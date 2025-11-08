@@ -16,6 +16,15 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      - name: Set up Docker Compose CLI
+        uses: docker/compose-action@v1
+        with:
+          # ensure compose files are available from the repo workspace
+          workdir: .
+
+      - name: Verify Docker Compose
+        run: docker compose version
+
       - name: Run integration script
         run: |
           chmod +x ./scripts/integration_test.sh
