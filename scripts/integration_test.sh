@@ -16,6 +16,12 @@ else
 fi
 
 # Build and start services
+# Export default env vars used by compose when not provided (use safe defaults for CI)
+export POSTGRES_USER="${POSTGRES_USER:-user}"
+export POSTGRES_DB="${POSTGRES_DB:-aichat}"
+export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-testpassword}"
+export REDIS_URL="${REDIS_URL:-redis://redis:6379}"
+
 ${COMPOSE_CMD} -f "$COMPOSE_FILE" up -d --build
 
 # Ensure we always tear down compose on exit
