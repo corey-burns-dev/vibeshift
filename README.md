@@ -146,3 +146,8 @@ For production deployment:
 ## License
 
 MIT
+
+## CI / Integration Tests
+
+- The repository's integration workflow uses Docker Compose. On GitHub Actions runners the workflow will install the Docker Compose CLI plugin and provide a `docker-compose` compatibility symlink so tests run regardless of the runner's preinstalled compose tooling.
+- If you run the integration script locally, ensure you have a Compose-capable Docker CLI (`docker compose`) or the legacy `docker-compose` binary available.
