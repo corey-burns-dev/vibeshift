@@ -1,6 +1,6 @@
 services:
   redis:
-    image: redis:8.0.5-alpine
+    image: redis:8.2.3-alpine
     ports:
       - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning

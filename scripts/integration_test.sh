@@ -26,14 +26,14 @@ ${COMPOSE_CMD} -f "$COMPOSE_FILE" up -d --build
 
 # Ensure we always tear down compose on exit
 cleanup() {
-  docker-compose -f "$COMPOSE_FILE" down -v
+  ${COMPOSE_CMD} -f "$COMPOSE_FILE" down -v
 }
 trap cleanup EXIT
 
 echo "Waiting for app to be healthy on http://localhost:$PORT/health..."
 for i in $(seq 1 $RETRIES); do
   if curl -sf "http://localhost:$PORT/health" >/dev/null 2>&1; then
-    echo "\nApp is healthy"
+    printf '\nApp is healthy\n'
     break
   fi
   printf '.'
