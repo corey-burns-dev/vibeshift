@@ -1,24 +1,48 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build and start services
-docker-compose -f compose.yml up -d --build
+COMPOSE_FILE="compose.yml"
+PORT="${GO_PORT:-8080}"
+RETRIES=60
 
-# Wait for app to become healthy
-echo "Waiting for app to be healthy..."
-for i in {1..30}; do
-  if docker exec "$(docker ps -qf "name=vibeshift-app-1")" sh -c "curl -sf http://localhost:8080/health" >/dev/null 2>&1; then
-    echo "App is healthy"
+# Prefer the classic docker-compose binary, fall back to the Docker CLI 'compose' plugin.
+if command -v docker-compose >/dev/null 2>&1; then
+  COMPOSE_CMD="docker-compose"
+elif command -v "docker" >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+  COMPOSE_CMD="docker compose"
+else
+  echo "ERROR: neither 'docker-compose' nor 'docker compose' is available" >&2
+  exit 1
+fi
+
+# Build and start services
+${COMPOSE_CMD} -f "$COMPOSE_FILE" up -d --build
+
+# Ensure we always tear down compose on exit
+cleanup() {
+  docker-compose -f "$COMPOSE_FILE" down -v
+}
+trap cleanup EXIT
+
+echo "Waiting for app to be healthy on http://localhost:$PORT/health..."
+for i in $(seq 1 $RETRIES); do
+  if curl -sf "http://localhost:$PORT/health" >/dev/null 2>&1; then
+    echo "\nApp is healthy"
     break
   fi
+  printf '.'
   sleep 1
 done
 
-# Test endpoints
-curl -f http://localhost:8080/health
-curl -f http://localhost:8080/ping
+if ! curl -sf "http://localhost:$PORT/health" >/dev/null 2>&1; then
+  echo "\nERROR: app did not become healthy after ${RETRIES} seconds"
+  echo "--- app logs ---"
+  ${COMPOSE_CMD} -f "$COMPOSE_FILE" logs --no-color app || true
+  exit 1
+fi
 
-# Cleanup
-docker-compose -f compose.yml down -v
+echo "Running endpoint checks..."
+curl -sS "http://localhost:$PORT/health"
+curl -sS "http://localhost:$PORT/ping"
 
 echo "Integration tests passed"
