@@ -73,6 +73,21 @@ make lint       # Run Go linter
 - `REDIS_URL` - Redis connection URL (default: `redis://redis:6379`)
 - `DATABASE_URL` - PostgreSQL connection URL
 
+`REDIS_URL` accepts either a plain `host:port` value or a URL form. Examples:
+
+```bash
+# URL form (supports password and DB index)
+export REDIS_URL="redis://:mypassword@redis:6379/1"
+
+# TLS (secure) URL form
+export REDIS_URL="rediss://:mypassword@redis:6379/1"
+
+# Plain host:port form (no scheme)
+export REDIS_URL="redis:6379"
+```
+
+The server will parse a `redis://`/`rediss://` URL and extract host, port, password, and optional DB index. If a plain `host:port` is provided it will be used directly.
+
 ## Development
 
 ### Project Structure
