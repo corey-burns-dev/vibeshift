@@ -83,6 +83,8 @@ A professional full-stack application with Go backend, React frontend, Redis, an
 
 - `make fmt` — Format Go code
 - `make lint` — Lint Go code
+- `make fmt-frontend` — Format frontend code (Biome)
+- `make lint-frontend` — Lint frontend code (Biome)
 - `make install` — Install frontend dependencies
 
 ### Utilities
@@ -92,7 +94,7 @@ A professional full-stack application with Go backend, React frontend, Redis, an
 
 ## Project Structure
 
-```
+```txt
 vibeshift/
 ├── cmd/
 │   └── server/              # Go server entrypoint
@@ -131,6 +133,7 @@ vibeshift/
 - **Build Tool:** Vite
 - **Styling:** Tailwind CSS with shadcn components
 - **Data Fetching:** TanStack Query v5
+- **Code Quality:** Biome for linting and formatting
 - **Features:** Real-time health status, responsive design
 
 ### Services (Docker Compose)
@@ -185,14 +188,14 @@ make logs-all
 docker-compose logs -f frontend
 ```
 
-### Code Quality
+### Frontend Code Quality
 
 ```bash
-# Format Go code
-make fmt
+# Format frontend code
+make fmt-frontend
 
-# Lint Go code
-make lint
+# Lint frontend code
+make lint-frontend
 
 # Install frontend dependencies
 make install
@@ -206,58 +209,9 @@ See `.env.example` for a complete list. Key variables:
 - `POSTGRES_DB` — PostgreSQL database name (default: aichat)
 - `POSTGRES_USER` — PostgreSQL user (default: user)
 - `POSTGRES_PASSWORD` — PostgreSQL password (required)
-- `VITE_API_URL` — Frontend API URL (default: http://localhost:8080)
+- `VITE_API_URL` — Frontend API URL (default: `http://localhost:8080`)
 
-## Troubleshooting
-
-### Services not starting?
-
-Check logs:
-```bash
-make logs:all
-```
-
-### Database connection errors?
-
-Ensure PostgreSQL is healthy:
-```bash
-docker-compose ps
-```
-
-Look for `(healthy)` status on postgres service.
-
-### Frontend can't connect to backend?
-
-In development, the frontend proxies requests to `http://localhost:8080`. Ensure the backend is running:
-```bash
-make dev:backend
-```
-
-## Common Commands
-
-
-Use `make help` to see all available commands:
-
-```bash
-make dev        # Start development with hot reloading
-make prod       # Start production environment
-make down       # Stop all containers
-make clean      # Clean containers, volumes, and build artifacts
-make logs       # View live container logs
-make fmt        # Format Go code
-make lint       # Run Go linter
-```
-
-## API Endpoints
-
-- `GET /health` - Health check: `{"status": "ok", "service": "ai-chat"}`
-- `GET /ping` - Ping: `{"message": "pong"}`
-
-## Environment Variables
-
-- `POSTGRES_PASSWORD` - Password for PostgreSQL database
-- `REDIS_URL` - Redis connection URL (default: `redis://redis:6379`)
-- `DATABASE_URL` - PostgreSQL connection URL
+### Redis Configuration
 
 `REDIS_URL` accepts either a plain `host:port` value or a URL form. Examples:
 
@@ -270,41 +224,44 @@ export REDIS_URL="rediss://:mypassword@redis:6379/1"
 
 # Plain host:port form (no scheme)
 export REDIS_URL="redis:6379"
-Note: when `REDIS_URL` uses the `rediss://` scheme the client will enable TLS when connecting. Ensure your Redis instance is configured for TLS when using `rediss://`.
 ```
 
-The server will parse a `redis://` or `rediss://` URL and extract host, port, password, and an optional DB index. `rediss://` is the same URL form but indicates a TLS (secure) connection. If a plain `host:port` is provided (for example `redis:6379`) it will be used directly.
+**Note:** When `REDIS_URL` uses the `rediss://` scheme, the client will enable TLS when connecting. Ensure your Redis instance is configured for TLS when using `rediss://`.
 
-Examples:
+## API Endpoints
+
+- `GET /health` - Health check: `{"status": "ok", "service": "ai-chat"}`
+- `GET /ping` - Ping: `{"message": "pong"}`
+
+## Troubleshooting
+
+### Services not starting?
+
+Check logs:
 
 ```bash
-# Unsecured Redis (default)
-export REDIS_URL="redis://:mypassword@redis:6379/1"
-
-# Secured (TLS) Redis
-export REDIS_URL="rediss://:mypassword@redis:6379/1"
-
-# Plain host:port
-export REDIS_URL="redis:6379"
+make logs-all
 ```
 
-## Development
+### Database connection errors?
 
-### Project Structure
+Ensure PostgreSQL is healthy:
 
-```text
-vibeshift/
-├── main.go                 # Main application
-├── Dockerfile              # Production build
-├── Dockerfile.dev          # Development build
-├── compose.yml             # Production & base services
-├── docker-compose.override.yml  # Development overrides
-├── .air.toml               # Air config for hot reloading
-├── Makefile                # Build and development commands
-├── go.mod                  # Go modules
-├── .env                    # Environment variables (local)
-└── .env.example            # Example env file (template)
+```bash
+docker-compose ps
 ```
+
+Look for `(healthy)` status on postgres service.
+
+### Frontend can't connect to backend?
+
+In development, the frontend proxies requests to `http://localhost:8080`. Ensure the backend is running:
+
+```bash
+make dev-backend
+```
+
+## Development Guide
 
 ### Adding New Features
 
@@ -335,6 +292,11 @@ For production deployment:
    make down
    ```
 
+## CI / Integration Tests
+
+- The repository's integration workflow uses Docker Compose. On GitHub Actions runners the workflow will install the Docker Compose CLI plugin and provide a `docker-compose` compatibility symlink so tests run regardless of the runner's preinstalled compose tooling.
+- If you run the integration script locally, ensure you have a Compose-capable Docker CLI (`docker compose`) or the legacy `docker-compose` binary available.
+
 ## Contributing
 
 1. Fork the repo
@@ -346,8 +308,3 @@ For production deployment:
 ## License
 
 MIT
-
-## CI / Integration Tests
-
-- The repository's integration workflow uses Docker Compose. On GitHub Actions runners the workflow will install the Docker Compose CLI plugin and provide a `docker-compose` compatibility symlink so tests run regardless of the runner's preinstalled compose tooling.
-- If you run the integration script locally, ensure you have a Compose-capable Docker CLI (`docker compose`) or the legacy `docker-compose` binary available.

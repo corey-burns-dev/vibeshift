@@ -136,10 +136,10 @@ install:
 
 # Environment setup
 env:
-	@if [ ! -f .env ]; then \
-		echo "$(BLUE)Creating .env from .env.example...$(NC)"; \
-		cp .env.example .env; \
-		echo "$(YELLOW)⚠️  Update .env with your settings$(NC)"; \
+	@if [ ! -f config.yml ]; then \
+		echo "$(BLUE)Creating config.yml from config.example.yml...$(NC)"; \
+		cp config.example.yml config.yml; \
+		echo "$(YELLOW)⚠️  Update config.yml with your settings$(NC)"; \
 	fi
 
 # Utility targets

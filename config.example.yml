@@ -1,0 +1,18 @@
+# Default configuration for the application.
+# Copy this file to config.yml and adjust the values as needed.
+
+# Server port
+PORT: "8080"
+
+# Database connection
+DB_HOST: "localhost"
+DB_PORT: "5432"
+DB_USER: "user"
+DB_PASSWORD: "password"
+DB_NAME: "vibeshift"
+
+# Redis connection
+REDIS_URL: "localhost:6379"
+
+# JWT Secret for signing tokens
+JWT_SECRET: "your-super-secret-key-that-should-be-long-and-random"
