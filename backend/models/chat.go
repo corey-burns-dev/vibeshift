@@ -9,9 +9,9 @@ import (
 // Conversation represents a chat conversation (can be 1-on-1 or group)
 type Conversation struct {
 	ID           uint           `gorm:"primaryKey" json:"id"`
-	Name         string         `json:"name"`          // For group chats
+	Name         string         `json:"name"` // For group chats
 	IsGroup      bool           `gorm:"default:false" json:"is_group"`
-	Avatar       string         `json:"avatar"`        // For group chats
+	Avatar       string         `json:"avatar"` // For group chats
 	CreatedBy    uint           `json:"created_by"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
@@ -28,7 +28,7 @@ type Message struct {
 	SenderID       uint           `gorm:"not null;index" json:"sender_id"`
 	Sender         *User          `gorm:"foreignKey:SenderID" json:"sender,omitempty"`
 	Content        string         `gorm:"type:text;not null" json:"content"`
-	MessageType    string         `gorm:"default:'text'" json:"message_type"` // text, image, file, etc.
+	MessageType    string         `gorm:"default:'text'" json:"message_type"`  // text, image, file, etc.
 	Metadata       string         `gorm:"type:json" json:"metadata,omitempty"` // For file URLs, image URLs, etc.
 	IsRead         bool           `gorm:"default:false" json:"is_read"`
 	CreatedAt      time.Time      `json:"created_at"`

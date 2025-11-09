@@ -44,6 +44,7 @@ func Connect(cfg *config.Config) *gorm.DB {
 		&models.Conversation{},
 		&models.Message{},
 		&models.ConversationParticipant{},
+		&models.Friendship{},
 	)
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)

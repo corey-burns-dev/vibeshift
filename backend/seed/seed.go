@@ -144,7 +144,7 @@ func Seed(db *gorm.DB) error {
 
 func clearData(db *gorm.DB) error {
 	log.Println("🗑️  Clearing existing data...")
-	
+
 	// Delete in correct order to respect foreign key constraints
 	if err := db.Exec("DELETE FROM comments").Error; err != nil {
 		return err
@@ -164,7 +164,7 @@ func clearData(db *gorm.DB) error {
 	if err := db.Exec("DELETE FROM users").Error; err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -191,7 +191,7 @@ func createUsers(db *gorm.DB) ([]models.User, error) {
 }
 
 func createPosts(db *gorm.DB, users []models.User) ([]models.Post, error) {
-	rand.Seed(time.Now().UnixNano())
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	// Create a slice to hold all post data before inserting
 	type postData struct {
@@ -201,17 +201,17 @@ func createPosts(db *gorm.DB, users []models.User) ([]models.Post, error) {
 		likes    int
 		imageURL string
 	}
-	
+
 	allPostsData := make([]postData, 0)
 
 	// Prepare all posts data (each user creates 2-4 posts)
 	for _, user := range users {
-		numPosts := rand.Intn(3) + 2 // 2-4 posts per user
-		
+		numPosts := r.Intn(3) + 2 // 2-4 posts per user
+
 		for i := 0; i < numPosts; i++ {
-			titleIdx := rand.Intn(len(postTitles))
-			contentIdx := rand.Intn(len(postContents))
-			
+			titleIdx := r.Intn(len(postTitles))
+			contentIdx := r.Intn(len(postContents))
+
 			pd := postData{
 				title:   postTitles[titleIdx],
 				content: postContents[contentIdx],
@@ -220,8 +220,8 @@ func createPosts(db *gorm.DB, users []models.User) ([]models.Post, error) {
 			}
 
 			// Randomly add image URLs to some posts (30% chance)
-			if rand.Float32() < 0.3 {
-				pd.imageURL = fmt.Sprintf("https://picsum.photos/seed/%d/800/600", rand.Intn(1000))
+			if r.Float32() < 0.3 {
+				pd.imageURL = fmt.Sprintf("https://picsum.photos/seed/%d/800/600", r.Intn(1000))
 			}
 
 			allPostsData = append(allPostsData, pd)
@@ -229,7 +229,7 @@ func createPosts(db *gorm.DB, users []models.User) ([]models.Post, error) {
 	}
 
 	// Shuffle the posts so they're not grouped by user
-	rand.Shuffle(len(allPostsData), func(i, j int) {
+	r.Shuffle(len(allPostsData), func(i, j int) {
 		allPostsData[i], allPostsData[j] = allPostsData[j], allPostsData[i]
 	})
 
@@ -248,9 +248,9 @@ func createPosts(db *gorm.DB, users []models.User) ([]models.Post, error) {
 			return nil, err
 		}
 		posts = append(posts, post)
-		
+
 		// Add a small random delay to create more realistic timestamps
-		time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
+		time.Sleep(time.Millisecond * time.Duration(r.Intn(100)))
 	}
 
 	return posts, nil
@@ -258,20 +258,20 @@ func createPosts(db *gorm.DB, users []models.User) ([]models.Post, error) {
 
 func createComments(db *gorm.DB, users []models.User, posts []models.Post) (int, error) {
 	count := 0
-	rand.Seed(time.Now().UnixNano())
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	// Each post gets 1-5 comments
 	for _, post := range posts {
-		numComments := rand.Intn(5) + 1
-		
+		numComments := r.Intn(5) + 1
+
 		for i := 0; i < numComments; i++ {
 			// Pick a random user (different from post author when possible)
-			userIdx := rand.Intn(len(users))
+			userIdx := r.Intn(len(users))
 			if len(users) > 1 && users[userIdx].ID == post.UserID {
 				userIdx = (userIdx + 1) % len(users)
 			}
 
-			commentIdx := rand.Intn(len(comments))
+			commentIdx := r.Intn(len(comments))
 			comment := models.Comment{
 				Content: comments[commentIdx],
 				PostID:  post.ID,
@@ -290,12 +290,12 @@ func createComments(db *gorm.DB, users []models.User, posts []models.Post) (int,
 
 func addLikes(db *gorm.DB, posts []models.Post) (int, error) {
 	count := 0
-	
+
 	// Already added likes during post creation
 	// This function could be used for a likes table if you implement that feature
 	for _, post := range posts {
 		count += post.Likes
 	}
-	
+
 	return count, nil
 }

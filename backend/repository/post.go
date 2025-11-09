@@ -13,6 +13,7 @@ type PostRepository interface {
 	GetByID(ctx context.Context, id uint) (*models.Post, error)
 	GetByUserID(ctx context.Context, userID uint, limit, offset int) ([]*models.Post, error)
 	List(ctx context.Context, limit, offset int) ([]*models.Post, error)
+	Search(ctx context.Context, query string, limit, offset int) ([]*models.Post, error)
 	Update(ctx context.Context, post *models.Post) error
 	Delete(ctx context.Context, id uint) error
 	Like(ctx context.Context, id uint) error
@@ -58,6 +59,19 @@ func (r *postRepository) List(ctx context.Context, limit, offset int) ([]*models
 	var posts []*models.Post
 	err := r.db.WithContext(ctx).
 		Preload("User").
+		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&posts).Error
+	return posts, err
+}
+
+func (r *postRepository) Search(ctx context.Context, query string, limit, offset int) ([]*models.Post, error) {
+	var posts []*models.Post
+	like := "%" + query + "%"
+	err := r.db.WithContext(ctx).
+		Preload("User").
+		Where("title ILIKE ? OR content ILIKE ?", like, like).
 		Order("created_at DESC").
 		Limit(limit).
 		Offset(offset).

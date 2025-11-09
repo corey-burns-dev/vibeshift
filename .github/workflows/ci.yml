@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ${{ github.workspace }}/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install staticcheck
+        run: GO111MODULE=on go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Run fmt check
+        run: |
+          gofmt -l ./ | tee /tmp/gofmt.txt
+          if [ -s /tmp/gofmt.txt ]; then echo 'gofmt found issues' && exit 1; fi
+
+      - name: Run vet
+        run: go vet ./...
+
+      - name: Run staticcheck
+        run: $HOME/go/bin/staticcheck ./...
+
+      - name: Run tests
+        run: go test ./...

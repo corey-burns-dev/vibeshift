@@ -21,13 +21,9 @@ export default function Chat() {
   const { data: messages = [], isLoading } = useMessages(globalConversationId)
   const sendMessage = useSendMessage(globalConversationId)
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [])
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return
@@ -165,12 +161,20 @@ export default function Chat() {
                 <div className="space-y-3">
                   {conversations && conversations.length > 0 ? (
                     conversations.map((conversation: Conversation) => (
-                      <div
+                      <button
+                        type="button"
                         key={conversation.id}
                         className={`flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-muted ${
                           conversation.id === globalConversationId ? 'bg-muted' : ''
                         }`}
                         onClick={() => setGlobalConversationId(conversation.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            setGlobalConversationId(conversation.id)
+                          }
+                        }}
+                        aria-pressed={conversation.id === globalConversationId}
                       >
                         <Avatar className="w-8 h-8">
                           <AvatarImage
@@ -193,7 +197,7 @@ export default function Chat() {
                             </p>
                           )}
                         </div>
-                      </div>
+                      </button>
                     ))
                   ) : (
                     <div className="text-xs text-muted-foreground text-center py-4">

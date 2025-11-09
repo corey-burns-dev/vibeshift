@@ -121,7 +121,7 @@ fmt:
 
 lint:
 	@echo "$(BLUE)Linting Go code...$(NC)"
-	$(GO) vet ./...
+	cd backend && $(GO) vet ./...
 	@echo "$(GREEN)✓ Linting passed$(NC)"
 
 fmt-frontend:
