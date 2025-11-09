@@ -1,4 +1,4 @@
-.PHONY: help dev dev-backend dev-frontend dev-both prod build build-backend build-frontend up down logs logs-backend logs-frontend logs-all clean lint lint-frontend fmt fmt-frontend install env restart check-versions
+.PHONY: help dev dev-backend dev-frontend dev-both prod build build-backend build-frontend up down logs logs-backend logs-frontend logs-all clean lint lint-frontend fmt fmt-frontend install env restart check-versions test-api
 
 # Variables
 DOCKER_COMPOSE := docker-compose
@@ -43,6 +43,9 @@ help:
 	@echo "  make lint               - 🔍 Lint Go code"
 	@echo "  make lint-frontend      - 🔍 Lint frontend code (Biome)"
 	@echo "  make install            - 📦 Install frontend dependencies"
+	@echo ""
+	@echo "$(GREEN)Testing:$(NC)"
+	@echo "  make test-api           - 🧪 Test all API endpoints"
 	@echo ""
 	@echo "$(GREEN)Utilities:$(NC)"
 	@echo "  make env                - ⚙️  Initialize .env file"
@@ -156,3 +159,25 @@ clean:
 	rm -rf frontend/node_modules frontend/dist
 	$(GO) clean
 	@echo "$(GREEN)✓ Cleanup complete$(NC)"
+
+# Testing
+test-api:
+	@echo "$(BLUE)Running API endpoint tests...$(NC)"
+## Testing
+.PHONY: test test-unit test-integration test-coverage test-api
+test:
+	cd backend && go test ./... -v
+
+test-unit:
+	cd backend && go test ./handlers/... -v
+
+test-integration:
+	chmod +x test-api.sh
+	./test-api.sh
+
+test-coverage:
+	cd backend && go test ./... -coverprofile=coverage.out
+	cd backend && go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: backend/coverage.html"
+
+test-api: test-integration

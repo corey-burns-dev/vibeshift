@@ -1,12 +1,12 @@
 FROM golang:1.25-alpine
 
-WORKDIR /app
+WORKDIR /app/backend
 
 # Install air for hot reloading
 RUN go install github.com/air-verse/air@latest
 
 # Copy go mod files
-COPY backend/go.mod ./
+COPY backend/go.mod backend/go.sum ./
 
 # Download dependencies
 RUN go mod download

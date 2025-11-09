@@ -1,0 +1,190 @@
+### Vibeshift API Tests
+### VS Code REST Client Extension Required
+### https://marketplace.visualstudio.com/items?itemName=humao.rest-client
+
+@baseUrl = http://localhost:8080/api
+@token = 
+@userId = 
+@postId = 
+
+###############################################
+# Health Check
+###############################################
+
+### Health Check
+GET {{baseUrl}}/
+Content-Type: application/json
+
+###############################################
+# Authentication
+###############################################
+
+### Sign Up
+# @name signup
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "username": "johndoe",
+  "email": "john@example.com",
+  "password": "password123"
+}
+
+### Extract Token from Signup
+@token = {{signup.response.body.token}}
+@userId = {{signup.response.body.user.id}}
+
+### Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "password123"
+}
+
+### Login with Wrong Password (Should Fail)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "wrongpassword"
+}
+
+###############################################
+# Posts
+###############################################
+
+### Get All Posts
+GET {{baseUrl}}/posts
+Content-Type: application/json
+
+### Get All Posts (with pagination)
+GET {{baseUrl}}/posts?offset=0&limit=10
+Content-Type: application/json
+
+### Create Post (Requires Auth)
+# @name createPost
+POST {{baseUrl}}/posts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "My First Post",
+  "content": "This is a great post about web development!",
+  "image_url": "https://example.com/image.jpg"
+}
+
+### Extract Post ID
+@postId = {{createPost.response.body.id}}
+
+### Get Single Post
+GET {{baseUrl}}/posts/{{postId}}
+Content-Type: application/json
+
+### Update Post (Requires Auth)
+PUT {{baseUrl}}/posts/{{postId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Updated Post Title",
+  "content": "This post has been updated with new content!"
+}
+
+### Like Post
+POST {{baseUrl}}/posts/{{postId}}/like
+Content-Type: application/json
+
+### Search Posts
+GET {{baseUrl}}/posts/search?q=web&offset=0&limit=10
+Content-Type: application/json
+
+### Delete Post (Requires Auth)
+DELETE {{baseUrl}}/posts/{{postId}}
+Authorization: Bearer {{token}}
+
+###############################################
+# Comments
+###############################################
+
+### Get Post Comments
+GET {{baseUrl}}/posts/{{postId}}/comments
+Content-Type: application/json
+
+### Create Comment (Requires Auth)
+# @name createComment
+POST {{baseUrl}}/posts/{{postId}}/comments
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "content": "Great post! Thanks for sharing."
+}
+
+### Extract Comment ID
+@commentId = {{createComment.response.body.id}}
+
+### Update Comment (Requires Auth)
+PUT {{baseUrl}}/posts/{{postId}}/comments/{{commentId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "content": "Updated comment text."
+}
+
+### Delete Comment (Requires Auth)
+DELETE {{baseUrl}}/posts/{{postId}}/comments/{{commentId}}
+Authorization: Bearer {{token}}
+
+###############################################
+# Users
+###############################################
+
+### Get My Profile (Requires Auth)
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{token}}
+
+### Get User Profile by ID
+GET {{baseUrl}}/users/{{userId}}
+Content-Type: application/json
+
+### Update My Profile (Requires Auth)
+PUT {{baseUrl}}/users/me
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "username": "johndoe_updated",
+  "bio": "Full-stack developer passionate about Go and React",
+  "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=johndoe"
+}
+
+###############################################
+# Error Cases
+###############################################
+
+### Create Post Without Auth (Should Fail)
+POST {{baseUrl}}/posts
+Content-Type: application/json
+
+{
+  "title": "This should fail",
+  "content": "No authentication token provided"
+}
+
+### Update Someone Else's Post (Should Fail)
+PUT {{baseUrl}}/posts/999999
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Trying to update non-existent post"
+}
+
+### Get Non-Existent Post (Should Fail)
+GET {{baseUrl}}/posts/999999
+Content-Type: application/json

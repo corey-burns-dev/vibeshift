@@ -3,27 +3,33 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useLogin } from '@/hooks'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const navigate = useNavigate()
+  const [error, setError] = useState('')
+  
+  const loginMutation = useLogin()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setError('')
 
-    // Simulate login API call
-    setTimeout(() => {
-      setIsLoading(false)
-      // For demo purposes, just navigate to posts
-      navigate('/posts')
-    }, 1000)
+    try {
+      await loginMutation.mutateAsync({
+        email,
+        password,
+      })
+      // Navigation happens automatically in the hook
+    } catch (error) {
+      console.error('Login error:', error)
+      setError(error instanceof Error ? error.message : 'An error occurred during login')
+    }
   }
 
   return (
@@ -77,8 +83,8 @@ export default function Login() {
                   </Button>
                 </div>
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
+              <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
+                {loginMutation.isPending ? (
                   'Signing in...'
                 ) : (
                   <>
@@ -88,6 +94,12 @@ export default function Login() {
                 )}
               </Button>
             </form>
+
+            {error && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
 
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">Don't have an account? </span>

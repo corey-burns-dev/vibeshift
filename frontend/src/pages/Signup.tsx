@@ -3,23 +3,23 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useSignup } from '@/hooks'
 import { Eye, EyeOff, UserPlus } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 
 export default function Signup() {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: ''
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const navigate = useNavigate()
+  
+  const signupMutation = useSignup()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -33,12 +33,10 @@ export default function Signup() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required'
-    }
-
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required'
+    if (!formData.username.trim()) {
+      newErrors.username = 'Username is required'
+    } else if (formData.username.length < 3) {
+      newErrors.username = 'Username must be at least 3 characters'
     }
 
     if (!formData.email.trim()) {
@@ -66,14 +64,21 @@ export default function Signup() {
 
     if (!validateForm()) return
 
-    setIsLoading(true)
+    setErrors({})
 
-    // Simulate signup API call
-    setTimeout(() => {
-      setIsLoading(false)
-      // For demo purposes, just navigate to posts
-      navigate('/posts')
-    }, 1500)
+    try {
+      await signupMutation.mutateAsync({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+      })
+      // Navigation happens automatically in the hook
+    } catch (error) {
+      console.error('Signup error:', error)
+      setErrors({
+        general: error instanceof Error ? error.message : 'An error occurred during signup'
+      })
+    }
   }
 
   return (
@@ -90,37 +95,20 @@ export default function Signup() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input
-                    id="firstName"
-                    name="firstName"
-                    type="text"
-                    placeholder="John"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    className={errors.firstName ? 'border-red-500' : ''}
-                  />
-                  {errors.firstName && (
-                    <p className="text-sm text-red-500">{errors.firstName}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    name="lastName"
-                    type="text"
-                    placeholder="Doe"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    className={errors.lastName ? 'border-red-500' : ''}
-                  />
-                  {errors.lastName && (
-                    <p className="text-sm text-red-500">{errors.lastName}</p>
-                  )}
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  name="username"
+                  type="text"
+                  placeholder="johndoe"
+                  value={formData.username}
+                  onChange={handleChange}
+                  className={errors.username ? 'border-red-500' : ''}
+                />
+                {errors.username && (
+                  <p className="text-sm text-red-500">{errors.username}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -201,8 +189,8 @@ export default function Signup() {
                 )}
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
+              <Button type="submit" className="w-full" disabled={signupMutation.isPending}>
+                {signupMutation.isPending ? (
                   'Creating account...'
                 ) : (
                   <>
@@ -212,6 +200,12 @@ export default function Signup() {
                 )}
               </Button>
             </form>
+
+            {errors.general && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600">{errors.general}</p>
+              </div>
+            )}
 
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">Already have an account? </span>
