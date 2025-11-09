@@ -1,0 +1,8 @@
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  padding: 2rem;
+}
+.app {
+  max-width: 640px;
+}
+button { margin-bottom: 1rem }
