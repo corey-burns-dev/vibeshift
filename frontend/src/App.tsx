@@ -1,4 +1,3 @@
-import React from 'react'
 import { useHealth } from './hooks/useHealth'
 
 export default function App() {

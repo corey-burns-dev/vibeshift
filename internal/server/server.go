@@ -69,6 +69,14 @@ func RunWithQuit(quit <-chan os.Signal) {
 		Handler: mux,
 	}
 
+	// Wrap the mux with a simple CORS middleware. The frontend origin can be
+	// configured via FRONTEND_ORIGIN (defaults to allow all for dev).
+	frontendOrigin := os.Getenv("FRONTEND_ORIGIN")
+	if frontendOrigin == "" {
+		frontendOrigin = "*"
+	}
+	srv.Handler = corsMiddleware(mux, frontendOrigin)
+
 	go func() {
 		log.Printf("Server starting on port :%s", port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -85,4 +93,18 @@ func RunWithQuit(quit <-chan os.Signal) {
 	if database != nil {
 		_ = database.Close()
 	}
+}
+
+// corsMiddleware is a very small CORS implementation used in dev.
+func corsMiddleware(next http.Handler, origin string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
