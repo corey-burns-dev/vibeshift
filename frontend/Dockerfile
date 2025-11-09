@@ -1,11 +1,12 @@
 ### production Dockerfile for frontend (build static files and serve with nginx)
 FROM node:18-alpine AS build
+RUN npm install -g pnpm
 WORKDIR /app
-COPY package.json package-lock.json* ./
+COPY package.json pnpm-lock.yaml* ./
 COPY tsconfig.json vite.config.ts ./
 COPY src ./src
 COPY index.html ./
-RUN npm ci --silent && npm run build
+RUN pnpm install && pnpm run build
 
 FROM nginx:stable-alpine AS runtime
 COPY --from=build /app/dist /usr/share/nginx/html

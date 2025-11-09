@@ -1,8 +1,9 @@
 ### development Dockerfile for frontend (run vite dev server)
 FROM node:18-alpine
+RUN npm install -g pnpm
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci --silent
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install
 COPY . ./
 EXPOSE 5173
-CMD ["npm", "run", "dev"]
+CMD ["pnpm", "dev"]
