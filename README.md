@@ -1,18 +1,22 @@
 # Vibeshift
 
-A Go-based full-stack application with Redis and PostgreSQL, containerized for easy development and deployment.
+A professional full-stack application with Go backend, React frontend, Redis, and PostgreSQL. All orchestrated through Docker Compose and a comprehensive Makefile.
 
 ## Features
 
-- REST API with health and ping endpoints
-- Docker containerization for dev and prod
-- Hot reloading in development
-- PostgreSQL and Redis integration
+- **Backend:** Go REST API with health and ping endpoints
+- **Frontend:** React 19 with TanStack Query, Tailwind CSS, and shadcn components
+- **Databases:** PostgreSQL for persistence, Redis for caching
+- **Development:** Hot reloading for both backend and frontend
+- **Containerization:** Docker multi-stage builds for optimized images
+- **Professional CLI:** Organized Makefile for all development tasks
 
 ## Prerequisites
 
 - Docker and Docker Compose
 - Git
+- Node.js (v24+) and pnpm (for local frontend development)
+- Go (v1.23+, optional for local backend development)
 
 ## Quick Start
 
@@ -29,26 +33,205 @@ A Go-based full-stack application with Redis and PostgreSQL, containerized for e
    make env
    ```
 
-   This copies `.env.example` to `.env`. Edit `.env` with your settings if needed.
+   This creates `.env` from `.env.example`. Update with your settings if needed.
 
-3. **Run in Development (with hot reloading):**
+3. **Start the full stack:**
 
    ```bash
    make dev
    ```
 
-   - The app will be available at `http://localhost:8080`
-   - Edit Go files and see changes reload automatically
+   - Backend API: `http://localhost:8080`
+   - Frontend: `http://localhost:5173`
+   - PostgreSQL: `localhost:5432`
+   - Redis: `localhost:6379`
 
-4. **Run in Production:**
+4. **View help for all available commands:**
 
    ```bash
-   make prod
+   make help
    ```
 
-   - Optimized for production with minimal image size
+## Available Commands
+
+### Development
+
+- `make dev` — Start full stack (backend + frontend + databases)
+- `make dev:backend` — Backend only (Go + Redis + Postgres)
+- `make dev:frontend` — Frontend only (Vite dev server, local)
+
+### Building
+
+- `make build` — Build all Docker images (production)
+- `make build:backend` — Build backend image only
+- `make build:frontend` — Build frontend image only
+
+### Container Management
+
+- `make up` — Start services in background
+- `make down` — Stop all services
+- `make restart` — Restart all services
+
+### Monitoring
+
+- `make logs` — Stream backend logs
+- `make logs:backend` — Backend logs only
+- `make logs:frontend` — Frontend logs only
+- `make logs:all` — All service logs
+
+### Code Quality
+
+- `make fmt` — Format Go code
+- `make lint` — Lint Go code
+- `make install` — Install frontend dependencies
+
+### Utilities
+
+- `make env` — Initialize .env file
+- `make clean` — Clean containers, volumes, and artifacts
+
+## Project Structure
+
+```
+vibeshift/
+├── cmd/
+│   └── server/              # Go server entrypoint
+├── internal/
+│   ├── handlers/            # HTTP handlers
+│   ├── server/              # Server setup
+├── pkg/
+│   ├── db/                  # PostgreSQL utilities
+│   ├── redis/               # Redis client
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # React components
+│   │   ├── hooks/           # Custom hooks (useHealth)
+│   │   ├── api/             # API utilities
+│   │   ├── lib/             # Utilities and helpers
+│   │   └── App.tsx          # Main app component
+│   ├── Dockerfile           # Production Dockerfile
+│   └── Dockerfile.dev       # Development Dockerfile
+├── Dockerfile               # Backend Dockerfile
+├── compose.yml              # Docker Compose orchestration
+├── Makefile                 # Development CLI
+└── .env.example             # Environment template
+```
+
+## Architecture
+
+### Backend
+
+- **Framework:** Go with net/http
+- **Databases:** PostgreSQL (persistence), Redis (caching)
+- **Features:** Graceful shutdown, health checks, CORS support
+
+### Frontend
+
+- **Framework:** React 19 with TypeScript
+- **Build Tool:** Vite
+- **Styling:** Tailwind CSS with shadcn components
+- **Data Fetching:** TanStack Query v5
+- **Features:** Real-time health status, responsive design
+
+### Services (Docker Compose)
+
+1. **redis** — Caching layer
+2. **postgres** — Data persistence
+3. **app** — Go backend API
+4. **frontend** — React development server
+
+## Common Workflows
+
+### Full Development Stack
+
+```bash
+make dev
+# Backend: http://localhost:8080
+# Frontend: http://localhost:5173
+# Postgres: localhost:5432
+# Redis: localhost:6379
+```
+
+### Backend-Only Development
+
+```bash
+make dev:backend
+# Backend: http://localhost:8080
+# Postgres: localhost:5432
+# Redis: localhost:6379
+```
+
+### Frontend-Only Development (with backend proxy)
+
+```bash
+make dev:frontend
+# Frontend: http://localhost:5173
+# API proxied to http://localhost:8080/health and /ping
+```
+
+### Check Logs
+
+```bash
+# Backend logs
+make logs:backend
+
+# All logs
+make logs:all
+
+# Follow specific service
+docker-compose logs -f frontend
+```
+
+### Code Quality
+
+```bash
+# Format Go code
+make fmt
+
+# Lint Go code
+make lint
+
+# Install frontend dependencies
+make install
+```
+
+## Environment Variables
+
+See `.env.example` for a complete list. Key variables:
+
+- `GO_PORT` — Backend server port (default: 8080)
+- `POSTGRES_DB` — PostgreSQL database name (default: aichat)
+- `POSTGRES_USER` — PostgreSQL user (default: user)
+- `POSTGRES_PASSWORD` — PostgreSQL password (required)
+- `VITE_API_URL` — Frontend API URL (default: http://localhost:8080)
+
+## Troubleshooting
+
+### Services not starting?
+
+Check logs:
+```bash
+make logs:all
+```
+
+### Database connection errors?
+
+Ensure PostgreSQL is healthy:
+```bash
+docker-compose ps
+```
+
+Look for `(healthy)` status on postgres service.
+
+### Frontend can't connect to backend?
+
+In development, the frontend proxies requests to `http://localhost:8080`. Ensure the backend is running:
+```bash
+make dev:backend
+```
 
 ## Common Commands
+
 
 Use `make help` to see all available commands:
 
