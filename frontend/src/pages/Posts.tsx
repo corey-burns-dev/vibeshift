@@ -1,4 +1,3 @@
-import { useMutation } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import { Heart, Loader2, MessageCircle, Send } from 'lucide-react'
 import { memo, useCallback, useEffect, useState } from 'react'
@@ -8,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { useCreateComment, usePostComments } from '@/hooks/useComments'
-import { useCreatePost, useInfinitePosts } from '@/hooks/usePosts'
+import { useCreatePost, useInfinitePosts, useLikePost } from '@/hooks/usePosts'
 import { getCurrentUser, useIsAuthenticated } from '@/hooks/useUsers'
 
 // Component for individual post comments
@@ -125,12 +124,7 @@ export default function Posts() {
   const currentUser = getCurrentUser()
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfinitePosts(10)
   const createPostMutation = useCreatePost()
-  const likePostMutation = useMutation((postId: number) =>
-    fetch(`/api/posts/${postId}/like`, { method: 'POST' }).then((res) => {
-      if (!res.ok) throw new Error('Failed to like post')
-      return res.json()
-    })
-  )
+  const likePostMutation = useLikePost()
 
   // Flatten pages into single array of posts
   const posts = data?.pages.flat() ?? []
