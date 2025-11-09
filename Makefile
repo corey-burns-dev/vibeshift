@@ -1,4 +1,4 @@
-.PHONY: help dev dev:backend dev:frontend prod build build:backend build:frontend up down logs logs:backend logs:frontend logs:all clean lint fmt install env restart
+.PHONY: help dev dev-backend dev-frontend prod build build-backend build-frontend up down logs logs-backend logs-frontend logs-all clean lint fmt install env restart
 
 # Variables
 DOCKER_COMPOSE := docker-compose
@@ -20,21 +20,21 @@ help:
 	@echo ""
 	@echo "$(GREEN)Development:$(NC)"
 	@echo "  make dev                - 🚀 Start full stack (backend + frontend + databases)"
-	@echo "  make dev:backend        - 🔧 Backend only (Go + Redis + Postgres)"
-	@echo "  make dev:frontend       - 🎨 Frontend only (Vite dev server, local)"
+	@echo "  make dev-backend        - 🔧 Backend only (Go + Redis + Postgres)"
+	@echo "  make dev-frontend       - 🎨 Frontend only (Vite dev server, local)"
 	@echo ""
 	@echo "$(GREEN)Build & Compose:$(NC)"
 	@echo "  make build              - 🔨 Build all Docker images (prod)"
-	@echo "  make build:backend      - 🔨 Build backend image"
-	@echo "  make build:frontend     - 🔨 Build frontend image"
+	@echo "  make build-backend      - 🔨 Build backend image"
+	@echo "  make build-frontend     - 🔨 Build frontend image"
 	@echo "  make up                 - ⬆️  Start services in background"
 	@echo "  make down               - ⬇️  Stop all services"
 	@echo ""
 	@echo "$(GREEN)Logs & Monitoring:$(NC)"
 	@echo "  make logs               - 📋 Stream backend logs"
-	@echo "  make logs:backend       - 📋 Backend logs only"
-	@echo "  make logs:frontend      - 📋 Frontend logs only"
-	@echo "  make logs:all           - 📋 All service logs"
+	@echo "  make logs-backend       - 📋 Backend logs only"
+	@echo "  make logs-frontend      - 📋 Frontend logs only"
+	@echo "  make logs-all           - 📋 All service logs"
 	@echo ""
 	@echo "$(GREEN)Code Quality:$(NC)"
 	@echo "  make fmt                - 🎨 Format Go code"
@@ -52,23 +52,23 @@ dev: env
 	@echo "$(BLUE)Starting full stack development environment...$(NC)"
 	$(DOCKER_COMPOSE) up --build
 
-dev:backend: env
+dev-backend: env
 	@echo "$(BLUE)Starting backend services (Go, Redis, Postgres)...$(NC)"
 	$(DOCKER_COMPOSE) up --build app redis postgres
 
-dev:frontend: install
+dev-frontend: install
 	@echo "$(BLUE)Starting frontend dev server...$(NC)"
 	cd frontend && $(PNPM) dev
 
 # Build targets
-build: build:backend build:frontend
+build: build-backend build-frontend
 	@echo "$(GREEN)✓ All images built successfully$(NC)"
 
-build:backend:
+build-backend:
 	@echo "$(BLUE)Building backend image...$(NC)"
 	$(DOCKER_COMPOSE) build app
 
-build:frontend:
+build-frontend:
 	@echo "$(BLUE)Building frontend image...$(NC)"
 	$(DOCKER_COMPOSE) build frontend
 
@@ -85,13 +85,13 @@ down:
 logs:
 	$(DOCKER_COMPOSE) logs -f app
 
-logs:backend:
+logs-backend:
 	$(DOCKER_COMPOSE) logs -f app
 
-logs:frontend:
+logs-frontend:
 	$(DOCKER_COMPOSE) logs -f frontend
 
-logs:all:
+logs-all:
 	$(DOCKER_COMPOSE) logs -f
 
 # Code quality
