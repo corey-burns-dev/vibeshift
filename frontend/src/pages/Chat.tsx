@@ -95,24 +95,24 @@ export default function Chat() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="flex-1 max-w-7xl mx-auto px-4 py-6 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
           {/* Chat Area */}
-          <div className="lg:col-span-3">
-            <Card className="h-[600px] flex flex-col">
-              <CardHeader className="flex-shrink-0">
+          <div className="lg:col-span-3 flex flex-col">
+            <Card className="flex-1 flex flex-col min-h-0">
+              <CardHeader className="shrink-0">
                 <CardTitle className="flex items-center gap-2">
                   <MessageCircle className="w-5 h-5" />
                   Live Chat
                 </CardTitle>
               </CardHeader>
 
-              <CardContent className="flex-1 flex flex-col p-0">
+              <CardContent className="flex-1 flex flex-col p-0 min-h-0">
                 {/* Messages */}
-                <ScrollArea className="flex-1 px-6" ref={scrollAreaRef}>
+                <ScrollArea className="flex-1 px-6 min-h-0" ref={scrollAreaRef}>
                   <div className="space-y-3 py-4">
                     {messages.map((msg) => (
                       <div key={msg.id} className="flex items-start gap-3 group">
@@ -122,7 +122,7 @@ export default function Chat() {
                           </div>
                         ) : (
                           <>
-                            <Avatar className="w-8 h-8 flex-shrink-0">
+                            <Avatar className="w-8 h-8 shrink-0">
                               <AvatarImage src={msg.avatar} />
                               <AvatarFallback className="text-xs">
                                 {msg.username[0].toUpperCase()}
@@ -140,7 +140,7 @@ export default function Chat() {
                                   {msg.timestamp}
                                 </span>
                               </div>
-                              <p className="text-sm break-words">{msg.message}</p>
+                              <p className="text-sm wrap-break-word">{msg.message}</p>
                             </div>
                           </>
                         )}
@@ -151,7 +151,7 @@ export default function Chat() {
                 </ScrollArea>
 
                 {/* Message Input */}
-                <div className="border-t p-4">
+                <div className="border-t p-4 shrink-0">
                   <div className="flex gap-2">
                     <Input
                       placeholder="Type a message..."
@@ -170,9 +170,9 @@ export default function Chat() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-6 lg:flex lg:flex-col">
             {/* Online Users */}
-            <Card>
+            <Card className="lg:flex-1">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Users className="w-5 h-5" />

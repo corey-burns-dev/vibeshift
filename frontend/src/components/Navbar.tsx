@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 
 export function Navbar() {
   return (
-    <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <nav className="border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link to="/" className="text-2xl font-bold text-primary">
@@ -23,18 +23,24 @@ export function Navbar() {
             >
               Chat
             </Link>
-            <a
-              href="#features"
+            <Link
+              to="/profile"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
-              Features
-            </a>
-            <a
-              href="#status"
+              Profile
+            </Link>
+            <Link
+              to="/friends"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
-              Status
-            </a>
+              Friends
+            </Link>
+            <Link
+              to="/messages"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Messages
+            </Link>
           </div>
         </div>
         <div className="flex items-center gap-4">

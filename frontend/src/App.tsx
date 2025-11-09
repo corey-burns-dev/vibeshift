@@ -1,7 +1,12 @@
 import { Navbar } from '@/components/Navbar'
 import { Button } from '@/components/ui/button'
 import Chat from '@/pages/Chat'
+import Friends from '@/pages/Friends'
+import Login from '@/pages/Login'
+import Messages from '@/pages/Messages'
 import Posts from '@/pages/Posts'
+import Profile from '@/pages/Profile'
+import Signup from '@/pages/Signup'
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 
 function HomePage() {
@@ -106,6 +111,11 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/posts" element={<Posts />} />
         <Route path="/chat" element={<Chat />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/friends" element={<Friends />} />
+        <Route path="/messages" element={<Messages />} />
       </Routes>
     </Router>
   )
