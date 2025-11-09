@@ -41,9 +41,25 @@ func Setup(app *fiber.App) {
 
 	// User routes
 	users := api.Group("/users")
-	// Public user routes
-	users.Get("/:id", handlers.GetUserProfile)
-	// Protected user routes
+	// Public user routes (list all)
+	users.Get("/", handlers.GetAllUsers)
+	// Protected user routes (must come before /:id to avoid conflicts)
 	users.Get("/me", middleware.AuthRequired, handlers.GetMyProfile)
 	users.Put("/me", middleware.AuthRequired, handlers.UpdateMyProfile)
+	// Public user routes (single user)
+	users.Get("/:id", handlers.GetUserProfile)
+
+	// Chat routes (all protected)
+	chat := api.Group("/chat", middleware.AuthRequired)
+	// Conversations
+	chat.Get("/conversations", handlers.GetConversations)
+	chat.Post("/conversations", handlers.CreateConversation)
+	chat.Get("/conversations/:id", handlers.GetConversation)
+	chat.Post("/conversations/:id/read", handlers.MarkAsRead)
+	chat.Post("/conversations/:id/participants", handlers.AddParticipants)
+	chat.Delete("/conversations/:id/participants/:participantId", handlers.RemoveParticipant)
+	// Messages
+	chat.Get("/conversations/:id/messages", handlers.GetMessages)
+	chat.Post("/conversations/:id/messages", handlers.SendMessage)
+	chat.Delete("/conversations/:id/messages/:messageId", handlers.DeleteMessage)
 }

@@ -87,3 +87,43 @@ export interface SearchParams extends PaginationParams {
 export interface ApiError {
   error: string
 }
+
+// Chat types
+export interface Conversation {
+  id: number
+  is_group: boolean
+  name?: string
+  avatar?: string
+  created_by: number
+  created_at: string
+  updated_at: string
+  last_message?: Message
+  participants?: User[]
+}
+
+export interface Message {
+  id: number
+  conversation_id: number
+  sender_id: number
+  sender?: User
+  content: string
+  message_type: 'text' | 'image' | 'file'
+  metadata?: Record<string, any>
+  is_read: boolean
+  created_at: string
+  updated_at: string
+  deleted_at?: string
+}
+
+export interface CreateConversationRequest {
+  participant_ids: number[]
+  is_group?: boolean
+  name?: string
+  avatar?: string
+}
+
+export interface SendMessageRequest {
+  content: string
+  message_type?: 'text' | 'image' | 'file'
+  metadata?: Record<string, any>
+}

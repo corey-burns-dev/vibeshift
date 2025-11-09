@@ -3,55 +3,83 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { Calendar, Camera, Edit, Heart, MapPin, MessageCircle } from 'lucide-react'
+import { useMyProfile, useUpdateMyProfile } from '@/hooks/useUsers'
+import { Calendar, Camera, Copy, Edit, Eye, EyeOff, Key } from 'lucide-react'
 import { useState } from 'react'
 
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false)
-  const [profile, setProfile] = useState({
-    name: 'John Doe',
-    username: 'johndoe',
-    email: 'john@example.com',
-    bio: 'Full-stack developer passionate about creating amazing user experiences. Love coding, gaming, and coffee! ☕',
-    location: 'San Francisco, CA',
-    website: 'https://johndoe.dev',
-    joinDate: 'January 2024',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=john'
+  const [showToken, setShowToken] = useState(false)
+  const [tokenCopied, setTokenCopied] = useState(false)
+  
+  const { data: user, isLoading } = useMyProfile()
+  const updateProfile = useUpdateMyProfile()
+  
+  const [editedProfile, setEditedProfile] = useState({
+    username: '',
+    bio: '',
+    avatar: ''
   })
 
-  const [stats] = useState({
-    posts: 42,
-    followers: 128,
-    following: 89,
-    likes: 256
-  })
-
-  const [posts] = useState([
-    {
-      id: 1,
-      content: 'Just shipped a new feature! 🚀 The new dark mode toggle is working perfectly.',
-      timestamp: '2h ago',
-      likes: 12,
-      comments: 3
-    },
-    {
-      id: 2,
-      content: 'Working on some Go backend optimizations. Fiber v2 is amazing!',
-      timestamp: '1d ago',
-      likes: 8,
-      comments: 2
-    }
-  ])
+  const token = localStorage.getItem('token') || ''
 
   const handleSave = () => {
-    setIsEditing(false)
-    // Here you would typically save to backend
+    updateProfile.mutate(editedProfile, {
+      onSuccess: () => {
+        setIsEditing(false)
+      }
+    })
   }
 
   const handleInputChange = (field: string, value: string) => {
-    setProfile(prev => ({ ...prev, [field]: value }))
+    setEditedProfile(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleEdit = () => {
+    if (user) {
+      setEditedProfile({
+        username: user.username,
+        bio: user.bio || '',
+        avatar: user.avatar || ''
+      })
+    }
+    setIsEditing(true)
+  }
+
+  const copyToken = () => {
+    navigator.clipboard.writeText(token)
+    setTokenCopied(true)
+    setTimeout(() => setTokenCopied(false), 2000)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric'
+    })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="max-w-4xl mx-auto px-4 py-8 text-center">
+          <p className="text-muted-foreground">Loading profile...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="max-w-4xl mx-auto px-4 py-8 text-center">
+          <p className="text-muted-foreground">Please log in to view your profile</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -66,9 +94,9 @@ export default function Profile() {
               <div className="flex flex-col items-center md:items-start">
                 <div className="relative">
                   <Avatar className="w-24 h-24">
-                    <AvatarImage src={profile.avatar} />
+                    <AvatarImage src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} />
                     <AvatarFallback className="text-2xl">
-                      {profile.name.split(' ').map(n => n[0]).join('')}
+                      {user.username[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <Button
@@ -87,140 +115,122 @@ export default function Profile() {
                     {isEditing ? (
                       <div className="space-y-2">
                         <Input
-                          value={profile.name}
-                          onChange={(e) => handleInputChange('name', e.target.value)}
-                          className="text-2xl font-bold"
+                          value={editedProfile.username}
+                          onChange={(e) => handleInputChange('username', e.target.value)}
+                          placeholder="Username"
                         />
                         <Input
-                          value={profile.username}
-                          onChange={(e) => handleInputChange('username', e.target.value)}
-                          className="text-muted-foreground"
+                          value={editedProfile.avatar}
+                          onChange={(e) => handleInputChange('avatar', e.target.value)}
+                          placeholder="Avatar URL"
+                          className="text-sm"
                         />
                       </div>
                     ) : (
                       <div>
-                        <h1 className="text-2xl font-bold">{profile.name}</h1>
-                        <p className="text-muted-foreground">@{profile.username}</p>
+                        <h1 className="text-2xl font-bold">{user.username}</h1>
+                        <p className="text-muted-foreground">{user.email}</p>
+                        <p className="text-xs text-muted-foreground mt-1">ID: {user.id}</p>
                       </div>
                     )}
                   </div>
 
                   <Button
-                    onClick={isEditing ? handleSave : () => setIsEditing(true)}
+                    onClick={isEditing ? handleSave : handleEdit}
                     variant={isEditing ? "default" : "outline"}
+                    disabled={updateProfile.isPending}
                   >
                     <Edit className="w-4 h-4 mr-2" />
-                    {isEditing ? 'Save' : 'Edit Profile'}
+                    {updateProfile.isPending ? 'Saving...' : isEditing ? 'Save' : 'Edit Profile'}
                   </Button>
                 </div>
 
                 {isEditing ? (
                   <Textarea
-                    value={profile.bio}
+                    value={editedProfile.bio}
                     onChange={(e) => handleInputChange('bio', e.target.value)}
                     placeholder="Tell us about yourself..."
                     rows={3}
                   />
                 ) : (
-                  <p className="text-muted-foreground">{profile.bio}</p>
+                  <p className="text-muted-foreground">{user.bio || 'No bio yet'}</p>
                 )}
 
                 <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    {isEditing ? (
-                      <Input
-                        value={profile.location}
-                        onChange={(e) => handleInputChange('location', e.target.value)}
-                        className="h-6 px-1 text-sm"
-                      />
-                    ) : (
-                      <span>{profile.location}</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
-                    <span>Joined {profile.joinDate}</span>
+                    <span>Joined {formatDate(user.created_at)}</span>
                   </div>
                 </div>
 
-                {/* Stats */}
-                <div className="flex gap-6">
-                  <div className="text-center">
-                    <div className="font-bold text-lg">{stats.posts}</div>
-                    <div className="text-sm text-muted-foreground">Posts</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-bold text-lg">{stats.followers}</div>
-                    <div className="text-sm text-muted-foreground">Followers</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-bold text-lg">{stats.following}</div>
-                    <div className="text-sm text-muted-foreground">Following</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-bold text-lg">{stats.likes}</div>
-                    <div className="text-sm text-muted-foreground">Likes</div>
-                  </div>
-                </div>
+                {/* JWT Token Section */}
+                <Card className="bg-muted/50">
+                  <CardContent className="pt-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <Key className="w-4 h-4" />
+                          <span>JWT Token (for testing)</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setShowToken(!showToken)}
+                          >
+                            {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={copyToken}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="font-mono text-xs break-all p-2 bg-background rounded border">
+                        {showToken ? token : '••••••••••••••••••••••••••••••••••••••••'}
+                      </div>
+                      {tokenCopied && (
+                        <p className="text-xs text-green-600">Token copied to clipboard!</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Profile Content */}
-        <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="posts">Posts</TabsTrigger>
-            <TabsTrigger value="media">Media</TabsTrigger>
-            <TabsTrigger value="likes">Likes</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="posts" className="space-y-4 mt-6">
-            {posts.map((post) => (
-              <Card key={post.id}>
-                <CardContent className="pt-6">
-                  <p className="mb-4">{post.content}</p>
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span>{post.timestamp}</span>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1">
-                        <Heart className="w-4 h-4" />
-                        <span>{post.likes}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MessageCircle className="w-4 h-4" />
-                        <span>{post.comments}</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </TabsContent>
-
-          <TabsContent value="media" className="mt-6">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center text-muted-foreground py-8">
-                  <Camera className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No media posts yet</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="likes" className="mt-6">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center text-muted-foreground py-8">
-                  <Heart className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No liked posts yet</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        {/* Account Info */}
+        <Card>
+          <CardContent className="pt-6">
+            <h3 className="text-lg font-semibold mb-4">Account Information</h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">User ID:</span>
+                <span className="font-mono">{user.id}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Username:</span>
+                <span>{user.username}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Email:</span>
+                <span>{user.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Account Created:</span>
+                <span>{new Date(user.created_at).toLocaleDateString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Last Updated:</span>
+                <span>{new Date(user.updated_at).toLocaleDateString()}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

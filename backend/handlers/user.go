@@ -13,6 +13,28 @@ type UpdateUserRequest struct {
 	Avatar   string `json:"avatar"`
 }
 
+// GetAllUsers - Get all users (public, will be admin-only in future)
+func GetAllUsers(c *fiber.Ctx) error {
+	var users []models.User
+
+	// Get limit and offset from query params
+	limit := c.QueryInt("limit", 100)
+	offset := c.QueryInt("offset", 0)
+
+	if err := database.DB.Limit(limit).Offset(offset).Find(&users).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch users",
+		})
+	}
+
+	// Hide passwords
+	for i := range users {
+		users[i].Password = ""
+	}
+
+	return c.JSON(users)
+}
+
 // GetUserProfile - Get user profile by ID (public)
 func GetUserProfile(c *fiber.Ctx) error {
 	id := c.Params("id")

@@ -3,130 +3,160 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { Heart, MessageCircle, MoreHorizontal, Send, Share } from 'lucide-react'
-import { useState } from 'react'
+import { useCreateComment, usePostComments } from '@/hooks/useComments'
+import { useCreatePost, useInfinitePosts, useLikePost } from '@/hooks/usePosts'
+import { getCurrentUser, useIsAuthenticated } from '@/hooks/useUsers'
+import { formatDistanceToNow } from 'date-fns'
+import { Heart, Loader2, MessageCircle, Send } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
-// Mock data for posts
-const mockPosts = [
-  {
-    id: 1,
-    author: 'alice_dev',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
-    content:
-      'Just shipped a new feature! 🚀 The new dark mode toggle is working perfectly. Loving the new Tailwind v4 setup.',
-    image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=500&h=400&fit=crop',
-    likes: 42,
-    comments: [
-      {
-        id: 1,
-        author: 'bob_coder',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob',
-        content: 'Congrats! The dark mode looks amazing 🎉',
-        timestamp: '2h ago',
-      },
-      {
-        id: 2,
-        author: 'charlie_ui',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=charlie',
-        content: "Tailwind v4 is a game changer! How's the performance?",
-        timestamp: '1h ago',
-      },
-    ],
-    timestamp: '2h ago',
-  },
-  {
-    id: 2,
-    author: 'bob_coder',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob',
-    content:
-      'Working on some Go backend optimizations. Fiber v2 is amazing for performance! The Redis integration is smooth.',
-    image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=500&h=400&fit=crop',
-    likes: 28,
-    comments: [
-      {
-        id: 3,
-        author: 'alice_dev',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
-        content: 'Fiber v2 is incredible! What optimizations are you implementing?',
-        timestamp: '3h ago',
-      },
-    ],
-    timestamp: '4h ago',
-  },
-  {
-    id: 3,
-    author: 'charlie_ui',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=charlie',
-    content:
-      'The new shadcn/ui components are incredible. Building this chat interface was so much easier with the scroll area and inputs.',
-    likes: 67,
-    comments: [
-      {
-        id: 4,
-        author: 'alice_dev',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
-        content: 'shadcn/ui is a lifesaver! The components are so well designed.',
-        timestamp: '5h ago',
-      },
-      {
-        id: 5,
-        author: 'bob_coder',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob',
-        content: 'Agreed! The accessibility features are top-notch too.',
-        timestamp: '4h ago',
-      },
-      {
-        id: 6,
-        author: 'diana_design',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=diana',
-        content: "Can't wait to try the new scroll area component!",
-        timestamp: '3h ago',
-      },
-    ],
-    timestamp: '6h ago',
-  },
-]
+// Component for individual post comments
+function PostComments({ postId }: { postId: number }) {
+  const [newComment, setNewComment] = useState('')
+  const currentUser = getCurrentUser()
 
-export default function Posts() {
-  const [newPost, setNewPost] = useState('')
-  const [posts, setPosts] = useState(mockPosts)
-  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set())
-  const [expandedComments, setExpandedComments] = useState<Set<number>>(new Set())
-  const [newComments, setNewComments] = useState<Record<number, string>>({})
+  const { data: comments = [], isLoading } = usePostComments(postId)
+  const createCommentMutation = useCreateComment(postId)
 
-  const handleLike = (postId: number) => {
-    setLikedPosts((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(postId)) {
-        newSet.delete(postId)
-        setPosts((prevPosts) =>
-          prevPosts.map((post) => (post.id === postId ? { ...post, likes: post.likes - 1 } : post))
-        )
-      } else {
-        newSet.add(postId)
-        setPosts((prevPosts) =>
-          prevPosts.map((post) => (post.id === postId ? { ...post, likes: post.likes + 1 } : post))
-        )
+  const handleCreateComment = () => {
+    if (!newComment.trim()) return
+
+    createCommentMutation.mutate(
+      { content: newComment },
+      {
+        onSuccess: () => {
+          setNewComment('')
+        },
       }
-      return newSet
-    })
+    )
   }
 
-  const handleNewPost = () => {
-    if (!newPost.trim()) return
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-4">
+        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
-    const post = {
-      id: posts.length + 1,
-      author: 'you',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=you',
-      content: newPost,
-      likes: 0,
-      comments: [],
-      timestamp: 'now',
+  return (
+    <div className="mt-4 pt-4 border-t">
+      {/* Existing Comments */}
+      <div className="space-y-3 mb-4">
+        {comments.map((comment) => (
+          <div key={comment.id} className="flex gap-3">
+            <Avatar className="w-8 h-8 shrink-0">
+              <AvatarImage
+                src={
+                  comment.user?.avatar ||
+                  `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.user?.username}`
+                }
+              />
+              <AvatarFallback className="text-xs">
+                {comment.user?.username?.[0]?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <div className="bg-muted rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-semibold text-sm">{comment.user?.username}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                  </span>
+                </div>
+                <p className="text-sm">{comment.content}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Add Comment */}
+      {currentUser && (
+        <div className="flex gap-3">
+          <Avatar className="w-8 h-8 shrink-0">
+            <AvatarImage
+              src={
+                currentUser.avatar ||
+                `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.username}`
+              }
+            />
+            <AvatarFallback className="text-xs">
+              {currentUser.username?.[0]?.toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 flex gap-2">
+            <Textarea
+              placeholder="Write a comment..."
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              className="resize-none text-sm"
+              rows={2}
+              disabled={createCommentMutation.isPending}
+            />
+            <Button
+              size="sm"
+              onClick={handleCreateComment}
+              disabled={!newComment.trim() || createCommentMutation.isPending}
+              className="self-end"
+            >
+              {createCommentMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function Posts() {
+  const [newPostTitle, setNewPostTitle] = useState('')
+  const [newPostContent, setNewPostContent] = useState('')
+  const [expandedComments, setExpandedComments] = useState<Set<number>>(new Set())
+
+  const isAuthenticated = useIsAuthenticated()
+  const currentUser = getCurrentUser()
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfinitePosts(10)
+  const createPostMutation = useCreatePost()
+
+  // Flatten pages into single array of posts
+  const posts = data?.pages.flatMap((page) => page) ?? []
+
+  // Infinite scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 500 &&
+        hasNextPage &&
+        !isFetchingNextPage
+      ) {
+        fetchNextPage()
+      }
     }
 
-    setPosts([post, ...posts])
-    setNewPost('')
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  const handleNewPost = () => {
+    if (!newPostTitle.trim() || !newPostContent.trim()) return
+
+    createPostMutation.mutate(
+      {
+        title: newPostTitle,
+        content: newPostContent,
+      },
+      {
+        onSuccess: () => {
+          setNewPostTitle('')
+          setNewPostContent('')
+        },
+      }
+    )
   }
 
   const toggleComments = (postId: number) => {
@@ -141,29 +171,19 @@ export default function Posts() {
     })
   }
 
-  const handleNewComment = (postId: number) => {
-    const commentText = newComments[postId]
-    if (!commentText?.trim()) return
-
-    const newComment = {
-      id: Date.now(), // Simple ID generation
-      author: 'you',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=you',
-      content: commentText,
-      timestamp: 'now',
-    }
-
-    setPosts((prevPosts) =>
-      prevPosts.map((post) =>
-        post.id === postId ? { ...post, comments: [...post.comments, newComment] } : post
-      )
-    )
-
-    setNewComments((prev) => ({ ...prev, [postId]: '' }))
+  const handleLikePost = (postId: number) => {
+    useLikePost(postId).mutate()
   }
 
-  const handleCommentChange = (postId: number, value: string) => {
-    setNewComments((prev) => ({ ...prev, [postId]: value }))
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="max-w-2xl mx-auto px-4 py-6 flex justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -172,34 +192,63 @@ export default function Posts() {
 
       <div className="max-w-2xl mx-auto px-4 py-6">
         {/* Create Post */}
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=you" />
-                <AvatarFallback>Y</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-semibold">Create Post</p>
+        {isAuthenticated && (
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarImage
+                    src={
+                      currentUser?.avatar ||
+                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.username}`
+                    }
+                  />
+                  <AvatarFallback>
+                    {currentUser?.username?.[0]?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold">Create Post</p>
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              placeholder="What's on your mind?"
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value)}
-              className="mb-3 resize-none"
-              rows={3}
-            />
-            <div className="flex justify-end">
-              <Button onClick={handleNewPost} disabled={!newPost.trim()}>
-                <Send className="w-4 h-4 mr-2" />
-                Post
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <input
+                type="text"
+                placeholder="Post title..."
+                value={newPostTitle}
+                onChange={(e) => setNewPostTitle(e.target.value)}
+                className="w-full mb-3 px-3 py-2 border rounded-md"
+                disabled={createPostMutation.isPending}
+              />
+              <Textarea
+                placeholder="What's on your mind?"
+                value={newPostContent}
+                onChange={(e) => setNewPostContent(e.target.value)}
+                className="mb-3 resize-none"
+                rows={3}
+                disabled={createPostMutation.isPending}
+              />
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleNewPost}
+                  disabled={
+                    !newPostTitle.trim() ||
+                    !newPostContent.trim() ||
+                    createPostMutation.isPending
+                  }
+                >
+                  {createPostMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-2" />
+                  )}
+                  Post
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Posts Feed */}
         <div className="space-y-6">
@@ -209,26 +258,33 @@ export default function Posts() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Avatar>
-                      <AvatarImage src={post.avatar} />
-                      <AvatarFallback>{post.author[0].toUpperCase()}</AvatarFallback>
+                      <AvatarImage
+                        src={
+                          post.user?.avatar ||
+                          `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user?.username}`
+                        }
+                      />
+                      <AvatarFallback>
+                        {post.user?.username?.[0]?.toUpperCase() || 'U'}
+                      </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-semibold">{post.author}</p>
-                      <p className="text-sm text-muted-foreground">{post.timestamp}</p>
+                      <p className="font-semibold">{post.user?.username}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                      </p>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
+                <h3 className="font-semibold text-lg mb-2">{post.title}</h3>
                 <p className="mb-4">{post.content}</p>
 
-                {post.image && (
+                {post.image_url && (
                   <div className="mb-4 rounded-lg overflow-hidden">
                     <img
-                      src={post.image}
+                      src={post.image_url}
                       alt="Post content"
                       className="w-full h-auto object-cover"
                     />
@@ -240,12 +296,10 @@ export default function Posts() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleLike(post.id)}
-                      className={likedPosts.has(post.id) ? 'text-red-500' : ''}
+                      onClick={() => handleLikePost(post.id)}
+                      disabled={!isAuthenticated}
                     >
-                      <Heart
-                        className={`w-4 h-4 mr-2 ${likedPosts.has(post.id) ? 'fill-current' : ''}`}
-                      />
+                      <Heart className="w-4 h-4 mr-2" />
                       {post.likes}
                     </Button>
                     <Button
@@ -255,72 +309,38 @@ export default function Posts() {
                       className={expandedComments.has(post.id) ? 'text-blue-500' : ''}
                     >
                       <MessageCircle className="w-4 h-4 mr-2" />
-                      {post.comments.length}
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Share className="w-4 h-4 mr-2" />
-                      Share
+                      Comments
                     </Button>
                   </div>
                 </div>
 
                 {/* Comments Section */}
-                {expandedComments.has(post.id) && (
-                  <div className="mt-4 pt-4 border-t">
-                    {/* Existing Comments */}
-                    <div className="space-y-3 mb-4">
-                      {post.comments.map((comment) => (
-                        <div key={comment.id} className="flex gap-3">
-                          <Avatar className="w-8 h-8 shrink-0">
-                            <AvatarImage src={comment.avatar} />
-                            <AvatarFallback className="text-xs">
-                              {comment.author[0].toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="bg-muted rounded-lg px-3 py-2">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-sm">{comment.author}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {comment.timestamp}
-                                </span>
-                              </div>
-                              <p className="text-sm">{comment.content}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Add Comment */}
-                    <div className="flex gap-3">
-                      <Avatar className="w-8 h-8 shrink-0">
-                        <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=you" />
-                        <AvatarFallback className="text-xs">Y</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 flex gap-2">
-                        <Textarea
-                          placeholder="Write a comment..."
-                          value={newComments[post.id] || ''}
-                          onChange={(e) => handleCommentChange(post.id, e.target.value)}
-                          className="resize-none text-sm"
-                          rows={2}
-                        />
-                        <Button
-                          size="sm"
-                          onClick={() => handleNewComment(post.id)}
-                          disabled={!newComments[post.id]?.trim()}
-                          className="self-end"
-                        >
-                          <Send className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {expandedComments.has(post.id) && <PostComments postId={post.id} />}
               </CardContent>
             </Card>
           ))}
+
+          {/* Loading indicator for infinite scroll */}
+          {isFetchingNextPage && (
+            <div className="flex justify-center py-4">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
+
+          {/* End of feed */}
+          {!hasNextPage && posts.length > 0 && (
+            <div className="text-center py-4 text-muted-foreground text-sm">
+              You've reached the end!
+            </div>
+          )}
+
+          {/* Empty state */}
+          {posts.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground mb-4">No posts yet</p>
+              {isAuthenticated && <p className="text-sm">Be the first to create a post!</p>}
+            </div>
+          )}
         </div>
       </div>
     </div>

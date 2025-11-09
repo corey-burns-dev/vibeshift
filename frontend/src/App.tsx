@@ -7,6 +7,7 @@ import Messages from '@/pages/Messages'
 import Posts from '@/pages/Posts'
 import Profile from '@/pages/Profile'
 import Signup from '@/pages/Signup'
+import Users from '@/pages/Users'
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 
 function HomePage() {
@@ -116,6 +117,7 @@ export default function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/friends" element={<Friends />} />
         <Route path="/messages" element={<Messages />} />
+        <Route path="/users" element={<Users />} />
       </Routes>
     </Router>
   )

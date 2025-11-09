@@ -37,7 +37,14 @@ func Connect(cfg *config.Config) {
 	log.Println("Database connected successfully")
 
 	// Auto migrate models
-	err = DB.AutoMigrate(&models.User{}, &models.Post{}, &models.Comment{})
+	err = DB.AutoMigrate(
+		&models.User{},
+		&models.Post{},
+		&models.Comment{},
+		&models.Conversation{},
+		&models.Message{},
+		&models.ConversationParticipant{},
+	)
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}

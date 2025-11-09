@@ -4,12 +4,16 @@ import type {
     ApiError,
     AuthResponse,
     Comment,
+    Conversation,
     CreateCommentRequest,
+    CreateConversationRequest,
     CreatePostRequest,
     LoginRequest,
+    Message,
     PaginationParams,
     Post,
     SearchParams,
+    SendMessageRequest,
     SignupRequest,
     UpdateCommentRequest,
     UpdatePostRequest,
@@ -172,6 +176,14 @@ class ApiClient {
   }
 
   // Users
+  async getUsers(params?: PaginationParams): Promise<User[]> {
+    const query = new URLSearchParams()
+    if (params?.offset !== undefined) query.set('offset', params.offset.toString())
+    if (params?.limit !== undefined) query.set('limit', params.limit.toString())
+    const queryString = query.toString() ? `?${query.toString()}` : ''
+    return this.request(`/users${queryString}`)
+  }
+
   async getMyProfile(): Promise<User> {
     return this.request('/users/me')
   }
@@ -184,6 +196,50 @@ class ApiClient {
     return this.request('/users/me', {
       method: 'PUT',
       body: JSON.stringify(data),
+    })
+  }
+
+  // Chat - Conversations
+  async getConversations(): Promise<Conversation[]> {
+    return this.request('/chat/conversations')
+  }
+
+  async getConversation(id: number): Promise<Conversation> {
+    return this.request(`/chat/conversations/${id}`)
+  }
+
+  async createConversation(data: CreateConversationRequest): Promise<Conversation> {
+    return this.request('/chat/conversations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async markConversationAsRead(id: number): Promise<{ message: string }> {
+    return this.request(`/chat/conversations/${id}/read`, {
+      method: 'POST',
+    })
+  }
+
+  // Chat - Messages
+  async getMessages(conversationId: number, params?: PaginationParams): Promise<Message[]> {
+    const query = new URLSearchParams()
+    if (params?.offset !== undefined) query.set('offset', params.offset.toString())
+    if (params?.limit !== undefined) query.set('limit', params.limit.toString())
+    const queryString = query.toString() ? `?${query.toString()}` : ''
+    return this.request(`/chat/conversations/${conversationId}/messages${queryString}`)
+  }
+
+  async sendMessage(conversationId: number, data: SendMessageRequest): Promise<Message> {
+    return this.request(`/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteMessage(conversationId: number, messageId: number): Promise<{ message: string }> {
+    return this.request(`/chat/conversations/${conversationId}/messages/${messageId}`, {
+      method: 'DELETE',
     })
   }
 }

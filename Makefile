@@ -1,4 +1,4 @@
-.PHONY: help dev dev-backend dev-frontend dev-both prod build build-backend build-frontend up down logs logs-backend logs-frontend logs-all clean lint lint-frontend fmt fmt-frontend install env restart check-versions test-api
+.PHONY: help dev dev-backend dev-frontend dev-both prod build build-backend build-frontend up down logs logs-backend logs-frontend logs-all clean lint lint-frontend fmt fmt-frontend install env restart check-versions test-api seed
 
 # Variables
 DOCKER_COMPOSE := docker-compose
@@ -46,6 +46,9 @@ help:
 	@echo ""
 	@echo "$(GREEN)Testing:$(NC)"
 	@echo "  make test-api           - 🧪 Test all API endpoints"
+	@echo ""
+	@echo "$(GREEN)Database:$(NC)"
+	@echo "  make seed               - 🌱 Seed database with test data"
 	@echo ""
 	@echo "$(GREEN)Utilities:$(NC)"
 	@echo "  make env                - ⚙️  Initialize .env file"
@@ -181,3 +184,10 @@ test-coverage:
 	@echo "Coverage report generated: backend/coverage.html"
 
 test-api: test-integration
+
+# Database seeding
+seed:
+	@echo "$(BLUE)Seeding database with test data...$(NC)"
+	cd backend && $(GO) run cmd/seed/main.go
+	@echo "$(GREEN)✓ Database seeded successfully!$(NC)"
+	@echo "$(YELLOW)📧 Test users password: password123$(NC)"
