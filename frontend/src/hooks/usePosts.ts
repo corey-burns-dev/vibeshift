@@ -95,7 +95,7 @@ export function useUpdatePost(postId: number) {
 
       return { previousPost }
     },
-    onError: (_err, _newData, context) => {
+    onError: (_err, _variables, context) => {
       // Rollback on error
       if (context?.previousPost) {
         queryClient.setQueryData(postKeys.detail(postId), context.previousPost)
@@ -104,7 +104,6 @@ export function useUpdatePost(postId: number) {
     onSettled: () => {
       // Refetch after error or success
       queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) })
-      queryClient.invalidateQueries({ queryKey: postKeys.lists() })
     },
   })
 }
@@ -125,12 +124,12 @@ export function useDeletePost() {
 }
 
 // Like post
-export function useLikePost(postId: number) {
+export function useLikePost() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: () => apiClient.likePost(postId),
-    onMutate: async () => {
+    mutationFn: (postId: number) => apiClient.likePost(postId),
+    onMutate: async (postId) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: postKeys.detail(postId) })
 
@@ -147,13 +146,13 @@ export function useLikePost(postId: number) {
 
       return { previousPost }
     },
-    onError: (_err, _variables, context) => {
+    onError: (_err, postId, context) => {
       // Rollback on error
       if (context?.previousPost) {
         queryClient.setQueryData(postKeys.detail(postId), context.previousPost)
       }
     },
-    onSettled: () => {
+    onSettled: (_data, _error, postId) => {
       // Refetch after error or success
       queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) })
     },
