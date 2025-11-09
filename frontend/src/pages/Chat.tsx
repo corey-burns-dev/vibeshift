@@ -1,3 +1,5 @@
+import { MessageCircle, Send, Settings, Users } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import type { Conversation } from '@/api/types'
 import { Navbar } from '@/components/Navbar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -7,8 +9,6 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useConversations, useMessages, useSendMessage } from '@/hooks/useChat'
 import { getCurrentUser } from '@/hooks/useUsers'
-import { MessageCircle, Send, Settings, Users } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
 
 export default function Chat() {
   const [newMessage, setNewMessage] = useState('')
@@ -41,7 +41,7 @@ export default function Chat() {
         onSuccess: () => {
           setNewMessage('')
         },
-      },
+      }
     )
   }
 

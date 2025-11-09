@@ -27,10 +27,6 @@ func InitRedis(addr string) {
 	}
 }
 
-func Close() {
-	if Client != nil {
-		if err := Client.Close(); err != nil {
-			log.Printf("Error closing Redis: %v", err)
-		}
-	}
+func GetClient() *redis.Client {
+	return Client
 }

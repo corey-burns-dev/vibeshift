@@ -7,47 +7,30 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	"vibeshift/cache"
 	"vibeshift/config"
-	"vibeshift/database"
-	"vibeshift/handlers"
-	"vibeshift/middleware"
-	"vibeshift/routes"
+	"vibeshift/server"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 func main() {
 	// Load configuration
 	cfg := config.LoadConfig()
 
-	// Initialize Redis
-	cache.InitRedis(cfg.RedisURL)
-	defer cache.Close()
-
-	// Initialize handlers and middleware with config
-	handlers.InitAuthHandlers(cfg)
-	middleware.InitMiddleware(cfg)
-
-	// Connect to database
-	database.Connect(cfg)
+	// Create server with dependency injection
+	srv, err := server.NewServer(cfg)
+	if err != nil {
+		log.Fatalf("Failed to create server: %v", err)
+	}
 
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
 		AppName: "Social Media API",
 	})
 
-	// Middleware
-	app.Use(logger.New())
-	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-	}))
-
-	// Setup routes
-	routes.Setup(app)
+	// Setup middleware and routes
+	srv.SetupMiddleware(app)
+	srv.SetupRoutes(app)
 
 	// Graceful shutdown
 	go func() {
@@ -61,6 +44,11 @@ func main() {
 
 		if err := app.ShutdownWithContext(ctx); err != nil {
 			log.Printf("Server shutdown error: %v", err)
+		}
+
+		// Shutdown server resources
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Printf("Server resource shutdown error: %v", err)
 		}
 	}()
 

@@ -1,3 +1,5 @@
+import { MoreHorizontal, Paperclip, Phone, Search, Send, Smile, Video } from 'lucide-react'
+import { useState } from 'react'
 import { Navbar } from '@/components/Navbar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -7,8 +9,6 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { MoreHorizontal, Paperclip, Phone, Search, Send, Smile, Video } from 'lucide-react'
-import { useState } from 'react'
 
 // Mock conversations data
 const conversations = [
@@ -18,15 +18,15 @@ const conversations = [
       name: 'Alice Johnson',
       username: 'alice_dev',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
-      status: 'online'
+      status: 'online',
     },
     lastMessage: {
       text: 'Hey, how are you doing?',
       timestamp: '2m ago',
-      isFromMe: false
+      isFromMe: false,
     },
     unreadCount: 2,
-    isTyping: false
+    isTyping: false,
   },
   {
     id: 2,
@@ -34,15 +34,15 @@ const conversations = [
       name: 'Bob Smith',
       username: 'bob_coder',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob',
-      status: 'online'
+      status: 'online',
     },
     lastMessage: {
       text: 'Thanks for the help with that bug!',
       timestamp: '1h ago',
-      isFromMe: true
+      isFromMe: true,
     },
     unreadCount: 0,
-    isTyping: false
+    isTyping: false,
   },
   {
     id: 3,
@@ -50,16 +50,16 @@ const conversations = [
       name: 'Charlie Brown',
       username: 'charlie_ui',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=charlie',
-      status: 'away'
+      status: 'away',
     },
     lastMessage: {
       text: 'The design looks great!',
       timestamp: '3h ago',
-      isFromMe: false
+      isFromMe: false,
     },
     unreadCount: 1,
-    isTyping: true
-  }
+    isTyping: true,
+  },
 ]
 
 // Mock messages for the selected conversation
@@ -71,14 +71,14 @@ const messages = [
     isFromMe: false,
     user: {
       name: 'Alice Johnson',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice'
-    }
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
+    },
   },
   {
     id: 2,
-    text: 'I\'m doing great! Just working on some new features.',
+    text: "I'm doing great! Just working on some new features.",
     timestamp: '10:32 AM',
-    isFromMe: true
+    isFromMe: true,
   },
   {
     id: 3,
@@ -87,25 +87,25 @@ const messages = [
     isFromMe: false,
     user: {
       name: 'Alice Johnson',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice'
-    }
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
+    },
   },
   {
     id: 4,
     text: 'Mostly UI improvements and some backend optimizations.',
     timestamp: '10:35 AM',
-    isFromMe: true
+    isFromMe: true,
   },
   {
     id: 5,
-    text: 'Cool! I\'ve been working on a similar project. Want to share some ideas?',
+    text: "Cool! I've been working on a similar project. Want to share some ideas?",
     timestamp: '10:36 AM',
     isFromMe: false,
     user: {
       name: 'Alice Johnson',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice'
-    }
-  }
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
+    },
+  },
 ]
 
 export default function Messages() {
@@ -114,9 +114,10 @@ export default function Messages() {
   const [newMessage, setNewMessage] = useState('')
   const [activeTab, setActiveTab] = useState('all')
 
-  const filteredConversations = conversations.filter(conversation =>
-    conversation.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conversation.user.username.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredConversations = conversations.filter(
+    (conversation) =>
+      conversation.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      conversation.user.username.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const handleSendMessage = () => {
@@ -146,19 +147,29 @@ export default function Messages() {
           <Avatar>
             <AvatarImage src={conversation.user.avatar} />
             <AvatarFallback>
-              {conversation.user.name.split(' ').map((n: string) => n[0]).join('')}
+              {conversation.user.name
+                .split(' ')
+                .map((n: string) => n[0])
+                .join('')}
             </AvatarFallback>
           </Avatar>
-          <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-background ${
-            conversation.user.status === 'online' ? 'bg-green-500' :
-            conversation.user.status === 'away' ? 'bg-yellow-500' : 'bg-gray-500'
-          }`} />
+          <div
+            className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-background ${
+              conversation.user.status === 'online'
+                ? 'bg-green-500'
+                : conversation.user.status === 'away'
+                  ? 'bg-yellow-500'
+                  : 'bg-gray-500'
+            }`}
+          />
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold truncate">{conversation.user.name}</h3>
-            <span className="text-xs text-muted-foreground">{conversation.lastMessage.timestamp}</span>
+            <span className="text-xs text-muted-foreground">
+              {conversation.lastMessage.timestamp}
+            </span>
           </div>
           <p className="text-sm text-muted-foreground truncate">
             {conversation.isTyping ? (
@@ -184,22 +195,27 @@ export default function Messages() {
         <Avatar className="w-8 h-8">
           <AvatarImage src={message.user.avatar} />
           <AvatarFallback className="text-xs">
-            {message.user.name.split(' ').map((n: string) => n[0]).join('')}
+            {message.user.name
+              .split(' ')
+              .map((n: string) => n[0])
+              .join('')}
           </AvatarFallback>
         </Avatar>
       )}
 
       <div className={`max-w-[70%] ${message.isFromMe ? 'order-1' : 'order-2'}`}>
-        <div className={`rounded-lg px-3 py-2 ${
-          message.isFromMe
-            ? 'bg-primary text-primary-foreground ml-auto'
-            : 'bg-muted'
-        }`}>
+        <div
+          className={`rounded-lg px-3 py-2 ${
+            message.isFromMe ? 'bg-primary text-primary-foreground ml-auto' : 'bg-muted'
+          }`}
+        >
           <p className="text-sm">{message.text}</p>
         </div>
-        <p className={`text-xs text-muted-foreground mt-1 ${
-          message.isFromMe ? 'text-right' : 'text-left'
-        }`}>
+        <p
+          className={`text-xs text-muted-foreground mt-1 ${
+            message.isFromMe ? 'text-right' : 'text-left'
+          }`}
+        >
           {message.timestamp}
         </p>
       </div>
@@ -241,8 +257,12 @@ export default function Messages() {
               <CardContent className="p-0">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                   <TabsList className="w-full mx-4 mb-4">
-                    <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
-                    <TabsTrigger value="unread" className="flex-1">Unread</TabsTrigger>
+                    <TabsTrigger value="all" className="flex-1">
+                      All
+                    </TabsTrigger>
+                    <TabsTrigger value="unread" className="flex-1">
+                      Unread
+                    </TabsTrigger>
                   </TabsList>
 
                   <ScrollArea className="h-[calc(100vh-400px)]">
@@ -254,7 +274,7 @@ export default function Messages() {
 
                     <TabsContent value="unread" className="mt-0">
                       {filteredConversations
-                        .filter(conversation => conversation.unreadCount > 0)
+                        .filter((conversation) => conversation.unreadCount > 0)
                         .map((conversation) => (
                           <ConversationItem key={conversation.id} conversation={conversation} />
                         ))}
@@ -276,20 +296,30 @@ export default function Messages() {
                       <Avatar>
                         <AvatarImage src={selectedConversation.user.avatar} />
                         <AvatarFallback>
-                          {selectedConversation.user.name.split(' ').map((n: string) => n[0]).join('')}
+                          {selectedConversation.user.name
+                            .split(' ')
+                            .map((n: string) => n[0])
+                            .join('')}
                         </AvatarFallback>
                       </Avatar>
-                      <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-background ${
-                        selectedConversation.user.status === 'online' ? 'bg-green-500' :
-                        selectedConversation.user.status === 'away' ? 'bg-yellow-500' : 'bg-gray-500'
-                      }`} />
+                      <div
+                        className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-background ${
+                          selectedConversation.user.status === 'online'
+                            ? 'bg-green-500'
+                            : selectedConversation.user.status === 'away'
+                              ? 'bg-yellow-500'
+                              : 'bg-gray-500'
+                        }`}
+                      />
                     </div>
                     <div>
                       <h3 className="font-semibold">{selectedConversation.user.name}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {selectedConversation.isTyping ? 'typing...' :
-                         selectedConversation.user.status === 'online' ? 'Active now' :
-                         `Last seen recently`}
+                        {selectedConversation.isTyping
+                          ? 'typing...'
+                          : selectedConversation.user.status === 'online'
+                            ? 'Active now'
+                            : `Last seen recently`}
                       </p>
                     </div>
                   </div>

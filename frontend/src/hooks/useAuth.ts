@@ -15,10 +15,10 @@ export function useSignup() {
       // Store token and user
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
-      
+
       // Invalidate any cached user data
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] })
-      
+
       // Navigate to posts
       navigate('/posts')
     },
@@ -35,10 +35,10 @@ export function useLogin() {
       // Store token and user
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
-      
+
       // Invalidate any cached user data
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] })
-      
+
       // Navigate to posts
       navigate('/posts')
     },
@@ -53,11 +53,11 @@ export function useLogout() {
     // Clear local storage
     localStorage.removeItem('token')
     localStorage.removeItem('user')
-    
+
     // Clear all cached queries
     queryClient.clear()
-    
-    // Navigate to home
-    navigate('/')
+
+    // Navigate to login
+    navigate('/login')
   }
 }

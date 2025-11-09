@@ -2,7 +2,9 @@
 
 ## Overview
 
-This project includes a professional database seeding system to populate your database with realistic test data. This follows industry best practices used by companies like Stripe, GitHub, and others.
+This project includes a professional database seeding system to populate your
+database with realistic test data. This follows industry best practices used by
+companies like Stripe, GitHub, and others.
 
 ## Quick Start
 
@@ -12,6 +14,7 @@ make seed
 ```
 
 This will create:
+
 - **15 test users** with realistic profiles
 - **30-60 posts** with varied content
 - **50+ comments** on posts
@@ -21,24 +24,28 @@ This will create:
 ## Test Users
 
 All seeded users have the same password for easy testing:
+
 - **Password:** `password123`
 
 Example users:
-- alex_dev@example.com
-- sarah_codes@example.com
-- mike_tech@example.com
-- emma_design@example.com
+
+- `alex_dev@example.com`
+- `sarah_codes@example.com`
+- `mike_tech@example.com`
+- `emma_design@example.com`
 - ... and 11 more!
 
 ## What Gets Seeded?
 
 ### Users (15)
+
 - Unique usernames and emails
 - Professional bios
 - Avatar images
 - Bcrypt-hashed passwords
 
 ### Posts (30-60)
+
 - 2-4 posts per user
 - Realistic titles and content
 - Random likes (0-49)
@@ -46,12 +53,14 @@ Example users:
 - Varied creation times
 
 ### Comments (50+)
+
 - 1-5 comments per post
 - Comments from different users
 - Realistic comment text
 - Natural conversation patterns
 
 ### Likes
+
 - Random distribution across posts
 - Realistic engagement patterns
 
@@ -78,6 +87,7 @@ The seeder automatically clears existing data before seeding. If you want to kee
 ### Customize Seed Data
 
 Edit `backend/seed/seed.go` to customize:
+
 - Number of users
 - Posts per user
 - Comments per post
@@ -87,32 +97,38 @@ Edit `backend/seed/seed.go` to customize:
 ## Best Practices Implemented
 
 ### 1. **Separate Seeder Command**
+
 - Dedicated CLI tool (`cmd/seed/main.go`)
 - Can run independently or via Makefile
 - Clear output with status indicators
 
 ### 2. **Idempotent Seeding**
+
 - Clears data before seeding
 - Safe to run multiple times
 - Predictable results
 
 ### 3. **Realistic Data**
+
 - Actual user profiles with bios
 - Varied content that looks real
 - Natural relationships (comments from different users)
 - Random but reasonable distributions
 
 ### 4. **Foreign Key Awareness**
+
 - Deletes in correct order
 - Respects relationships
 - Prevents constraint violations
 
 ### 5. **Production-Ready Passwords**
+
 - Uses bcrypt hashing
 - Same as production auth
 - Secure even in test environment
 
 ### 6. **Easy to Extend**
+
 - Modular functions
 - Easy to add new models
 - Simple to customize data
@@ -120,12 +136,14 @@ Edit `backend/seed/seed.go` to customize:
 ## When to Use
 
 ### Development
+
 ```bash
 # Start fresh every morning
 make seed
 ```
 
 ### Testing
+
 ```bash
 # Reset to known state before tests
 make seed
@@ -133,12 +151,14 @@ go test ./...
 ```
 
 ### Demos
+
 ```bash
 # Populate for client presentations
 make seed
 ```
 
 ### CI/CD
+
 ```bash
 # In your CI pipeline
 docker-compose up -d postgres redis
@@ -165,11 +185,13 @@ If you have existing data you want to keep:
 ## Environment-Specific Seeding
 
 ### Development (Current)
+
 - 15 users, lots of content
 - Clear data each time
 - Fast and lightweight
 
 ### Staging (Future)
+
 ```go
 // seed_staging.go
 func SeedStaging(db *gorm.DB) {
@@ -180,6 +202,7 @@ func SeedStaging(db *gorm.DB) {
 ```
 
 ### Production (Never)
+
 - Don't seed production!
 - Use migrations instead
 - Real data only
@@ -187,16 +210,19 @@ func SeedStaging(db *gorm.DB) {
 ## Troubleshooting
 
 ### "Failed to clear data"
+
 - Check database connection
 - Verify PostgreSQL is running
 - Check foreign key constraints
 
 ### "Failed to create users"
+
 - Unique constraint violation?
 - Clear database manually
 - Check existing data
 
 ### Slow seeding
+
 - Normal for first run
 - Bcrypt hashing takes time
 - Reduce number of users if needed
@@ -204,6 +230,7 @@ func SeedStaging(db *gorm.DB) {
 ## Future Enhancements
 
 Planned improvements:
+
 - [ ] Chat conversations seeding
 - [ ] User relationships/followers
 - [ ] More varied post types
@@ -224,11 +251,13 @@ make clean            # Remove all data
 ## Learn More
 
 This seeding approach is inspired by:
+
 - Rails database seeds
 - Laravel seeders and factories
 - Django fixtures
 - Prisma seed scripts
 
 Read more about best practices:
+
 - [The Twelve-Factor App](https://12factor.net/)
 - [Database Seeding Best Practices](https://guides.rubyonrails.org/v3.2/migrations.html#migrations-and-seed-data)

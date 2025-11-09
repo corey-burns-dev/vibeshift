@@ -4,6 +4,8 @@ services:
     ports:
       - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -58,10 +60,11 @@ services:
     depends_on:
       - app
     environment:
-      - VITE_API_URL=http://app:${GO_PORT}
+      - VITE_API_URL=http://localhost:${GO_PORT}/api
     volumes:
       - ./frontend:/app
       - /app/node_modules
 
 volumes:
   postgres_data:
+  redis_data:

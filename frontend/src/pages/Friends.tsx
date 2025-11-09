@@ -1,11 +1,11 @@
+import { MessageCircle, MoreHorizontal, Search, UserMinus, UserPlus, Users } from 'lucide-react'
+import { useState } from 'react'
 import { Navbar } from '@/components/Navbar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { MessageCircle, MoreHorizontal, Search, UserMinus, UserPlus, Users } from 'lucide-react'
-import { useState } from 'react'
 
 // Mock friends data
 const friends = [
@@ -16,7 +16,7 @@ const friends = [
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
     status: 'online',
     lastSeen: 'now',
-    mutualFriends: 12
+    mutualFriends: 12,
   },
   {
     id: 2,
@@ -25,7 +25,7 @@ const friends = [
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob',
     status: 'online',
     lastSeen: 'now',
-    mutualFriends: 8
+    mutualFriends: 8,
   },
   {
     id: 3,
@@ -34,8 +34,8 @@ const friends = [
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=charlie',
     status: 'away',
     lastSeen: '2h ago',
-    mutualFriends: 15
-  }
+    mutualFriends: 15,
+  },
 ]
 
 // Mock friend requests
@@ -45,15 +45,15 @@ const friendRequests = [
     name: 'Diana Prince',
     username: 'diana_design',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=diana',
-    mutualFriends: 5
+    mutualFriends: 5,
   },
   {
     id: 5,
     name: 'Eve Wilson',
     username: 'eve_writer',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=eve',
-    mutualFriends: 3
-  }
+    mutualFriends: 3,
+  },
 ]
 
 // Mock suggested friends
@@ -64,7 +64,7 @@ const suggestedFriends = [
     username: 'frank_artist',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=frank',
     mutualFriends: 7,
-    reason: 'Works at the same company'
+    reason: 'Works at the same company',
   },
   {
     id: 7,
@@ -72,27 +72,30 @@ const suggestedFriends = [
     username: 'grace_photographer',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=grace',
     mutualFriends: 4,
-    reason: 'Followed by 3 friends'
-  }
+    reason: 'Followed by 3 friends',
+  },
 ]
 
 export default function Friends() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState('friends')
 
-  const filteredFriends = friends.filter(friend =>
-    friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    friend.username.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredFriends = friends.filter(
+    (friend) =>
+      friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      friend.username.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const filteredRequests = friendRequests.filter(request =>
-    request.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    request.username.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredRequests = friendRequests.filter(
+    (request) =>
+      request.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      request.username.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const filteredSuggestions = suggestedFriends.filter(suggestion =>
-    suggestion.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    suggestion.username.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredSuggestions = suggestedFriends.filter(
+    (suggestion) =>
+      suggestion.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      suggestion.username.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const handleAcceptRequest = (friendId: number) => {
@@ -115,9 +118,13 @@ export default function Friends() {
     console.log('Removed friend:', friendId)
   }
 
-  const FriendCard = ({ friend, showActions = true, actions }: {
-    friend: any,
-    showActions?: boolean,
+  const FriendCard = ({
+    friend,
+    showActions = true,
+    actions,
+  }: {
+    friend: any
+    showActions?: boolean
     actions?: React.ReactNode
   }) => (
     <Card>
@@ -128,14 +135,22 @@ export default function Friends() {
               <Avatar>
                 <AvatarImage src={friend.avatar} />
                 <AvatarFallback>
-                  {friend.name.split(' ').map((n: string) => n[0]).join('')}
+                  {friend.name
+                    .split(' ')
+                    .map((n: string) => n[0])
+                    .join('')}
                 </AvatarFallback>
               </Avatar>
               {friend.status && (
-                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-background ${
-                  friend.status === 'online' ? 'bg-green-500' :
-                  friend.status === 'away' ? 'bg-yellow-500' : 'bg-gray-500'
-                }`} />
+                <div
+                  className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-background ${
+                    friend.status === 'online'
+                      ? 'bg-green-500'
+                      : friend.status === 'away'
+                        ? 'bg-yellow-500'
+                        : 'bg-gray-500'
+                  }`}
+                />
               )}
             </div>
             <div>
@@ -146,9 +161,7 @@ export default function Friends() {
                   {friend.mutualFriends} mutual friends
                 </p>
               )}
-              {friend.reason && (
-                <p className="text-xs text-muted-foreground">{friend.reason}</p>
-              )}
+              {friend.reason && <p className="text-xs text-muted-foreground">{friend.reason}</p>}
               {friend.lastSeen && friend.status !== 'online' && (
                 <p className="text-xs text-muted-foreground">Last seen {friend.lastSeen}</p>
               )}
@@ -220,29 +233,23 @@ export default function Friends() {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="friends">
-              Friends ({friends.length})
-            </TabsTrigger>
-            <TabsTrigger value="requests">
-              Requests ({friendRequests.length})
-            </TabsTrigger>
-            <TabsTrigger value="suggestions">
-              Suggestions ({suggestedFriends.length})
-            </TabsTrigger>
+            <TabsTrigger value="friends">Friends ({friends.length})</TabsTrigger>
+            <TabsTrigger value="requests">Requests ({friendRequests.length})</TabsTrigger>
+            <TabsTrigger value="suggestions">Suggestions ({suggestedFriends.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="friends" className="space-y-4 mt-6">
             {filteredFriends.length > 0 ? (
-              filteredFriends.map((friend) => (
-                <FriendCard key={friend.id} friend={friend} />
-              ))
+              filteredFriends.map((friend) => <FriendCard key={friend.id} friend={friend} />)
             ) : (
               <Card>
                 <CardContent className="p-8 text-center">
                   <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-lg font-semibold mb-2">No friends found</h3>
                   <p className="text-muted-foreground">
-                    {searchQuery ? 'Try adjusting your search terms.' : 'Start connecting with people!'}
+                    {searchQuery
+                      ? 'Try adjusting your search terms.'
+                      : 'Start connecting with people!'}
                   </p>
                 </CardContent>
               </Card>
@@ -295,10 +302,7 @@ export default function Friends() {
                   key={suggestion.id}
                   friend={suggestion}
                   actions={
-                    <Button
-                      size="sm"
-                      onClick={() => handleAddFriend(suggestion.id)}
-                    >
+                    <Button size="sm" onClick={() => handleAddFriend(suggestion.id)}>
                       <UserPlus className="w-4 h-4 mr-1" />
                       Add Friend
                     </Button>
@@ -311,7 +315,9 @@ export default function Friends() {
                   <Search className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-lg font-semibold mb-2">No suggestions found</h3>
                   <p className="text-muted-foreground">
-                    {searchQuery ? 'Try adjusting your search terms.' : 'Check back later for friend suggestions!'}
+                    {searchQuery
+                      ? 'Try adjusting your search terms.'
+                      : 'Check back later for friend suggestions!'}
                   </p>
                 </CardContent>
               </Card>

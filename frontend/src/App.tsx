@@ -1,15 +1,34 @@
 import { Navbar } from '@/components/Navbar'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Button } from '@/components/ui/button'
-import Chat from '@/pages/Chat'
-import Friends from '@/pages/Friends'
-import Login from '@/pages/Login'
-import Messages from '@/pages/Messages'
-import Posts from '@/pages/Posts'
-import Profile from '@/pages/Profile'
-import Signup from '@/pages/Signup'
-import Users from '@/pages/Users'
-import { Route, BrowserRouter as Router, Routes } from 'react-router-dom'
+import { routePrefetchMap } from '@/utils/prefetch'
+import { useQueryClient } from '@tanstack/react-query'
+import { lazy, Suspense, useEffect } from 'react'
+import { Route, BrowserRouter as Router, Routes, useLocation } from 'react-router-dom'
 
+// Lazy load pages for code splitting
+const Login = lazy(() => import('@/pages/Login'))
+const Signup = lazy(() => import('@/pages/Signup'))
+const Posts = lazy(() => import('@/pages/Posts'))
+const Chat = lazy(() => import('@/pages/Chat'))
+const Profile = lazy(() => import('@/pages/Profile'))
+const Friends = lazy(() => import('@/pages/Friends'))
+const Messages = lazy(() => import('@/pages/Messages'))
+const Users = lazy(() => import('@/pages/Users'))
+
+// Loading component
+function PageLoader() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    </div>
+  )
+}
+
+// HomePage component (keeping it inline since it's lightweight)
 function HomePage() {
   return (
     <div className="min-h-screen bg-background">
@@ -105,20 +124,73 @@ function HomePage() {
   )
 }
 
+function RoutesWithPrefetch() {
+  const location = useLocation()
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    const prefetchFn = routePrefetchMap[location.pathname]
+    if (prefetchFn) {
+      prefetchFn(queryClient).catch(console.error)
+    }
+  }, [location.pathname, queryClient])
+
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/posts" element={<Posts />} />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <Chat />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/friends"
+          element={
+            <ProtectedRoute>
+              <Friends />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/messages"
+          element={
+            <ProtectedRoute>
+              <Messages />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <ProtectedRoute>
+              <Users />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </Suspense>
+  )
+}
+
 export default function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/posts" element={<Posts />} />
-        <Route path="/chat" element={<Chat />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/friends" element={<Friends />} />
-        <Route path="/messages" element={<Messages />} />
-        <Route path="/users" element={<Users />} />
-      </Routes>
+      <RoutesWithPrefetch />
     </Router>
   )
 }

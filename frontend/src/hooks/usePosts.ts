@@ -1,18 +1,13 @@
 // Post Hooks - using TanStack Query with optimistic updates
 
-import {
-    useInfiniteQuery,
-    useMutation,
-    useQuery,
-    useQueryClient
-} from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../api/client'
 import type {
-    CreatePostRequest,
-    PaginationParams,
-    Post,
-    SearchParams,
-    UpdatePostRequest,
+  CreatePostRequest,
+  PaginationParams,
+  Post,
+  SearchParams,
+  UpdatePostRequest,
 } from '../api/types'
 
 // Query keys
@@ -37,8 +32,7 @@ export function usePosts(params?: PaginationParams) {
 export function useInfinitePosts(limit = 10) {
   return useInfiniteQuery({
     queryKey: ['posts', 'infinite', limit],
-    queryFn: ({ pageParam = 0 }) =>
-      apiClient.getPosts({ offset: pageParam, limit }),
+    queryFn: ({ pageParam = 0 }) => apiClient.getPosts({ offset: pageParam, limit }),
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.length < limit) return undefined
       return allPages.length * limit

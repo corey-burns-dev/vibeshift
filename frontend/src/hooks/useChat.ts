@@ -1,22 +1,21 @@
 // Chat hooks with TanStack Query
 
-import { apiClient } from '@/api/client'
-import type {
-    CreateConversationRequest,
-    Message,
-    PaginationParams,
-    SendMessageRequest
-} from '@/api/types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
+import { apiClient } from '@/api/client'
+import type {
+  CreateConversationRequest,
+  Message,
+  PaginationParams,
+  SendMessageRequest,
+} from '@/api/types'
 
 // Query keys
 const chatKeys = {
   all: ['chat'] as const,
   conversations: () => [...chatKeys.all, 'conversations'] as const,
   conversation: (id: number) => [...chatKeys.all, 'conversation', id] as const,
-  messages: (conversationId: number) =>
-    [...chatKeys.all, 'messages', conversationId] as const,
+  messages: (conversationId: number) => [...chatKeys.all, 'messages', conversationId] as const,
 }
 
 // ===== Conversations =====
@@ -41,8 +40,7 @@ export function useCreateConversation() {
   const navigate = useNavigate()
 
   return useMutation({
-    mutationFn: (data: CreateConversationRequest) =>
-      apiClient.createConversation(data),
+    mutationFn: (data: CreateConversationRequest) => apiClient.createConversation(data),
     onSuccess: (conversation) => {
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() })
       navigate(`/chat/${conversation.id}`)
@@ -54,8 +52,7 @@ export function useMarkAsRead() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (conversationId: number) =>
-      apiClient.markConversationAsRead(conversationId),
+    mutationFn: (conversationId: number) => apiClient.markConversationAsRead(conversationId),
     onSuccess: (_, conversationId) => {
       queryClient.invalidateQueries({ queryKey: chatKeys.conversation(conversationId) })
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() })
@@ -77,15 +74,14 @@ export function useSendMessage(conversationId: number) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: SendMessageRequest) =>
-      apiClient.sendMessage(conversationId, data),
+    mutationFn: (data: SendMessageRequest) => apiClient.sendMessage(conversationId, data),
     onMutate: async (newMessage) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: chatKeys.messages(conversationId) })
 
       // Snapshot previous value
       const previousMessages = queryClient.getQueryData<Message[]>(
-        chatKeys.messages(conversationId),
+        chatKeys.messages(conversationId)
       )
 
       // Optimistically update
@@ -102,10 +98,10 @@ export function useSendMessage(conversationId: number) {
           updated_at: new Date().toISOString(),
         }
 
-        queryClient.setQueryData<Message[]>(
-          chatKeys.messages(conversationId),
-          [...previousMessages, optimisticMessage],
-        )
+        queryClient.setQueryData<Message[]>(chatKeys.messages(conversationId), [
+          ...previousMessages,
+          optimisticMessage,
+        ])
       }
 
       return { previousMessages }
@@ -113,10 +109,7 @@ export function useSendMessage(conversationId: number) {
     onError: (err, newMessage, context) => {
       // Rollback on error
       if (context?.previousMessages) {
-        queryClient.setQueryData(
-          chatKeys.messages(conversationId),
-          context.previousMessages,
-        )
+        queryClient.setQueryData(chatKeys.messages(conversationId), context.previousMessages)
       }
     },
     onSettled: () => {
@@ -131,22 +124,21 @@ export function useDeleteMessage(conversationId: number) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (messageId: number) =>
-      apiClient.deleteMessage(conversationId, messageId),
+    mutationFn: (messageId: number) => apiClient.deleteMessage(conversationId, messageId),
     onMutate: async (messageId) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: chatKeys.messages(conversationId) })
 
       // Snapshot previous value
       const previousMessages = queryClient.getQueryData<Message[]>(
-        chatKeys.messages(conversationId),
+        chatKeys.messages(conversationId)
       )
 
       // Optimistically remove message
       if (previousMessages) {
         queryClient.setQueryData<Message[]>(
           chatKeys.messages(conversationId),
-          previousMessages.filter((msg) => msg.id !== messageId),
+          previousMessages.filter((msg) => msg.id !== messageId)
         )
       }
 
@@ -155,10 +147,7 @@ export function useDeleteMessage(conversationId: number) {
     onError: (err, messageId, context) => {
       // Rollback on error
       if (context?.previousMessages) {
-        queryClient.setQueryData(
-          chatKeys.messages(conversationId),
-          context.previousMessages,
-        )
+        queryClient.setQueryData(chatKeys.messages(conversationId), context.previousMessages)
       }
     },
     onSettled: () => {

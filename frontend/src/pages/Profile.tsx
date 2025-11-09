@@ -4,22 +4,40 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { useLogout } from '@/hooks/useAuth'
 import { useMyProfile, useUpdateMyProfile } from '@/hooks/useUsers'
 import { Calendar, Camera, Copy, Edit, Eye, EyeOff, Key } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false)
   const [showToken, setShowToken] = useState(false)
   const [tokenCopied, setTokenCopied] = useState(false)
-  
-  const { data: user, isLoading } = useMyProfile()
+
+  const navigate = useNavigate()
+  const logout = useLogout()
+  const { data: user, isLoading, error } = useMyProfile()
   const updateProfile = useUpdateMyProfile()
-  
+
+  // Handle authentication errors
+  useEffect(() => {
+    if (error) {
+      // Check if it's an authentication error (401 Unauthorized or 403 Forbidden)
+      const isAuthError = error.message?.includes('401') || error.message?.includes('403') ||
+                         error.message?.includes('Unauthorized') || error.message?.includes('Forbidden')
+
+      if (isAuthError) {
+        // Clear invalid token and redirect to login
+        logout()
+      }
+    }
+  }, [error, logout])
+
   const [editedProfile, setEditedProfile] = useState({
     username: '',
     bio: '',
-    avatar: ''
+    avatar: '',
   })
 
   const token = localStorage.getItem('token') || ''
@@ -28,12 +46,12 @@ export default function Profile() {
     updateProfile.mutate(editedProfile, {
       onSuccess: () => {
         setIsEditing(false)
-      }
+      },
     })
   }
 
   const handleInputChange = (field: string, value: string) => {
-    setEditedProfile(prev => ({ ...prev, [field]: value }))
+    setEditedProfile((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleEdit = () => {
@@ -41,7 +59,7 @@ export default function Profile() {
       setEditedProfile({
         username: user.username,
         bio: user.bio || '',
-        avatar: user.avatar || ''
+        avatar: user.avatar || '',
       })
     }
     setIsEditing(true)
@@ -56,7 +74,7 @@ export default function Profile() {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'long',
-      year: 'numeric'
+      year: 'numeric',
     })
   }
 
@@ -94,7 +112,12 @@ export default function Profile() {
               <div className="flex flex-col items-center md:items-start">
                 <div className="relative">
                   <Avatar className="w-24 h-24">
-                    <AvatarImage src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} />
+                    <AvatarImage
+                      src={
+                        user.avatar ||
+                        `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`
+                      }
+                    />
                     <AvatarFallback className="text-2xl">
                       {user.username[0].toUpperCase()}
                     </AvatarFallback>
@@ -137,7 +160,7 @@ export default function Profile() {
 
                   <Button
                     onClick={isEditing ? handleSave : handleEdit}
-                    variant={isEditing ? "default" : "outline"}
+                    variant={isEditing ? 'default' : 'outline'}
                     disabled={updateProfile.isPending}
                   >
                     <Edit className="w-4 h-4 mr-2" />
@@ -178,13 +201,13 @@ export default function Profile() {
                             variant="ghost"
                             onClick={() => setShowToken(!showToken)}
                           >
-                            {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            {showToken ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={copyToken}
-                          >
+                          <Button size="sm" variant="ghost" onClick={copyToken}>
                             <Copy className="w-4 h-4" />
                           </Button>
                         </div>

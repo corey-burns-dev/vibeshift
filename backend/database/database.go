@@ -13,7 +13,7 @@ import (
 
 var DB *gorm.DB
 
-func Connect(cfg *config.Config) {
+func Connect(cfg *config.Config) *gorm.DB {
 	var err error
 
 	// Build PostgreSQL connection string
@@ -50,4 +50,5 @@ func Connect(cfg *config.Config) {
 	}
 
 	log.Println("Database migration completed")
+	return DB
 }

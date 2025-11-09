@@ -49,12 +49,15 @@ export function useUpdateMyProfile() {
           ...previousUser,
           ...newData,
         })
-        
+
         // Also update localStorage
-        localStorage.setItem('user', JSON.stringify({
-          ...previousUser,
-          ...newData,
-        }))
+        localStorage.setItem(
+          'user',
+          JSON.stringify({
+            ...previousUser,
+            ...newData,
+          })
+        )
       }
 
       return { previousUser }

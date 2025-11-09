@@ -1,3 +1,6 @@
+import { useQuery } from '@tanstack/react-query'
+import { Calendar, ExternalLink, Mail } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { apiClient } from '@/api/client'
 import { Navbar } from '@/components/Navbar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -5,16 +8,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table'
-import { useQuery } from '@tanstack/react-query'
-import { Calendar, ExternalLink, Mail } from 'lucide-react'
-import { Link } from 'react-router-dom'
 
 export default function Users() {
   const {

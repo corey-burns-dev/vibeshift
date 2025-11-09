@@ -8,17 +8,17 @@ import { useCreatePost, useInfinitePosts, useLikePost } from '@/hooks/usePosts'
 import { getCurrentUser, useIsAuthenticated } from '@/hooks/useUsers'
 import { formatDistanceToNow } from 'date-fns'
 import { Heart, Loader2, MessageCircle, Send } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { memo, useCallback, useEffect, useState } from 'react'
 
 // Component for individual post comments
-function PostComments({ postId }: { postId: number }) {
+const PostComments = memo(function PostComments({ postId }: { postId: number }) {
   const [newComment, setNewComment] = useState('')
   const currentUser = getCurrentUser()
 
   const { data: comments = [], isLoading } = usePostComments(postId)
   const createCommentMutation = useCreateComment(postId)
 
-  const handleCreateComment = () => {
+  const handleCreateComment = useCallback(() => {
     if (!newComment.trim()) return
 
     createCommentMutation.mutate(
@@ -29,7 +29,7 @@ function PostComments({ postId }: { postId: number }) {
         },
       }
     )
-  }
+  }, [newComment, createCommentMutation])
 
   if (isLoading) {
     return (
@@ -111,7 +111,7 @@ function PostComments({ postId }: { postId: number }) {
       )}
     </div>
   )
-}
+})
 
 export default function Posts() {
   const [newPostTitle, setNewPostTitle] = useState('')
@@ -233,9 +233,7 @@ export default function Posts() {
                 <Button
                   onClick={handleNewPost}
                   disabled={
-                    !newPostTitle.trim() ||
-                    !newPostContent.trim() ||
-                    createPostMutation.isPending
+                    !newPostTitle.trim() || !newPostContent.trim() || createPostMutation.isPending
                   }
                 >
                   {createPostMutation.isPending ? (
@@ -285,8 +283,9 @@ export default function Posts() {
                   <div className="mb-4 rounded-lg overflow-hidden">
                     <img
                       src={post.image_url}
-                      alt="Post content"
+                      alt={`Image for post: ${post.title}`}
                       className="w-full h-auto object-cover"
+                      loading="lazy"
                     />
                   </div>
                 )}
@@ -298,6 +297,7 @@ export default function Posts() {
                       size="sm"
                       onClick={() => handleLikePost(post.id)}
                       disabled={!isAuthenticated}
+                      aria-label={`Like post by ${post.user?.username}`}
                     >
                       <Heart className="w-4 h-4 mr-2" />
                       {post.likes}
@@ -307,6 +307,7 @@ export default function Posts() {
                       size="sm"
                       onClick={() => toggleComments(post.id)}
                       className={expandedComments.has(post.id) ? 'text-blue-500' : ''}
+                      aria-label={`${expandedComments.has(post.id) ? 'Hide' : 'Show'} comments for post by ${post.user?.username}`}
                     >
                       <MessageCircle className="w-4 h-4 mr-2" />
                       Comments

@@ -1,3 +1,5 @@
+import { LogOut, Settings, User } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import ModeToggle from '@/components/mode-toggle'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -10,8 +12,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { getCurrentUser, useIsAuthenticated, useLogout } from '@/hooks'
-import { LogOut, Settings, User } from 'lucide-react'
-import { Link } from 'react-router-dom'
 
 export function Navbar() {
   const isAuthenticated = useIsAuthenticated()

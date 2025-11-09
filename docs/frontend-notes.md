@@ -7,15 +7,21 @@
 
 ## Framework Choice
 
-- Stay on React + Vite unless you specifically need server-side rendering or built-in routing
-- Consider Next.js/Remix only if you plan to add SSR, file-based routing, or server-initiated rendering soon
+- Stay on React + Vite unless you specifically need server-side rendering or
+  built-in routing
+- Consider Next.js/Remix only if you plan to add SSR, file-based routing, or
+  server-initiated rendering soon
 
 ## Data Management Strategy
 
-- Use TanStack Query to manage all server state (API data): caching, retries, mutations, pagination
-- Keep UI-only state with simple tools (React context or Zustand); avoid Redux unless workflows are very complex
-- Generate TypeScript types from the Go API (OpenAPI via swaggo or oapi-codegen) to keep client/server in sync
-- Use the native `fetch` API or a small wrapper (e.g., `ky`); let TanStack Query handle retry/cancel/error behavior
+- Use TanStack Query to manage all server state (API data): caching, retries,
+  mutations, pagination
+- Keep UI-only state with simple tools (React context or Zustand); avoid Redux
+  unless workflows are very complex
+- Generate TypeScript types from the Go API (OpenAPI via swaggo or oapi-codegen)
+  to keep client/server in sync
+- Use the native `fetch` API or a small wrapper (e.g., `ky`); let TanStack Query
+  handle retry/cancel/error behavior
 
 ## API Hook Conventions
 

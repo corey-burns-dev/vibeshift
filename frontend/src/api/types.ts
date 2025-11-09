@@ -108,7 +108,7 @@ export interface Message {
   sender?: User
   content: string
   message_type: 'text' | 'image' | 'file'
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
   is_read: boolean
   created_at: string
   updated_at: string
@@ -125,5 +125,5 @@ export interface CreateConversationRequest {
 export interface SendMessageRequest {
   content: string
   message_type?: 'text' | 'image' | 'file'
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }

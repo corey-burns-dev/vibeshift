@@ -34,10 +34,7 @@ class ApiClient {
     return localStorage.getItem('token')
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {},
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
     const token = this.getAuthToken()
 
@@ -145,10 +142,7 @@ class ApiClient {
     return this.request(`/posts/${postId}/comments`)
   }
 
-  async createComment(
-    postId: number,
-    data: CreateCommentRequest,
-  ): Promise<Comment> {
+  async createComment(postId: number, data: CreateCommentRequest): Promise<Comment> {
     return this.request(`/posts/${postId}/comments`, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -158,7 +152,7 @@ class ApiClient {
   async updateComment(
     postId: number,
     commentId: number,
-    data: UpdateCommentRequest,
+    data: UpdateCommentRequest
   ): Promise<Comment> {
     return this.request(`/posts/${postId}/comments/${commentId}`, {
       method: 'PUT',
@@ -166,10 +160,7 @@ class ApiClient {
     })
   }
 
-  async deleteComment(
-    postId: number,
-    commentId: number,
-  ): Promise<{ message: string }> {
+  async deleteComment(postId: number, commentId: number): Promise<{ message: string }> {
     return this.request(`/posts/${postId}/comments/${commentId}`, {
       method: 'DELETE',
     })
