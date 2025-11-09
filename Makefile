@@ -1,4 +1,4 @@
-.PHONY: help dev dev-backend dev-frontend prod build build-backend build-frontend up down logs logs-backend logs-frontend logs-all clean lint fmt install env restart
+.PHONY: help dev dev-backend dev-frontend dev-both prod build build-backend build-frontend up down logs logs-backend logs-frontend logs-all clean lint fmt install env restart check-versions
 
 # Variables
 DOCKER_COMPOSE := docker-compose
@@ -22,6 +22,7 @@ help:
 	@echo "  make dev                - 🚀 Start full stack (backend + frontend + databases)"
 	@echo "  make dev-backend        - 🔧 Backend only (Go + Redis + Postgres)"
 	@echo "  make dev-frontend       - 🎨 Frontend only (Vite dev server, local)"
+	@echo "  make dev-both           - 🔀 Backend in Docker + Frontend local (best DX)"
 	@echo ""
 	@echo "$(GREEN)Build & Compose:$(NC)"
 	@echo "  make build              - 🔨 Build all Docker images (prod)"
@@ -45,6 +46,7 @@ help:
 	@echo "  make env                - ⚙️  Initialize .env file"
 	@echo "  make restart            - 🔄 Restart all services"
 	@echo "  make clean              - 🧹 Clean containers, volumes, and artifacts"
+	@echo "  make check-versions     - 🔍 Check latest Docker image versions"
 	@echo ""
 
 # Development targets
@@ -59,6 +61,15 @@ dev-backend: env
 dev-frontend: install
 	@echo "$(BLUE)Starting frontend dev server...$(NC)"
 	cd frontend && $(PNPM) dev
+
+dev-both: env install
+	@echo "$(BLUE)Starting backend in Docker + frontend locally...$(NC)"
+	@echo "$(YELLOW)Backend will start in background...$(NC)"
+	@$(DOCKER_COMPOSE) up --build app redis postgres -d
+	@sleep 3
+	@echo "$(YELLOW)Frontend starting in foreground...$(NC)"
+	@cd frontend && $(PNPM) dev
+
 
 # Build targets
 build: build-backend build-frontend
@@ -121,6 +132,9 @@ env:
 
 # Utility targets
 restart: down dev
+
+check-versions:
+	@bash scripts/check-versions.sh
 
 clean:
 	@echo "$(BLUE)Cleaning up containers, volumes, and artifacts...$(NC)"
