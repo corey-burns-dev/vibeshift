@@ -84,9 +84,23 @@ export REDIS_URL="rediss://:mypassword@redis:6379/1"
 
 # Plain host:port form (no scheme)
 export REDIS_URL="redis:6379"
+Note: when `REDIS_URL` uses the `rediss://` scheme the client will enable TLS when connecting. Ensure your Redis instance is configured for TLS when using `rediss://`.
 ```
 
-The server will parse a `redis://`/`rediss://` URL and extract host, port, password, and optional DB index. If a plain `host:port` is provided it will be used directly.
+The server will parse a `redis://` or `rediss://` URL and extract host, port, password, and an optional DB index. `rediss://` is the same URL form but indicates a TLS (secure) connection. If a plain `host:port` is provided (for example `redis:6379`) it will be used directly.
+
+Examples:
+
+```bash
+# Unsecured Redis (default)
+export REDIS_URL="redis://:mypassword@redis:6379/1"
+
+# Secured (TLS) Redis
+export REDIS_URL="rediss://:mypassword@redis:6379/1"
+
+# Plain host:port
+export REDIS_URL="redis:6379"
+```
 
 ## Development
 

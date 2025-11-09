@@ -26,27 +26,12 @@ func NewClient(raw string) *redis.Client {
 	if raw == "" {
 		raw = "redis:6379"
 	}
-
-	addr := raw
-	opts := &redis.Options{}
-	if strings.HasPrefix(raw, "redis://") || strings.HasPrefix(raw, "rediss://") {
-		if u, err := url.Parse(raw); err == nil {
-			addr = u.Host
-			if u.User != nil {
-				if pw, ok := u.User.Password(); ok {
-					opts.Password = pw
-				}
-			}
-			if p := strings.Trim(u.Path, "/"); p != "" {
-				if dbn, err := strconv.Atoi(p); err == nil {
-					opts.DB = dbn
-
-				}
-			}
-		}
+	addr, password, db, _ := ParseRedisURL(raw)
+	opts := &redis.Options{
+		Addr:     addr,
+		Password: password,
+		DB:       db,
 	}
-
-	opts.Addr = addr
 	// Disable maintenance notifications handshake by default.
 	opts.MaintNotificationsConfig = &maintnotifications.Config{Mode: maintnotifications.ModeDisabled}
 
@@ -81,3 +66,37 @@ func NewAdapter(rawClient *redis.Client) *Client {
 }
 
 var _ RedisClient = (*Client)(nil)
+
+// ParseRedisURL extracts connection pieces from a REDIS_URL-like string.
+// Returns addr (host:port), password, db index, and tls=true when scheme is rediss://.
+func ParseRedisURL(raw string) (addr, password string, db int, tls bool) {
+	if raw == "" {
+		raw = "redis:6379"
+	}
+
+	// default values
+	addr = raw
+	password = ""
+	db = 0
+	tls = false
+
+	if strings.HasPrefix(raw, "redis://") || strings.HasPrefix(raw, "rediss://") {
+		if u, err := url.Parse(raw); err == nil {
+			addr = u.Host
+			if u.User != nil {
+				if pw, ok := u.User.Password(); ok {
+					password = pw
+				}
+			}
+			if p := strings.Trim(u.Path, "/"); p != "" {
+				if dbn, err := strconv.Atoi(p); err == nil {
+					db = dbn
+				}
+			}
+			if u.Scheme == "rediss" {
+				tls = true
+			}
+		}
+	}
+	return
+}
