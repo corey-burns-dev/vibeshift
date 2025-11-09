@@ -4,7 +4,11 @@ help:
 	@echo "Vibeshift - Development & Production Commands"
 	@echo ""
 	@echo "Development:"
-	@echo "  make dev          - Start development environment with hot reloading"
+	@echo "  make dev          - Start development environment (backend + frontend via Compose)"
+	@echo "  make dev:backend  - Start only the backend service via Compose"
+	@echo "  make dev:frontend - Start only the frontend service via Compose"
+	@echo "  make dev:both     - Start both services (same as make dev)"
+	@echo "  make frontend-dev - Run frontend dev server locally (npm run dev)"
 	@echo "  make logs         - View live logs from containers"
 	@echo "  make down         - Stop all containers"
 	@echo ""
@@ -22,6 +26,18 @@ help:
 
 dev:
 	docker-compose up --build
+
+dev:backend
+	docker-compose up --build app
+
+dev:frontend
+	docker-compose up --build frontend
+
+dev:both
+	docker-compose up --build
+
+frontend-dev:
+	cd frontend && npm ci && npm run dev
 
 prod:
 	docker-compose -f compose.yml up -d --build
