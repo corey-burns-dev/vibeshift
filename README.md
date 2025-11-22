@@ -211,6 +211,22 @@ See `.env.example` for a complete list. Key variables:
 - `POSTGRES_PASSWORD` — PostgreSQL password (required)
 - `VITE_API_URL` — Frontend API URL (default: `http://localhost:8080`)
 
+Note about YAML config and `make env`:
+
+- **`config.yml`**: This repository now uses a YAML config file at `config.yml` (copy `config.example.yml` → `config.yml` and update values).
+- **`make env`**: Docker Compose still expects a `.env` file. Run `make env` to generate a `.env` from `config.yml` automatically.
+- **`yq` recommended**: If you have `yq` installed (v4 preferred, but v3 is supported), `make env` will use it for robust YAML parsing. If `yq` is not available, `make env` falls back to a simple `sed` parser.
+
+Examples:
+
+```bash
+# Generate/update .env from config.yml
+make env
+
+# Start backend services (Postgres, Redis, app)
+make dev-backend
+```
+
 ### Redis Configuration
 
 `REDIS_URL` accepts either a plain `host:port` value or a URL form. Examples:

@@ -146,7 +146,9 @@ env:
 		echo "$(BLUE)Creating config.yml from config.example.yml...$(NC)"; \
 		cp config.example.yml config.yml; \
 		echo "$(YELLOW)⚠️  Update config.yml with your settings$(NC)"; \
-	fi
+	fi; \
+	# Generate .env using a helper script (handles yq v3/v4 and sed fallback)
+	@./scripts/generate_env.sh
 
 # Utility targets
 restart: down dev
