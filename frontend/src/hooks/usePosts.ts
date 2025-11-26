@@ -3,11 +3,11 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../api/client'
 import type {
-  CreatePostRequest,
-  PaginationParams,
-  Post,
-  SearchParams,
-  UpdatePostRequest,
+    CreatePostRequest,
+    PaginationParams,
+    Post,
+    SearchParams,
+    UpdatePostRequest,
 } from '../api/types'
 import { handleAuthOrFKError } from '../lib/handleAuthOrFKError'
 
@@ -157,7 +157,7 @@ function updatePostInCache(
   )
 }
 
-// Like post
+// Like/Toggle post (backend handles toggle logic)
 export function useLikePost() {
   const queryClient = useQueryClient()
 
@@ -175,17 +175,22 @@ export function useLikePost() {
         data: queryClient.getQueryData(q.queryKey),
       }))
 
-      // Optimistically update
-      updatePostInCache(queryClient, postId, (oldPost) => ({
-        ...oldPost,
-        likes_count: (oldPost.likes_count ?? 0) + 1,
-        liked: true,
-      }))
+      // Optimistically toggle based on current state
+      updatePostInCache(queryClient, postId, (oldPost) => {
+        const isCurrentlyLiked = oldPost.liked
+        return {
+          ...oldPost,
+          likes_count: isCurrentlyLiked 
+            ? Math.max((oldPost.likes_count ?? 0) - 1, 0)
+            : (oldPost.likes_count ?? 0) + 1,
+          liked: !isCurrentlyLiked,
+        }
+      })
 
       return { previousPost, previousInfinitePostsData }
     },
     onSuccess: (updatedPost) => {
-      // Use the returned post to update cache
+      // Use the returned post to update cache with actual state
       updatePostInCache(queryClient, updatedPost.id, () => updatedPost)
     },
     onError: (error, postId, context) => {

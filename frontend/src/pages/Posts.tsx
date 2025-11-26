@@ -1,7 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
-import { formatDistanceToNow } from 'date-fns'
-import { Heart, Loader2, MessageCircle, Send } from 'lucide-react'
-import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { apiClient } from '@/api/client'
 import type { Post } from '@/api/types'
 import { Navbar } from '@/components/Navbar'
@@ -18,6 +14,10 @@ import {
   useUnlikePost,
 } from '@/hooks/usePosts'
 import { getCurrentUser, useIsAuthenticated } from '@/hooks/useUsers'
+import { useQueryClient } from '@tanstack/react-query'
+import { formatDistanceToNow } from 'date-fns'
+import { Heart, Loader2, MessageCircle, Send } from 'lucide-react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 
 function handleAuthOrFKError(error: unknown) {
   let msg: string
@@ -310,19 +310,12 @@ export default function Posts() {
   }
 
   const handleLikeToggle = (post: Post) => {
-    if (post.liked) {
-      unlikePostMutation.mutate(post.id, {
-        onError: (error) => {
-          console.error('Failed to unlike post:', error)
-        },
-      })
-    } else {
-      likePostMutation.mutate(post.id, {
-        onError: (error) => {
-          console.error('Failed to like post:', error)
-        },
-      })
-    }
+    // Backend now handles toggle logic automatically
+    likePostMutation.mutate(post.id, {
+      onError: (error) => {
+        console.error('Failed to toggle like:', error)
+      },
+    })
   }
 
   const startEditPost = (post: Post) => {
