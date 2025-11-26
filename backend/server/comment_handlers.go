@@ -9,7 +9,7 @@ import (
 
 // CreateComment creates a comment on a post (protected)
 func (s *Server) CreateComment(c *fiber.Ctx) error {
-	ctx := c.Context()
+	ctx := c.UserContext()
 	userID := c.Locals("userID").(uint)
 	postIDParam := c.Params("id")
 
@@ -20,7 +20,7 @@ func (s *Server) CreateComment(c *fiber.Ctx) error {
 	}
 
 	// Verify post exists
-	if _, err := s.postRepo.GetByID(ctx, postID); err != nil {
+	if _, err := s.postRepo.GetByID(ctx, postID, 0); err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound, err)
 	}
 
@@ -55,7 +55,7 @@ func (s *Server) CreateComment(c *fiber.Ctx) error {
 
 // GetComments returns all comments for a post (public)
 func (s *Server) GetComments(c *fiber.Ctx) error {
-	ctx := c.Context()
+	ctx := c.UserContext()
 	postIDParam := c.Params("id")
 	var postID uint
 	if _, err := fmt.Sscan(postIDParam, &postID); err != nil {
@@ -63,7 +63,7 @@ func (s *Server) GetComments(c *fiber.Ctx) error {
 	}
 
 	// Verify post exists
-	if _, err := s.postRepo.GetByID(ctx, postID); err != nil {
+	if _, err := s.postRepo.GetByID(ctx, postID, 0); err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound, err)
 	}
 
@@ -77,7 +77,7 @@ func (s *Server) GetComments(c *fiber.Ctx) error {
 
 // UpdateComment updates a comment (only owner)
 func (s *Server) UpdateComment(c *fiber.Ctx) error {
-	ctx := c.Context()
+	ctx := c.UserContext()
 	userID := c.Locals("userID").(uint)
 	commentIDParam := c.Params("commentId")
 	var commentID uint
@@ -119,7 +119,7 @@ func (s *Server) UpdateComment(c *fiber.Ctx) error {
 
 // DeleteComment deletes a comment (owner only)
 func (s *Server) DeleteComment(c *fiber.Ctx) error {
-	ctx := c.Context()
+	ctx := c.UserContext()
 	userID := c.Locals("userID").(uint)
 	commentIDParam := c.Params("commentId")
 	var commentID uint

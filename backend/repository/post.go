@@ -10,14 +10,14 @@ import (
 // PostRepository defines the interface for post data operations
 type PostRepository interface {
 	Create(ctx context.Context, post *models.Post) error
-	GetByID(ctx context.Context, id uint) (*models.Post, error)
-	GetByUserID(ctx context.Context, userID uint, limit, offset int) ([]*models.Post, error)
-	List(ctx context.Context, limit, offset int) ([]*models.Post, error)
-	Search(ctx context.Context, query string, limit, offset int) ([]*models.Post, error)
+	GetByID(ctx context.Context, id uint, currentUserID uint) (*models.Post, error)
+	GetByUserID(ctx context.Context, userID uint, limit, offset int, currentUserID uint) ([]*models.Post, error)
+	List(ctx context.Context, limit, offset int, currentUserID uint) ([]*models.Post, error)
+	Search(ctx context.Context, query string, limit, offset int, currentUserID uint) ([]*models.Post, error)
 	Update(ctx context.Context, post *models.Post) error
 	Delete(ctx context.Context, id uint) error
-	Like(ctx context.Context, id uint) error
-	Unlike(ctx context.Context, id uint) error
+	Like(ctx context.Context, userID, postID uint) error
+	Unlike(ctx context.Context, userID, postID uint) error
 }
 
 // postRepository implements PostRepository
@@ -34,16 +34,18 @@ func (r *postRepository) Create(ctx context.Context, post *models.Post) error {
 	return r.db.WithContext(ctx).Create(post).Error
 }
 
-func (r *postRepository) GetByID(ctx context.Context, id uint) (*models.Post, error) {
+func (r *postRepository) GetByID(ctx context.Context, id uint, currentUserID uint) (*models.Post, error) {
 	var post models.Post
 	err := r.db.WithContext(ctx).Preload("User").First(&post, id).Error
 	if err != nil {
 		return nil, err
 	}
+	// populate comments and likes count
+	r.populatePostDetails(ctx, &post, currentUserID)
 	return &post, nil
 }
 
-func (r *postRepository) GetByUserID(ctx context.Context, userID uint, limit, offset int) ([]*models.Post, error) {
+func (r *postRepository) GetByUserID(ctx context.Context, userID uint, limit, offset int, currentUserID uint) ([]*models.Post, error) {
 	var posts []*models.Post
 	err := r.db.WithContext(ctx).
 		Preload("User").
@@ -52,10 +54,16 @@ func (r *postRepository) GetByUserID(ctx context.Context, userID uint, limit, of
 		Limit(limit).
 		Offset(offset).
 		Find(&posts).Error
+	if err != nil {
+		return posts, err
+	}
+	for _, p := range posts {
+		r.populatePostDetails(ctx, p, currentUserID)
+	}
 	return posts, err
 }
 
-func (r *postRepository) List(ctx context.Context, limit, offset int) ([]*models.Post, error) {
+func (r *postRepository) List(ctx context.Context, limit, offset int, currentUserID uint) ([]*models.Post, error) {
 	var posts []*models.Post
 	err := r.db.WithContext(ctx).
 		Preload("User").
@@ -63,10 +71,16 @@ func (r *postRepository) List(ctx context.Context, limit, offset int) ([]*models
 		Limit(limit).
 		Offset(offset).
 		Find(&posts).Error
+	if err != nil {
+		return posts, err
+	}
+	for _, p := range posts {
+		r.populatePostDetails(ctx, p, currentUserID)
+	}
 	return posts, err
 }
 
-func (r *postRepository) Search(ctx context.Context, query string, limit, offset int) ([]*models.Post, error) {
+func (r *postRepository) Search(ctx context.Context, query string, limit, offset int, currentUserID uint) ([]*models.Post, error) {
 	var posts []*models.Post
 	like := "%" + query + "%"
 	err := r.db.WithContext(ctx).
@@ -76,7 +90,35 @@ func (r *postRepository) Search(ctx context.Context, query string, limit, offset
 		Limit(limit).
 		Offset(offset).
 		Find(&posts).Error
+	if err != nil {
+		return posts, err
+	}
+	for _, p := range posts {
+		r.populatePostDetails(ctx, p, currentUserID)
+	}
 	return posts, err
+}
+
+// populatePostDetails fetches counts for comments and likes, and checks if the post is liked by the current user.
+func (r *postRepository) populatePostDetails(ctx context.Context, p *models.Post, currentUserID uint) {
+	// 1. Get comments count
+	var commentsCount int64
+	r.db.WithContext(ctx).Model(&models.Comment{}).Where("post_id = ?", p.ID).Count(&commentsCount)
+	p.CommentsCount = int(commentsCount)
+
+	// 2. Get likes count
+	var likesCount int64
+	r.db.WithContext(ctx).Model(&models.Like{}).Where("post_id = ?", p.ID).Count(&likesCount)
+	p.LikesCount = int(likesCount)
+
+	// 3. Check if the current user liked the post
+	if currentUserID != 0 {
+		var like models.Like
+		err := r.db.WithContext(ctx).Where("post_id = ? AND user_id = ?", p.ID, currentUserID).First(&like).Error
+		p.Liked = err == nil
+	} else {
+		p.Liked = false
+	}
 }
 
 func (r *postRepository) Update(ctx context.Context, post *models.Post) error {
@@ -87,10 +129,16 @@ func (r *postRepository) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&models.Post{}, id).Error
 }
 
-func (r *postRepository) Like(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Model(&models.Post{}).Where("id = ?", id).Update("likes", gorm.Expr("likes + 1")).Error
+func (r *postRepository) Like(ctx context.Context, userID, postID uint) error {
+	like := models.Like{
+		UserID: userID,
+		PostID: postID,
+	}
+	// Use FirstOrCreate to prevent duplicate likes
+	return r.db.WithContext(ctx).Where(models.Like{UserID: userID, PostID: postID}).FirstOrCreate(&like).Error
 }
 
-func (r *postRepository) Unlike(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Model(&models.Post{}).Where("id = ?", id).Update("likes", gorm.Expr("GREATEST(likes - 1, 0)")).Error
+func (r *postRepository) Unlike(ctx context.Context, userID, postID uint) error {
+	// Delete the like record
+	return r.db.WithContext(ctx).Where("user_id = ? AND post_id = ?", userID, postID).Delete(&models.Like{}).Error
 }

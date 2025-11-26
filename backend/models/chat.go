@@ -30,7 +30,6 @@ type Message struct {
 	Content        string         `gorm:"type:text;not null" json:"content"`
 	MessageType    string         `gorm:"default:'text'" json:"message_type"`  // text, image, file, etc.
 	Metadata       string         `gorm:"type:json" json:"metadata,omitempty"` // For file URLs, image URLs, etc.
-	IsRead         bool           `gorm:"default:false" json:"is_read"`
 	CreatedAt      time.Time      `json:"created_at"`
 	UpdatedAt      time.Time      `json:"updated_at"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`

@@ -1,15 +1,5 @@
 # Quick Reference: API Hooks
 
-## Import
-```typescript
-import { 
-  useSignup, useLogin, useLogout,           // Auth
-  usePosts, usePost, useCreatePost, etc,    // Posts  
-  usePostComments, useCreateComment, etc,   // Comments
-  useMyProfile, useUserProfile, etc         // Users
-} from '@/hooks'
-```
-
 ## Auth Hooks
 
 | Hook | Purpose | Usage |
@@ -53,6 +43,7 @@ import {
 ## Common Patterns
 
 ### Loading State
+
 ```typescript
 const { data, isLoading, error } = usePosts()
 
@@ -62,6 +53,7 @@ return <PostsList posts={data} />
 ```
 
 ### Mutation
+
 ```typescript
 const createPost = useCreatePost()
 
@@ -79,6 +71,7 @@ createPost.mutate({ title, content })
 ```
 
 ### Optimistic UI
+
 ```typescript
 // Likes update instantly, rolls back on error
 const likePost = useLikePost(postId)
@@ -88,6 +81,7 @@ const likePost = useLikePost(postId)
 ```
 
 ### Infinite Scroll
+
 ```typescript
 const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfinitePosts(10)
 
@@ -125,6 +119,7 @@ VITE_API_URL=http://localhost:8080/api
 ## Types
 
 All types exported from `@/api/types`:
+
 - `User`, `Post`, `Comment`
 - `SignupRequest`, `LoginRequest`, `AuthResponse`
 - `CreatePostRequest`, `UpdatePostRequest`

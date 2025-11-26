@@ -1,0 +1,20 @@
+FROM golang:1.25-alpine
+
+WORKDIR /app
+
+# Install dependencies for testing
+RUN apk add --no-cache postgresql-client bash build-base
+
+# Enable CGO for race detection
+ENV CGO_ENABLED=1
+
+# Copy go module files and download dependencies for caching
+COPY backend/go.mod backend/go.sum ./backend/
+RUN cd backend && go mod download
+
+# Copy the rest of the source code. This will be overlayed by the volume mount,
+# but it's good practice to have the code in the image.
+COPY . .
+
+# Default command to run tests, can be overridden
+CMD ["sh", "-c", "cd backend && go test -v ./..."]

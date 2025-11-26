@@ -132,7 +132,7 @@ func Seed(db *gorm.DB) error {
 	log.Printf("✓ Created %d comments", commentsCount)
 
 	// Add some likes to posts
-	likesCount, err := addLikes(db, posts)
+	likesCount, err := addLikes(db, users, posts)
 	if err != nil {
 		return fmt.Errorf("failed to add likes: %w", err)
 	}
@@ -147,6 +147,9 @@ func clearData(db *gorm.DB) error {
 
 	// Delete in correct order to respect foreign key constraints
 	if err := db.Exec("DELETE FROM comments").Error; err != nil {
+		return err
+	}
+	if err := db.Exec("DELETE FROM likes").Error; err != nil {
 		return err
 	}
 	if err := db.Exec("DELETE FROM posts").Error; err != nil {
@@ -198,7 +201,6 @@ func createPosts(db *gorm.DB, users []models.User) ([]models.Post, error) {
 		title    string
 		content  string
 		userID   uint
-		likes    int
 		imageURL string
 	}
 
@@ -216,7 +218,6 @@ func createPosts(db *gorm.DB, users []models.User) ([]models.Post, error) {
 				title:   postTitles[titleIdx],
 				content: postContents[contentIdx],
 				userID:  user.ID,
-				likes:   rand.Intn(50), // Random likes between 0-49
 			}
 
 			// Randomly add image URLs to some posts (30% chance)
@@ -240,7 +241,6 @@ func createPosts(db *gorm.DB, users []models.User) ([]models.Post, error) {
 			Title:    pd.title,
 			Content:  pd.content,
 			UserID:   pd.userID,
-			Likes:    pd.likes,
 			ImageURL: pd.imageURL,
 		}
 
@@ -288,13 +288,47 @@ func createComments(db *gorm.DB, users []models.User, posts []models.Post) (int,
 	return count, nil
 }
 
-func addLikes(db *gorm.DB, posts []models.Post) (int, error) {
+func addLikes(db *gorm.DB, users []models.User, posts []models.Post) (int, error) {
 	count := 0
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	// Already added likes during post creation
-	// This function could be used for a likes table if you implement that feature
+	if len(users) == 0 {
+		return 0, nil
+	}
+
 	for _, post := range posts {
-		count += post.Likes
+		// Each post gets a random number of likes, from 0 to all users
+		numLikes := r.Intn(len(users) + 1)
+		
+		// Shuffle users to get a random subset
+		shuffledUsers := make([]models.User, len(users))
+		copy(shuffledUsers, users)
+		r.Shuffle(len(shuffledUsers), func(i, j int) {
+			shuffledUsers[i], shuffledUsers[j] = shuffledUsers[j], shuffledUsers[i]
+		})
+
+		for i := 0; i < numLikes; i++ {
+			user := shuffledUsers[i]
+
+			// A user cannot like their own post in this seed logic
+			if user.ID == post.UserID {
+				continue
+			}
+
+			like := models.Like{
+				UserID: user.ID,
+				PostID: post.ID,
+			}
+
+			// Use FirstOrCreate to avoid creating duplicate likes if we ever rerun this
+			// on existing data. In this script, it's just for safety.
+			if err := db.Where(models.Like{UserID: user.ID, PostID: post.ID}).FirstOrCreate(&like).Error; err != nil {
+				// We can log the error but continue, as a duplicate like isn't a fatal seed error
+				log.Printf("Could not create like for user %d on post %d: %v", user.ID, post.ID, err)
+				continue
+			}
+			count++
+		}
 	}
 
 	return count, nil

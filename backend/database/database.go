@@ -41,6 +41,7 @@ func Connect(cfg *config.Config) *gorm.DB {
 		&models.User{},
 		&models.Post{},
 		&models.Comment{},
+		&models.Like{},
 		&models.Conversation{},
 		&models.Message{},
 		&models.ConversationParticipant{},

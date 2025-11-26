@@ -13,6 +13,7 @@ tmp/
 *.exe
 *.out
 *.test
+!Dockerfile.test
 
 # Docker
 docker-compose.override.yml

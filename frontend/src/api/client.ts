@@ -1,7 +1,6 @@
 // API Client - centralized HTTP requests with auth handling
 
 import type {
-	ApiError,
 	AuthResponse,
 	Comment,
 	Conversation,
@@ -64,14 +63,37 @@ class ApiClient {
 			headers,
 		});
 
+		// Read response as text first so we can handle empty/non-JSON bodies
+		const text = await response.text();
+
 		if (!response.ok) {
-			const error: ApiError = await response.json().catch(() => ({
-				error: `HTTP ${response.status}: ${response.statusText}`,
-			}));
-			throw new Error(error.error);
+			// Try to parse JSON error body, otherwise use text/status
+			let errMsg = `HTTP ${response.status}: ${response.statusText}`;
+			try {
+				const parsed = text ? JSON.parse(text) : null;
+				if (parsed && typeof parsed === "object" && parsed.error) {
+					errMsg = parsed.error;
+				} else if (parsed && typeof parsed === "string") {
+					errMsg = parsed;
+				}
+			} catch (_) {
+				// not JSON - use text if present
+				if (text) errMsg = text;
+			}
+			throw new Error(errMsg);
 		}
 
-		return response.json();
+		// If response body is empty, return undefined cast to T
+		if (!text) {
+			return undefined as unknown as T;
+		}
+
+		// Try to parse JSON, otherwise return raw text
+		try {
+			return JSON.parse(text) as T;
+		} catch (_) {
+			return text as unknown as T;
+		}
 	}
 
 	// Health
@@ -132,6 +154,12 @@ class ApiClient {
 	async likePost(id: number): Promise<Post> {
 		return this.request(`/posts/${id}/like`, {
 			method: "POST",
+		});
+	}
+
+	async unlikePost(id: number): Promise<Post> {
+		return this.request(`/posts/${id}/like`, {
+			method: "DELETE",
 		});
 	}
 

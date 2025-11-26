@@ -103,6 +103,13 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	auth.Post("/signup", s.Signup)
 	auth.Post("/login", middleware.RateLimit(s.redis, 5, time.Minute), s.Login)
 
+	// Public post routes (browse/search)
+	publicPosts := api.Group("/posts")
+	publicPosts.Get("/", s.GetPosts)
+	publicPosts.Get("/search", s.SearchPosts)
+	publicPosts.Get(":id", s.GetPost)
+	publicPosts.Get(":id/comments", s.GetComments)
+
 	// Protected routes
 	protected := api.Group("", s.AuthRequired())
 
@@ -125,13 +132,6 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	friends.Get("/", s.GetFriends)
 	friends.Get("/status/:userId", s.GetFriendshipStatus)
 	friends.Delete("/:userId", s.RemoveFriend)
-
-	// Public post routes (browse/search)
-	publicPosts := api.Group("/posts")
-	publicPosts.Get("/", s.GetPosts)
-	publicPosts.Get("/search", s.SearchPosts)
-	publicPosts.Get(":id", s.GetPost)
-	publicPosts.Get(":id/comments", s.GetComments)
 
 	// Protected post routes
 	posts := protected.Group("/posts")
@@ -243,6 +243,45 @@ func (s *Server) AuthRequired() fiber.Handler {
 
 		return c.Next()
 	}
+}
+
+// optionalUserID attempts to extract userID from Authorization header but does not enforce it.
+func (s *Server) optionalUserID(c *fiber.Ctx) (uint, bool) {
+	authHeader := c.Get("Authorization")
+	if authHeader == "" {
+		return 0, false
+	}
+
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		return 0, false
+	}
+
+	tokenString := parts[1]
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fiber.NewError(fiber.StatusUnauthorized, "Invalid signing method")
+		}
+		return []byte(s.config.JWTSecret), nil
+	})
+	if err != nil || !token.Valid {
+		return 0, false
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return 0, false
+	}
+
+	sub, ok := claims["sub"].(string)
+	if !ok {
+		return 0, false
+	}
+	userID, err := strconv.ParseUint(sub, 10, 32)
+	if err != nil {
+		return 0, false
+	}
+	return uint(userID), true
 }
 
 // Start starts the server

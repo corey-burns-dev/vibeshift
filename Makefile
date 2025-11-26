@@ -1,18 +1,17 @@
-.PHONY: help dev dev-backend dev-frontend dev-both prod build build-backend build-frontend up down logs logs-backend logs-frontend logs-all clean lint lint-frontend fmt fmt-frontend install env restart check-versions test-api seed
-
 # Variables
-DOCKER_COMPOSE := docker-compose
-GO := go
-PNPM := bun
-GO_PORT ?= 8080
-FRONTEND_PORT ?= 5173
+GO ?= go
+DOCKER_COMPOSE ?= docker compose
+PNPM ?= pnpm
 
-# Color output
-BLUE := \033[0;34m
-GREEN := \033[0;32m
-YELLOW := \033[0;33m
+# Colors
+BLUE := \033[1;34m
+GREEN := \033[1;32m
+YELLOW := \033[1;33m
 NC := \033[0m # No Color
 
+.PHONY: help dev dev-backend dev-frontend dev-both build build-backend build-frontend up down logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions clean test test-api test-up test-down test-backend seed
+
+# Default target
 help:
 	@echo "$(BLUE)╔════════════════════════════════════════════════════════════════╗$(NC)"
 	@echo "$(BLUE)║           Vibeshift - Full Stack Development CLI               ║$(NC)"
@@ -45,6 +44,7 @@ help:
 	@echo "  make install            - 📦 Install frontend dependencies"
 	@echo ""
 	@echo "$(GREEN)Testing:$(NC)"
+	@echo "  make test               - 🧪 Run backend tests"
 	@echo "  make test-api           - 🧪 Test all API endpoints"
 	@echo ""
 	@echo "$(GREEN)Database:$(NC)"
@@ -74,10 +74,8 @@ dev-both: env install
 	@echo "$(BLUE)Starting backend in Docker + frontend locally...$(NC)"
 	@echo "$(YELLOW)Backend will start in background...$(NC)"
 	@$(DOCKER_COMPOSE) up --build app redis postgres -d
-	@sleep 3
 	@echo "$(YELLOW)Frontend starting in foreground...$(NC)"
 	@cd frontend && $(PNPM) dev
-
 
 # Build targets
 build: build-backend build-frontend
@@ -101,8 +99,7 @@ down:
 	$(DOCKER_COMPOSE) down
 
 # Logging
-logs:
-	$(DOCKER_COMPOSE) logs -f app
+logs: logs-backend
 
 logs-backend:
 	$(DOCKER_COMPOSE) logs -f app
@@ -146,8 +143,7 @@ env:
 		echo "$(BLUE)Creating config.yml from config.example.yml...$(NC)"; \
 		cp config.example.yml config.yml; \
 		echo "$(YELLOW)⚠️  Update config.yml with your settings$(NC)"; \
-	fi; \
-	# Generate .env using a helper script (handles yq v3/v4 and sed fallback)
+	fi
 	@./scripts/generate_env.sh
 
 # Utility targets
@@ -159,33 +155,28 @@ check-versions:
 clean:
 	@echo "$(BLUE)Cleaning up containers, volumes, and artifacts...$(NC)"
 	$(DOCKER_COMPOSE) down -v
-	-sudo chmod -R 755 tmp/ 2>/dev/null || true
-	-sudo rm -rf tmp/ 2>/dev/null || true
+	-chmod -R 755 tmp/ 2>/dev/null || true
+	-rm -rf tmp/ 2>/dev/null || true
 	rm -rf frontend/node_modules frontend/dist
 	$(GO) clean
 	@echo "$(GREEN)✓ Cleanup complete$(NC)"
 
 # Testing
+test: test-backend
+
+test-backend:
+	@echo "$(BLUE)Running backend tests...$(NC)"
+	cd backend && $(GO) test ./...
+
 test-api:
 	@echo "$(BLUE)Running API endpoint tests...$(NC)"
-## Testing
-.PHONY: test test-unit test-integration test-coverage test-api
-test:
-	cd backend && go test ./... -v
-
-test-unit:
-	cd backend && go test ./handlers/... -v
-
-test-integration:
-	chmod +x test-api.sh
 	./test-api.sh
 
-test-coverage:
-	cd backend && go test ./... -coverprofile=coverage.out
-	cd backend && go tool cover -html=coverage.out -o coverage.html
-	@echo "Coverage report generated: backend/coverage.html"
+test-up:
+	$(DOCKER_COMPOSE) up -d postgres_test redis
 
-test-api: test-integration
+test-down:
+	$(DOCKER_COMPOSE) down
 
 # Database seeding
 seed:

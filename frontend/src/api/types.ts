@@ -7,6 +7,7 @@ export interface User {
   bio?: string
   avatar?: string
   created_at: string
+  liked?: boolean
   updated_at: string
 }
 
@@ -15,7 +16,9 @@ export interface Post {
   title: string
   content: string
   image_url?: string
-  likes: number
+  likes_count: number
+  liked?: boolean
+  comments_count?: number
   user_id: number
   user?: User
   created_at: string

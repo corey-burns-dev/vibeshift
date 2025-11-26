@@ -113,7 +113,7 @@ export default function Friends() {
     console.log('Sent friend request to user:', friendId)
   }
 
-  const handleRemoveFriend = (friendId: number) => {
+  const _handleRemoveFriend = (friendId: number) => {
     // In a real app, this would make an API call
     console.log('Removed friend:', friendId)
   }
