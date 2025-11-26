@@ -169,6 +169,8 @@ export function useLikePost() {
         ...oldPost,
         ...updatedPost,
       }))
+      // Force refetch to ensure UI is in sync
+      queryClient.invalidateQueries({ queryKey: ['posts', 'infinite'] })
     },
     onError: (error) => {
       handleAuthOrFKError(error)
