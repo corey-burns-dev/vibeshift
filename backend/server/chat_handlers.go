@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"vibeshift/models"
 
 	"github.com/gofiber/fiber/v2"
@@ -170,7 +171,22 @@ func (s *Server) SendMessage(c *fiber.Ctx) error {
 	}
 
 	// Load message with sender info for response
-	// For simplicity, we'll return the message as created
+	message.Sender, _ = s.userRepo.GetByID(ctx, userID)
+
+	// Broadcast message to all participants via Redis pub/sub
+	if s.notifier != nil {
+		messageJSON, err := json.Marshal(map[string]interface{}{
+			"type":            "message",
+			"conversation_id": uint(convID),
+			"user_id":         userID,
+			"username":        message.Sender.Username,
+			"payload":         message,
+		})
+		if err == nil {
+			_ = s.notifier.PublishChatMessage(ctx, uint(convID), string(messageJSON))
+		}
+	}
+
 	return c.Status(fiber.StatusCreated).JSON(message)
 }
 

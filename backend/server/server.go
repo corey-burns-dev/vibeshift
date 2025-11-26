@@ -37,6 +37,7 @@ type Server struct {
 	friendRepo  repository.FriendRepository
 	notifier    *notifications.Notifier
 	hub         *notifications.Hub
+	chatHub     *notifications.ChatHub
 	// Add other repositories as needed
 }
 
@@ -71,6 +72,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	if redisClient != nil {
 		server.notifier = notifications.NewNotifier(redisClient)
 		server.hub = notifications.NewHub()
+		server.chatHub = notifications.NewChatHub()
 	}
 
 	return server, nil
@@ -158,8 +160,9 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	conversations.Get("/:id/messages", s.GetMessages)
 	conversations.Post("/:id/participants", s.AddParticipant)
 
-	// Websocket endpoint (example): client should connect and send auth message first
-	api.Get("/ws", s.WebsocketHandler())
+	// Websocket endpoints
+	api.Get("/ws", s.WebsocketHandler())          // General notifications
+	api.Get("/ws/chat", s.WebSocketChatHandler()) // Real-time chat
 }
 
 // HealthCheck handles health check requests
@@ -309,6 +312,13 @@ func (s *Server) Start() error {
 		go func() {
 			// best-effort wiring; ignores error
 			_ = s.hub.StartWiring(context.Background(), s.notifier)
+		}()
+	}
+
+	// Wire chat hub to Redis subscriber if available
+	if s.chatHub != nil && s.notifier != nil {
+		go func() {
+			_ = s.chatHub.StartWiring(context.Background(), s.notifier)
 		}()
 	}
 

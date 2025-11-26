@@ -30,6 +30,8 @@ type Message struct {
 	Content        string         `gorm:"type:text;not null" json:"content"`
 	MessageType    string         `gorm:"default:'text'" json:"message_type"`  // text, image, file, etc.
 	Metadata       string         `gorm:"type:json" json:"metadata,omitempty"` // For file URLs, image URLs, etc.
+	IsRead         bool           `gorm:"default:false" json:"is_read"`
+	ReadAt         *time.Time     `json:"read_at,omitempty"`
 	CreatedAt      time.Time      `json:"created_at"`
 	UpdatedAt      time.Time      `json:"updated_at"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
@@ -42,4 +44,5 @@ type ConversationParticipant struct {
 	UserID         uint      `gorm:"primaryKey" json:"user_id"`
 	JoinedAt       time.Time `gorm:"autoCreateTime" json:"joined_at"`
 	LastReadAt     time.Time `json:"last_read_at"`
+	UnreadCount    int       `gorm:"default:0" json:"unread_count"`
 }
