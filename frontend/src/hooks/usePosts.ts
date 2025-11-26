@@ -164,11 +164,15 @@ export function useLikePost() {
   return useMutation({
     mutationFn: (postId: number) => apiClient.likePost(postId),
     onSuccess: (updatedPost) => {
+      console.log('Like toggle response:', updatedPost)
       // Update cache with server response, merging with existing data
-      updatePostInCache(queryClient, updatedPost.id, (oldPost) => ({
-        ...oldPost,
-        ...updatedPost,
-      }))
+      updatePostInCache(queryClient, updatedPost.id, (oldPost) => {
+        console.log('Updating cache - old:', oldPost, 'new:', updatedPost)
+        return {
+          ...oldPost,
+          ...updatedPost,
+        }
+      })
       // Force refetch to ensure UI is in sync
       queryClient.invalidateQueries({ queryKey: ['posts', 'infinite'] })
     },
