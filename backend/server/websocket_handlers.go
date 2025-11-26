@@ -26,13 +26,19 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 			// Try to read auth message
 			_, msg, err := conn.ReadMessage()
 			if err != nil {
-				conn.Close()
+				if cerr := conn.Close(); cerr != nil {
+					log.Printf("websocket close error: %v", cerr)
+				}
 				return
 			}
 			txt := string(msg)
 			if !strings.HasPrefix(txt, "auth:") {
-				conn.WriteMessage(websocket.TextMessage, []byte(`{"error":"first message must be auth:token"}`))
-				conn.Close()
+				if werr := conn.WriteMessage(websocket.TextMessage, []byte(`{"error":"first message must be auth:token"}`)); werr != nil {
+					log.Printf("websocket write error: %v", werr)
+				}
+				if cerr := conn.Close(); cerr != nil {
+					log.Printf("websocket close error: %v", cerr)
+				}
 				return
 			}
 			token = strings.TrimPrefix(txt, "auth:")
@@ -41,8 +47,12 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 		// Validate JWT token
 		userID, username, err := s.validateChatToken(token)
 		if err != nil {
-			conn.WriteMessage(websocket.TextMessage, []byte(`{"error":"invalid token"}`))
-			conn.Close()
+			if werr := conn.WriteMessage(websocket.TextMessage, []byte(`{"error":"invalid token"}`)); werr != nil {
+				log.Printf("websocket write error: %v", werr)
+			}
+			if cerr := conn.Close(); cerr != nil {
+				log.Printf("websocket close error: %v", cerr)
+			}
 			return
 		}
 
@@ -60,7 +70,9 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 			Payload: map[string]interface{}{"user_id": userID, "username": username},
 		}
 		welcomeJSON, _ := json.Marshal(welcomeMsg)
-		conn.WriteMessage(websocket.TextMessage, welcomeJSON)
+		if werr := conn.WriteMessage(websocket.TextMessage, welcomeJSON); werr != nil {
+			log.Printf("failed to send welcome message: %v", werr)
+		}
 
 		// Message handling loop
 		for {
@@ -95,7 +107,9 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 
 							// Publish presence
 							if s.notifier != nil {
-								s.notifier.PublishPresence(ctx, convID, userID, username, "online")
+								if perr := s.notifier.PublishPresence(ctx, convID, userID, username, "online"); perr != nil {
+									log.Printf("publish presence (online) error: %v", perr)
+								}
 							}
 
 							// Send confirmation
@@ -105,7 +119,9 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 								Payload:        map[string]interface{}{"conversation_id": convID},
 							}
 							responseJSON, _ := json.Marshal(response)
-							conn.WriteMessage(websocket.TextMessage, responseJSON)
+							if werr := conn.WriteMessage(websocket.TextMessage, responseJSON); werr != nil {
+								log.Printf("websocket write error sending joined confirmation: %v", werr)
+							}
 						}
 					}
 				}
@@ -119,7 +135,9 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 
 						// Publish presence
 						if s.notifier != nil {
-							s.notifier.PublishPresence(ctx, convID, userID, username, "offline")
+							if perr := s.notifier.PublishPresence(ctx, convID, userID, username, "offline"); perr != nil {
+								log.Printf("publish presence (offline) error: %v", perr)
+							}
 						}
 					}
 				}
@@ -131,7 +149,9 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 					isTyping, _ := incomingMsg["is_typing"].(bool)
 
 					if s.notifier != nil && s.isUserParticipant(ctx, userID, convID) {
-						s.notifier.PublishTypingIndicator(ctx, convID, userID, username, isTyping)
+						if perr := s.notifier.PublishTypingIndicator(ctx, convID, userID, username, isTyping); perr != nil {
+							log.Printf("publish typing indicator error: %v", perr)
+						}
 					}
 				}
 
@@ -167,7 +187,9 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 								Username:       username,
 								Payload:        message,
 							})
-							s.notifier.PublishChatMessage(ctx, convID, string(messageJSON))
+							if perr := s.notifier.PublishChatMessage(ctx, convID, string(messageJSON)); perr != nil {
+								log.Printf("publish chat message error: %v", perr)
+							}
 						}
 					}
 				}
@@ -177,7 +199,9 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 				if convIDFloat, ok := incomingMsg["conversation_id"].(float64); ok {
 					convID := uint(convIDFloat)
 					if s.isUserParticipant(ctx, userID, convID) {
-						s.chatRepo.UpdateLastRead(ctx, convID, userID)
+						if uerr := s.chatRepo.UpdateLastRead(ctx, convID, userID); uerr != nil {
+							log.Printf("update last read error: %v", uerr)
+						}
 
 						// Broadcast read receipt
 						if s.notifier != nil {
@@ -189,7 +213,9 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 								Payload:        map[string]interface{}{"conversation_id": convID, "user_id": userID},
 							}
 							readJSON, _ := json.Marshal(readMsg)
-							s.notifier.PublishChatMessage(ctx, convID, string(readJSON))
+							if perr := s.notifier.PublishChatMessage(ctx, convID, string(readJSON)); perr != nil {
+								log.Printf("publish read receipt error: %v", perr)
+							}
 						}
 					}
 				}

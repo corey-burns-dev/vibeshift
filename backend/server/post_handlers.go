@@ -216,17 +216,18 @@ func (s *Server) LikePost(c *fiber.Ctx) error {
 	var existingLike models.Like
 	err = s.db.WithContext(ctx).Where("user_id = ? AND post_id = ?", userID, uint(postID)).First(&existingLike).Error
 
-	if err == nil {
+	switch err {
+	case nil:
 		// Already liked, so unlike it
-		if err := s.postRepo.Unlike(ctx, userID, uint(postID)); err != nil {
-			return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+		if uerr := s.postRepo.Unlike(ctx, userID, uint(postID)); uerr != nil {
+			return models.RespondWithError(c, fiber.StatusInternalServerError, uerr)
 		}
-	} else if err == gorm.ErrRecordNotFound {
+	case gorm.ErrRecordNotFound:
 		// Not liked, so like it
-		if err := s.postRepo.Like(ctx, userID, uint(postID)); err != nil {
-			return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+		if lerr := s.postRepo.Like(ctx, userID, uint(postID)); lerr != nil {
+			return models.RespondWithError(c, fiber.StatusInternalServerError, lerr)
 		}
-	} else {
+	default:
 		// Some other error
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}

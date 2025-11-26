@@ -118,8 +118,18 @@ fmt:
 
 lint:
 	@echo "$(BLUE)Linting Go code with golangci-lint...$(NC)"
-	cd backend && golangci-lint run
+	@if ! command -v golangci-lint >/dev/null 2>&1; then \
+		echo "$(YELLOW)golangci-lint not found. Run 'make install-linter' to install it.$(NC)"; \
+		exit 1; \
+	fi
+	cd backend && golangci-lint run --no-config ./...
 	@echo "$(GREEN)✓ Linting passed$(NC)"
+
+.PHONY: install-linter
+install-linter:
+	@echo "$(BLUE)Installing golangci-lint...$(NC)"
+	@GO111MODULE=on go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	@echo "$(GREEN)✓ golangci-lint installed (ensure $HOME/go/bin is in your PATH)$(NC)"
 
 fmt-frontend:
 	@echo "$(BLUE)Formatting frontend code with Biome...$(NC)"

@@ -34,17 +34,17 @@ func (s *Server) SendFriendRequest(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 	if existing != nil {
-		if existing.Status == models.FriendshipStatusAccepted {
+		switch existing.Status {
+		case models.FriendshipStatusAccepted:
 			return models.RespondWithError(c, fiber.StatusConflict,
 				models.NewValidationError("You are already friends"))
-		} else if existing.Status == models.FriendshipStatusPending {
+		case models.FriendshipStatusPending:
 			if existing.RequesterID == userID {
 				return models.RespondWithError(c, fiber.StatusConflict,
 					models.NewValidationError("Friend request already sent"))
-			} else {
-				return models.RespondWithError(c, fiber.StatusConflict,
-					models.NewValidationError("You already have a pending friend request from this user"))
 			}
+			return models.RespondWithError(c, fiber.StatusConflict,
+				models.NewValidationError("You already have a pending friend request from this user"))
 		}
 	}
 

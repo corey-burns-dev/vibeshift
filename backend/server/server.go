@@ -330,11 +330,17 @@ func (s *Server) Start() error {
 func (s *Server) Shutdown(ctx context.Context) error {
 	// Close database connection
 	if sqlDB, err := s.db.DB(); err == nil {
-		sqlDB.Close()
+		if cerr := sqlDB.Close(); cerr != nil {
+			log.Printf("error closing sql DB: %v", cerr)
+		}
 	}
 
 	// Close Redis connection
-	s.redis.Close()
+	if s.redis != nil {
+		if rerr := s.redis.Close(); rerr != nil {
+			log.Printf("error closing redis: %v", rerr)
+		}
+	}
 
 	log.Println("Server shutdown complete")
 	return nil

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -47,20 +48,30 @@ func (s *Server) WebsocketHandler() fiber.Handler {
 		// Expect the client to send an auth message first in the form: "user:<id>"
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			conn.Close()
+			if cerr := conn.Close(); cerr != nil {
+				log.Printf("websocket read auth error, close failed: %v", cerr)
+			}
 			return
 		}
 		txt := string(msg)
 		if !strings.HasPrefix(txt, "user:") {
-			conn.WriteMessage(websocket.TextMessage, []byte("first message must be auth: user:<id>"))
-			conn.Close()
+			if werr := conn.WriteMessage(websocket.TextMessage, []byte("first message must be auth: user:<id>")); werr != nil {
+				log.Printf("websocket write error: %v", werr)
+			}
+			if cerr := conn.Close(); cerr != nil {
+				log.Printf("websocket close error: %v", cerr)
+			}
 			return
 		}
 		idStr := strings.TrimPrefix(txt, "user:")
 		id64, err := strconv.ParseUint(idStr, 10, 32)
 		if err != nil {
-			conn.WriteMessage(websocket.TextMessage, []byte("invalid user id"))
-			conn.Close()
+			if werr := conn.WriteMessage(websocket.TextMessage, []byte("invalid user id")); werr != nil {
+				log.Printf("websocket write error: %v", werr)
+			}
+			if cerr := conn.Close(); cerr != nil {
+				log.Printf("websocket close error: %v", cerr)
+			}
 			return
 		}
 		uid := uint(id64)
@@ -78,7 +89,9 @@ func (s *Server) WebsocketHandler() fiber.Handler {
 				break
 			}
 			if s.notifier != nil {
-				_ = s.notifier.PublishUser(context.Background(), uid, string(msg))
+				if perr := s.notifier.PublishUser(context.Background(), uid, string(msg)); perr != nil {
+					log.Printf("failed to publish user message: %v", perr)
+				}
 			}
 		}
 	})

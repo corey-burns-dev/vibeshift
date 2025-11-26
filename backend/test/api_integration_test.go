@@ -94,7 +94,9 @@ func TestFullAPIFlow(t *testing.T) {
 			Email string `json:"email"`
 		} `json:"user"`
 	}
-	json.NewDecoder(res.Body).Decode(&signupResp)
+	if err := json.NewDecoder(res.Body).Decode(&signupResp); err != nil {
+		t.Fatalf("decode signup response: %v", err)
+	}
 	assert.NotEmpty(t, signupResp.Token)
 	userID := signupResp.User.ID
 	token := signupResp.Token
@@ -116,7 +118,9 @@ func TestFullAPIFlow(t *testing.T) {
 		var loginResp struct {
 			Token string `json:"token"`
 		}
-		json.NewDecoder(res.Body).Decode(&loginResp)
+		if err := json.NewDecoder(res.Body).Decode(&loginResp); err != nil {
+			t.Fatalf("decode login response: %v", err)
+		}
 		assert.NotEmpty(t, loginResp.Token)
 	})
 
@@ -141,7 +145,9 @@ func TestFullAPIFlow(t *testing.T) {
 			Title   string `json:"title"`
 			Content string `json:"content"`
 		}
-		json.NewDecoder(res.Body).Decode(&postResp)
+		if err := json.NewDecoder(res.Body).Decode(&postResp); err != nil {
+			t.Fatalf("decode post response: %v", err)
+		}
 		assert.Equal(t, "Test Post", postResp.Title)
 		postID = postResp.ID
 	})
@@ -186,7 +192,9 @@ func TestFullAPIFlow(t *testing.T) {
 			ID      uint   `json:"id"`
 			Content string `json:"content"`
 		}
-		json.NewDecoder(res.Body).Decode(&commentResp)
+		if err := json.NewDecoder(res.Body).Decode(&commentResp); err != nil {
+			t.Fatalf("decode comment response: %v", err)
+		}
 		assert.Equal(t, "This is a test comment.", commentResp.Content)
 	})
 
