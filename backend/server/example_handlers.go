@@ -1,17 +1,15 @@
+// Package server contains HTTP and WebSocket handlers for the application's API endpoints.
 package server
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 
-	"vibeshift/cache"
 	"vibeshift/models"
 )
 
@@ -23,21 +21,13 @@ func (s *Server) GetUserCached(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusBadRequest, models.NewValidationError("invalid user id"))
 	}
 	var user models.User
-	key := fmt.Sprintf("user:profile:%d", id64)
 
-	// CacheAside will try Redis first and call the fetch closure on miss.
-	err = cache.CacheAside(context.Background(), key, &user, 5*time.Minute, func() error {
-		u, err := s.userRepo.GetByID(context.Background(), uint(id64))
-		if err != nil {
-			return err
-		}
-		// copy into dest
-		user = *u
-		return nil
-	})
+	u, err := s.userRepo.GetByID(context.Background(), uint(id64))
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, models.NewInternalError(err))
 	}
+	// copy into dest
+	user = *u
 	return c.JSON(user)
 }
 

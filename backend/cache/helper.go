@@ -1,8 +1,10 @@
+// Package cache provides Redis caching utilities for the application.
 package cache
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -11,11 +13,11 @@ import (
 // GetJSON attempts to get the key from Redis and unmarshal into dest.
 // Returns (true, nil) if found and unmarshaled, (false, nil) if not found.
 func GetJSON(ctx context.Context, key string, dest any) (bool, error) {
-	if Client == nil {
+	if client == nil {
 		return false, nil
 	}
-	s, err := Client.Get(ctx, key).Result()
-	if err == redis.Nil {
+	s, err := client.Get(ctx, key).Result()
+	if errors.Is(err, redis.Nil) {
 		return false, nil
 	}
 	if err != nil {
@@ -29,19 +31,21 @@ func GetJSON(ctx context.Context, key string, dest any) (bool, error) {
 
 // SetJSON marshals v and sets the key with TTL.
 func SetJSON(ctx context.Context, key string, v any, ttl time.Duration) error {
-	if Client == nil {
+	if client == nil {
 		return nil
 	}
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
 	}
-	return Client.Set(ctx, key, b, ttl).Err()
+	return client.Set(ctx, key, b, ttl).Err()
 }
 
-// CacheAside tries Redis first, on miss it calls fetch (which should populate dest),
+// Aside tries Redis first, on miss it calls fetch (which should populate dest),
 // then stores the result in Redis with ttl. fetch must write into dest.
-func CacheAside(ctx context.Context, key string, dest any, ttl time.Duration, fetch func() error) (err error) {
+// Aside tries Redis first, on miss it calls fetch (which should populate dest),
+// then stores the result in Redis with ttl. fetch must write into dest.
+func Aside(ctx context.Context, key string, dest any, ttl time.Duration, fetch func() error) (err error) {
 	found, err := GetJSON(ctx, key, dest)
 	if err != nil {
 		return err

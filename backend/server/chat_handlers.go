@@ -1,3 +1,4 @@
+// Package server contains HTTP and WebSocket handlers for the application's API endpoints.
 package server
 
 import (
@@ -17,10 +18,10 @@ func (s *Server) CreateConversation(c *fiber.Ctx) error {
 		IsGroup        bool   `json:"is_group,omitempty"`
 		ParticipantIDs []uint `json:"participant_ids"`
 	}
-	if err := c.BodyParser(&req); err != nil {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid request body"))
-	}
+	       if parseErr := c.BodyParser(&req); parseErr != nil {
+		       return models.RespondWithError(c, fiber.StatusBadRequest,
+			       models.NewValidationError("Invalid request body"))
+	       }
 
 	// For group chats, name is required
 	if req.IsGroup && req.Name == "" {
@@ -83,7 +84,7 @@ func (s *Server) GetConversation(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
 	convID, err := c.ParamsInt("id")
-	if err != nil {
+	if err != nil || convID < 0 {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
 			models.NewValidationError("Invalid conversation ID"))
 	}
@@ -115,7 +116,7 @@ func (s *Server) SendMessage(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
 	convID, err := c.ParamsInt("id")
-	if err != nil {
+	if err != nil || convID < 0 {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
 			models.NewValidationError("Invalid conversation ID"))
 	}
@@ -125,10 +126,10 @@ func (s *Server) SendMessage(c *fiber.Ctx) error {
 		MessageType string `json:"message_type,omitempty"`
 		Metadata    string `json:"metadata,omitempty"`
 	}
-	if err := c.BodyParser(&req); err != nil {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid request body"))
-	}
+	       if parseErr := c.BodyParser(&req); parseErr != nil {
+		       return models.RespondWithError(c, fiber.StatusBadRequest,
+			       models.NewValidationError("Invalid request body"))
+	       }
 
 	if req.Content == "" {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
@@ -195,7 +196,7 @@ func (s *Server) GetMessages(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
 	convID, err := c.ParamsInt("id")
-	if err != nil {
+	if err != nil || convID < 0 {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
 			models.NewValidationError("Invalid conversation ID"))
 	}
@@ -235,7 +236,7 @@ func (s *Server) AddParticipant(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
 	convID, err := c.ParamsInt("id")
-	if err != nil {
+	if err != nil || convID < 0 {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
 			models.NewValidationError("Invalid conversation ID"))
 	}
@@ -243,10 +244,10 @@ func (s *Server) AddParticipant(c *fiber.Ctx) error {
 	var req struct {
 		UserID uint `json:"user_id"`
 	}
-	if err := c.BodyParser(&req); err != nil {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid request body"))
-	}
+	       if parseErr := c.BodyParser(&req); parseErr != nil {
+		       return models.RespondWithError(c, fiber.StatusBadRequest,
+			       models.NewValidationError("Invalid request body"))
+	       }
 
 	// Check if current user is participant and conversation is group
 	conv, err := s.chatRepo.GetConversation(ctx, uint(convID))

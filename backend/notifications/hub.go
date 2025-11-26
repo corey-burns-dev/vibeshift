@@ -1,3 +1,4 @@
+// Package notifications provides real-time notification delivery and management.
 package notifications
 
 import (
@@ -16,6 +17,7 @@ type Hub struct {
 	conns map[uint]map[*websocket.Conn]struct{}
 }
 
+// NewHub creates a new Hub instance for managing notifications.
 func NewHub() *Hub {
 	return &Hub{conns: make(map[uint]map[*websocket.Conn]struct{})}
 }

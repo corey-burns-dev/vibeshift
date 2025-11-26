@@ -1,3 +1,4 @@
+// Command main is the entry point for the Vibeshift backend server.
 package main
 
 import (

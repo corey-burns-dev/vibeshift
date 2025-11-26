@@ -1,6 +1,8 @@
+// Package server contains HTTP and WebSocket handlers for the application's API endpoints.
 package server
 
 import (
+	"errors"
 	"vibeshift/models"
 
 	"github.com/gofiber/fiber/v2"
@@ -93,6 +95,10 @@ func (s *Server) GetPost(c *fiber.Ctx) error {
 	}
 	userID, _ := s.optionalUserID(c)
 
+	if id < 0 {
+		return models.RespondWithError(c, fiber.StatusBadRequest,
+			models.NewValidationError("Invalid post ID"))
+	}
 	post, err := s.postRepo.GetByID(ctx, uint(id), userID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound, err)
@@ -114,6 +120,10 @@ func (s *Server) GetUserPosts(c *fiber.Ctx) error {
 	offset := c.QueryInt("offset", 0)
 	currentUserID, _ := s.optionalUserID(c)
 
+	if userIDParam < 0 {
+		return models.RespondWithError(c, fiber.StatusBadRequest,
+			models.NewValidationError("Invalid user ID"))
+	}
 	posts, err := s.postRepo.GetByUserID(ctx, uint(userIDParam), limit, offset, currentUserID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
@@ -137,13 +147,19 @@ func (s *Server) UpdatePost(c *fiber.Ctx) error {
 		Content  string `json:"content"`
 		ImageURL string `json:"image_url,omitempty"`
 	}
-	if err := c.BodyParser(&req); err != nil {
+	parseErr := c.BodyParser(&req)
+	if parseErr != nil {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
 			models.NewValidationError("Invalid request body"))
 	}
 
 	// Get existing post
-	post, err := s.postRepo.GetByID(ctx, uint(postID), userID)
+	if postID < 0 {
+		return models.RespondWithError(c, fiber.StatusBadRequest,
+			models.NewValidationError("Invalid post ID"))
+	}
+	var post *models.Post
+	post, err = s.postRepo.GetByID(ctx, uint(postID), userID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound, err)
 	}
@@ -183,6 +199,10 @@ func (s *Server) DeletePost(c *fiber.Ctx) error {
 	}
 
 	// Get existing post to check ownership
+	if postID < 0 {
+		return models.RespondWithError(c, fiber.StatusBadRequest,
+			models.NewValidationError("Invalid post ID"))
+	}
 	post, err := s.postRepo.GetByID(ctx, uint(postID), userID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound, err)
@@ -207,7 +227,7 @@ func (s *Server) LikePost(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
 	postID, err := c.ParamsInt("id")
-	if err != nil {
+	if err != nil || postID < 0 {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
 			models.NewValidationError("Invalid post ID"))
 	}
@@ -216,13 +236,13 @@ func (s *Server) LikePost(c *fiber.Ctx) error {
 	var existingLike models.Like
 	err = s.db.WithContext(ctx).Where("user_id = ? AND post_id = ?", userID, uint(postID)).First(&existingLike).Error
 
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		// Already liked, so unlike it
 		if uerr := s.postRepo.Unlike(ctx, userID, uint(postID)); uerr != nil {
 			return models.RespondWithError(c, fiber.StatusInternalServerError, uerr)
 		}
-	case gorm.ErrRecordNotFound:
+	case errors.Is(err, gorm.ErrRecordNotFound):
 		// Not liked, so like it
 		if lerr := s.postRepo.Like(ctx, userID, uint(postID)); lerr != nil {
 			return models.RespondWithError(c, fiber.StatusInternalServerError, lerr)
@@ -245,13 +265,13 @@ func (s *Server) UnlikePost(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
 	postID, err := c.ParamsInt("id")
-	if err != nil {
+	if err != nil || postID < 0 {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
 			models.NewValidationError("Invalid post ID"))
 	}
 
-	if err := s.postRepo.Unlike(ctx, userID, uint(postID)); err != nil {
-		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	if unlikeErr := s.postRepo.Unlike(ctx, userID, uint(postID)); unlikeErr != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, unlikeErr)
 	}
 
 	// Return updated post

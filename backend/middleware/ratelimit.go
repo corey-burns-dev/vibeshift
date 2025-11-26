@@ -1,3 +1,4 @@
+// Package middleware provides authentication and authorization middleware for the application.
 package middleware
 
 import (

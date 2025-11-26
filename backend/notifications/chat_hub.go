@@ -1,3 +1,4 @@
+// Package notifications provides real-time notification delivery and management.
 package notifications
 
 import (

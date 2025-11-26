@@ -1,11 +1,14 @@
+// Package config provides application configuration loading and management.
 package config
 
 import (
+	"errors"
 	"log"
 
 	"github.com/spf13/viper"
 )
 
+// Config holds application configuration values loaded from file or environment variables.
 type Config struct {
 	JWTSecret  string `mapstructure:"JWT_SECRET"`
 	Port       string `mapstructure:"PORT"`
@@ -17,6 +20,7 @@ type Config struct {
 	RedisURL   string `mapstructure:"REDIS_URL"`
 }
 
+// LoadConfig loads application configuration from file and environment variables.
 func LoadConfig() *Config {
 	viper.AddConfigPath(".")
 	viper.SetConfigName("config")
@@ -24,7 +28,8 @@ func LoadConfig() *Config {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+		var notFoundErr viper.ConfigFileNotFoundError
+		if errors.As(err, &notFoundErr) {
 			log.Println("Config file not found; using environment variables and defaults")
 		} else {
 			log.Fatalf("Error reading config file: %s", err)

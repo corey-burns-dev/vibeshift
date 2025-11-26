@@ -1,3 +1,4 @@
+// Package models contains data structures for the application's domain models.
 package models
 
 import (
@@ -6,14 +7,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// FriendshipStatus represents the status of a friendship request.
 type FriendshipStatus string
 
 const (
-	FriendshipStatusPending  FriendshipStatus = "pending"
+	// FriendshipStatusPending indicates a pending friendship request.
+	FriendshipStatusPending FriendshipStatus = "pending"
+	// FriendshipStatusAccepted indicates an accepted friendship request.
 	FriendshipStatusAccepted FriendshipStatus = "accepted"
-	FriendshipStatusBlocked  FriendshipStatus = "blocked"
+	// FriendshipStatusBlocked indicates a blocked friendship.
+	FriendshipStatusBlocked FriendshipStatus = "blocked"
 )
 
+// Friendship represents a friendship relationship between two users.
 type Friendship struct {
 	ID          uint             `gorm:"primaryKey" json:"id"`
 	RequesterID uint             `gorm:"not null" json:"requester_id"`
@@ -33,7 +39,7 @@ func (Friendship) TableName() string {
 }
 
 // BeforeCreate ensures RequesterID < AddresseeID for consistent ordering
-func (f *Friendship) BeforeCreate(tx *gorm.DB) error {
+func (f *Friendship) BeforeCreate(_ *gorm.DB) error {
 	if f.RequesterID > f.AddresseeID {
 		f.RequesterID, f.AddresseeID = f.AddresseeID, f.RequesterID
 	}

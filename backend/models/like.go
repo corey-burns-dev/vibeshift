@@ -1,3 +1,4 @@
+// Package models contains data structures for the application's domain models.
 package models
 
 import (

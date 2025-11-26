@@ -1,7 +1,9 @@
+// Package repository provides data access layer implementations for the application.
 package repository
 
 import (
 	"context"
+	"errors"
 	"vibeshift/models"
 
 	"gorm.io/gorm"
@@ -40,7 +42,7 @@ func (r *friendRepository) Create(ctx context.Context, friendship *models.Friend
 func (r *friendRepository) GetByID(ctx context.Context, id uint) (*models.Friendship, error) {
 	var friendship models.Friendship
 	if err := r.db.WithContext(ctx).Preload("Requester").Preload("Addressee").First(&friendship, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, models.NewNotFoundError("Friendship", id)
 		}
 		return nil, models.NewInternalError(err)
@@ -58,7 +60,7 @@ func (r *friendRepository) GetFriendshipBetweenUsers(ctx context.Context, userID
 		Preload("Requester").
 		Preload("Addressee").
 		First(&friendship).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil // No friendship exists
 		}
 		return nil, models.NewInternalError(err)

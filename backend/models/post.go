@@ -1,3 +1,4 @@
+// Package models contains data structures for the application's domain models.
 package models
 
 import (
@@ -6,6 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// Post represents a post in the Vibeshift application.
 type Post struct {
 	ID       uint   `gorm:"primaryKey" json:"id"`
 	Title    string `gorm:"not null" json:"title"`

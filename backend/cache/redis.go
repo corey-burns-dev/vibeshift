@@ -1,3 +1,4 @@
+// Package cache provides Redis caching utilities for the application.
 package cache
 
 import (
@@ -8,10 +9,11 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-var Client *redis.Client
+var client *redis.Client
 
+// InitRedis initializes the Redis client with the given address.
 func InitRedis(addr string) {
-	Client = redis.NewClient(&redis.Options{
+	client = redis.NewClient(&redis.Options{
 		Addr: addr,
 	})
 
@@ -19,14 +21,15 @@ func InitRedis(addr string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := Client.Ping(ctx).Err(); err != nil {
+	if err := client.Ping(ctx).Err(); err != nil {
 		log.Printf("Redis connection warning: %v (continuing without cache)", err)
-		Client = nil
+		client = nil
 	} else {
 		log.Println("Redis connected successfully")
 	}
 }
 
+// GetClient returns the current Redis client instance.
 func GetClient() *redis.Client {
-	return Client
+	return client
 }

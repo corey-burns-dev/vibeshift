@@ -1,3 +1,4 @@
+// Package notifications provides real-time notification delivery and management.
 package notifications
 
 import (
@@ -14,6 +15,7 @@ type Notifier struct {
 	rdb *redis.Client
 }
 
+// NewNotifier creates a new Notifier instance using the provided Redis client.
 func NewNotifier(rdb *redis.Client) *Notifier {
 	return &Notifier{rdb: rdb}
 }
@@ -109,12 +111,12 @@ func (n *Notifier) StartChatSubscriber(
 	return nil
 }
 
-// Helper to derive channel name
+// UserChannel derives the Redis channel name for a user.
 func UserChannel(userID uint) string {
 	return "notifications:user:" + strconv.FormatUint(uint64(userID), 10)
 }
 
-// Helper to derive conversation channel name
+// ConversationChannel derives the Redis channel name for a conversation.
 func ConversationChannel(conversationID uint) string {
 	return "chat:conv:" + strconv.FormatUint(uint64(conversationID), 10)
 }

@@ -1,3 +1,4 @@
+// Package database handles database connections and migrations.
 package database
 
 import (
@@ -11,8 +12,12 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+// DB is the global database connection instance.
 var DB *gorm.DB
 
+// Connect opens a database connection using the provided configuration and performs
+// automatic migration for the application models, then returns the gorm DB instance.
+// Connect establishes a database connection using the provided configuration.
 func Connect(cfg *config.Config) *gorm.DB {
 	var err error
 

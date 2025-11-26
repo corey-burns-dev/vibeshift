@@ -1,3 +1,4 @@
+// Package middleware provides authentication and authorization middleware for the application.
 package middleware
 
 import (
@@ -10,10 +11,12 @@ import (
 
 var cfg *config.Config
 
+// InitMiddleware initializes authentication middleware with the given config.
 func InitMiddleware(c *config.Config) {
 	cfg = c
 }
 
+// AuthRequired is a middleware that enforces authentication for protected routes.
 func AuthRequired(c *fiber.Ctx) error {
 	authHeader := c.Get("Authorization")
 	if authHeader == "" {

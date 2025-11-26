@@ -1,3 +1,4 @@
+// Package server contains HTTP and WebSocket handlers for the application's API endpoints.
 package server
 
 import (

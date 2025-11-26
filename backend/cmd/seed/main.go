@@ -1,3 +1,4 @@
+// Command main runs the database seeder for Vibeshift.
 package main
 
 import (

@@ -1,3 +1,4 @@
+// Package server contains HTTP and WebSocket handlers for the application's API endpoints.
 package server
 
 import (
@@ -17,21 +18,25 @@ func (s *Server) SendFriendRequest(c *fiber.Ctx) error {
 	}
 
 	// Cannot send friend request to yourself
+	if targetUserID < 0 {
+		return models.RespondWithError(c, fiber.StatusBadRequest,
+			models.NewValidationError("Invalid user ID"))
+	}
 	if userID == uint(targetUserID) {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
 			models.NewValidationError("Cannot send friend request to yourself"))
 	}
 
 	// Check if target user exists
-	_, err = s.userRepo.GetByID(ctx, uint(targetUserID))
-	if err != nil {
-		return models.RespondWithError(c, fiber.StatusNotFound, err)
+	_, getUserErr := s.userRepo.GetByID(ctx, uint(targetUserID))
+	if getUserErr != nil {
+		return models.RespondWithError(c, fiber.StatusNotFound, getUserErr)
 	}
 
 	// Check if friendship already exists
-	existing, err := s.friendRepo.GetFriendshipBetweenUsers(ctx, userID, uint(targetUserID))
-	if err != nil {
-		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	existing, getFriendshipErr := s.friendRepo.GetFriendshipBetweenUsers(ctx, userID, uint(targetUserID))
+	if getFriendshipErr != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, getFriendshipErr)
 	}
 	if existing != nil {
 		switch existing.Status {
@@ -55,8 +60,8 @@ func (s *Server) SendFriendRequest(c *fiber.Ctx) error {
 		Status:      models.FriendshipStatusPending,
 	}
 
-	if err := s.friendRepo.Create(ctx, friendship); err != nil {
-		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	if createErr := s.friendRepo.Create(ctx, friendship); createErr != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, createErr)
 	}
 
 	// Load full friendship for response
@@ -99,7 +104,7 @@ func (s *Server) AcceptFriendRequest(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
 	requestID, err := c.ParamsInt("requestId")
-	if err != nil {
+	if err != nil || requestID < 0 {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
 			models.NewValidationError("Invalid request ID"))
 	}
@@ -123,8 +128,8 @@ func (s *Server) AcceptFriendRequest(c *fiber.Ctx) error {
 	}
 
 	// Accept the request
-	if err := s.friendRepo.UpdateStatus(ctx, uint(requestID), models.FriendshipStatusAccepted); err != nil {
-		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	if updateErr := s.friendRepo.UpdateStatus(ctx, uint(requestID), models.FriendshipStatusAccepted); updateErr != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, updateErr)
 	}
 
 	// Get updated friendship
@@ -141,7 +146,7 @@ func (s *Server) RejectFriendRequest(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
 	requestID, err := c.ParamsInt("requestId")
-	if err != nil {
+	if err != nil || requestID < 0 {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
 			models.NewValidationError("Invalid request ID"))
 	}
@@ -165,8 +170,8 @@ func (s *Server) RejectFriendRequest(c *fiber.Ctx) error {
 	}
 
 	// Delete the request (reject)
-	if err := s.friendRepo.Delete(ctx, uint(requestID)); err != nil {
-		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	if deleteErr := s.friendRepo.Delete(ctx, uint(requestID)); deleteErr != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, deleteErr)
 	}
 
 	return c.SendStatus(fiber.StatusOK)
@@ -195,21 +200,21 @@ func (s *Server) GetFriendshipStatus(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
 	targetUserID, err := c.ParamsInt("userId")
-	if err != nil {
+	if err != nil || targetUserID < 0 {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
 			models.NewValidationError("Invalid user ID"))
 	}
 
 	// Check if target user exists
-	_, err = s.userRepo.GetByID(ctx, uint(targetUserID))
-	if err != nil {
-		return models.RespondWithError(c, fiber.StatusNotFound, err)
+	_, getUserErr := s.userRepo.GetByID(ctx, uint(targetUserID))
+	if getUserErr != nil {
+		return models.RespondWithError(c, fiber.StatusNotFound, getUserErr)
 	}
 
 	// Get friendship status
-	friendship, err := s.friendRepo.GetFriendshipBetweenUsers(ctx, userID, uint(targetUserID))
-	if err != nil {
-		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	friendship, getFriendshipErr := s.friendRepo.GetFriendshipBetweenUsers(ctx, userID, uint(targetUserID))
+	if getFriendshipErr != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, getFriendshipErr)
 	}
 
 	status := "none"
@@ -228,15 +233,15 @@ func (s *Server) RemoveFriend(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
 	targetUserID, err := c.ParamsInt("userId")
-	if err != nil {
+	if err != nil || targetUserID < 0 {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
 			models.NewValidationError("Invalid user ID"))
 	}
 
 	// Check if friendship exists and is accepted
-	friendship, err := s.friendRepo.GetFriendshipBetweenUsers(ctx, userID, uint(targetUserID))
-	if err != nil {
-		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	friendship, getFriendshipErr := s.friendRepo.GetFriendshipBetweenUsers(ctx, userID, uint(targetUserID))
+	if getFriendshipErr != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, getFriendshipErr)
 	}
 	if friendship == nil || friendship.Status != models.FriendshipStatusAccepted {
 		return models.RespondWithError(c, fiber.StatusNotFound,
@@ -244,8 +249,8 @@ func (s *Server) RemoveFriend(c *fiber.Ctx) error {
 	}
 
 	// Remove friendship
-	if err := s.friendRepo.RemoveFriendship(ctx, userID, uint(targetUserID)); err != nil {
-		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	if removeErr := s.friendRepo.RemoveFriendship(ctx, userID, uint(targetUserID)); removeErr != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, removeErr)
 	}
 
 	return c.SendStatus(fiber.StatusOK)

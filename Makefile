@@ -122,7 +122,7 @@ lint:
 		echo "$(YELLOW)golangci-lint not found. Run 'make install-linter' to install it.$(NC)"; \
 		exit 1; \
 	fi
-	cd backend && golangci-lint run --no-config ./...
+	cd backend && golangci-lint run ./...
 	@echo "$(GREEN)✓ Linting passed$(NC)"
 
 .PHONY: install-linter

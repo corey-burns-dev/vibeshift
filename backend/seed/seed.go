@@ -1,3 +1,4 @@
+// Package seed provides database seeding utilities for development and testing.
 package seed
 
 import (
@@ -193,8 +194,9 @@ func createUsers(db *gorm.DB) ([]models.User, error) {
 	return users, nil
 }
 
+// WARNING: This uses math/rand for deterministic seeding of test data. Do not use for cryptographic purposes.
 func createPosts(db *gorm.DB, users []models.User) ([]models.Post, error) {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	r := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404
 
 	// Create a slice to hold all post data before inserting
 	type postData struct {
@@ -256,9 +258,10 @@ func createPosts(db *gorm.DB, users []models.User) ([]models.Post, error) {
 	return posts, nil
 }
 
+// WARNING: This uses math/rand for deterministic seeding of test data. Do not use for cryptographic purposes.
 func createComments(db *gorm.DB, users []models.User, posts []models.Post) (int, error) {
 	count := 0
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	r := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404
 
 	// Each post gets 1-5 comments
 	for _, post := range posts {
@@ -288,9 +291,10 @@ func createComments(db *gorm.DB, users []models.User, posts []models.Post) (int,
 	return count, nil
 }
 
+// WARNING: This uses math/rand for deterministic seeding of test data. Do not use for cryptographic purposes.
 func addLikes(db *gorm.DB, users []models.User, posts []models.Post) (int, error) {
 	count := 0
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	r := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404
 
 	if len(users) == 0 {
 		return 0, nil
@@ -299,7 +303,7 @@ func addLikes(db *gorm.DB, users []models.User, posts []models.Post) (int, error
 	for _, post := range posts {
 		// Each post gets a random number of likes, from 0 to all users
 		numLikes := r.Intn(len(users) + 1)
-		
+
 		// Shuffle users to get a random subset
 		shuffledUsers := make([]models.User, len(users))
 		copy(shuffledUsers, users)

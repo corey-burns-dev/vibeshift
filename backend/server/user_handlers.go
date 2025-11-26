@@ -1,3 +1,4 @@
+// Package server contains HTTP and WebSocket handlers for the application's API endpoints.
 package server
 
 import (
@@ -29,7 +30,7 @@ func (s *Server) GetAllUsers(c *fiber.Ctx) error {
 func (s *Server) GetUserProfile(c *fiber.Ctx) error {
 	ctx := c.Context()
 	id, err := c.ParamsInt("id")
-	if err != nil {
+	if err != nil || id < 0 {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
 			models.NewValidationError("Invalid user ID"))
 	}

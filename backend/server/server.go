@@ -1,3 +1,4 @@
+// Package server contains HTTP and WebSocket handlers for the application's API endpoints.
 package server
 
 import (
@@ -214,11 +215,11 @@ func (s *Server) AuthRequired() fiber.Handler {
 		}
 
 		// Validate issuer and audience
-		if issuer, ok := claims["iss"].(string); !ok || issuer != "vibeshift-api" {
+		if issuer, issuerOk := claims["iss"].(string); !issuerOk || issuer != "vibeshift-api" {
 			return models.RespondWithError(c, fiber.StatusUnauthorized,
 				models.NewUnauthorizedError("Invalid token issuer"))
 		}
-		if audience, ok := claims["aud"].(string); !ok || audience != "vibeshift-client" {
+		if audience, audienceOk := claims["aud"].(string); !audienceOk || audience != "vibeshift-client" {
 			return models.RespondWithError(c, fiber.StatusUnauthorized,
 				models.NewUnauthorizedError("Invalid token audience"))
 		}
@@ -327,7 +328,7 @@ func (s *Server) Start() error {
 }
 
 // Shutdown gracefully shuts down the server
-func (s *Server) Shutdown(ctx context.Context) error {
+func (s *Server) Shutdown(_ context.Context) error {
 	// Close database connection
 	if sqlDB, err := s.db.DB(); err == nil {
 		if cerr := sqlDB.Close(); cerr != nil {

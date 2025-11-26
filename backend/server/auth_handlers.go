@@ -1,3 +1,4 @@
+// Package server contains HTTP and WebSocket handlers for the application's API endpoints.
 package server
 
 import (
@@ -64,8 +65,8 @@ func (s *Server) Signup(c *fiber.Ctx) error {
 		Password: string(hashedPassword),
 	}
 
-	if err := s.userRepo.Create(c.Context(), user); err != nil {
-		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	if createErr := s.userRepo.Create(c.Context(), user); createErr != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, createErr)
 	}
 
 	// Generate JWT token
@@ -113,7 +114,7 @@ func (s *Server) Login(c *fiber.Ctx) error {
 	}
 
 	// Compare password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+	if cmpErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); cmpErr != nil {
 		return models.RespondWithError(c, fiber.StatusUnauthorized,
 			models.NewUnauthorizedError("Invalid credentials"))
 	}

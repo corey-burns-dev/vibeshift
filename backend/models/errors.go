@@ -1,6 +1,8 @@
+// Package models contains data structures for the application's domain models.
 package models
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
@@ -31,7 +33,7 @@ func (e *AppError) Unwrap() error {
 	return e.Err
 }
 
-// Predefined error constructors
+// NewNotFoundError creates a new not found error for the given resource.
 func NewNotFoundError(resource string, id interface{}) *AppError {
 	return &AppError{
 		Code:    "NOT_FOUND",
@@ -39,6 +41,7 @@ func NewNotFoundError(resource string, id interface{}) *AppError {
 	}
 }
 
+// NewValidationError creates a new validation error with the given message.
 func NewValidationError(message string) *AppError {
 	return &AppError{
 		Code:    "VALIDATION_ERROR",
@@ -46,6 +49,7 @@ func NewValidationError(message string) *AppError {
 	}
 }
 
+// NewUnauthorizedError creates a new unauthorized error with the given message.
 func NewUnauthorizedError(message string) *AppError {
 	return &AppError{
 		Code:    "UNAUTHORIZED",
@@ -53,6 +57,7 @@ func NewUnauthorizedError(message string) *AppError {
 	}
 }
 
+// NewInternalError creates a new internal error wrapping the given error.
 func NewInternalError(err error) *AppError {
 	return &AppError{
 		Code:    "INTERNAL_ERROR",
@@ -61,11 +66,11 @@ func NewInternalError(err error) *AppError {
 	}
 }
 
-// respondWithError creates a standardized error response
+// RespondWithError creates a standardized error response
 func RespondWithError(c *fiber.Ctx, status int, err error) error {
 	var response ErrorResponse
-
-	if appErr, ok := err.(*AppError); ok {
+	var appErr *AppError
+	if errors.As(err, &appErr) {
 		response = ErrorResponse{
 			Error: appErr.Message,
 			Code:  appErr.Code,
@@ -78,6 +83,5 @@ func RespondWithError(c *fiber.Ctx, status int, err error) error {
 			Error: err.Error(),
 		}
 	}
-
 	return c.Status(status).JSON(response)
 }

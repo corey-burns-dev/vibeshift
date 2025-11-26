@@ -1,3 +1,4 @@
+// Package test contains integration and API tests for the application.
 package test
 
 import (
@@ -49,6 +50,9 @@ func TestSignupAndLogin(t *testing.T) {
 		t.Fatalf("app.Test signup error: %v", err)
 	}
 	assert.Equal(t, 201, res.StatusCode)
+	if cerr := res.Body.Close(); cerr != nil {
+		t.Fatalf("error closing response body: %v", cerr)
+	}
 
 	// Login
 	loginBody := map[string]string{
@@ -63,6 +67,9 @@ func TestSignupAndLogin(t *testing.T) {
 		t.Fatalf("app.Test login error: %v", err)
 	}
 	assert.Equal(t, 200, res.StatusCode)
+	if cerr := res.Body.Close(); cerr != nil {
+		t.Fatalf("error closing response body: %v", cerr)
+	}
 }
 
 func TestFullAPIFlow(t *testing.T) {
@@ -86,7 +93,6 @@ func TestFullAPIFlow(t *testing.T) {
 		t.Fatalf("app.Test signup error: %v", err)
 	}
 	assert.Equal(t, 201, res.StatusCode)
-
 	var signupResp struct {
 		Token string `json:"token"`
 		User  struct {
@@ -95,7 +101,13 @@ func TestFullAPIFlow(t *testing.T) {
 		} `json:"user"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&signupResp); err != nil {
+		if cerr := res.Body.Close(); cerr != nil {
+			t.Fatalf("error closing response body: %v", cerr)
+		}
 		t.Fatalf("decode signup response: %v", err)
+	}
+	if cerr := res.Body.Close(); cerr != nil {
+		t.Fatalf("error closing response body: %v", cerr)
 	}
 	assert.NotEmpty(t, signupResp.Token)
 	userID := signupResp.User.ID
@@ -119,7 +131,13 @@ func TestFullAPIFlow(t *testing.T) {
 			Token string `json:"token"`
 		}
 		if err := json.NewDecoder(res.Body).Decode(&loginResp); err != nil {
+			if cerr := res.Body.Close(); cerr != nil {
+				t.Fatalf("error closing response body: %v", cerr)
+			}
 			t.Fatalf("decode login response: %v", err)
+		}
+		if cerr := res.Body.Close(); cerr != nil {
+			t.Fatalf("error closing response body: %v", cerr)
 		}
 		assert.NotEmpty(t, loginResp.Token)
 	})
@@ -146,7 +164,13 @@ func TestFullAPIFlow(t *testing.T) {
 			Content string `json:"content"`
 		}
 		if err := json.NewDecoder(res.Body).Decode(&postResp); err != nil {
+			if cerr := res.Body.Close(); cerr != nil {
+				t.Fatalf("error closing response body: %v", cerr)
+			}
 			t.Fatalf("decode post response: %v", err)
+		}
+		if cerr := res.Body.Close(); cerr != nil {
+			t.Fatalf("error closing response body: %v", cerr)
 		}
 		assert.Equal(t, "Test Post", postResp.Title)
 		postID = postResp.ID
@@ -161,6 +185,9 @@ func TestFullAPIFlow(t *testing.T) {
 			t.Fatalf("app.Test like post error: %v", err)
 		}
 		assert.Equal(t, 200, res.StatusCode)
+		if cerr := res.Body.Close(); cerr != nil {
+			t.Fatalf("error closing response body: %v", cerr)
+		}
 	})
 
 	// --- Unlike Post ---
@@ -172,6 +199,9 @@ func TestFullAPIFlow(t *testing.T) {
 			t.Fatalf("app.Test unlike post error: %v", err)
 		}
 		assert.Equal(t, 200, res.StatusCode)
+		if cerr := res.Body.Close(); cerr != nil {
+			t.Fatalf("error closing response body: %v", cerr)
+		}
 	})
 
 	// --- Create Comment ---
@@ -193,7 +223,13 @@ func TestFullAPIFlow(t *testing.T) {
 			Content string `json:"content"`
 		}
 		if err := json.NewDecoder(res.Body).Decode(&commentResp); err != nil {
+			if cerr := res.Body.Close(); cerr != nil {
+				t.Fatalf("error closing response body: %v", cerr)
+			}
 			t.Fatalf("decode comment response: %v", err)
+		}
+		if cerr := res.Body.Close(); cerr != nil {
+			t.Fatalf("error closing response body: %v", cerr)
 		}
 		assert.Equal(t, "This is a test comment.", commentResp.Content)
 	})
@@ -206,6 +242,9 @@ func TestFullAPIFlow(t *testing.T) {
 			t.Fatalf("app.Test get comments error: %v", err)
 		}
 		assert.Equal(t, 200, res.StatusCode)
+		if cerr := res.Body.Close(); cerr != nil {
+			t.Fatalf("error closing response body: %v", cerr)
+		}
 	})
 
 	// --- Get Posts ---
@@ -216,6 +255,9 @@ func TestFullAPIFlow(t *testing.T) {
 			t.Fatalf("app.Test get posts error: %v", err)
 		}
 		assert.Equal(t, 200, res.StatusCode)
+		if cerr := res.Body.Close(); cerr != nil {
+			t.Fatalf("error closing response body: %v", cerr)
+		}
 	})
 
 	// --- Get User Profile ---
@@ -227,6 +269,9 @@ func TestFullAPIFlow(t *testing.T) {
 			t.Fatalf("app.Test get user profile error: %v", err)
 		}
 		assert.Equal(t, 200, res.StatusCode)
+		if cerr := res.Body.Close(); cerr != nil {
+			t.Fatalf("error closing response body: %v", cerr)
+		}
 	})
 }
 

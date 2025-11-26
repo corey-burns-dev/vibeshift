@@ -1,3 +1,4 @@
+// Package server contains HTTP and WebSocket handlers for the application's API endpoints.
 package server
 
 import (
@@ -27,7 +28,7 @@ func (s *Server) CreateComment(c *fiber.Ctx) error {
 	var req struct {
 		Content string `json:"content"`
 	}
-	if err := c.BodyParser(&req); err != nil {
+	if parseErr := c.BodyParser(&req); parseErr != nil {
 		return models.RespondWithError(c, fiber.StatusBadRequest, models.NewValidationError("Invalid request body"))
 	}
 	if req.Content == "" {
@@ -97,7 +98,7 @@ func (s *Server) UpdateComment(c *fiber.Ctx) error {
 	var req struct {
 		Content string `json:"content"`
 	}
-	if err := c.BodyParser(&req); err != nil {
+	if parseErr := c.BodyParser(&req); parseErr != nil {
 		return models.RespondWithError(c, fiber.StatusBadRequest, models.NewValidationError("Invalid request body"))
 	}
 	if req.Content == "" {
@@ -105,8 +106,8 @@ func (s *Server) UpdateComment(c *fiber.Ctx) error {
 	}
 
 	comment.Content = req.Content
-	if err := s.commentRepo.Update(ctx, comment); err != nil {
-		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	if updateErr := s.commentRepo.Update(ctx, comment); updateErr != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, updateErr)
 	}
 
 	updated, err := s.commentRepo.GetByID(ctx, comment.ID)

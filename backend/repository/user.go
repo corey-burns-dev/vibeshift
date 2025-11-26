@@ -1,7 +1,9 @@
+// Package repository provides data access layer implementations for the application.
 package repository
 
 import (
 	"context"
+	"errors"
 	"vibeshift/models"
 
 	"gorm.io/gorm"
@@ -31,7 +33,7 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 func (r *userRepository) GetByID(ctx context.Context, id uint) (*models.User, error) {
 	var user models.User
 	if err := r.db.WithContext(ctx).Preload("Posts").First(&user, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, models.NewNotFoundError("User", id)
 		}
 		return nil, models.NewInternalError(err)
@@ -42,7 +44,7 @@ func (r *userRepository) GetByID(ctx context.Context, id uint) (*models.User, er
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
 	if err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil // Return nil for not found, not an error
 		}
 		return nil, models.NewInternalError(err)
@@ -53,7 +55,7 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*models.
 func (r *userRepository) GetByUsername(ctx context.Context, username string) (*models.User, error) {
 	var user models.User
 	if err := r.db.WithContext(ctx).Where("username = ?", username).First(&user).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, models.NewInternalError(err)
