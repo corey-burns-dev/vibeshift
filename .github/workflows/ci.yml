@@ -60,12 +60,11 @@ jobs:
           REDIS_URL: localhost:6379 # Tests might fail if Redis is needed too
         run: go test -v ./...
 
-      # We will enable this after configuring golangci-lint
-      # - name: Run Linter
-      #   uses: golangci/golangci-lint-action@v4
-      #   with:
-      #     version: latest
-      #     working-directory: backend
+      - name: Run Linter
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          working-directory: backend
 
   frontend-check:
     name: Frontend Check

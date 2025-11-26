@@ -117,8 +117,8 @@ fmt:
 	@echo "$(GREEN)✓ Code formatted$(NC)"
 
 lint:
-	@echo "$(BLUE)Linting Go code...$(NC)"
-	cd backend && $(GO) vet ./...
+	@echo "$(BLUE)Linting Go code with golangci-lint...$(NC)"
+	cd backend && golangci-lint run
 	@echo "$(GREEN)✓ Linting passed$(NC)"
 
 fmt-frontend:
