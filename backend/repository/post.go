@@ -142,6 +142,6 @@ func (r *postRepository) Like(ctx context.Context, userID, postID uint) error {
 }
 
 func (r *postRepository) Unlike(ctx context.Context, userID, postID uint) error {
-	// Delete the like record
-	return r.db.WithContext(ctx).Where("user_id = ? AND post_id = ?", userID, postID).Delete(&models.Like{}).Error
+	// Hard delete the like record (not soft delete)
+	return r.db.WithContext(ctx).Unscoped().Where("user_id = ? AND post_id = ?", userID, postID).Delete(&models.Like{}).Error
 }
