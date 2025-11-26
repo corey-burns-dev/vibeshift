@@ -130,26 +130,15 @@ func (r *postRepository) Delete(ctx context.Context, id uint) error {
 }
 
 func (r *postRepository) Like(ctx context.Context, userID, postID uint) error {
-	// Check if like already exists
-	var existingLike models.Like
-	err := r.db.WithContext(ctx).Where("user_id = ? AND post_id = ?", userID, postID).First(&existingLike).Error
-
-	// If like already exists, return success (idempotent operation)
-	if err == nil {
-		return nil
-	}
-
-	// If error is not "record not found", return the error
-	if err != gorm.ErrRecordNotFound {
-		return err
-	}
-
-	// Create new like
-	like := models.Like{
-		UserID: userID,
-		PostID: postID,
-	}
-	return r.db.WithContext(ctx).Create(&like).Error
+	// Use INSERT ... ON CONFLICT DO NOTHING to handle race conditions
+	// This is atomic and prevents duplicate key errors
+	result := r.db.WithContext(ctx).Exec(
+		`INSERT INTO likes (user_id, post_id, created_at) 
+		 VALUES (?, ?, NOW()) 
+		 ON CONFLICT (user_id, post_id) DO NOTHING`,
+		userID, postID,
+	)
+	return result.Error
 }
 
 func (r *postRepository) Unlike(ctx context.Context, userID, postID uint) error {
