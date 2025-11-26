@@ -500,7 +500,7 @@ export default function Posts() {
                       variant={post.liked ? 'default' : 'ghost'}
                       size="sm"
                       onClick={() => handleLikeToggle(post)}
-                      disabled={!isAuthenticated}
+                      disabled={!isAuthenticated || likePostMutation.isPending}
                       aria-label={`Like post by ${post.user?.username}`}
                     >
                       <Heart className="w-4 h-4 mr-2" />
