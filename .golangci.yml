@@ -1,0 +1,68 @@
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck      # Check for unchecked errors
+    - gosimple      # Simplify code
+    - govet         # Vet examines Go source code
+    - ineffassign   # Detect ineffectual assignments
+    - staticcheck   # Staticcheck is a go vet on steroids
+    - unused        # Check for unused code
+    - gofmt         # Check formatting
+    - goimports     # Check imports
+    - misspell      # Check for misspelled words
+    - revive        # Fast, configurable, extensible, flexible, and beautiful linter
+    - gosec         # Security checker
+    - bodyclose     # Check HTTP response body is closed
+    - noctx         # Finds sending http request without context.Context
+    - errorlint     # Find code that will cause problems with Go 1.13+ error wrapping
+    - gocritic      # Provides diagnostics that check for bugs, performance and style issues
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  
+  govet:
+    check-shadowing: true
+    enable-all: true
+  
+  revive:
+    rules:
+      - name: exported
+        disabled: false
+      - name: unexported-return
+        disabled: false
+      - name: var-naming
+        disabled: false
+  
+  gosec:
+    excludes:
+      - G104 # Audit errors not checked - covered by errcheck
+  
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gosec
+        - errcheck
+    
+    # Exclude known false positives
+    - linters:
+        - staticcheck
+      text: "SA1019:" # Ignore deprecation warnings for now
+  
+  max-issues-per-linter: 0
+  max-same-issues: 0
