@@ -100,6 +100,37 @@ var (
 		"I tried this and it worked perfectly. Thanks!",
 		"One of the best explanations I've seen on this topic.",
 	}
+
+	conversationNames = []string{
+		"General",
+		"Movies",
+		"Music",
+		"Television",
+		"Games",
+		"Fitness",
+		"Hobbies",
+		"Social",
+		"Sports",
+		"Technology",
+	}
+
+	chatMessages = []string{
+		"Hey everyone! How's it going?",
+		"Just finished an amazing workout!",
+		"Anyone watch the game last night?",
+		"Loving this new music release 🎵",
+		"Have you seen the latest episode?",
+		"Just beat the final boss! 🎮",
+		"Who's up for grabbing coffee?",
+		"This is my new favorite hobby!",
+		"Great discussion everyone!",
+		"Can't wait for the weekend!",
+		"That's awesome! Love your enthusiasm ❤️",
+		"Thanks for the recommendation!",
+		"This place is amazing!",
+		"When are we doing this again?",
+		"Already counting down to next time!",
+	}
 )
 
 // Seed populates the database with test data
@@ -138,6 +169,20 @@ func Seed(db *gorm.DB) error {
 		return fmt.Errorf("failed to add likes: %w", err)
 	}
 	log.Printf("✓ Added %d likes", likesCount)
+
+	// Create conversations (chat rooms)
+	conversations, err := createConversations(db, users)
+	if err != nil {
+		return fmt.Errorf("failed to create conversations: %w", err)
+	}
+	log.Printf("✓ Created %d conversations", len(conversations))
+
+	// Create messages in conversations
+	messagesCount, err := createMessages(db, users, conversations)
+	if err != nil {
+		return fmt.Errorf("failed to create messages: %w", err)
+	}
+	log.Printf("✓ Created %d messages", messagesCount)
 
 	log.Println("🎉 Database seeding completed successfully!")
 	return nil
@@ -332,6 +377,80 @@ func addLikes(db *gorm.DB, users []models.User, posts []models.Post) (int, error
 				continue
 			}
 			count++
+		}
+	}
+
+	return count, nil
+}
+
+// createConversations creates 10 chat rooms (conversations)
+func createConversations(db *gorm.DB, users []models.User) ([]models.Conversation, error) {
+	conversations := make([]models.Conversation, 0, len(conversationNames))
+
+	if len(users) == 0 {
+		return conversations, nil
+	}
+
+	for _, name := range conversationNames {
+		conversation := models.Conversation{
+			Name:      name,
+			IsGroup:   true,
+			CreatedBy: users[0].ID,
+			Avatar:    fmt.Sprintf("https://api.dicebear.com/7.x/avataaars/svg?seed=%s", name),
+		}
+
+		// Create the conversation
+		if err := db.Create(&conversation).Error; err != nil {
+			return nil, err
+		}
+
+		// Add all users as participants
+		for _, user := range users {
+			if err := db.Model(&conversation).Association("Participants").Append(&user); err != nil {
+				log.Printf("Failed to add participant %d to conversation %s: %v", user.ID, name, err)
+			}
+		}
+
+		conversations = append(conversations, conversation)
+	}
+
+	return conversations, nil
+}
+
+// createMessages adds some test messages to conversations
+// WARNING: This uses math/rand for deterministic seeding of test data. Do not use for cryptographic purposes.
+func createMessages(db *gorm.DB, users []models.User, conversations []models.Conversation) (int, error) {
+	count := 0
+	r := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404
+
+	if len(users) == 0 || len(conversations) == 0 {
+		return 0, nil
+	}
+
+	// Add 5-15 messages to each conversation
+	for _, conv := range conversations {
+		numMessages := r.Intn(11) + 5 // 5-15 messages per conversation
+
+		for i := 0; i < numMessages; i++ {
+			// Pick a random user as the sender
+			userIdx := r.Intn(len(users))
+			messageIdx := r.Intn(len(chatMessages))
+
+			message := models.Message{
+				ConversationID: conv.ID,
+				SenderID:       users[userIdx].ID,
+				Content:        chatMessages[messageIdx],
+				MessageType:    "text",
+				Metadata:       "{}", // Valid JSON object
+			}
+
+			if err := db.Create(&message).Error; err != nil {
+				return count, err
+			}
+			count++
+
+			// Add a small random delay to create more realistic timestamps
+			time.Sleep(time.Millisecond * time.Duration(r.Intn(50)))
 		}
 	}
 
