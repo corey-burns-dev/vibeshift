@@ -1,7 +1,7 @@
 # Variables
 GO ?= go
 DOCKER_COMPOSE ?= docker compose
-PNPM ?= pnpm
+BUN ?= bun
 
 # Colors
 BLUE := \033[1;34m
@@ -60,22 +60,22 @@ help:
 # Development targets
 dev: env
 	@echo "$(BLUE)Starting full stack development environment...$(NC)"
-	$(DOCKER_COMPOSE) up --build
+	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) up --build
 
 dev-backend: env
 	@echo "$(BLUE)Starting backend services (Go, Redis, Postgres)...$(NC)"
-	$(DOCKER_COMPOSE) up --build app redis postgres
+	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) up --build app redis postgres
 
 dev-frontend: install
 	@echo "$(BLUE)Starting frontend dev server...$(NC)"
-	cd frontend && $(PNPM) dev
+	cd frontend && $(BUN) --bun vite --host
 
 dev-both: env install
 	@echo "$(BLUE)Starting backend in Docker + frontend locally...$(NC)"
 	@echo "$(YELLOW)Backend will start in background...$(NC)"
-	@$(DOCKER_COMPOSE) up --build app redis postgres -d
+	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) up --build app redis postgres -d
 	@echo "$(YELLOW)Frontend starting in foreground...$(NC)"
-	@cd frontend && $(PNPM) dev
+	@cd frontend && $(BUN) --bun vite --host
 
 # Build targets
 build: build-backend build-frontend
@@ -92,7 +92,7 @@ build-frontend:
 # Container management
 up:
 	@echo "$(BLUE)Starting services in background...$(NC)"
-	$(DOCKER_COMPOSE) up -d
+	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) up -d
 
 down:
 	@echo "$(BLUE)Stopping all services...$(NC)"
@@ -133,18 +133,18 @@ install-linter:
 
 fmt-frontend:
 	@echo "$(BLUE)Formatting frontend code with Biome...$(NC)"
-	cd frontend && $(PNPM) run format:write
+	cd frontend && $(BUN) --bun biome format --write .
 	@echo "$(GREEN)✓ Frontend code formatted$(NC)"
 
 lint-frontend:
 	@echo "$(BLUE)Linting frontend code with Biome...$(NC)"
-	cd frontend && $(PNPM) run lint:fix
+	cd frontend && $(BUN) --bun biome check --write .
 	@echo "$(GREEN)✓ Frontend linting passed$(NC)"
 
 # Frontend dependencies
 install:
 	@echo "$(BLUE)Installing frontend dependencies...$(NC)"
-	cd frontend && $(PNPM) install
+	cd frontend && $(BUN) install
 	@echo "$(GREEN)✓ Dependencies installed$(NC)"
 
 # Swagger documentation

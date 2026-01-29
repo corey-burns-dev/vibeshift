@@ -8,7 +8,7 @@ echo "Starting services..."
 $COMPOSE_CMD up -d --build
 
 echo "Waiting for backend health..."
-until curl -fsS http://localhost:8080/health >/dev/null 2>&1; do
+until curl -fsS http://localhost:8375/health >/dev/null 2>&1; do
   printf '.'; sleep 1
 done
 echo " backend healthy"
@@ -21,7 +21,7 @@ echo " frontend ready"
 
 echo "Testing frontend fetches backend via proxy"
 curl -fsS http://localhost:5173/ -o /dev/null
-curl -fsS http://localhost:8080/health | jq .
+curl -fsS http://localhost:8375/health | jq .
 
 echo "Integration E2E checks passed"
 

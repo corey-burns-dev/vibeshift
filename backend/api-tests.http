@@ -2,7 +2,7 @@
 ### VS Code REST Client Extension Required
 ### https://marketplace.visualstudio.com/items?itemName=humao.rest-client
 
-@baseUrl = http://localhost:8080/api
+@baseUrl = http://localhost:8375/api
 @token = 
 @userId = 
 @postId = 

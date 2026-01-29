@@ -37,7 +37,7 @@ func LoadConfig() *Config {
 	}
 
 	// Set default values
-	viper.SetDefault("PORT", "8080")
+	viper.SetDefault("PORT", "8375")
 	viper.SetDefault("DB_HOST", "localhost")
 	viper.SetDefault("DB_PORT", "5432")
 	viper.SetDefault("DB_USER", "user")

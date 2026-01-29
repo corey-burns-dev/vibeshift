@@ -1,6 +1,6 @@
 // User Hooks - using TanStack Query
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../api/client'
 import type { UpdateProfileRequest, User } from '../api/types'
 
@@ -21,17 +21,18 @@ export function useMyProfile() {
     queryFn: () => apiClient.getMyProfile(),
     retry: (failureCount, error) => {
       // Don't retry on auth errors
+      const err = error as Error
       const isAuthError =
-        error?.message?.includes('401') ||
-        error?.message?.includes('403') ||
-        error?.message?.includes('Unauthorized') ||
-        error?.message?.includes('Forbidden')
+        err?.message?.includes('401') ||
+        err?.message?.includes('403') ||
+        err?.message?.includes('Unauthorized') ||
+        err?.message?.includes('Forbidden')
       return !isAuthError && failureCount < 2
     },
     // Use cached data as initial data
     initialData: cachedUser ? cachedUser : undefined,
     // Keep previous data while fetching new data
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -127,11 +128,12 @@ export function useValidateToken() {
         return true
       } catch (error) {
         // If health check fails with auth error, token is invalid
+        const err = error as Error
         const isAuthError =
-          error?.message?.includes('401') ||
-          error?.message?.includes('403') ||
-          error?.message?.includes('Unauthorized') ||
-          error?.message?.includes('Forbidden')
+          err?.message?.includes('401') ||
+          err?.message?.includes('403') ||
+          err?.message?.includes('Unauthorized') ||
+          err?.message?.includes('Forbidden')
         if (isAuthError) {
           // Clear invalid token
           localStorage.removeItem('token')
@@ -144,6 +146,6 @@ export function useValidateToken() {
     },
     enabled: !!localStorage.getItem('token'),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   })
 }

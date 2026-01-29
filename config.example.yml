@@ -2,7 +2,7 @@
 # Copy this file to config.yml and adjust the values as needed.
 
 # Server port
-PORT: "8080"
+PORT: "8375"
 
 # Database connection
 DB_HOST: "localhost"

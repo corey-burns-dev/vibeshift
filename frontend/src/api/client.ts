@@ -20,7 +20,7 @@ import type {
   User,
 } from './types'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8375/api'
 
 class ApiClient {
   private baseUrl: string
@@ -201,6 +201,14 @@ class ApiClient {
     if (params?.limit !== undefined) query.set('limit', params.limit.toString())
     const queryString = query.toString() ? `?${query.toString()}` : ''
     return this.request(`/users${queryString}`)
+  }
+
+  async getFriends(params?: PaginationParams): Promise<User[]> {
+    const query = new URLSearchParams()
+    if (params?.offset !== undefined) query.set('offset', params.offset.toString())
+    if (params?.limit !== undefined) query.set('limit', params.limit.toString())
+    const queryString = query.toString() ? `?${query.toString()}` : ''
+    return this.request(`/friends${queryString}`)
   }
 
   async getMyProfile(): Promise<User> {

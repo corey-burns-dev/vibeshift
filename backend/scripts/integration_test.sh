@@ -2,7 +2,7 @@
 set -euo pipefail
 
 COMPOSE_FILE="compose.yml"
-PORT="${GO_PORT:-8080}"
+PORT="${GO_PORT:-8375}"
 RETRIES=60
 
 # Prefer the classic docker-compose binary, fall back to the Docker CLI 'compose' plugin.

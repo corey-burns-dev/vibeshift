@@ -76,6 +76,17 @@ const suggestedFriends = [
   },
 ]
 
+interface Friend {
+  id: number
+  name: string
+  username: string
+  avatar: string
+  status?: string
+  lastSeen?: string
+  mutualFriends?: number
+  reason?: string
+}
+
 export default function Friends() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState('friends')
@@ -123,7 +134,7 @@ export default function Friends() {
     showActions = true,
     actions,
   }: {
-    friend: any
+    friend: Friend
     showActions?: boolean
     actions?: React.ReactNode
   }) => (

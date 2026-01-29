@@ -1,16 +1,19 @@
-### development Dockerfile for frontend (run vite dev server)
-FROM node:24.11.0-alpine3.21
+### development Dockerfile for frontend (Bun + Vite dev server)
+### Using official Bun image for better dependency handling and reproducibility
+FROM oven/bun:latest
 WORKDIR /app
 
-# Install required packages for Bun installation
-RUN apk add --no-cache curl bash
+# Copy lockfile and package.json first (dependency layer caching)
+COPY bun.lock package.json ./
 
-# Install Bun
-RUN curl -fsSL https://bun.sh/install | bash && \
-  mv ~/.bun/bin/bun /usr/local/bin/
+# Install dependencies using Bun with frozen lockfile for reproducibility
+# Bun will automatically use bun.lock to ensure consistent versions across environments
+RUN bun install --frozen
 
-COPY package.json bun.lockb* ./
-RUN bun install
+# Copy application source (node_modules excluded via .dockerignore)
 COPY . ./
+
 EXPOSE 5173
+
+# Run Vite dev server with Bun
 CMD ["bun", "--bun", "vite", "--host"]

@@ -16,7 +16,7 @@ Object.defineProperty(window, 'matchMedia', {
 })
 
 // Mock ResizeObserver
-global.ResizeObserver = class ResizeObserver {
+globalThis.ResizeObserver = class ResizeObserver {
   constructor(cb: ResizeObserverCallback) {
     this.cb = cb
   }
@@ -27,8 +27,16 @@ global.ResizeObserver = class ResizeObserver {
 }
 
 // Mock IntersectionObserver
-global.IntersectionObserver = class IntersectionObserver {
+globalThis.IntersectionObserver = class IntersectionObserver {
+  readonly root: Element | Document | null = null
+  readonly rootMargin: string = ''
+  readonly thresholds: ReadonlyArray<number> = []
+
   observe() {}
   unobserve() {}
   disconnect() {}
-}
+  takeRecords() {
+    return []
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: Mock implementation
+} as any

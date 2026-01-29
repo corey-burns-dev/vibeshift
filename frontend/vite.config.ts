@@ -13,8 +13,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/health': 'http://localhost:8080',
-      '/ping': 'http://localhost:8080'
+      '/health': 'http://localhost:8375',
+      '/ping': 'http://localhost:8375'
     }
   },
   build: {

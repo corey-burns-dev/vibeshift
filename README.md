@@ -41,7 +41,7 @@ A professional full-stack application with Go backend, React frontend, Redis, an
    make dev
    ```
 
-   - Backend API: `http://localhost:8080`
+   - Backend API: `http://localhost:8375`
    - Frontend: `http://localhost:5173`
    - PostgreSQL: `localhost:5432`
    - Redis: `localhost:6379`
@@ -151,7 +151,7 @@ vibeshift/
 make dev
 ```
 
-- Backend: `http://localhost:8080`
+- Backend: `http://localhost:8375`
 - Frontend: `http://localhost:5173`
 - Postgres: `localhost:5432`
 - Redis: `localhost:6379`
@@ -162,7 +162,7 @@ make dev
 make dev-backend
 ```
 
-- Backend: `http://localhost:8080`
+- Backend: `http://localhost:8375`
 - Postgres: `localhost:5432`
 - Redis: `localhost:6379`
 
@@ -173,7 +173,7 @@ make dev-frontend
 ```
 
 - Frontend: `http://localhost:5173`
-- API proxied to `http://localhost:8080/health` and `/ping`
+- API proxied to `http://localhost:8375/health` and `/ping`
 
 ### Check Logs
 
@@ -205,11 +205,11 @@ make install
 
 See `.env.example` for a complete list. Key variables:
 
-- `GO_PORT` — Backend server port (default: 8080)
+- `GO_PORT` — Backend server port (default: 8375)
 - `POSTGRES_DB` — PostgreSQL database name (default: aichat)
 - `POSTGRES_USER` — PostgreSQL user (default: user)
 - `POSTGRES_PASSWORD` — PostgreSQL password (required)
-- `VITE_API_URL` — Frontend API URL (default: `http://localhost:8080`)
+- `VITE_API_URL` — Frontend API URL (default: `http://localhost:8375`)
 
 Note about YAML config and `make env`:
 
@@ -271,7 +271,7 @@ Look for `(healthy)` status on postgres service.
 
 ### Frontend can't connect to backend?
 
-In development, the frontend proxies requests to `http://localhost:8080`. Ensure the backend is running:
+In development, the frontend proxies requests to `http://localhost:8375`. Ensure the backend is running:
 
 ```bash
 make dev-backend

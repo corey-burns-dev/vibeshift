@@ -113,7 +113,7 @@ const post = await apiClient.createPost({ title, content })
 
 ```env
 # frontend/.env
-VITE_API_URL=http://localhost:8080/api
+VITE_API_URL=http://localhost:8375/api
 ```
 
 ## Types

@@ -30,7 +30,7 @@ frontend/src/
 Create `frontend/.env`:
 
 ```env
-VITE_API_URL=http://localhost:8080/api
+VITE_API_URL=http://localhost:8375/api
 ```
 
 ## API Client
@@ -207,7 +207,7 @@ const [posts, setPosts] = useState([])
 const [loading, setLoading] = useState(true)
 
 useEffect(() => {
-  fetch('http://localhost:8080/api/posts')
+  fetch('http://localhost:8375/api/posts')
     .then(res => res.json())
     .then(setPosts)
     .finally(() => setLoading(false))

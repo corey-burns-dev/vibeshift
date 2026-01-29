@@ -3,11 +3,11 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../api/client'
 import type {
-    CreatePostRequest,
-    PaginationParams,
-    Post,
-    SearchParams,
-    UpdatePostRequest,
+  CreatePostRequest,
+  PaginationParams,
+  Post,
+  SearchParams,
+  UpdatePostRequest,
 } from '../api/types'
 import { handleAuthOrFKError } from '../lib/handleAuthOrFKError'
 
@@ -164,10 +164,26 @@ export function useLikePost() {
   return useMutation({
     mutationFn: (postId: number) => apiClient.likePost(postId),
     onSuccess: (updatedPost) => {
-      console.log('Like toggle response - liked:', updatedPost.liked, 'count:', updatedPost.likes_count, 'id:', updatedPost.id)
+      console.log(
+        'Like toggle response - liked:',
+        updatedPost.liked,
+        'count:',
+        updatedPost.likes_count,
+        'id:',
+        updatedPost.id
+      )
       // Update cache with server response, merging with existing data
       updatePostInCache(queryClient, updatedPost.id, (oldPost) => {
-        console.log('Cache update - OLD liked:', oldPost.liked, 'count:', oldPost.likes_count, '→ NEW liked:', updatedPost.liked, 'count:', updatedPost.likes_count)
+        console.log(
+          'Cache update - OLD liked:',
+          oldPost.liked,
+          'count:',
+          oldPost.likes_count,
+          '→ NEW liked:',
+          updatedPost.liked,
+          'count:',
+          updatedPost.likes_count
+        )
         return {
           ...oldPost,
           ...updatedPost,

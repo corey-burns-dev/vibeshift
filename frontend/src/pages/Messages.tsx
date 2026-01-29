@@ -108,6 +108,34 @@ const messages = [
   },
 ]
 
+interface Conversation {
+  id: number
+  user: {
+    name: string
+    username: string
+    avatar: string
+    status: string
+  }
+  lastMessage: {
+    text: string
+    timestamp: string
+    isFromMe: boolean
+  }
+  unreadCount: number
+  isTyping: boolean
+}
+
+interface Message {
+  id: number
+  text: string
+  timestamp: string
+  isFromMe: boolean
+  user?: {
+    name: string
+    avatar: string
+  }
+}
+
 export default function Messages() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedConversation, setSelectedConversation] = useState(conversations[0])
@@ -135,7 +163,7 @@ export default function Messages() {
     }
   }
 
-  const ConversationItem = ({ conversation }: { conversation: any }) => (
+  const ConversationItem = ({ conversation }: { conversation: Conversation }) => (
     <button
       type="button"
       className={`w-full text-left p-4 hover:bg-accent/50 transition-colors ${
@@ -190,7 +218,7 @@ export default function Messages() {
     </button>
   )
 
-  const MessageBubble = ({ message }: { message: any }) => (
+  const MessageBubble = ({ message }: { message: Message }) => (
     <div className={`flex gap-3 mb-4 ${message.isFromMe ? 'justify-end' : 'justify-start'}`}>
       {!message.isFromMe && (
         <Avatar className="w-8 h-8">

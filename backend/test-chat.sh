@@ -3,7 +3,7 @@
 # Test script for chat endpoints
 # Make sure you have a valid JWT token from logging in
 
-API_URL="http://localhost:8080/api"
+API_URL="http://localhost:8375/api"
 
 # Colors
 GREEN='\033[0;32m'
