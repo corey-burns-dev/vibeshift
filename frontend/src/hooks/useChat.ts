@@ -1,14 +1,14 @@
 // Chat hooks with TanStack Query
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router'
 import { apiClient } from '@/api/client'
 import type {
-  CreateConversationRequest,
-  Message,
-  PaginationParams,
-  SendMessageRequest,
+    CreateConversationRequest,
+    Message,
+    PaginationParams,
+    SendMessageRequest,
 } from '@/api/types'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { handleAuthOrFKError } from '../lib/handleAuthOrFKError'
 
 // Query keys
