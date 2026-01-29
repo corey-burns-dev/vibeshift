@@ -13,15 +13,23 @@ import { useEffect, useRef, useState } from 'react'
 
 export default function Chat() {
   const [newMessage, setNewMessage] = useState('')
-  const [globalConversationId, setGlobalConversationId] = useState<number>(1) // Default to conversation 1 for now
+  const [globalConversationId, setGlobalConversationId] = useState<number | null>(null) // Start with no selection
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const typingTimeoutRef = useRef<number | null>(null)
 
   const currentUser = getCurrentUser()
-  const { data: conversations } = useConversations()
-  const { data: messages = [], isLoading } = useMessages(globalConversationId)
-  const sendMessage = useSendMessage(globalConversationId)
+  const { data: conversations, isLoading: convLoading, error: convError } = useConversations()
+  
+  // Auto-select first conversation when loaded
+  useEffect(() => {
+    if (conversations && conversations.length > 0 && !globalConversationId) {
+      setGlobalConversationId(conversations[0].id)
+    }
+  }, [conversations, globalConversationId])
+
+  const { data: messages = [], isLoading } = useMessages(globalConversationId || 0)
+  const sendMessage = useSendMessage(globalConversationId || 0)
   const queryClient = useQueryClient()
 
   // Participants state: map of userId -> { id, username, online, typing }
@@ -53,18 +61,21 @@ export default function Chat() {
 
   // WebSocket for real-time updates (messages, typing, presence)
   const chatWs = useChatWebSocket({
-    conversationId: globalConversationId,
+    conversationId: globalConversationId || 0,
+    enabled: !!globalConversationId,
     onMessage: (msg) => {
       // append message into react-query cache for messages
-      queryClient.setQueryData(['chat', 'messages', globalConversationId], (old: any) => {
-        if (!old) return [msg]
-        // ensure array
-        if (Array.isArray(old)) {
-          if (old.some((m: any) => m.id === msg.id)) return old
-          return [...old, msg]
-        }
-        return old
-      })
+      if (globalConversationId) {
+        queryClient.setQueryData(['chat', 'messages', globalConversationId], (old: any) => {
+          if (!old) return [msg]
+          // ensure array
+          if (Array.isArray(old)) {
+            if (old.some((m: any) => m.id === msg.id)) return old
+            return [...old, msg]
+          }
+          return old
+        })
+      }
     },
     onTyping: (userId, username, isTyping) => {
       setParticipants((prev) => ({ ...(prev || {}), [userId]: { ...(prev?.[userId] || { id: userId, username }), typing: isTyping, online: true } }))
@@ -76,7 +87,7 @@ export default function Chat() {
   })
 
   const handleSendMessage = () => {
-    if (!newMessage.trim()) return
+    if (!newMessage.trim() || !globalConversationId) return
 
     sendMessage.mutate(
       {
@@ -134,6 +145,25 @@ export default function Chat() {
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <Navbar />
+
+      {/* Show loading or error states */}
+      {convError && (
+        <div className="bg-destructive/15 border-b border-destructive p-4">
+          <p className="text-sm text-destructive">Error loading conversations: {String(convError)}</p>
+        </div>
+      )}
+
+      {convLoading && (
+        <div className="bg-muted border-b border-border p-4">
+          <p className="text-sm text-muted-foreground">Loading conversations...</p>
+        </div>
+      )}
+
+      {conversations && conversations.length === 0 && !convLoading && (
+        <div className="bg-amber-50 border-b border-amber-200 p-4">
+          <p className="text-sm text-amber-800">No conversations found. Create one to get started!</p>
+        </div>
+      )}
 
       {/* Main chat container - full height, no scroll */}
       <div className="flex-1 flex overflow-hidden">
