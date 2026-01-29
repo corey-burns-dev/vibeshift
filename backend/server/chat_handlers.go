@@ -6,6 +6,8 @@ import (
 	"vibeshift/models"
 
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/clause"
+	"gorm.io/gorm"
 )
 
 // CreateConversation handles POST /api/conversations
@@ -18,10 +20,10 @@ func (s *Server) CreateConversation(c *fiber.Ctx) error {
 		IsGroup        bool   `json:"is_group,omitempty"`
 		ParticipantIDs []uint `json:"participant_ids"`
 	}
-	       if parseErr := c.BodyParser(&req); parseErr != nil {
-		       return models.RespondWithError(c, fiber.StatusBadRequest,
-			       models.NewValidationError("Invalid request body"))
-	       }
+	if parseErr := c.BodyParser(&req); parseErr != nil {
+		return models.RespondWithError(c, fiber.StatusBadRequest,
+			models.NewValidationError("Invalid request body"))
+	}
 
 	// For group chats, name is required
 	if req.IsGroup && req.Name == "" {
@@ -71,6 +73,41 @@ func (s *Server) GetConversations(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
 
+	// Get all group conversations
+	var allGroupConversations []*models.Conversation
+	err := s.db.WithContext(ctx).
+		Where("is_group = ?", true).
+		Preload("Participants").
+		Preload("Messages", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC").Limit(1)
+		}).
+		Preload("Messages.Sender").
+		Order("name ASC").
+		Find(&allGroupConversations).Error
+	if err != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	}
+
+	// Auto-add user to any group conversations they're not in
+	for _, conv := range allGroupConversations {
+		isParticipant := false
+		for _, p := range conv.Participants {
+			if p.ID == userID {
+				isParticipant = true
+				break
+			}
+		}
+		// If user is not a participant, add them (ignore errors if already exists)
+		if !isParticipant {
+			// Use OnConflict to avoid duplicate key errors
+			s.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&models.ConversationParticipant{
+				ConversationID: conv.ID,
+				UserID:         userID,
+			})
+		}
+	}
+
+	// Get user's conversations (now includes all group conversations)
 	conversations, err := s.chatRepo.GetUserConversations(ctx, userID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
@@ -126,10 +163,10 @@ func (s *Server) SendMessage(c *fiber.Ctx) error {
 		MessageType string `json:"message_type,omitempty"`
 		Metadata    string `json:"metadata,omitempty"`
 	}
-	       if parseErr := c.BodyParser(&req); parseErr != nil {
-		       return models.RespondWithError(c, fiber.StatusBadRequest,
-			       models.NewValidationError("Invalid request body"))
-	       }
+	if parseErr := c.BodyParser(&req); parseErr != nil {
+		return models.RespondWithError(c, fiber.StatusBadRequest,
+			models.NewValidationError("Invalid request body"))
+	}
 
 	if req.Content == "" {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
@@ -244,10 +281,10 @@ func (s *Server) AddParticipant(c *fiber.Ctx) error {
 	var req struct {
 		UserID uint `json:"user_id"`
 	}
-	       if parseErr := c.BodyParser(&req); parseErr != nil {
-		       return models.RespondWithError(c, fiber.StatusBadRequest,
-			       models.NewValidationError("Invalid request body"))
-	       }
+	if parseErr := c.BodyParser(&req); parseErr != nil {
+		return models.RespondWithError(c, fiber.StatusBadRequest,
+			models.NewValidationError("Invalid request body"))
+	}
 
 	// Check if current user is participant and conversation is group
 	conv, err := s.chatRepo.GetConversation(ctx, uint(convID))

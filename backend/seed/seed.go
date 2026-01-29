@@ -13,6 +13,21 @@ import (
 )
 
 var (
+	conversationNames = []string{
+		"General",
+		"Movies",
+		"Music",
+		"Television",
+		"Games",
+		"Fitness",
+		"Hobbies",
+		"Social",
+		"Sports",
+		"Technology",
+	}
+)
+
+var (
 	usernames = []string{
 		"alex_dev", "sarah_codes", "mike_tech", "emma_design", "john_backend",
 		"lisa_frontend", "david_ops", "rachel_data", "chris_mobile", "jen_fullstack",
@@ -137,54 +152,16 @@ var (
 func Seed(db *gorm.DB) error {
 	log.Println("🌱 Starting database seeding...")
 
-	// Clear existing data (optional - comment out if you want to keep existing data)
-	if err := clearData(db); err != nil {
-		return fmt.Errorf("failed to clear data: %w", err)
-	}
-
-	// Create users
-	users, err := createUsers(db)
-	if err != nil {
-		return fmt.Errorf("failed to create users: %w", err)
-	}
-	log.Printf("✓ Created %d users", len(users))
-
-	// Create posts
-	posts, err := createPosts(db, users)
-	if err != nil {
-		return fmt.Errorf("failed to create posts: %w", err)
-	}
-	log.Printf("✓ Created %d posts", len(posts))
-
-	// Create comments
-	commentsCount, err := createComments(db, users, posts)
-	if err != nil {
-		return fmt.Errorf("failed to create comments: %w", err)
-	}
-	log.Printf("✓ Created %d comments", commentsCount)
-
-	// Add some likes to posts
-	likesCount, err := addLikes(db, users, posts)
-	if err != nil {
-		return fmt.Errorf("failed to add likes: %w", err)
-	}
-	log.Printf("✓ Added %d likes", likesCount)
-
-	// Create conversations (chat rooms)
-	conversations, err := createConversations(db, users)
+	// Create conversations (chat rooms) - these should always exist
+	// They are never cleared, only created if they don't exist
+	conversations, err := createOrGetConversations(db)
 	if err != nil {
 		return fmt.Errorf("failed to create conversations: %w", err)
 	}
-	log.Printf("✓ Created %d conversations", len(conversations))
-
-	// Create messages in conversations
-	messagesCount, err := createMessages(db, users, conversations)
-	if err != nil {
-		return fmt.Errorf("failed to create messages: %w", err)
-	}
-	log.Printf("✓ Created %d messages", messagesCount)
+	log.Printf("✓ %d conversations available", len(conversations))
 
 	log.Println("🎉 Database seeding completed successfully!")
+	log.Println("✨ Chat rooms are ready. Users will auto-join when they login.")
 	return nil
 }
 
@@ -455,4 +432,45 @@ func createMessages(db *gorm.DB, users []models.User, conversations []models.Con
 	}
 
 	return count, nil
+}
+
+// createOrGetConversations ensures the 10 group conversations exist.
+// These rooms are never deleted - they're the permanent chat channels.
+// Users will auto-join these conversations when they first access the chat.
+func createOrGetConversations(db *gorm.DB) ([]models.Conversation, error) {
+	conversations := make([]models.Conversation, 0, len(conversationNames))
+
+	for _, name := range conversationNames {
+		var conv models.Conversation
+
+		// Check if conversation already exists
+		result := db.Where("name = ? AND is_group = ?", name, true).First(&conv)
+		if result.Error == nil {
+			// Conversation exists, just use it
+			conversations = append(conversations, conv)
+			continue
+		}
+
+		// Conversation doesn't exist, create it
+		if result.Error == gorm.ErrRecordNotFound {
+			newConv := models.Conversation{
+				Name:    name,
+				IsGroup: true,
+				Avatar:  fmt.Sprintf("https://api.dicebear.com/7.x/avataaars/svg?seed=%s", name),
+				// CreatedBy will be set to first user, but it's just for reference
+			}
+
+			if err := db.Create(&newConv).Error; err != nil {
+				log.Printf("Failed to create conversation %s: %v", name, err)
+				continue
+			}
+
+			conversations = append(conversations, newConv)
+		} else {
+			// Some other database error
+			log.Printf("Error checking for conversation %s: %v", name, result.Error)
+		}
+	}
+
+	return conversations, nil
 }
