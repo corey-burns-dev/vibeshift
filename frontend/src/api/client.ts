@@ -1,23 +1,23 @@
 // API Client - centralized HTTP requests with auth handling
 
 import type {
-  AuthResponse,
-  Comment,
-  Conversation,
-  CreateCommentRequest,
-  CreateConversationRequest,
-  CreatePostRequest,
-  LoginRequest,
-  Message,
-  PaginationParams,
-  Post,
-  SearchParams,
-  SendMessageRequest,
-  SignupRequest,
-  UpdateCommentRequest,
-  UpdatePostRequest,
-  UpdateProfileRequest,
-  User,
+    AuthResponse,
+    Comment,
+    Conversation,
+    CreateCommentRequest,
+    CreateConversationRequest,
+    CreatePostRequest,
+    LoginRequest,
+    Message,
+    PaginationParams,
+    Post,
+    SearchParams,
+    SendMessageRequest,
+    SignupRequest,
+    UpdateCommentRequest,
+    UpdatePostRequest,
+    UpdateProfileRequest,
+    User,
 } from './types'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8375/api'
@@ -267,6 +267,21 @@ class ApiClient {
   async deleteMessage(conversationId: number, messageId: number): Promise<{ message: string }> {
     return this.request(`/conversations/${conversationId}/messages/${messageId}`, {
       method: 'DELETE',
+    })
+  }
+
+  // Chatrooms (public group conversations)
+  async getAllChatrooms(): Promise<(Conversation & { is_joined: boolean })[]> {
+    return this.request('/chatrooms')
+  }
+
+  async getJoinedChatrooms(): Promise<Conversation[]> {
+    return this.request('/chatrooms/joined')
+  }
+
+  async joinChatroom(chatroomId: number): Promise<{ message: string }> {
+    return this.request(`/chatrooms/${chatroomId}/join`, {
+      method: 'POST',
     })
   }
 }

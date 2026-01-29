@@ -45,6 +45,14 @@ export function useUserProfile(id: number) {
   })
 }
 
+// Get all users (for community sidebar)
+export function useAllUsers() {
+  return useQuery({
+    queryKey: [...userKeys.all, 'list'],
+    queryFn: () => apiClient.getUsers({ limit: 100 }),
+  })
+}
+
 // Update current user profile
 export function useUpdateMyProfile() {
   const queryClient = useQueryClient()

@@ -6,8 +6,8 @@ import (
 	"vibeshift/models"
 
 	"github.com/gofiber/fiber/v2"
-	"gorm.io/clause"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // CreateConversation handles POST /api/conversations
@@ -54,6 +54,10 @@ func (s *Server) CreateConversation(c *fiber.Ctx) error {
 
 	// Add other participants
 	for _, participantID := range req.ParticipantIDs {
+		// Skip if participant is the creator (already added)
+		if participantID == userID {
+			continue
+		}
 		if err := s.chatRepo.AddParticipant(ctx, conv.ID, participantID); err != nil {
 			return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 		}
@@ -196,6 +200,10 @@ func (s *Server) SendMessage(c *fiber.Ctx) error {
 			models.NewUnauthorizedError("You are not a participant in this conversation"))
 	}
 
+	if req.Metadata == "" {
+		req.Metadata = "{}"
+	}
+
 	message := &models.Message{
 		ConversationID: uint(convID),
 		SenderID:       userID,
@@ -315,4 +323,106 @@ func (s *Server) AddParticipant(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusOK)
+}
+
+// GetAllChatrooms handles GET /api/chatrooms - returns ALL public chatrooms
+func (s *Server) GetAllChatrooms(c *fiber.Ctx) error {
+	ctx := c.Context()
+	userID := c.Locals("userID").(uint)
+
+	// Get all group conversations (public chatrooms)
+	var chatrooms []*models.Conversation
+	err := s.db.WithContext(ctx).
+		Where("is_group = ?", true).
+		Preload("Participants").
+		Preload("Messages", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC").Limit(1)
+		}).
+		Preload("Messages.Sender").
+		Order("name ASC").
+		Find(&chatrooms).Error
+	if err != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	}
+
+	// Add "is_joined" field to each chatroom
+	type ChatroomResponse struct {
+		*models.Conversation
+		IsJoined bool `json:"is_joined"`
+	}
+
+	result := make([]ChatroomResponse, 0, len(chatrooms))
+	for _, room := range chatrooms {
+		isJoined := false
+		for _, p := range room.Participants {
+			if p.ID == userID {
+				isJoined = true
+				break
+			}
+		}
+		result = append(result, ChatroomResponse{
+			Conversation: room,
+			IsJoined:     isJoined,
+		})
+	}
+
+	return c.JSON(result)
+}
+
+// GetJoinedChatrooms handles GET /api/chatrooms/joined - returns chatrooms the user has joined
+func (s *Server) GetJoinedChatrooms(c *fiber.Ctx) error {
+	ctx := c.Context()
+	userID := c.Locals("userID").(uint)
+
+	// Get only group conversations where user is a participant
+	var chatrooms []*models.Conversation
+	err := s.db.WithContext(ctx).
+		Joins("JOIN conversation_participants cp ON cp.conversation_id = conversations.id").
+		Where("conversations.is_group = ? AND cp.user_id = ?", true, userID).
+		Preload("Participants").
+		Preload("Messages", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC").Limit(1)
+		}).
+		Preload("Messages.Sender").
+		Order("conversations.name ASC").
+		Find(&chatrooms).Error
+	if err != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	}
+
+	return c.JSON(chatrooms)
+}
+
+// JoinChatroom handles POST /api/chatrooms/:id/join - join a chatroom
+func (s *Server) JoinChatroom(c *fiber.Ctx) error {
+	ctx := c.Context()
+	userID := c.Locals("userID").(uint)
+	roomID, err := c.ParamsInt("id")
+	if err != nil || roomID < 0 {
+		return models.RespondWithError(c, fiber.StatusBadRequest,
+			models.NewValidationError("Invalid chatroom ID"))
+	}
+
+	// Verify the conversation exists and is a group
+	var conv models.Conversation
+	if err := s.db.WithContext(ctx).First(&conv, roomID).Error; err != nil {
+		return models.RespondWithError(c, fiber.StatusNotFound,
+			models.NewNotFoundError("Chatroom", roomID))
+	}
+
+	if !conv.IsGroup {
+		return models.RespondWithError(c, fiber.StatusBadRequest,
+			models.NewValidationError("Cannot join a 1-on-1 conversation"))
+	}
+
+	// Add user to the chatroom (ignore if already joined)
+	err = s.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&models.ConversationParticipant{
+		ConversationID: uint(roomID),
+		UserID:         userID,
+	}).Error
+	if err != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	}
+
+	return c.JSON(fiber.Map{"message": "Joined chatroom successfully"})
 }

@@ -6,9 +6,8 @@ WORKDIR /app
 # Copy lockfile and package.json first (dependency layer caching)
 COPY bun.lock package.json ./
 
-# Install dependencies using Bun with frozen lockfile for reproducibility
-# Bun will automatically use bun.lock to ensure consistent versions across environments
-RUN bun install --frozen
+# Install dependencies using Bun
+RUN bun install
 
 # Copy application source (node_modules excluded via .dockerignore)
 COPY . ./

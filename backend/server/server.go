@@ -169,6 +169,12 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	// Generic /:id route must be last
 	conversations.Get("/:id", s.GetConversation)
 
+	// Chatrooms routes (public group conversations)
+	chatrooms := protected.Group("/chatrooms")
+	chatrooms.Get("/", s.GetAllChatrooms)          // Get ALL public chatrooms
+	chatrooms.Get("/joined", s.GetJoinedChatrooms) // Get rooms user has joined
+	chatrooms.Post("/:id/join", s.JoinChatroom)    // Join a chatroom
+
 	// Websocket endpoints
 	api.Get("/ws", s.WebsocketHandler())          // General notifications
 	api.Get("/ws/chat", s.WebSocketChatHandler()) // Real-time chat

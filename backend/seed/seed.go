@@ -116,19 +116,6 @@ var (
 		"One of the best explanations I've seen on this topic.",
 	}
 
-	conversationNames = []string{
-		"General",
-		"Movies",
-		"Music",
-		"Television",
-		"Games",
-		"Fitness",
-		"Hobbies",
-		"Social",
-		"Sports",
-		"Technology",
-	}
-
 	chatMessages = []string{
 		"Hey everyone! How's it going?",
 		"Just finished an amazing workout!",

@@ -9,7 +9,7 @@ GREEN := \033[1;32m
 YELLOW := \033[1;33m
 NC := \033[0m # No Color
 
-.PHONY: help dev dev-backend dev-frontend dev-both build build-backend build-frontend up down logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions clean test test-api test-up test-down test-backend seed
+.PHONY: help dev dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions clean test test-api test-up test-down test-backend seed deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit
 
 # Default target
 help:
@@ -28,6 +28,9 @@ help:
 	@echo "  make build-backend      - 🔨 Build backend image"
 	@echo "  make build-frontend     - 🔨 Build frontend image"
 	@echo "  make up                 - ⬆️  Start services in background"
+	@echo "  make recreate           - 🔄 Rebuild all containers (no cache)"
+	@echo "  make recreate-frontend  - 🔄 Rebuild frontend container (no cache)"
+	@echo "  make recreate-backend   - 🔄 Rebuild backend container (no cache)"
 	@echo "  make down               - ⬇️  Stop all services"
 	@echo ""
 	@echo "$(GREEN)Logs & Monitoring:$(NC)"
@@ -55,6 +58,14 @@ help:
 	@echo "  make restart            - 🔄 Restart all services"
 	@echo "  make clean              - 🧹 Clean containers, volumes, and artifacts"
 	@echo "  make check-versions     - 🔍 Check latest Docker image versions"
+	@echo ""
+	@echo "$(GREEN)Dependencies:$(NC)"
+	@echo "  make deps-update        - 📦 Update all dependencies (Go + frontend)"
+	@echo "  make deps-update-backend - 📦 Update Go dependencies only"
+	@echo "  make deps-tidy          - 🧹 Tidy Go modules (go mod tidy)"
+	@echo "  make deps-check         - 🔍 Check for outdated Go dependencies"
+	@echo "  make deps-vuln          - 🛡️  Scan for security vulnerabilities"
+	@echo "  make deps-audit         - 🔎 Full dependency audit (check + vuln)"
 	@echo ""
 
 # Development targets
@@ -97,6 +108,25 @@ up:
 down:
 	@echo "$(BLUE)Stopping all services...$(NC)"
 	$(DOCKER_COMPOSE) down
+
+# Recreate targets (rebuild from scratch without cache)
+recreate:
+	@echo "$(BLUE)Recreating all containers (no cache)...$(NC)"
+	$(DOCKER_COMPOSE) build --no-cache
+	$(DOCKER_COMPOSE) up -d --force-recreate
+	@echo "$(GREEN)✓ All containers recreated$(NC)"
+
+recreate-frontend:
+	@echo "$(BLUE)Recreating frontend container (no cache)...$(NC)"
+	$(DOCKER_COMPOSE) build --no-cache frontend
+	$(DOCKER_COMPOSE) up -d --force-recreate frontend
+	@echo "$(GREEN)✓ Frontend container recreated$(NC)"
+
+recreate-backend:
+	@echo "$(BLUE)Recreating backend container (no cache)...$(NC)"
+	$(DOCKER_COMPOSE) build --no-cache app
+	$(DOCKER_COMPOSE) up -d --force-recreate app
+	@echo "$(GREEN)✓ Backend container recreated$(NC)"
 
 # Logging
 logs: logs-backend
@@ -200,3 +230,51 @@ seed:
 	cd backend && $(GO) run cmd/seed/main.go
 	@echo "$(GREEN)✓ Database seeded successfully!$(NC)"
 	@echo "$(YELLOW)📧 Test users password: password123$(NC)"
+
+# Dependency Management
+deps-update:
+	@echo "$(BLUE)Updating Go dependencies...$(NC)"
+	cd backend && $(GO) get -u ./...
+	cd backend && $(GO) mod tidy
+	@echo "$(GREEN)✓ Go dependencies updated$(NC)"
+	@echo "$(BLUE)Updating frontend dependencies...$(NC)"
+	cd frontend && $(BUN) update
+	@echo "$(GREEN)✓ Frontend dependencies updated$(NC)"
+
+deps-update-backend:
+	@echo "$(BLUE)Updating Go dependencies...$(NC)"
+	cd backend && $(GO) get -u ./...
+	cd backend && $(GO) mod tidy
+	@echo "$(GREEN)✓ Go dependencies updated$(NC)"
+
+deps-update-frontend:
+	@echo "$(BLUE)Updating frontend dependencies...$(NC)"
+	cd frontend && $(BUN) update
+	@echo "$(GREEN)✓ Frontend dependencies updated$(NC)"
+
+deps-tidy:
+	@echo "$(BLUE)Tidying Go modules...$(NC)"
+	cd backend && $(GO) mod tidy
+	@echo "$(GREEN)✓ Go modules tidied$(NC)"
+
+deps-check:
+	@echo "$(BLUE)Checking for outdated Go dependencies...$(NC)"
+	@if [ ! -f "$(HOME)/go/bin/go-mod-outdated" ]; then \
+		echo "$(YELLOW)Installing go-mod-outdated...$(NC)"; \
+		$(GO) install github.com/psampaz/go-mod-outdated@latest; \
+	fi
+	cd backend && $(GO) list -u -m -json all | $(HOME)/go/bin/go-mod-outdated -update -direct
+	@echo ""
+	@echo "$(GREEN)✓ Dependency check complete$(NC)"
+
+deps-vuln:
+	@echo "$(BLUE)Scanning for security vulnerabilities...$(NC)"
+	@if [ ! -f "$(HOME)/go/bin/govulncheck" ]; then \
+		echo "$(YELLOW)Installing govulncheck...$(NC)"; \
+		$(GO) install golang.org/x/vuln/cmd/govulncheck@latest; \
+	fi
+	cd backend && $(HOME)/go/bin/govulncheck ./...
+	@echo "$(GREEN)✓ Vulnerability scan complete$(NC)"
+
+deps-audit: deps-check deps-vuln
+	@echo "$(GREEN)✓ Full dependency audit complete$(NC)"

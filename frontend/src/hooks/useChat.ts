@@ -17,6 +17,9 @@ const chatKeys = {
   conversations: () => [...chatKeys.all, 'conversations'] as const,
   conversation: (id: number) => [...chatKeys.all, 'conversation', id] as const,
   messages: (conversationId: number) => [...chatKeys.all, 'messages', conversationId] as const,
+  chatrooms: () => [...chatKeys.all, 'chatrooms'] as const,
+  chatroomsAll: () => [...chatKeys.chatrooms(), 'all'] as const,
+  chatroomsJoined: () => [...chatKeys.chatrooms(), 'joined'] as const,
 }
 
 // ===== Conversations =====
@@ -25,6 +28,38 @@ export function useConversations() {
   return useQuery({
     queryKey: chatKeys.conversations(),
     queryFn: () => apiClient.getConversations(),
+  })
+}
+
+// ===== Chatrooms =====
+
+export function useAllChatrooms() {
+  return useQuery({
+    queryKey: chatKeys.chatroomsAll(),
+    queryFn: () => apiClient.getAllChatrooms(),
+  })
+}
+
+export function useJoinedChatrooms() {
+  return useQuery({
+    queryKey: chatKeys.chatroomsJoined(),
+    queryFn: () => apiClient.getJoinedChatrooms(),
+  })
+}
+
+export function useJoinChatroom() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (chatroomId: number) => apiClient.joinChatroom(chatroomId),
+    onSuccess: () => {
+      // Invalidate both chatroom queries to refresh the lists
+      queryClient.invalidateQueries({ queryKey: chatKeys.chatrooms() })
+      queryClient.invalidateQueries({ queryKey: chatKeys.conversations() })
+    },
+    onError: (error) => {
+      handleAuthOrFKError(error)
+    },
   })
 }
 

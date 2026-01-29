@@ -28,8 +28,9 @@ type ChatHub struct {
 
 // ChatMessage represents a message broadcast to a conversation
 type ChatMessage struct {
-	Type           string      `json:"type"` // "message", "typing", "presence", "read"
+	Type           string      `json:"type"` // "message", "typing", "presence", "read", "room_message", "user_status", "connected_users"
 	ConversationID uint        `json:"conversation_id"`
+	RoomID         uint        `json:"room_id,omitempty"`
 	UserID         uint        `json:"user_id,omitempty"`
 	Username       string      `json:"username,omitempty"`
 	Payload        interface{} `json:"payload"`
@@ -47,15 +48,40 @@ func NewChatHub() *ChatHub {
 // RegisterUser registers a user's websocket connection
 func (h *ChatHub) RegisterUser(userID uint, conn *websocket.Conn) {
 	h.mu.Lock()
-	defer h.mu.Unlock()
+
 	h.userConns[userID] = conn
+
+	// Collect all currently online user IDs (excluding self)
+	onlineIDs := make([]uint, 0, len(h.userConns))
+	for id := range h.userConns {
+		if id != userID {
+			onlineIDs = append(onlineIDs, id)
+		}
+	}
+	h.mu.Unlock()
+
 	log.Printf("ChatHub: Registered user %d", userID)
+
+	// 1. Send initial snapshot of online users to the NEW user
+	if len(onlineIDs) > 0 {
+		snapshotMsg := ChatMessage{
+			Type:    "connected_users",
+			Payload: map[string]interface{}{"user_ids": onlineIDs},
+		}
+		if jsonMsg, err := json.Marshal(snapshotMsg); err == nil {
+			if err := conn.WriteMessage(websocket.TextMessage, jsonMsg); err != nil {
+				log.Printf("ChatHub: Failed to send snapshot to user %d: %v", userID, err)
+			}
+		}
+	}
+
+	// 2. Broadcast "User X is Online" to everyone else
+	h.BroadcastGlobalStatus(userID, "online")
 }
 
 // UnregisterUser removes a user's websocket connection and cleans up all their conversation subscriptions
 func (h *ChatHub) UnregisterUser(userID uint) {
 	h.mu.Lock()
-	defer h.mu.Unlock()
 
 	// Remove from all conversations
 	if convs, ok := h.userActiveConvs[userID]; ok {
@@ -72,7 +98,12 @@ func (h *ChatHub) UnregisterUser(userID uint) {
 
 	// Remove user connection
 	delete(h.userConns, userID)
+	h.mu.Unlock()
+
 	log.Printf("ChatHub: Unregistered user %d", userID)
+
+	// Broadcast "User X is Offline" to everyone else
+	h.BroadcastGlobalStatus(userID, "offline")
 }
 
 // JoinConversation subscribes a user to a conversation's messages
@@ -214,4 +245,39 @@ func (h *ChatHub) StartWiring(ctx context.Context, n *Notifier) error {
 		// Broadcast to all users in the conversation
 		h.BroadcastToConversation(conversationID, message)
 	})
+}
+
+// BroadcastGlobalStatus sends a "user_status" event (online/offline) to ALL connected users
+func (h *ChatHub) BroadcastGlobalStatus(userID uint, status string) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	message := ChatMessage{
+		Type:    "user_status",
+		UserID:  userID,
+		Payload: map[string]interface{}{"status": status, "user_id": userID},
+	}
+
+	jsonMsg, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("ChatHub: Failed to marshal status message: %v", err)
+		return
+	}
+
+	for id, conn := range h.userConns {
+		// Don't echo back to the user who triggered it
+		if id == userID {
+			continue
+		}
+		if conn == nil {
+			continue
+		}
+
+		// Fire and forget
+		go func(c *websocket.Conn) {
+			if err := c.WriteMessage(websocket.TextMessage, jsonMsg); err != nil {
+				// Log but don't panic
+			}
+		}(conn)
+	}
 }

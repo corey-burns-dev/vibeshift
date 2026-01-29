@@ -1,420 +1,485 @@
-import { MoreHorizontal, Paperclip, Phone, Search, Send, Smile, Video } from 'lucide-react'
-import { useState } from 'react'
-import { Navbar } from '@/components/Navbar'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
-
-// Mock conversations data
-const conversations = [
-  {
-    id: 1,
-    user: {
-      name: 'Alice Johnson',
-      username: 'alice_dev',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
-      status: 'online',
-    },
-    lastMessage: {
-      text: 'Hey, how are you doing?',
-      timestamp: '2m ago',
-      isFromMe: false,
-    },
-    unreadCount: 2,
-    isTyping: false,
-  },
-  {
-    id: 2,
-    user: {
-      name: 'Bob Smith',
-      username: 'bob_coder',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob',
-      status: 'online',
-    },
-    lastMessage: {
-      text: 'Thanks for the help with that bug!',
-      timestamp: '1h ago',
-      isFromMe: true,
-    },
-    unreadCount: 0,
-    isTyping: false,
-  },
-  {
-    id: 3,
-    user: {
-      name: 'Charlie Brown',
-      username: 'charlie_ui',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=charlie',
-      status: 'away',
-    },
-    lastMessage: {
-      text: 'The design looks great!',
-      timestamp: '3h ago',
-      isFromMe: false,
-    },
-    unreadCount: 1,
-    isTyping: true,
-  },
-]
-
-// Mock messages for the selected conversation
-const messages = [
-  {
-    id: 1,
-    text: 'Hey! How are you?',
-    timestamp: '10:30 AM',
-    isFromMe: false,
-    user: {
-      name: 'Alice Johnson',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
-    },
-  },
-  {
-    id: 2,
-    text: "I'm doing great! Just working on some new features.",
-    timestamp: '10:32 AM',
-    isFromMe: true,
-  },
-  {
-    id: 3,
-    text: 'That sounds awesome! What kind of features?',
-    timestamp: '10:33 AM',
-    isFromMe: false,
-    user: {
-      name: 'Alice Johnson',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
-    },
-  },
-  {
-    id: 4,
-    text: 'Mostly UI improvements and some backend optimizations.',
-    timestamp: '10:35 AM',
-    isFromMe: true,
-  },
-  {
-    id: 5,
-    text: "Cool! I've been working on a similar project. Want to share some ideas?",
-    timestamp: '10:36 AM',
-    isFromMe: false,
-    user: {
-      name: 'Alice Johnson',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
-    },
-  },
-]
-
-interface Conversation {
-  id: number
-  user: {
-    name: string
-    username: string
-    avatar: string
-    status: string
-  }
-  lastMessage: {
-    text: string
-    timestamp: string
-    isFromMe: boolean
-  }
-  unreadCount: number
-  isTyping: boolean
-}
-
-interface Message {
-  id: number
-  text: string
-  timestamp: string
-  isFromMe: boolean
-  user?: {
-    name: string
-    avatar: string
-  }
-}
+import type { Conversation } from '@/api/types';
+import { Navbar } from '@/components/Navbar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useConversations, useMessages, useSendMessage } from '@/hooks/useChat';
+import { useChatWebSocket } from '@/hooks/useChatWebSocket';
+import { usePresenceListener, usePresenceStore } from '@/hooks/usePresence';
+import { getCurrentUser } from '@/hooks/useUsers';
+import { useQueryClient } from '@tanstack/react-query';
+import { MessageCircle, Send, Users } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function Messages() {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedConversation, setSelectedConversation] = useState(conversations[0])
-  const [newMessage, setNewMessage] = useState('')
-  const [activeTab, setActiveTab] = useState('all')
+	const [newMessage, setNewMessage] = useState('');
+	const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
+	const [messageTab, setMessageTab] = useState<'all' | 'unread'>('all');
+	const scrollAreaRef = useRef<HTMLDivElement>(null);
+	const messagesEndRef = useRef<HTMLDivElement>(null);
+	const typingTimeoutRef = useRef<number | null>(null);
 
-  const filteredConversations = conversations.filter(
-    (conversation) =>
-      conversation.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      conversation.user.username.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+	// Connect to presence WebSocket for real-time online status
+	usePresenceListener();
+	const onlineUserIds = usePresenceStore(state => state.onlineUserIds);
 
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      // In a real app, this would make an API call
-      console.log('Sending message:', newMessage)
-      setNewMessage('')
-    }
-  }
+	const currentUser = getCurrentUser();
+	const {
+		data: allConversations = [],
+		isLoading: convLoading,
+		error: convError,
+	} = useConversations();
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSendMessage()
-    }
-  }
+	// Filter for DMs only (non-group conversations)
+	const dmConversations = allConversations.filter((c: Conversation) => !c.is_group);
 
-  const ConversationItem = ({ conversation }: { conversation: Conversation }) => (
-    <button
-      type="button"
-      className={`w-full text-left p-4 hover:bg-accent/50 transition-colors ${
-        selectedConversation.id === conversation.id ? 'bg-accent' : ''
-      }`}
-      onClick={() => setSelectedConversation(conversation)}
-    >
-      <div className="flex items-center gap-3">
-        <div className="relative">
-          <Avatar>
-            <AvatarImage src={conversation.user.avatar} />
-            <AvatarFallback>
-              {conversation.user.name
-                .split(' ')
-                .map((n: string) => n[0])
-                .join('')}
-            </AvatarFallback>
-          </Avatar>
-          <div
-            className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-background ${
-              conversation.user.status === 'online'
-                ? 'bg-green-500'
-                : conversation.user.status === 'away'
-                  ? 'bg-yellow-500'
-                  : 'bg-gray-500'
-            }`}
-          />
-        </div>
+	// Apply tab filter
+	const conversations =
+		messageTab === 'unread'
+			? dmConversations.filter((c: Conversation) => (c.unread_count ?? 0) > 0)
+			: dmConversations;
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold truncate">{conversation.user.name}</h3>
-            <span className="text-xs text-muted-foreground">
-              {conversation.lastMessage.timestamp}
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground truncate">
-            {conversation.isTyping ? (
-              <span className="text-primary">typing...</span>
-            ) : (
-              conversation.lastMessage.text
-            )}
-          </p>
-        </div>
+	// Auto-select first conversation when loaded
+	useEffect(() => {
+		if (conversations && conversations.length > 0 && !selectedConversationId) {
+			setSelectedConversationId(conversations[0].id);
+		}
+	}, [conversations, selectedConversationId]);
 
-        {conversation.unreadCount > 0 && (
-          <Badge variant="destructive" className="ml-2">
-            {conversation.unreadCount}
-          </Badge>
-        )}
-      </div>
-    </button>
-  )
+	const { data: messages = [], isLoading } = useMessages(selectedConversationId || 0);
+	const sendMessage = useSendMessage(selectedConversationId || 0);
+	const queryClient = useQueryClient();
 
-  const MessageBubble = ({ message }: { message: Message }) => (
-    <div className={`flex gap-3 mb-4 ${message.isFromMe ? 'justify-end' : 'justify-start'}`}>
-      {!message.isFromMe && (
-        <Avatar className="w-8 h-8">
-          <AvatarImage src={message.user.avatar} />
-          <AvatarFallback className="text-xs">
-            {message.user.name
-              .split(' ')
-              .map((n: string) => n[0])
-              .join('')}
-          </AvatarFallback>
-        </Avatar>
-      )}
+	// Participants state
+	const [participants, setParticipants] = useState<
+		Record<number, { id: number; username?: string; online?: boolean; typing?: boolean }>
+	>({});
 
-      <div className={`max-w-[70%] ${message.isFromMe ? 'order-1' : 'order-2'}`}>
-        <div
-          className={`rounded-lg px-3 py-2 ${
-            message.isFromMe ? 'bg-primary text-primary-foreground ml-auto' : 'bg-muted'
-          }`}
-        >
-          <p className="text-sm">{message.text}</p>
-        </div>
-        <p
-          className={`text-xs text-muted-foreground mt-1 ${
-            message.isFromMe ? 'text-right' : 'text-left'
-          }`}
-        >
-          {message.timestamp}
-        </p>
-      </div>
+	useEffect(() => {
+		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+	}, []);
 
-      {message.isFromMe && (
-        <Avatar className="w-8 h-8 order-2">
-          <AvatarFallback className="text-xs">ME</AvatarFallback>
-        </Avatar>
-      )}
-    </div>
-  )
+	useEffect(() => {
+		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+	}, [messages]);
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+	// Initialize participants from conversations data
+	useEffect(() => {
+		const conv = conversations?.find((c: Conversation) => c.id === selectedConversationId);
+		if (!conv) return;
+		const usersList: any[] = conv.participants || [];
+		if (usersList && usersList.length > 0) {
+			const map: Record<number, any> = {};
+			usersList.forEach((u: any) => {
+				map[u.id] = { id: u.id, username: u.username || u.name, online: !!u.online, typing: false };
+			});
+			setParticipants(map);
+		}
+	}, [conversations, selectedConversationId]);
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Messages</h1>
-          <p className="text-muted-foreground">Connect and chat with your friends</p>
-        </div>
+	// WebSocket for real-time updates
+	const chatWs = useChatWebSocket({
+		conversationId: selectedConversationId || 0,
+		enabled: !!selectedConversationId,
+		onMessage: msg => {
+			if (selectedConversationId) {
+				queryClient.setQueryData(['chat', 'messages', selectedConversationId], (old: any) => {
+					if (!old) return [msg];
+					if (Array.isArray(old)) {
+						if (old.some((m: any) => m.id === msg.id)) return old;
+						return [...old, msg];
+					}
+					return old;
+				});
+			}
+		},
+		onTyping: (userId, username, isTyping) => {
+			setParticipants(prev => ({
+				...(prev || {}),
+				[userId]: {
+					...(prev?.[userId] || { id: userId, username }),
+					typing: isTyping,
+					online: true,
+				},
+			}));
+		},
+		onPresence: (userId, username, status) => {
+			const online = status === 'online' || status === 'connected';
+			setParticipants(prev => ({
+				...(prev || {}),
+				[userId]: { ...(prev?.[userId] || { id: userId, username }), online },
+			}));
+		},
+	});
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
-          {/* Conversations List */}
-          <div className="lg:col-span-1">
-            <Card className="h-full">
-              <CardHeader className="pb-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    placeholder="Search conversations..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </CardHeader>
+	const handleSendMessage = () => {
+		if (!newMessage.trim() || !selectedConversationId) return;
+		sendMessage.mutate(
+			{ content: newMessage, message_type: 'text' },
+			{
+				onSuccess: () => {
+					setNewMessage('');
+					try {
+						chatWs?.sendTyping(false);
+					} catch {}
+				},
+			}
+		);
+	};
 
-              <CardContent className="p-0">
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="w-full mx-4 mb-4">
-                    <TabsTrigger value="all" className="flex-1">
-                      All
-                    </TabsTrigger>
-                    <TabsTrigger value="unread" className="flex-1">
-                      Unread
-                    </TabsTrigger>
-                  </TabsList>
+	const handleKeyPress = (e: React.KeyboardEvent) => {
+		if (e.key === 'Enter' && !e.shiftKey) {
+			e.preventDefault();
+			handleSendMessage();
+		}
+	};
 
-                  <ScrollArea className="h-[calc(100vh-400px)]">
-                    <TabsContent value="all" className="mt-0">
-                      {filteredConversations.map((conversation) => (
-                        <ConversationItem key={conversation.id} conversation={conversation} />
-                      ))}
-                    </TabsContent>
+	const handleInputChange = (val: string) => {
+		setNewMessage(val);
+		try {
+			chatWs?.sendTyping(true);
+		} catch {}
+		if (typingTimeoutRef.current) {
+			window.clearTimeout(typingTimeoutRef.current);
+		}
+		typingTimeoutRef.current = window.setTimeout(() => {
+			try {
+				chatWs?.sendTyping(false);
+			} catch {}
+		}, 1500) as unknown as number;
+	};
 
-                    <TabsContent value="unread" className="mt-0">
-                      {filteredConversations
-                        .filter((conversation) => conversation.unreadCount > 0)
-                        .map((conversation) => (
-                          <ConversationItem key={conversation.id} conversation={conversation} />
-                        ))}
-                    </TabsContent>
-                  </ScrollArea>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </div>
+	const formatTimestamp = (timestamp: string) => {
+		return new Date(timestamp).toLocaleTimeString('en-US', {
+			hour12: false,
+			hour: '2-digit',
+			minute: '2-digit',
+		});
+	};
 
-          {/* Chat Area */}
-          <div className="lg:col-span-2">
-            <Card className="h-full flex flex-col">
-              {/* Chat Header */}
-              <CardHeader className="border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <Avatar>
-                        <AvatarImage src={selectedConversation.user.avatar} />
-                        <AvatarFallback>
-                          {selectedConversation.user.name
-                            .split(' ')
-                            .map((n: string) => n[0])
-                            .join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div
-                        className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-background ${
-                          selectedConversation.user.status === 'online'
-                            ? 'bg-green-500'
-                            : selectedConversation.user.status === 'away'
-                              ? 'bg-yellow-500'
-                              : 'bg-gray-500'
-                        }`}
-                      />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold">{selectedConversation.user.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {selectedConversation.isTyping
-                          ? 'typing...'
-                          : selectedConversation.user.status === 'online'
-                            ? 'Active now'
-                            : `Last seen recently`}
-                      </p>
-                    </div>
-                  </div>
+	const getUserColor = (userId: number) => {
+		const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f39c12', '#9b59b6', '#e74c3c', '#3498db'];
+		return colors[userId % colors.length];
+	};
 
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" variant="ghost">
-                      <Phone className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost">
-                      <Video className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
+	// Get conversation display name (other person's name for DMs)
+	const getConversationName = (conv: Conversation) => {
+		if (conv.name) return conv.name;
+		const otherUser = conv.participants?.find(p => p.id !== currentUser?.id);
+		return otherUser?.username || 'Unknown User';
+	};
 
-              {/* Messages */}
-              <CardContent className="flex-1 p-0">
-                <ScrollArea className="h-full p-4">
-                  {messages.map((message) => (
-                    <MessageBubble key={message.id} message={message} />
-                  ))}
-                </ScrollArea>
-              </CardContent>
+	// Get avatar for conversation
+	const getConversationAvatar = (conv: Conversation) => {
+		const otherUser = conv.participants?.find(p => p.id !== currentUser?.id);
+		return (
+			otherUser?.avatar ||
+			`https://api.dicebear.com/7.x/avataaars/svg?seed=${getConversationName(conv)}`
+		);
+	};
 
-              {/* Message Input */}
-              <div className="border-t p-4">
-                <div className="flex items-end gap-2">
-                  <Button size="sm" variant="ghost" className="shrink-0">
-                    <Paperclip className="w-4 h-4" />
-                  </Button>
+	return (
+		<div className="h-screen bg-background flex flex-col overflow-hidden">
+			<Navbar />
 
-                  <div className="flex-1 relative">
-                    <Textarea
-                      placeholder="Type a message..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      className="min-h-10 max-h-[120px] resize-none pr-12"
-                      rows={1}
-                    />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                    >
-                      <Smile className="w-4 h-4" />
-                    </Button>
-                  </div>
+			{convError && (
+				<div className="bg-destructive/15 border-b border-destructive p-4">
+					<p className="text-sm text-destructive">Error loading messages: {String(convError)}</p>
+				</div>
+			)}
 
-                  <Button
-                    size="sm"
-                    onClick={handleSendMessage}
-                    disabled={!newMessage.trim()}
-                    className="shrink-0"
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+			{convLoading && (
+				<div className="bg-muted border-b border-border p-4">
+					<p className="text-sm text-muted-foreground">Loading conversations...</p>
+				</div>
+			)}
+
+			<div className="flex-1 flex overflow-hidden">
+				{/* Left Sidebar - Conversations (15%) */}
+				<div className="w-[15%] border-r bg-card flex flex-col overflow-hidden">
+					<div className="p-4 border-b shrink-0">
+						<h2 className="font-semibold text-sm flex items-center gap-2">
+							<MessageCircle className="w-4 h-4" />
+							Messages
+						</h2>
+					</div>
+
+					{/* Tabs: ALL / UNREAD */}
+					<div className="flex border-b shrink-0">
+						<button
+							type="button"
+							onClick={() => setMessageTab('all')}
+							className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+								messageTab === 'all'
+									? 'text-primary border-b-2 border-primary bg-accent/50'
+									: 'text-muted-foreground hover:text-foreground'
+							}`}
+						>
+							ALL
+						</button>
+						<button
+							type="button"
+							onClick={() => setMessageTab('unread')}
+							className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+								messageTab === 'unread'
+									? 'text-primary border-b-2 border-primary bg-accent/50'
+									: 'text-muted-foreground hover:text-foreground'
+							}`}
+						>
+							UNREAD
+						</button>
+					</div>
+
+					<ScrollArea className="flex-1">
+						<div className="space-y-1 p-2">
+							{convLoading ? (
+								<div className="text-xs text-muted-foreground text-center py-8">Loading...</div>
+							) : convError ? (
+								<div className="text-xs text-destructive text-center py-8">
+									Error: {String(convError)}
+								</div>
+							) : conversations && conversations.length > 0 ? (
+								conversations.map((conv: Conversation) => {
+									const name = getConversationName(conv);
+									const avatar = getConversationAvatar(conv);
+									const otherUser = conv.participants?.find(p => p.id !== currentUser?.id);
+									const isOnline = otherUser ? onlineUserIds.has(otherUser.id) : false;
+									const unread = conv.unread_count ?? 0;
+
+									return (
+										<button
+											key={conv.id}
+											type="button"
+											className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+												conv.id === selectedConversationId
+													? 'bg-primary text-primary-foreground'
+													: 'hover:bg-accent'
+											}`}
+											onClick={() => setSelectedConversationId(conv.id)}
+										>
+											<div className="flex items-center gap-2">
+												<div className="relative">
+													<Avatar className="w-8 h-8">
+														<AvatarImage src={avatar} />
+														<AvatarFallback className="text-xs">
+															{name.substring(0, 2).toUpperCase()}
+														</AvatarFallback>
+													</Avatar>
+													<div
+														className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-card ${
+															isOnline ? 'bg-green-500' : 'bg-gray-400'
+														}`}
+													/>
+												</div>
+												<div className="flex-1 min-w-0">
+													<div className="flex items-center justify-between">
+														<p className="font-medium truncate text-xs">{name}</p>
+														{unread > 0 && (
+															<span className="bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0.5 rounded-full">
+																{unread}
+															</span>
+														)}
+													</div>
+													{conv.last_message && (
+														<p className="text-xs opacity-75 truncate">
+															{conv.last_message.content}
+														</p>
+													)}
+												</div>
+											</div>
+										</button>
+									);
+								})
+							) : (
+								<div className="text-xs text-muted-foreground text-center py-8">
+									{messageTab === 'unread' ? 'No unread messages' : 'No conversations yet'}
+								</div>
+							)}
+						</div>
+					</ScrollArea>
+				</div>
+
+				{/* Center - Chat Window (70%) */}
+				<div className="flex-1 flex flex-col overflow-hidden">
+					<div className="border-b p-4 shrink-0 bg-card">
+						<div className="flex items-center gap-3">
+							{selectedConversationId &&
+								conversations.find((c: Conversation) => c.id === selectedConversationId) && (
+									<>
+										<Avatar className="w-8 h-8">
+											<AvatarImage
+												src={getConversationAvatar(
+													conversations.find((c: Conversation) => c.id === selectedConversationId)!
+												)}
+											/>
+											<AvatarFallback className="text-xs">
+												{getConversationName(
+													conversations.find((c: Conversation) => c.id === selectedConversationId)!
+												)
+													.substring(0, 2)
+													.toUpperCase()}
+											</AvatarFallback>
+										</Avatar>
+										<div>
+											<h3 className="font-semibold text-sm">
+												{getConversationName(
+													conversations.find((c: Conversation) => c.id === selectedConversationId)!
+												)}
+											</h3>
+											<p className="text-xs text-muted-foreground">
+												{(() => {
+													const conv = conversations.find(
+														(c: Conversation) => c.id === selectedConversationId
+													);
+													const otherUser = conv?.participants?.find(p => p.id !== currentUser?.id);
+													return otherUser && onlineUserIds.has(otherUser.id)
+														? 'Online'
+														: 'Offline';
+												})()}
+											</p>
+										</div>
+									</>
+								)}
+						</div>
+					</div>
+
+					<ScrollArea
+						className="flex-1 overflow-hidden"
+						ref={scrollAreaRef}
+					>
+						<div className="space-y-3 p-6">
+							{isLoading ? (
+								<div className="text-center py-8 text-muted-foreground">Loading messages...</div>
+							) : messages.length === 0 ? (
+								<div className="text-center py-8 text-muted-foreground">
+									No messages yet. Start the conversation!
+								</div>
+							) : (
+								messages.map(msg => {
+									const isOwnMessage = msg.sender_id === currentUser?.id;
+									const sender = msg.sender;
+									return (
+										<div
+											key={msg.id}
+											className={`flex items-start gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}
+										>
+											<Avatar className="w-8 h-8 shrink-0">
+												<AvatarImage
+													src={
+														sender?.avatar ||
+														`https://api.dicebear.com/7.x/avataaars/svg?seed=${sender?.username}`
+													}
+												/>
+												<AvatarFallback className="text-xs">
+													{sender?.username?.[0]?.toUpperCase() || 'U'}
+												</AvatarFallback>
+											</Avatar>
+											<div className={`flex-1 min-w-0 ${isOwnMessage ? 'text-right' : ''}`}>
+												<div
+													className={`flex items-baseline gap-2 mb-1 ${isOwnMessage ? 'justify-end' : ''}`}
+												>
+													<span
+														className="font-semibold text-sm"
+														style={{ color: getUserColor(msg.sender_id) }}
+													>
+														{isOwnMessage ? 'You' : sender?.username || 'Unknown'}
+													</span>
+													<span className="text-xs text-muted-foreground">
+														{formatTimestamp(msg.created_at)}
+													</span>
+												</div>
+												<div
+													className={`inline-block rounded-2xl px-4 py-2 ${
+														isOwnMessage ? 'bg-primary text-primary-foreground' : 'bg-muted'
+													}`}
+												>
+													<p className="text-sm wrap-break-word">{msg.content}</p>
+												</div>
+											</div>
+										</div>
+									);
+								})
+							)}
+
+							{Object.values(participants).some(p => p.typing) && (
+								<div className="flex items-center gap-2 text-xs text-muted-foreground">
+									<span>
+										{Object.values(participants)
+											.filter(p => p.typing)
+											.map(p => p.username)
+											.join(', ')}{' '}
+										is typing...
+									</span>
+								</div>
+							)}
+
+							<div ref={messagesEndRef} />
+						</div>
+					</ScrollArea>
+
+					<div className="border-t bg-card p-4 shrink-0">
+						<div className="flex gap-2">
+							<Input
+								placeholder="Type a message..."
+								value={newMessage}
+								onChange={e => handleInputChange(e.target.value)}
+								onKeyPress={handleKeyPress}
+								className="flex-1"
+							/>
+							<Button
+								onClick={handleSendMessage}
+								disabled={!newMessage.trim()}
+							>
+								<Send className="w-4 h-4" />
+							</Button>
+						</div>
+					</div>
+				</div>
+
+				{/* Right Sidebar - Contact Info (15%) */}
+				<div className="w-[15%] border-l bg-card flex flex-col overflow-hidden">
+					<div className="p-4 border-b shrink-0">
+						<h2 className="font-semibold text-sm flex items-center gap-2">
+							<Users className="w-4 h-4" />
+							Contact
+						</h2>
+					</div>
+					<ScrollArea className="flex-1">
+						<div className="p-4">
+							{selectedConversationId &&
+								conversations.find((c: Conversation) => c.id === selectedConversationId) &&
+								(() => {
+									const conv = conversations.find(
+										(c: Conversation) => c.id === selectedConversationId
+									)!;
+									const otherUser = conv.participants?.find(p => p.id !== currentUser?.id);
+									const isOnline = otherUser ? onlineUserIds.has(otherUser.id) : false;
+
+									return (
+										<div className="text-center">
+											<Avatar className="w-16 h-16 mx-auto mb-3">
+												<AvatarImage src={getConversationAvatar(conv)} />
+												<AvatarFallback>
+													{getConversationName(conv).substring(0, 2).toUpperCase()}
+												</AvatarFallback>
+											</Avatar>
+											<h3 className="font-semibold text-sm mb-1">{getConversationName(conv)}</h3>
+											<div className="flex items-center justify-center gap-1.5">
+												<div
+													className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`}
+												/>
+												<span className="text-xs text-muted-foreground">
+													{isOnline ? 'Online' : 'Offline'}
+												</span>
+											</div>
+										</div>
+									);
+								})()}
+						</div>
+					</ScrollArea>
+				</div>
+			</div>
+		</div>
+	);
 }
