@@ -21,9 +21,18 @@ export default function Chat() {
   const currentUser = getCurrentUser()
   const { data: conversations, isLoading: convLoading, error: convError } = useConversations()
   
+  // Debug logging
+  useEffect(() => {
+    console.log('Chat: currentUser =', currentUser)
+    console.log('Chat: conversations =', conversations)
+    console.log('Chat: convLoading =', convLoading)
+    console.log('Chat: convError =', convError)
+  }, [currentUser, conversations, convLoading, convError])
+  
   // Auto-select first conversation when loaded
   useEffect(() => {
     if (conversations && conversations.length > 0 && !globalConversationId) {
+      console.log('Chat: Auto-selecting first conversation:', conversations[0].id)
       setGlobalConversationId(conversations[0].id)
     }
   }, [conversations, globalConversationId])
@@ -177,7 +186,15 @@ export default function Chat() {
           </div>
           <ScrollArea className="flex-1">
             <div className="space-y-1 p-2">
-              {conversations && conversations.length > 0 ? (
+              {convLoading ? (
+                <div className="text-xs text-muted-foreground text-center py-8">
+                  Loading rooms...
+                </div>
+              ) : convError ? (
+                <div className="text-xs text-destructive text-center py-8">
+                  Error: {String(convError)}
+                </div>
+              ) : conversations && conversations.length > 0 ? (
                 conversations.map((conversation: Conversation) => (
                   <button
                     type="button"
