@@ -1,5 +1,5 @@
 import { MessageCircle, Send, Settings, Users } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import type { Conversation } from '@/api/types'
 import { Navbar } from '@/components/Navbar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -9,21 +9,72 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useConversations, useMessages, useSendMessage } from '@/hooks/useChat'
 import { getCurrentUser } from '@/hooks/useUsers'
+import { useQueryClient } from '@tanstack/react-query'
+import { useChatWebSocket } from '@/hooks/useChatWebSocket'
 
 export default function Chat() {
   const [newMessage, setNewMessage] = useState('')
   const [globalConversationId, setGlobalConversationId] = useState<number>(1) // Default to conversation 1 for now
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const typingTimeoutRef = useRef<number | null>(null)
 
   const currentUser = getCurrentUser()
   const { data: conversations } = useConversations()
   const { data: messages = [], isLoading } = useMessages(globalConversationId)
   const sendMessage = useSendMessage(globalConversationId)
+  const queryClient = useQueryClient()
+
+  // Participants state: map of userId -> { id, username, online, typing }
+  const [participants, setParticipants] = useState<Record<number, { id: number; username?: string; online?: boolean; typing?: boolean }>>({})
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
+
+  // Keep chat scrolled to bottom when messages update
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  // Initialize participants from conversations data when selected conversation changes
+  useEffect(() => {
+    const conv = conversations?.find((c) => c.id === globalConversationId)
+    if (!conv) return
+    // try multiple property names that could contain users
+    const usersList: any[] = conv.members || conv.participants || conv.users || []
+    if (usersList && usersList.length > 0) {
+      const map: Record<number, any> = {}
+      usersList.forEach((u: any) => {
+        map[u.id] = { id: u.id, username: u.username || u.name, online: !!u.online, typing: false }
+      })
+      setParticipants(map)
+    }
+  }, [conversations, globalConversationId])
+
+  // WebSocket for real-time updates (messages, typing, presence)
+  const chatWs = useChatWebSocket({
+    conversationId: globalConversationId,
+    onMessage: (msg) => {
+      // append message into react-query cache for messages
+      queryClient.setQueryData(['chat', 'messages', globalConversationId], (old: any) => {
+        if (!old) return [msg]
+        // ensure array
+        if (Array.isArray(old)) {
+          if (old.some((m: any) => m.id === msg.id)) return old
+          return [...old, msg]
+        }
+        return old
+      })
+    },
+    onTyping: (userId, username, isTyping) => {
+      setParticipants((prev) => ({ ...(prev || {}), [userId]: { ...(prev?.[userId] || { id: userId, username }), typing: isTyping, online: true } }))
+    },
+    onPresence: (userId, username, status) => {
+      const online = status === 'online' || status === 'connected'
+      setParticipants((prev) => ({ ...(prev || {}), [userId]: { ...(prev?.[userId] || { id: userId, username }), online } }))
+    },
+  })
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return
@@ -36,6 +87,10 @@ export default function Chat() {
       {
         onSuccess: () => {
           setNewMessage('')
+          // notify that user stopped typing
+          try {
+            chatWs?.sendTyping(false)
+          } catch {}
         },
       }
     )
@@ -46,6 +101,22 @@ export default function Chat() {
       e.preventDefault()
       handleSendMessage()
     }
+  }
+
+  const handleInputChange = (val: string) => {
+    setNewMessage(val)
+    // notify typing true, with debounce to send false
+    try {
+      chatWs?.sendTyping(true)
+    } catch {}
+    if (typingTimeoutRef.current) {
+      window.clearTimeout(typingTimeoutRef.current)
+    }
+    typingTimeoutRef.current = window.setTimeout(() => {
+      try {
+        chatWs?.sendTyping(false)
+      } catch {}
+    }, 1500) as unknown as number
   }
 
   const formatTimestamp = (timestamp: string) => {
