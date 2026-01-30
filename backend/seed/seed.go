@@ -2,6 +2,7 @@
 package seed
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
@@ -425,7 +426,7 @@ func createMessages(db *gorm.DB, users []models.User, conversations []models.Con
 				SenderID:       users[userIdx].ID,
 				Content:        chatMessages[messageIdx],
 				MessageType:    "text",
-				Metadata:       "{}", // Valid JSON object
+				Metadata:       json.RawMessage("{}"), // Valid JSON object
 			}
 
 			if err := db.Create(&message).Error; err != nil {

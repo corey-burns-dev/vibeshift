@@ -11,7 +11,7 @@ import (
 type Post struct {
 	ID       uint   `gorm:"primaryKey" json:"id"`
 	Title    string `gorm:"not null" json:"title"`
-	Content  string `gorm:"not null" json:"content"`
+	Content  string `gorm:"type:text;not null" json:"content"`
 	ImageURL string `json:"image_url"`
 	UserID   uint   `gorm:"not null" json:"user_id"`
 	User     User   `gorm:"foreignKey:UserID" json:"user"`

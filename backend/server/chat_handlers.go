@@ -2,6 +2,7 @@
 package server
 
 import (
+	"encoding/json"
 	"vibeshift/models"
 	"vibeshift/notifications"
 
@@ -169,9 +170,9 @@ func (s *Server) SendMessage(c *fiber.Ctx) error {
 	}
 
 	var req struct {
-		Content     string `json:"content"`
-		MessageType string `json:"message_type,omitempty"`
-		Metadata    string `json:"metadata,omitempty"`
+		Content     string          `json:"content"`
+		MessageType string          `json:"message_type,omitempty"`
+		Metadata    json.RawMessage `json:"metadata,omitempty"`
 	}
 	if parseErr := c.BodyParser(&req); parseErr != nil {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
@@ -212,8 +213,8 @@ func (s *Server) SendMessage(c *fiber.Ctx) error {
 			models.NewUnauthorizedError("You are not a participant in this conversation"))
 	}
 
-	if req.Metadata == "" {
-		req.Metadata = "{}"
+	if req.Metadata == nil {
+		req.Metadata = json.RawMessage("{}")
 	}
 
 	message := &models.Message{

@@ -129,6 +129,6 @@ export interface CreateConversationRequest {
 export interface SendMessageRequest {
 	content: string;
 	message_type?: "text" | "image" | "file";
-	// Backend expects a JSON string, not an object
-	metadata?: string;
+	// Backend expects a JSON object
+	metadata?: Record<string, unknown>;
 }

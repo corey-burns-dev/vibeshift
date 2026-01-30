@@ -5,7 +5,7 @@
 - **Framework:** React 19
 - **Build Tool:** Vite 7
 - **Language:** TypeScript
-- **Styling:** Tailwind CSS 4, Radix UI (Headless), Lucide React (Icons), `tailwindcss-animate`.
+- **Styling:** Tailwind CSS 4, Shadcn, Lucide React (Icons), `tailwindcss-animate`.
 - **State Management:** TanStack Query (React Query) v5.
 - **Routing:** React Router v7.
 - **Forms:** React Hook Form + Zod.

@@ -2,6 +2,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 
 	"gorm.io/gorm"
@@ -24,19 +25,19 @@ type Conversation struct {
 
 // Message represents a chat message
 type Message struct {
-	ID             uint           `gorm:"primaryKey" json:"id"`
-	ConversationID uint           `gorm:"not null;index" json:"conversation_id"`
-	Conversation   *Conversation  `gorm:"foreignKey:ConversationID" json:"conversation,omitempty"`
-	SenderID       uint           `gorm:"not null;index" json:"sender_id"`
-	Sender         *User          `gorm:"foreignKey:SenderID" json:"sender,omitempty"`
-	Content        string         `gorm:"type:text;not null" json:"content"`
-	MessageType    string         `gorm:"default:'text'" json:"message_type"`  // text, image, file, etc.
-	Metadata       string         `gorm:"type:json" json:"metadata,omitempty"` // For file URLs, image URLs, etc.
-	IsRead         bool           `gorm:"default:false" json:"is_read"`
-	ReadAt         *time.Time     `json:"read_at,omitempty"`
-	CreatedAt      time.Time      `json:"created_at"`
-	UpdatedAt      time.Time      `json:"updated_at"`
-	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
+	ID             uint            `gorm:"primaryKey" json:"id"`
+	ConversationID uint            `gorm:"not null;index" json:"conversation_id"`
+	Conversation   *Conversation   `gorm:"foreignKey:ConversationID" json:"conversation,omitempty"`
+	SenderID       uint            `gorm:"not null;index" json:"sender_id"`
+	Sender         *User           `gorm:"foreignKey:SenderID" json:"sender,omitempty"`
+	Content        string          `gorm:"type:text;not null" json:"content"`
+	MessageType    string          `gorm:"default:'text'" json:"message_type"`  // text, image, file, etc.
+	Metadata       json.RawMessage `gorm:"type:json" json:"metadata,omitempty"` // For file URLs, image URLs, etc.
+	IsRead         bool            `gorm:"default:false" json:"is_read"`
+	ReadAt         *time.Time      `json:"read_at,omitempty"`
+	CreatedAt      time.Time       `json:"created_at"`
+	UpdatedAt      time.Time       `json:"updated_at"`
+	DeletedAt      gorm.DeletedAt  `gorm:"index" json:"-"`
 }
 
 // ConversationParticipant tracks user participation in conversations
