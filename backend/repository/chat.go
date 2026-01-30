@@ -88,11 +88,22 @@ func (r *chatRepository) GetMessages(ctx context.Context, convID uint, limit, of
 	err := r.db.WithContext(ctx).
 		Where("conversation_id = ?", convID).
 		Preload("Sender").
-		Order("created_at ASC").
+		Order("created_at DESC").
 		Limit(limit).
 		Offset(offset).
 		Find(&messages).Error
-	return messages, err
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Reverse messages to return them in chronological order (oldest -> newest)
+	// We fetched DESC to get the *latest* messages, but client expects ASC
+	for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
+		messages[i], messages[j] = messages[j], messages[i]
+	}
+
+	return messages, nil
 }
 
 func (r *chatRepository) MarkMessageRead(ctx context.Context, msgID uint) error {

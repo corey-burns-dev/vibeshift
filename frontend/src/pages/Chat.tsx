@@ -66,8 +66,11 @@ export default function Chat() {
 
 	// Keep chat scrolled to bottom when messages update
 	useEffect(() => {
-		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-	}, [messages]);
+		// Use requestAnimationFrame to ensure DOM has updated
+		requestAnimationFrame(() => {
+			messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+		});
+	}, [messages.length]);
 
 	// Initialize participants from conversations data
 	useEffect(() => {
@@ -90,7 +93,7 @@ export default function Chat() {
 				if (!currentUser || u.id !== currentUser.id) {
 					map[u.id] = {
 						id: u.id,
-						username: u.username || u.name,
+						username: u.username,
 						online: !!u.online,
 						typing: false,
 					};
@@ -102,21 +105,10 @@ export default function Chat() {
 	}, [conversations, globalConversationId, currentUser?.id]);
 
 	// WebSocket handlers
-	const onMessage = useCallback(
-		(msg: any) => {
-			if (globalConversationId) {
-				queryClient.setQueryData(['chat', 'messages', globalConversationId], (old: any) => {
-					if (!old) return [msg];
-					if (Array.isArray(old)) {
-						if (old.some((m: any) => m.id === msg.id)) return old;
-						return [...old, msg];
-					}
-					return old;
-				});
-			}
-		},
-		[globalConversationId, queryClient]
-	);
+	const onMessage = useCallback((msg: any) => {
+		// useChatWebSocket now handles cache updates automatically.
+		// This callback can be used for side effects like playing a sound.
+	}, []);
 
 	const onPresence = useCallback(
 		(userId: number, username: string, status: string) => {
@@ -186,11 +178,63 @@ export default function Chat() {
 		}
 
 		setMessageError(null);
+		const tempId = crypto.randomUUID();
+		const messageContent = newMessage;
+
+		// Create optimistic message
+		const tempMessage = {
+			id: Date.now(), // Temporary numeric ID for List keys, will be replaced
+			content: messageContent,
+			sender_id: currentUser?.id,
+			sender: currentUser,
+			created_at: new Date().toISOString(),
+			conversation_id: globalConversationId,
+			message_type: 'text',
+			metadata: { tempId }, // Store tempId in object for local check
+			isOptimistic: true,
+		};
+
+		// Optimistically add to UI
+		queryClient.setQueryData(['chat', 'messages', globalConversationId], (old: any) => {
+			return Array.isArray(old) ? [...old, tempMessage] : [tempMessage];
+		});
+
+		setNewMessage(''); // Clear input immediately
+
 		sendMessage.mutate(
-			{ content: newMessage, message_type: 'text' },
-			{ onSuccess: () => setNewMessage('') }
+			{
+				content: messageContent,
+				message_type: 'text',
+				metadata: JSON.stringify({ tempId }),
+			},
+			{
+				onSuccess: serverMessage => {
+					// Replace optimistic message with server version
+					queryClient.setQueryData(['chat', 'messages', globalConversationId], (old: any) => {
+						if (!Array.isArray(old)) return old;
+						return old.map((m: any) => {
+							// Match by tempId in metadata if available
+							const mMeta = m.metadata;
+							if (mMeta?.tempId === tempId) return serverMessage;
+							return m;
+						});
+					});
+				},
+				onError: () => {
+					// Remove optimistic message on failure
+					queryClient.setQueryData(['chat', 'messages', globalConversationId], (old: any) => {
+						if (!Array.isArray(old)) return old;
+						return old.filter((m: any) => {
+							const mMeta = m.metadata;
+							return mMeta?.tempId !== tempId;
+						});
+					});
+					setNewMessage(messageContent); // Restore message
+					setMessageError('Failed to send message');
+				},
+			}
 		);
-	}, [newMessage, globalConversationId, sendMessage]);
+	}, [newMessage, globalConversationId, sendMessage, queryClient, currentUser]);
 
 	const handleKeyPress = useCallback(
 		(e: React.KeyboardEvent) => {
