@@ -36,7 +36,10 @@ import (
 
 func main() {
 	// Load configuration
-	cfg := config.LoadConfig()
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
 
 	// Create server with dependency injection
 	srv, err := server.NewServer(cfg)
@@ -46,7 +49,8 @@ func main() {
 
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
-		AppName: "Social Media API",
+		AppName:   "Social Media API",
+		BodyLimit: 10 * 1024 * 1024, // 10MB limit
 	})
 
 	// Setup middleware and routes

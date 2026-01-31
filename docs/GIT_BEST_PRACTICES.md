@@ -8,6 +8,7 @@ Welcome to the "pro" side of Git! This guide outlines the workflows and habits t
 **Pro:** `git pull --rebase`
 
 ### Why?
+
 When you use `git pull`, Git merges the remote changes into your local branch. If you both added commits, this creates a "merge commit" that clutters the history with no real information.
 `git pull --rebase` rewinds your local commits, brings in the remote changes, and then replays your work on top. This keeps the history a straight, clean line.
 
@@ -21,7 +22,8 @@ git pull --rebase origin master
 **Beginner:** Working directly on `master`
 **Pro:** Creating a branch for *everything*
 
-### Why?
+### Why use branches?
+
 Master should always be deployable. By working in a branch, you can break things safely. It also makes Code Reviews (Pull Requests) possible.
 
 ```bash
@@ -40,6 +42,7 @@ git push -u origin feat/user-profile
 **Pro:** Small, logical commits with "Conventional Commits" format.
 
 ### Structure
+
 ```text
 <type>(<scope>): <description>
 
@@ -47,6 +50,7 @@ git push -u origin feat/user-profile
 ```
 
 ### Types
+
 - `feat:` New feature
 - `fix:` Bug fix
 - `docs:` Documentation only
@@ -55,6 +59,7 @@ git push -u origin feat/user-profile
 - `chore:` Build process, dependency updates
 
 ### Example
+
 ```bash
 git commit -m "feat(auth): add login form validation"
 git commit -m "fix(header): repair broken navigation link on mobile"
@@ -69,6 +74,7 @@ git commit -m "fix(header): repair broken navigation link on mobile"
 # Edit the last 3 commits
 git rebase -i HEAD~3
 ```
+
 *Change `pick` to `squash` (or `s`) to combine a commit into the previous one.*
 
 ## 5. Reviewing Changes (`add -p`)
@@ -76,15 +82,16 @@ git rebase -i HEAD~3
 **Beginner:** `git add .` (Blindly adding everything)
 **Pro:** `git add -p` (Patch mode)
 
-### Why?
+### Why use patch mode?
+
 This iterates through every change and asks "Stage this hunk?". It forces you to review your code before staging it and allows you to split changes into different commits.
 
 ## Summary Checklist
 
-1.  [ ] **Pull first:** Always start with `git pull --rebase` (or fetch/rebase).
-2.  [ ] **Branch:** `git checkout -b feat/my-cool-thing`.
-3.  [ ] **Work:** Write code.
-4.  [ ] **Stage:** `git add -p` (Review what you did).
-5.  [ ] **Commit:** `git commit -m "feat: description"`
-6.  [ ] **Push:** `git push origin feat/my-cool-thing`
-7.  [ ] **Merge:** Open a Pull Request on GitHub.
+1. [ ] **Pull first:** Always start with `git pull --rebase` (or fetch/rebase).
+2. [ ] **Branch:** `git checkout -b feat/my-cool-thing`.
+3. [ ] **Work:** Write code.
+4. [ ] **Stage:** `git add -p` (Review what you did).
+5. [ ] **Commit:** `git commit -m "feat: description"`
+6. [ ] **Push:** `git push origin feat/my-cool-thing`
+7. [ ] **Merge:** Open a Pull Request on GitHub.

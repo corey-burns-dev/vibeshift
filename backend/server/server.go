@@ -3,6 +3,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -19,7 +20,9 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/helmet"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/gofiber/swagger"
 	"github.com/gofiber/websocket/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -46,7 +49,10 @@ type Server struct {
 // NewServer creates a new server instance with all dependencies
 func NewServer(cfg *config.Config) (*Server, error) {
 	// Initialize database
-	db := database.Connect(cfg)
+	db, err := database.Connect(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("database connection failed: %w", err)
+	}
 
 	// Initialize Redis
 	cache.InitRedis(cfg.RedisURL)
@@ -82,15 +88,37 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 // SetupMiddleware configures middleware for the Fiber app
 func (s *Server) SetupMiddleware(app *fiber.App) {
-	// Logger middleware
-	app.Use(logger.New(logger.Config{
-		Format:     "${time} ${method} ${path} ${status} ${latency}\n",
-		TimeFormat: "2006/01/02 15:04:05",
+	// Request ID for tracing
+	app.Use(requestid.New())
+
+	// Security headers
+	app.Use(helmet.New())
+
+	// Structured Logging middleware
+	app.Use(middleware.StructuredLogger())
+
+	// Global rate limiting (100 requests per minute per IP)
+	app.Use(limiter.New(limiter.Config{
+		Max:        100,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "Too many requests, please try again later.",
+			})
+		},
 	}))
 
 	// CORS middleware with WebSocket support
+	origins := s.config.AllowedOrigins
+	if origins == "" {
+		origins = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"
+	}
+
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173", // Allow localhost origins
+		AllowOrigins:     origins,
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, Upgrade, Connection, Sec-WebSocket-Key, Sec-WebSocket-Version",
 		AllowCredentials: true,
 		MaxAge:           86400, // 24 hours
@@ -189,10 +217,40 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 
 // HealthCheck handles health check requests
 func (s *Server) HealthCheck(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{
-		"message": "Vibecheck successful",
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	dbStatus := "healthy"
+	sqlDB, err := s.db.DB()
+	if err != nil {
+		dbStatus = "unhealthy"
+	} else if err := sqlDB.PingContext(ctx); err != nil {
+		dbStatus = "unhealthy"
+	}
+
+	redisStatus := "healthy"
+	if s.redis != nil {
+		if err := s.redis.Ping(ctx).Err(); err != nil {
+			redisStatus = "unhealthy"
+		}
+	} else {
+		redisStatus = "unavailable"
+	}
+
+	status := fiber.StatusOK
+	if dbStatus == "unhealthy" || redisStatus == "unhealthy" {
+		status = fiber.StatusServiceUnavailable
+	}
+
+	return c.Status(status).JSON(fiber.Map{
+		"message": "Vibecheck",
 		"version": "1.0.0",
 		"status":  "healthy",
+		"checks": fiber.Map{
+			"database": dbStatus,
+			"redis":    redisStatus,
+		},
+		"time": time.Now(),
 	})
 }
 
@@ -353,15 +411,18 @@ func (s *Server) Start() error {
 	// Wire notifications hub to Redis subscriber if available
 	if s.hub != nil && s.notifier != nil {
 		go func() {
-			// best-effort wiring; ignores error
-			_ = s.hub.StartWiring(context.Background(), s.notifier)
+			if err := s.hub.StartWiring(context.Background(), s.notifier); err != nil {
+				log.Printf("failed to start notification hub wiring: %v", err)
+			}
 		}()
 	}
 
 	// Wire chat hub to Redis subscriber if available
 	if s.chatHub != nil && s.notifier != nil {
 		go func() {
-			_ = s.chatHub.StartWiring(context.Background(), s.notifier)
+			if err := s.chatHub.StartWiring(context.Background(), s.notifier); err != nil {
+				log.Printf("failed to start chat hub wiring: %v", err)
+			}
 		}()
 	}
 

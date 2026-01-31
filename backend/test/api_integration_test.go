@@ -18,7 +18,10 @@ import (
 )
 
 func setupApp() *fiber.App {
-	cfg := config.LoadConfig()
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		panic(fmt.Errorf("failed to load config: %w", err))
+	}
 	srv, err := server.NewServer(cfg)
 	if err != nil {
 		panic(err)

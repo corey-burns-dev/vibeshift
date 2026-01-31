@@ -4,6 +4,7 @@ package database
 import (
 	"fmt"
 	"log"
+	"time"
 	"vibeshift/config"
 	"vibeshift/models"
 
@@ -18,7 +19,7 @@ var DB *gorm.DB
 // Connect opens a database connection using the provided configuration and performs
 // automatic migration for the application models, then returns the gorm DB instance.
 // Connect establishes a database connection using the provided configuration.
-func Connect(cfg *config.Config) *gorm.DB {
+func Connect(cfg *config.Config) (*gorm.DB, error) {
 	var err error
 
 	// Build PostgreSQL connection string
@@ -31,18 +32,18 @@ func Connect(cfg *config.Config) *gorm.DB {
 		cfg.DBName,
 	)
 
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+	dbInstance, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
 	log.Println("Database connected successfully")
 
 	// Auto migrate models
-	err = DB.AutoMigrate(
+	err = dbInstance.AutoMigrate(
 		&models.User{},
 		&models.Post{},
 		&models.Comment{},
@@ -53,9 +54,19 @@ func Connect(cfg *config.Config) *gorm.DB {
 		&models.Friendship{},
 	)
 	if err != nil {
-		log.Fatal("Failed to migrate database:", err)
+		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
 	log.Println("Database migration completed")
-	return DB
+
+	// Set connection pooling parameters
+	sqlDB, err := dbInstance.DB()
+	if err == nil {
+		sqlDB.SetMaxOpenConns(25)
+		sqlDB.SetMaxIdleConns(5)
+		sqlDB.SetConnMaxLifetime(5 * time.Minute)
+	}
+
+	DB = dbInstance
+	return DB, nil
 }

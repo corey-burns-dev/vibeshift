@@ -13,10 +13,16 @@ func main() {
 	log.Println("==================")
 
 	// Load configuration
-	cfg := config.LoadConfig()
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
 
 	// Connect to database
-	database.Connect(cfg)
+	_, err = database.Connect(cfg)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
 
 	// Run seeder
 	if err := seed.Seed(database.DB); err != nil {

@@ -1,0 +1,15 @@
+# Vibeshift Production Configuration Template
+# Copy this to config.production.yml and update values
+
+APP_ENV: production
+PORT: "8375"
+
+# Database
+DB_HOST: "postgres"
+DB_PORT: "5432"
+DB_USER: "vibeshift_admin"
+DB_NAME: "vibeshift_prod"
+
+# Security
+# ALLOWED_ORIGINS: "https://your-domain.com"
+# JWT_SECRET: "A-VERY-LONG-AND-SECURE-RANDOM-STRING"

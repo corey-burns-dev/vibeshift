@@ -3,6 +3,7 @@
 ## Overview
 
 This project uses **TanStack Query (React Query)** for all server state management, with a clean separation between:
+
 - **API Client** (`src/api/client.ts`) - HTTP request logic
 - **Type Definitions** (`src/api/types.ts`) - TypeScript interfaces
 - **Custom Hooks** (`src/hooks/*`) - React Query wrappers
@@ -46,7 +47,8 @@ await apiClient.createPost({ title: 'Hello', content: 'World' })
 await apiClient.likePost(postId)
 ```
 
-### Features:
+### Features
+
 - ✅ Automatic JWT token injection from localStorage
 - ✅ Centralized error handling
 - ✅ Type-safe requests/responses
@@ -147,6 +149,7 @@ const isAuth = useIsAuthenticated()
 ## Key Features
 
 ### 1. Optimistic Updates
+
 Posts, comments, and profile updates show changes immediately before server confirmation:
 
 ```typescript
@@ -155,6 +158,7 @@ likePost.mutate() // Likes count increases immediately
 ```
 
 ### 2. Automatic Cache Invalidation
+
 Mutations automatically refresh related data:
 
 ```typescript
@@ -163,6 +167,7 @@ deleteComment.mutate(id) // Automatically refetches comments
 ```
 
 ### 3. Query Keys Pattern
+
 Organized cache keys for precise invalidation:
 
 ```typescript
@@ -173,6 +178,7 @@ postKeys.detail(1)    // ['posts', 'detail', 1]
 ```
 
 ### 4. Error Handling
+
 All hooks expose loading and error states:
 
 ```typescript
@@ -183,6 +189,7 @@ if (error) return <Error message={error.message} />
 ```
 
 ### 5. Type Safety
+
 Full TypeScript coverage from API to UI:
 
 ```typescript
@@ -194,6 +201,7 @@ const post = usePost(1)     // post: Post | undefined
 ## Usage Examples
 
 See `docs/hooks-usage-examples.tsx` for complete component examples including:
+
 - Simple posts list
 - Infinite scroll implementation
 - Create post form
@@ -201,7 +209,8 @@ See `docs/hooks-usage-examples.tsx` for complete component examples including:
 
 ## Migration Guide
 
-### Before (manual fetch):
+### Before (manual fetch)
+
 ```typescript
 const [posts, setPosts] = useState([])
 const [loading, setLoading] = useState(true)
@@ -214,7 +223,8 @@ useEffect(() => {
 }, [])
 ```
 
-### After (with hooks):
+### After (with hooks)
+
 ```typescript
 const { data: posts, isLoading } = usePosts()
 // That's it! Handles caching, refetching, errors automatically

@@ -1,23 +1,36 @@
 services:
-  postgres_test:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DB_HOST=postgres
+      - REDIS_URL=redis:6379
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: vibeshift_test
-      POSTGRES_USER: vibeshift_user
-      POSTGRES_PASSWORD: vibeshift_password
-    ports:
-      - "5433:5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres_test_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vibeshift_user -d vibeshift_test"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+
   redis:
     image: redis:7.2-alpine
-    ports:
-      - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning
     volumes:
       - redis_data:/data
@@ -27,81 +40,13 @@ services:
       timeout: 3s
       retries: 5
 
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    ports:
-      - "${GO_PORT}:${GO_PORT}"
-    depends_on:
-      redis:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-    volumes:
-      - .:/app
-    env_file:
-      - .env
-    environment:
-      - DB_HOST=postgres
-      - REDIS_URL=redis:6379
-      - DB_USER=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_DB}
-    command: air -c .air.toml
-
-  backend-test:
-    build:
-      context: .
-      dockerfile: Dockerfile.test
-    depends_on:
-      redis:
-        condition: service_healthy
-      postgres_test:
-        condition: service_healthy
-    volumes:
-      - .:/app
-    environment:
-      - DB_HOST=postgres_test
-      - DB_PORT=5432
-      - DB_USER=vibeshift_user
-      - DB_PASSWORD=vibeshift_password
-      - DB_NAME=vibeshift_test
-      - REDIS_URL=redis:6379
-      - GIN_MODE=release
-      - APP_ENV=testing
-
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.dev
-    ports:
-      - "5173:5173"
+      dockerfile: Dockerfile
     depends_on:
       - app
-    environment:
-      - VITE_API_URL=http://localhost:${GO_PORT}/api
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
 
 volumes:
   postgres_data:
   redis_data:
-  postgres_test_data:

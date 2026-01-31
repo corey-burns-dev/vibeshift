@@ -10,9 +10,10 @@ import (
 
 // ErrorResponse represents a standardized API error response
 type ErrorResponse struct {
-	Error   string `json:"error"`
-	Code    string `json:"code,omitempty"`
-	Details string `json:"details,omitempty"`
+	Error     string `json:"error"`
+	Code      string `json:"code,omitempty"`
+	Details   string `json:"details,omitempty"`
+	RequestID string `json:"request_id,omitempty"`
 }
 
 // AppError represents a custom application error
@@ -70,17 +71,25 @@ func NewInternalError(err error) *AppError {
 func RespondWithError(c *fiber.Ctx, status int, err error) error {
 	var response ErrorResponse
 	var appErr *AppError
+
+	rid := ""
+	if val := c.Locals("requestid"); val != nil {
+		rid = fmt.Sprintf("%v", val)
+	}
+
 	if errors.As(err, &appErr) {
 		response = ErrorResponse{
-			Error: appErr.Message,
-			Code:  appErr.Code,
+			Error:     appErr.Message,
+			Code:      appErr.Code,
+			RequestID: rid,
 		}
 		if appErr.Err != nil {
 			response.Details = appErr.Err.Error()
 		}
 	} else {
 		response = ErrorResponse{
-			Error: err.Error(),
+			Error:     err.Error(),
+			RequestID: rid,
 		}
 	}
 	return c.Status(status).JSON(response)

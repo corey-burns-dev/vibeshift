@@ -3,6 +3,14 @@ GO ?= go
 DOCKER_COMPOSE ?= docker compose
 BUN ?= bun
 
+# Environment Orchestration
+ENVIRONMENT ?= dev
+ifeq ($(ENVIRONMENT),prod)
+	COMPOSE_FILES := -f compose.yml -f compose.prod.yml
+else
+	COMPOSE_FILES := -f compose.yml -f compose.override.yml
+endif
+
 # Colors
 BLUE := \033[1;34m
 GREEN := \033[1;32m
@@ -36,8 +44,11 @@ help:
 	@echo "$(GREEN)Logs & Monitoring:$(NC)"
 	@echo "  make logs               - 📋 Stream backend logs"
 	@echo "  make logs-backend       - 📋 Backend logs only"
-	@echo "  make logs-frontend      - 📋 Frontend logs only"
 	@echo "  make logs-all           - 📋 All service logs"
+	@echo ""
+	@echo "$(GREEN)Environment & Config:$(NC)"
+	@echo "  make config-check       - 🔍 Validate merged Docker Compose config"
+	@echo "  make env                - ⚙️  Initialize .env file"
 	@echo ""
 	@echo "$(GREEN)Code Quality:$(NC)"
 	@echo "  make fmt                - 🎨 Format Go code"
@@ -66,16 +77,17 @@ help:
 	@echo "  make deps-check         - 🔍 Check for outdated Go dependencies"
 	@echo "  make deps-vuln          - 🛡️  Scan for security vulnerabilities"
 	@echo "  make deps-audit         - 🔎 Full dependency audit (check + vuln)"
+	@echo "  make deps-add-backend pkg=<pkg> - ➕ Add Go dependency inside container"
 	@echo ""
 
 # Development targets
 dev: env
 	@echo "$(BLUE)Starting full stack development environment...$(NC)"
-	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) up --build
+	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) $(COMPOSE_FILES) up --build
 
 dev-backend: env
 	@echo "$(BLUE)Starting backend services (Go, Redis, Postgres)...$(NC)"
-	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) up --build app redis postgres
+	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) $(COMPOSE_FILES) up --build app redis postgres
 
 dev-frontend: install
 	@echo "$(BLUE)Starting frontend dev server...$(NC)"
@@ -84,7 +96,7 @@ dev-frontend: install
 dev-both: env install
 	@echo "$(BLUE)Starting backend in Docker + frontend locally...$(NC)"
 	@echo "$(YELLOW)Backend will start in background...$(NC)"
-	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) up --build app redis postgres -d
+	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) $(COMPOSE_FILES) up --build app redis postgres -d
 	@echo "$(YELLOW)Frontend starting in foreground...$(NC)"
 	@cd frontend && $(BUN) --bun vite --host
 
@@ -94,51 +106,56 @@ build: build-backend build-frontend
 
 build-backend:
 	@echo "$(BLUE)Building backend image...$(NC)"
-	$(DOCKER_COMPOSE) build app
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) build app
 
 build-frontend:
 	@echo "$(BLUE)Building frontend image...$(NC)"
-	$(DOCKER_COMPOSE) build frontend
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) build frontend
 
 # Container management
 up:
 	@echo "$(BLUE)Starting services in background...$(NC)"
-	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) up -d
+	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) $(COMPOSE_FILES) up -d
 
 down:
 	@echo "$(BLUE)Stopping all services...$(NC)"
-	$(DOCKER_COMPOSE) down
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) down
 
 # Recreate targets (rebuild from scratch without cache)
 recreate:
 	@echo "$(BLUE)Recreating all containers (no cache)...$(NC)"
-	$(DOCKER_COMPOSE) build --no-cache
-	$(DOCKER_COMPOSE) up -d --force-recreate
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) build --no-cache
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) up -d --force-recreate
 	@echo "$(GREEN)✓ All containers recreated$(NC)"
 
 recreate-frontend:
 	@echo "$(BLUE)Recreating frontend container (no cache)...$(NC)"
-	$(DOCKER_COMPOSE) build --no-cache frontend
-	$(DOCKER_COMPOSE) up -d --force-recreate frontend
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) build --no-cache frontend
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) up -d --force-recreate frontend
 	@echo "$(GREEN)✓ Frontend container recreated$(NC)"
 
 recreate-backend:
 	@echo "$(BLUE)Recreating backend container (no cache)...$(NC)"
-	$(DOCKER_COMPOSE) build --no-cache app
-	$(DOCKER_COMPOSE) up -d --force-recreate app
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) build --no-cache app
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) up -d --force-recreate app
 	@echo "$(GREEN)✓ Backend container recreated$(NC)"
 
 # Logging
 logs: logs-backend
 
 logs-backend:
-	$(DOCKER_COMPOSE) logs -f app
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) logs -f app
 
 logs-frontend:
-	$(DOCKER_COMPOSE) logs -f frontend
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) logs -f frontend
 
 logs-all:
-	$(DOCKER_COMPOSE) logs -f
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) logs -f
+
+# Config validation
+config-check:
+	@echo "$(BLUE)Validating merged Docker Compose configuration for environment: $(ENVIRONMENT)...$(NC)"
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) config
 
 # Code quality
 fmt:
@@ -200,7 +217,7 @@ check-versions:
 
 clean:
 	@echo "$(BLUE)Cleaning up containers, volumes, and artifacts...$(NC)"
-	$(DOCKER_COMPOSE) down -v
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) down -v
 	-chmod -R 755 tmp/ 2>/dev/null || true
 	-rm -rf tmp/ 2>/dev/null || true
 	rm -rf frontend/node_modules frontend/dist
@@ -219,10 +236,10 @@ test-api:
 	./test-api.sh
 
 test-up:
-	$(DOCKER_COMPOSE) up -d postgres_test redis
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) up -d postgres_test redis
 
 test-down:
-	$(DOCKER_COMPOSE) down
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) down
 
 # Database seeding
 seed:
@@ -232,11 +249,24 @@ seed:
 	@echo "$(YELLOW)📧 Test users password: password123$(NC)"
 
 # Dependency Management
-deps-update:
-	@echo "$(BLUE)Updating Go dependencies...$(NC)"
-	cd backend && $(GO) get -u ./...
-	cd backend && $(GO) mod tidy
-	@echo "$(GREEN)✓ Go dependencies updated$(NC)"
+deps-install-backend:
+	@echo "$(BLUE)Installing Go dependencies...$(NC)"
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) exec -T app go mod download
+	@echo "$(GREEN)✓ Go dependencies installed$(NC)"
+
+deps-add-backend:
+	@if [ -z "$(pkg)" ]; then echo "Usage: make deps-add-backend pkg=github.com/foo/bar"; exit 1; fi
+	@echo "$(BLUE)Adding Go package $(pkg) inside container...$(NC)"
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) exec -T app go get $(pkg)
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) exec -T app go mod tidy
+	@echo "$(GREEN)✓ Package added$(NC)"
+
+deps-tidy:
+	@echo "$(BLUE)Tidying Go modules inside container...$(NC)"
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) exec -T app go mod tidy
+	@echo "$(GREEN)✓ Go modules tidied$(NC)"
+
+deps-update: deps-tidy
 	@echo "$(BLUE)Updating frontend dependencies...$(NC)"
 	cd frontend && $(BUN) update
 	@echo "$(GREEN)✓ Frontend dependencies updated$(NC)"
@@ -253,9 +283,15 @@ deps-update-frontend:
 	@echo "$(GREEN)✓ Frontend dependencies updated$(NC)"
 
 deps-tidy:
-	@echo "$(BLUE)Tidying Go modules...$(NC)"
-	cd backend && $(GO) mod tidy
+	@echo "$(BLUE)Tidying Go modules inside container...$(NC)"
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) exec -T app go mod tidy
 	@echo "$(GREEN)✓ Go modules tidied$(NC)"
+
+deps-add-backend:
+	@if [ -z "$(pkg)" ]; then echo "Usage: make deps-add-backend pkg=github.com/foo/bar"; exit 1; fi
+	@echo "$(BLUE)Adding Go package $(pkg) inside container...$(NC)"
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) exec -T app go get $(pkg)
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) exec -T app go mod tidy
 
 deps-check:
 	@echo "$(BLUE)Checking for outdated Go dependencies...$(NC)"

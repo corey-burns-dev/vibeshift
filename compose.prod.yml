@@ -1,0 +1,24 @@
+services:
+  app:
+    environment:
+      - APP_ENV=production
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres:
+    restart: always
+    # In real prod, don't expose ports
+    # ports:
+    #   - "5432:5432"
+
+  redis:
+    restart: always
+
+  frontend:
+    ports:
+      - "80:80"
+    restart: always
