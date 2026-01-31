@@ -19,7 +19,7 @@ GREEN := \033[1;32m
 YELLOW := \033[1;33m
 NC := \033[0m # No Color
 
-.PHONY: help dev dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions clean test test-api test-up test-down test-backend seed deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down
+.PHONY: help dev dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions clean test test-backend test-api test-e2e test-up test-down seed deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down
 
 # Default target
 help:
@@ -66,6 +66,7 @@ help:
 	@echo "$(GREEN)Testing:$(NC)"
 	@echo "  make test               - 🧪 Run backend tests"
 	@echo "  make test-api           - 🧪 Test all API endpoints"
+	@echo "  make test-e2e           - 🧪 Run comprehensive E2E test (game create/join/chat)"
 	@echo ""
 	@echo "$(GREEN)Database:$(NC)"
 	@echo "  make seed               - 🌱 Seed database with test data"
@@ -274,6 +275,12 @@ test-up:
 
 test-down:
 	$(DOCKER_COMPOSE) $(COMPOSE_FILES) down
+
+# E2E Testing
+test-e2e:
+	@echo "$(BLUE)Running comprehensive E2E test...$(NC)"
+	@echo "$(YELLOW)⚠️  Ensure backend is running (make dev-backend or make dev)$(NC)"
+	bash scripts/e2e.sh
 
 # Database seeding
 seed:
