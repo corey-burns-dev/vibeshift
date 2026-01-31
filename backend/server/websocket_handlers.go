@@ -198,18 +198,24 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 							return
 						}
 
-						// Load sender info
-						message.Sender, _ = s.userRepo.GetByID(ctx, userID)
+						// Load sender info - best-effort attempt
+						if sender, err := s.userRepo.GetByID(ctx, userID); err == nil {
+							message.Sender = sender
+						}
 
 						// Broadcast via Redis
 						if s.notifier != nil {
-							messageJSON, _ := json.Marshal(notifications.ChatMessage{
+							messageJSON, err := json.Marshal(notifications.ChatMessage{
 								Type:           "message",
 								ConversationID: convID,
 								UserID:         userID,
 								Username:       username,
 								Payload:        message,
 							})
+							if err != nil {
+								log.Printf("marshal chat message error: %v", err)
+								return
+							}
 							if perr := s.notifier.PublishChatMessage(ctx, convID, string(messageJSON)); perr != nil {
 								log.Printf("publish chat message error: %v", perr)
 							}

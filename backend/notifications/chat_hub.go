@@ -328,3 +328,29 @@ func (h *ChatHub) BroadcastGlobalStatus(userID uint, status string) {
 		}
 	}
 }
+
+// Shutdown gracefully closes all websocket connections
+func (h *ChatHub) Shutdown(ctx context.Context) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	// Close all user connections
+	for userID, clients := range h.userConns {
+		for client := range clients {
+			if err := client.Conn.WriteMessage(1, // TextMessage
+				[]byte(`{"type":"server_shutdown","message":"Server is shutting down"}`)); err != nil {
+				log.Printf("failed to write shutdown message for user %d: %v", userID, err)
+			}
+			if err := client.Conn.Close(); err != nil {
+				log.Printf("failed to close websocket for user %d: %v", userID, err)
+			}
+		}
+	}
+
+	// Clear all state
+	h.conversations = make(map[uint]map[uint]*Client)
+	h.userActiveConvs = make(map[uint]map[uint]struct{})
+	h.userConns = make(map[uint]map[*Client]bool)
+
+	return nil
+}

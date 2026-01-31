@@ -268,23 +268,23 @@ export default function Posts() {
     const posts = data?.pages.flat() ?? []
 
     // Infinite scroll with debouncing
-    const handleScroll = useCallback(() => {
-        if (debounceRef.current) {
-            clearTimeout(debounceRef.current)
-        }
-        debounceRef.current = setTimeout(() => {
-            if (
-                window.innerHeight + window.scrollY >=
-                    document.documentElement.scrollHeight - 500 &&
-                hasNextPage &&
-                !isFetchingNextPage
-            ) {
-                fetchNextPage()
-            }
-        }, 200)
-    }, [hasNextPage, isFetchingNextPage, fetchNextPage])
-
     useEffect(() => {
+        const handleScroll = () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current)
+            }
+            debounceRef.current = setTimeout(() => {
+                if (
+                    window.innerHeight + window.scrollY >=
+                        document.documentElement.scrollHeight - 500 &&
+                    hasNextPage &&
+                    !isFetchingNextPage
+                ) {
+                    fetchNextPage()
+                }
+            }, 200)
+        }
+
         window.addEventListener('scroll', handleScroll)
         return () => {
             window.removeEventListener('scroll', handleScroll)
@@ -292,7 +292,7 @@ export default function Posts() {
                 clearTimeout(debounceRef.current)
             }
         }
-    }, [handleScroll])
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
     const handleNewPost = () => {
         if (!newPostTitle.trim() || !newPostContent.trim()) return
@@ -487,6 +487,7 @@ export default function Posts() {
                                     <div>
                                         <input
                                             type="text"
+                                            placeholder="Post title"
                                             value={editingPostTitle}
                                             onChange={(e) => setEditingPostTitle(e.target.value)}
                                             className="w-full mb-2 px-3 py-2 border rounded-md"

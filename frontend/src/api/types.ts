@@ -1,134 +1,149 @@
 // API Types - matching your Go backend
 
 export interface User {
-	id: number;
-	username: string;
-	email: string;
-	bio?: string;
-	avatar?: string;
-	created_at: string;
-	liked?: boolean;
-	updated_at: string;
+    id: number
+    username: string
+    email: string
+    bio?: string
+    avatar?: string
+    created_at: string
+    liked?: boolean
+    updated_at: string
 }
 
 export interface Post {
-	id: number;
-	title: string;
-	content: string;
-	image_url?: string;
-	likes_count: number;
-	liked?: boolean;
-	comments_count?: number;
-	user_id: number;
-	user?: User;
-	created_at: string;
-	updated_at: string;
+    id: number
+    title: string
+    content: string
+    image_url?: string
+    likes_count: number
+    liked?: boolean
+    comments_count?: number
+    user_id: number
+    user?: User
+    created_at: string
+    updated_at: string
 }
 
 export interface Comment {
-	id: number;
-	content: string;
-	post_id: number;
-	user_id: number;
-	user?: User;
-	created_at: string;
-	updated_at: string;
+    id: number
+    content: string
+    post_id: number
+    user_id: number
+    user?: User
+    created_at: string
+    updated_at: string
 }
 
 // Request/Response types
 export interface SignupRequest {
-	username: string;
-	email: string;
-	password: string;
+    username: string
+    email: string
+    password: string
 }
 
 export interface LoginRequest {
-	email: string;
-	password: string;
+    email: string
+    password: string
 }
 
 export interface AuthResponse {
-	token: string;
-	user: User;
+    token: string
+    user: User
 }
 
 export interface CreatePostRequest {
-	title: string;
-	content: string;
-	image_url?: string;
+    title: string
+    content: string
+    image_url?: string
 }
 
 export interface UpdatePostRequest {
-	title?: string;
-	content?: string;
-	image_url?: string;
+    title?: string
+    content?: string
+    image_url?: string
 }
 
 export interface CreateCommentRequest {
-	content: string;
+    content: string
 }
 
 export interface UpdateCommentRequest {
-	content: string;
+    content: string
 }
 
 export interface UpdateProfileRequest {
-	username?: string;
-	bio?: string;
-	avatar?: string;
+    username?: string
+    bio?: string
+    avatar?: string
 }
 
 export interface PaginationParams {
-	offset?: number;
-	limit?: number;
+    offset?: number
+    limit?: number
 }
 
 export interface SearchParams extends PaginationParams {
-	q: string;
+    q: string
 }
 
 export interface ApiError {
-	error: string;
+    error: string
 }
 
 // Chat types
 export interface Conversation {
-	id: number;
-	is_group: boolean;
-	name?: string;
-	avatar?: string;
-	created_by: number;
-	created_at: string;
-	updated_at: string;
-	last_message?: Message;
-	participants?: User[];
-	unread_count?: number;
+    id: number
+    is_group: boolean
+    name?: string
+    avatar?: string
+    created_by: number
+    created_at: string
+    updated_at: string
+    last_message?: Message
+    participants?: User[]
+    unread_count?: number
 }
 
 export interface Message {
-	id: number;
-	conversation_id: number;
-	sender_id: number;
-	sender?: User;
-	content: string;
-	message_type: "text" | "image" | "file";
-	metadata?: Record<string, unknown>;
-	is_read: boolean;
-	created_at: string;
-	updated_at: string;
-	deleted_at?: string;
+    id: number
+    conversation_id: number
+    sender_id: number
+    sender?: User
+    content: string
+    message_type: 'text' | 'image' | 'file'
+    metadata?: Record<string, unknown>
+    is_read: boolean
+    created_at: string
+    updated_at: string
+    deleted_at?: string
 }
 
 export interface CreateConversationRequest {
-	participant_ids: number[];
-	is_group?: boolean;
-	name?: string;
-	avatar?: string;
+    participant_ids: number[]
+    is_group?: boolean
+    name?: string
+    avatar?: string
 }
 
 export interface SendMessageRequest {
-	content: string;
-	message_type?: "text" | "image" | "file";
-	// Backend expects a JSON object
-	metadata?: Record<string, unknown>;
+    content: string
+    message_type?: 'text' | 'image' | 'file'
+    // Backend expects a JSON object
+    metadata?: Record<string, unknown>
+}
+
+// Game types (match backend models/game.go)
+export interface GameRoom {
+    id: number
+    type: string
+    status: string
+    creator_id: number
+    opponent_id?: number
+    winner_id?: number
+    is_draw: boolean
+    next_turn_id: number
+    current_state: string
+    creator: User
+    opponent?: User
 }

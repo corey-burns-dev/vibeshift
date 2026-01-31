@@ -25,7 +25,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/gofiber/swagger"
-	"github.com/gofiber/websocket/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -90,6 +89,15 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	}
 
 	return server, nil
+}
+
+// contextWithTimeout creates a context with a reasonable timeout for DB operations
+// Default is 5 seconds, can be customized based on operation
+func (s *Server) contextWithTimeout(c *fiber.Ctx, timeout time.Duration) (context.Context, context.CancelFunc) {
+	if timeout == 0 {
+		timeout = 5 * time.Second
+	}
+	return context.WithTimeout(c.Context(), timeout)
 }
 
 // SetupMiddleware configures middleware for the Fiber app
@@ -222,16 +230,11 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	games.Get("/stats/:type", s.GetGameStats)
 	games.Get("/rooms/:id", s.GetGameRoom)
 
-	// Websocket endpoints - require upgrade check middleware
-	api.Use("/ws", func(c *fiber.Ctx) error {
-		if websocket.IsWebSocketUpgrade(c) {
-			return c.Next()
-		}
-		return fiber.ErrUpgradeRequired
-	})
-	api.Get("/ws", s.WebsocketHandler())          // General notifications
-	api.Get("/ws/chat", s.WebSocketChatHandler()) // Real-time chat
-	api.Get("/ws/game", s.WebSocketGameHandler()) // Multiplayer games
+	// Websocket endpoints - protected by AuthRequired
+	ws := api.Group("/ws", s.AuthRequired())
+	ws.Get("/", s.WebsocketHandler())         // General notifications
+	ws.Get("/chat", s.WebSocketChatHandler()) // Real-time chat
+	ws.Get("/game", s.WebSocketGameHandler()) // Multiplayer games
 }
 
 // HealthCheck handles health check requests
@@ -277,40 +280,24 @@ func (s *Server) HealthCheck(c *fiber.Ctx) error {
 // AuthRequired returns the authentication middleware
 func (s *Server) AuthRequired() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		path := c.Path()
-		// Skip auth for WebSocket handshake if handled by manual token check (though this middleware shouldn't run)
-		if strings.HasPrefix(path, "/api/ws") {
-			// For WebSocket, we accept token in query param since headers aren't supported in JS WebSocket
-			if c.Get("Upgrade") == "websocket" {
-				token := c.Query("token")
-				if token != "" {
-					// We'll validate this later in the handler, or here.
-					// Let's validate here to be safe if this middleware is indeed running.
-					c.Locals("user_token", token)
-					// Hack: set the Authorization header so the rest of the logic works?
-					// Or just return Next() and let the specific handler do it?
-					// The specific handler DOES do it. So if we are here, we should probably just Next() if token exists.
-					return c.Next()
-				}
+		// Extract token from "Bearer <token>" or "token" query parameter (for WebSockets)
+		tokenString := ""
+		authHeader := c.Get("Authorization")
+		if authHeader != "" {
+			parts := strings.Split(authHeader, " ")
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				tokenString = parts[1]
 			}
 		}
 
-		authHeader := c.Get("Authorization")
-		log.Printf("AuthRequired checking %s. Header: %s", path, authHeader)
-
-		if authHeader == "" {
-			return models.RespondWithError(c, fiber.StatusUnauthorized,
-				models.NewUnauthorizedError("Authorization header required"))
+		if tokenString == "" {
+			tokenString = c.Query("token")
 		}
 
-		// Extract token from "Bearer <token>"
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
+		if tokenString == "" {
 			return models.RespondWithError(c, fiber.StatusUnauthorized,
-				models.NewUnauthorizedError("Invalid authorization header format"))
+				models.NewUnauthorizedError("Authorization required"))
 		}
-
-		tokenString := parts[1]
 
 		// Parse and validate token
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
@@ -459,7 +446,26 @@ func (s *Server) Start() error {
 }
 
 // Shutdown gracefully shuts down the server
-func (s *Server) Shutdown(_ context.Context) error {
+func (s *Server) Shutdown(ctx context.Context) error {
+	// Close WebSocket connections gracefully
+	if s.hub != nil {
+		if err := s.hub.Shutdown(ctx); err != nil {
+			log.Printf("error shutting down notification hub: %v", err)
+		}
+	}
+
+	if s.chatHub != nil {
+		if err := s.chatHub.Shutdown(ctx); err != nil {
+			log.Printf("error shutting down chat hub: %v", err)
+		}
+	}
+
+	if s.gameHub != nil {
+		if err := s.gameHub.Shutdown(ctx); err != nil {
+			log.Printf("error shutting down game hub: %v", err)
+		}
+	}
+
 	// Close database connection
 	if sqlDB, err := s.db.DB(); err == nil {
 		if cerr := sqlDB.Close(); cerr != nil {

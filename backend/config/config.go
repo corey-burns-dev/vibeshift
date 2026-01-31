@@ -31,6 +31,7 @@ func LoadConfig() (*Config, error) {
 	viper.AutomaticEnv()
 
 	// Initial read to get APP_ENV if set in base config
+	// We intentionally ignore this error as the config file may not exist yet
 	_ = viper.ReadInConfig()
 
 	env := viper.GetString("APP_ENV")

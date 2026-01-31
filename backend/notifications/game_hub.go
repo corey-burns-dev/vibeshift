@@ -139,7 +139,7 @@ func (h *GameHub) handleJoin(userID uint, action GameAction) {
 	}
 
 	// Join as opponent
-	room.OpponentID = userID
+	room.OpponentID = &userID
 	room.Status = models.GameActive
 	room.NextTurnID = room.CreatorID // Creator goes first
 
@@ -164,25 +164,61 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 	}
 
 	moveBytes, _ := json.Marshal(action.Payload)
-	var moveData models.TicTacToeMove
-	if err := json.Unmarshal(moveBytes, &moveData); err != nil {
-		h.sendError(userID, action.RoomID, "Invalid move format")
-		return
-	}
 
-	board := room.GetState()
-	if moveData.X < 0 || moveData.X > 2 || moveData.Y < 0 || moveData.Y > 2 || board[moveData.X][moveData.Y] != "" {
-		h.sendError(userID, action.RoomID, "Invalid move location")
-		return
-	}
-
-	// Update board
-	symbol := "X"
-	if userID == room.OpponentID {
+	var board interface{}
+	var symbol string
+	if room.OpponentID != nil && userID == *room.OpponentID {
 		symbol = "O"
+	} else {
+		symbol = "X"
 	}
-	board[moveData.X][moveData.Y] = symbol
-	room.SetState(board)
+
+	if room.Type == models.TicTacToe {
+		var moveData models.TicTacToeMove
+		if err := json.Unmarshal(moveBytes, &moveData); err != nil {
+			h.sendError(userID, action.RoomID, "Invalid move format")
+			return
+		}
+
+		tttBoard := room.GetTicTacToeState()
+		if moveData.X < 0 || moveData.X > 2 || moveData.Y < 0 || moveData.Y > 2 || tttBoard[moveData.X][moveData.Y] != "" {
+			h.sendError(userID, action.RoomID, "Invalid move location")
+			return
+		}
+		tttBoard[moveData.X][moveData.Y] = symbol
+		board = tttBoard
+		room.SetState(tttBoard)
+	} else if room.Type == models.ConnectFour {
+		var moveData models.ConnectFourMove
+		if err := json.Unmarshal(moveBytes, &moveData); err != nil {
+			h.sendError(userID, action.RoomID, "Invalid move format")
+			return
+		}
+
+		c4Board := room.GetConnectFourState()
+		if moveData.Column < 0 || moveData.Column > 6 || c4Board[0][moveData.Column] != "" {
+			h.sendError(userID, action.RoomID, "Invalid move location or column full")
+			return
+		}
+
+		// Gravity: find lowest empty row
+		found := false
+		for r := 5; r >= 0; r-- {
+			if c4Board[r][moveData.Column] == "" {
+				c4Board[r][moveData.Column] = symbol
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			h.sendError(userID, action.RoomID, "Column is full")
+			return
+		}
+
+		board = c4Board
+		room.SetState(c4Board)
+	}
 
 	// Persist move
 	moveRecord := models.GameMove{
@@ -198,33 +234,41 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 		room.Status = models.GameFinished
 		if winnerSym != "" {
 			winID := room.CreatorID
-			if winnerSym == "O" {
-				winID = room.OpponentID
+			if winnerSym == "O" && room.OpponentID != nil {
+				winID = *room.OpponentID
 			}
 			room.WinnerID = &winID
 			// Award points
+			points := 10
+			if room.Type == models.ConnectFour {
+				points = 15
+			}
 			h.db.Model(&models.GameStats{}).Where("user_id = ? AND game_type = ?", winID, room.Type).
-				Update("points", gorm.Expr("points + ?", 10)).
+				Update("points", gorm.Expr("points + ?", points)).
 				Update("wins", gorm.Expr("wins + ?", 1)).
 				Update("total_games", gorm.Expr("total_games + ?", 1))
 
 			lossID := room.CreatorID
-			if winID == room.CreatorID {
-				lossID = room.OpponentID
+			if winID == room.CreatorID && room.OpponentID != nil {
+				lossID = *room.OpponentID
 			}
 			h.db.Model(&models.GameStats{}).Where("user_id = ? AND game_type = ?", lossID, room.Type).
 				Update("losses", gorm.Expr("losses + ?", 1)).
 				Update("total_games", gorm.Expr("total_games + ?", 1))
 		} else {
 			room.IsDraw = true
-			h.db.Model(&models.GameStats{}).Where("user_id IN (?, ?) AND game_type = ?", room.CreatorID, room.OpponentID, room.Type).
+			opponentID := uint(0)
+			if room.OpponentID != nil {
+				opponentID = *room.OpponentID
+			}
+			h.db.Model(&models.GameStats{}).Where("user_id IN (?, ?) AND game_type = ?", room.CreatorID, opponentID, room.Type).
 				Update("draws", gorm.Expr("draws + ?", 1)).
 				Update("total_games", gorm.Expr("total_games + ?", 1))
 		}
 	} else {
 		// Switch turn
-		if userID == room.CreatorID {
-			room.NextTurnID = room.OpponentID
+		if userID == room.CreatorID && room.OpponentID != nil {
+			room.NextTurnID = *room.OpponentID
 		} else {
 			room.NextTurnID = room.CreatorID
 		}
@@ -291,4 +335,35 @@ func (h *GameHub) StartWiring(ctx context.Context, n *Notifier) error {
 
 		h.BroadcastToRoom(roomID, action)
 	})
+}
+
+// Shutdown gracefully closes all websocket connections
+func (h *GameHub) Shutdown(ctx context.Context) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	// Close all room connections
+	for roomID, users := range h.rooms {
+		for userID, conn := range users {
+			shutdownMsg := GameAction{
+				Type:    "server_shutdown",
+				RoomID:  roomID,
+				Payload: map[string]string{"message": "Server is shutting down"},
+			}
+			if msgJSON, err := json.Marshal(shutdownMsg); err == nil {
+				if err := conn.WriteMessage(websocket.TextMessage, msgJSON); err != nil {
+					log.Printf("failed to write shutdown message in room %d for user %d: %v", roomID, userID, err)
+				}
+			}
+			if err := conn.Close(); err != nil {
+				log.Printf("failed to close websocket in room %d for user %d: %v", roomID, userID, err)
+			}
+		}
+	}
+
+	// Clear all state
+	h.rooms = make(map[uint]map[uint]*websocket.Conn)
+	h.userRooms = make(map[uint]map[uint]struct{})
+
+	return nil
 }

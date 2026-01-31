@@ -2,6 +2,8 @@
 package server
 
 import (
+	"context"
+	"time"
 	"vibeshift/models"
 
 	"github.com/gofiber/fiber/v2"
@@ -9,12 +11,20 @@ import (
 
 // GetAllUsers handles GET /api/users
 func (s *Server) GetAllUsers(c *fiber.Ctx) error {
-	ctx := c.Context()
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
 	limit := c.QueryInt("limit", 100)
 	offset := c.QueryInt("offset", 0)
 
 	users, err := s.userRepo.List(ctx, limit, offset)
 	if err != nil {
+		// Check for timeout
+		if err == context.DeadlineExceeded {
+			return c.Status(fiber.StatusGatewayTimeout).JSON(fiber.Map{
+				"error": "Request timeout",
+			})
+		}
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 

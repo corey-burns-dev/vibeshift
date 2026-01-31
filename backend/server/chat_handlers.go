@@ -230,7 +230,10 @@ func (s *Server) SendMessage(c *fiber.Ctx) error {
 	}
 
 	// Load message with sender info for response
-	message.Sender, _ = s.userRepo.GetByID(ctx, userID)
+	// We attempt to load sender info but can gracefully continue if it fails
+	if sender, err := s.userRepo.GetByID(ctx, userID); err == nil {
+		message.Sender = sender
+	}
 
 	// Broadcast message to all WebSocket-connected participants in real-time via ChatHub
 	if s.chatHub != nil {

@@ -44,5 +44,17 @@
                 "noExplicitAny": "warn"
             }
         }
-    }
+    },
+    "overrides": [
+        {
+            "includes": ["src/pages/ConnectFour.tsx", "src/pages/TicTacToe.tsx"],
+            "linter": {
+                "rules": {
+                    "suspicious": {
+                        "noArrayIndexKey": "off"
+                    }
+                }
+            }
+        }
+    ]
 }

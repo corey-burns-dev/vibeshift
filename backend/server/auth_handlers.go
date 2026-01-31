@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 	"vibeshift/models"
+	"vibeshift/validation"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -39,6 +40,24 @@ func (s *Server) Signup(c *fiber.Ctx) error {
 	if req.Username == "" || req.Email == "" || req.Password == "" {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
 			models.NewValidationError("Username, email, and password are required"))
+	}
+
+	// Validate username format
+	if err := validation.ValidateUsername(req.Username); err != nil {
+		return models.RespondWithError(c, fiber.StatusBadRequest,
+			models.NewValidationError(err.Error()))
+	}
+
+	// Validate email format
+	if err := validation.ValidateEmail(req.Email); err != nil {
+		return models.RespondWithError(c, fiber.StatusBadRequest,
+			models.NewValidationError(err.Error()))
+	}
+
+	// Validate password strength
+	if err := validation.ValidatePassword(req.Password); err != nil {
+		return models.RespondWithError(c, fiber.StatusBadRequest,
+			models.NewValidationError(err.Error()))
 	}
 
 	// Check if user already exists

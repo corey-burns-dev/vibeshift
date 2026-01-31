@@ -2,6 +2,7 @@
 package middleware
 
 import (
+	"strconv"
 	"strings"
 	"vibeshift/config"
 
@@ -58,9 +59,105 @@ func AuthRequired(c *fiber.Ctx) error {
 		})
 	}
 
+	// Extract user ID from "sub" claim (subject claim per RFC 7519)
+	subClaim, ok := claims["sub"]
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid token structure - missing subject",
+		})
+	}
+
+	// Type assertion from interface to string
+	subStr, ok := subClaim.(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid token subject type",
+		})
+	}
+
+	// Parse user ID from string to uint
+	userIDVal, err := strconv.ParseUint(subStr, 10, 32)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid user ID in token",
+		})
+	}
+
 	// Store user ID in context
-	userID := uint(claims["user_id"].(float64))
-	c.Locals("userID", userID)
+	c.Locals("userID", uint(userIDVal))
+
+	return c.Next()
+}
+
+// WebSocketAuthRequired is middleware that validates JWT tokens from query parameters for WebSocket connections.
+func WebSocketAuthRequired(c *fiber.Ctx) error {
+	// Try to get token from query parameter first (for WebSocket)
+	token := c.Query("token")
+	if token == "" {
+		// Fall back to Authorization header (for regular HTTP)
+		authHeader := c.Get("Authorization")
+		if authHeader == "" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Token required",
+			})
+		}
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Invalid authorization header format",
+			})
+		}
+		token = parts[1]
+	}
+
+	// Parse and validate token
+	parsedToken, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fiber.NewError(fiber.StatusUnauthorized, "Invalid signing method")
+		}
+		return []byte(cfg.JWTSecret), nil
+	})
+
+	if err != nil || !parsedToken.Valid {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid or expired token",
+		})
+	}
+
+	// Extract claims
+	claims, ok := parsedToken.Claims.(jwt.MapClaims)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid token claims",
+		})
+	}
+
+	// Extract user ID from "sub" claim (subject claim per RFC 7519)
+	subClaim, ok := claims["sub"]
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid token structure - missing subject",
+		})
+	}
+
+	// Type assertion from interface to string
+	subStr, ok := subClaim.(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid token subject type",
+		})
+	}
+
+	// Parse user ID from string to uint
+	userIDVal, err := strconv.ParseUint(subStr, 10, 32)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid user ID in token",
+		})
+	}
+
+	// Store user ID in context
+	c.Locals("userID", uint(userIDVal))
 
 	return c.Next()
 }

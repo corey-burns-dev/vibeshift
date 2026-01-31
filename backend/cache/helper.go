@@ -59,7 +59,10 @@ func Aside(ctx context.Context, key string, dest any, ttl time.Duration, fetch f
 		return err
 	}
 
-	// Store into cache (best-effort)
-	_ = SetJSON(ctx, key, dest, ttl)
+	// Store into cache (best-effort) - we intentionally ignore cache failures
+	if err := SetJSON(ctx, key, dest, ttl); err != nil {
+		// Best-effort caching: log but don't fail the operation
+		return nil
+	}
 	return nil
 }

@@ -11,6 +11,7 @@ type GameRepository interface {
 	GetRoom(id uint) (*models.GameRoom, error)
 	UpdateRoom(room *models.GameRoom) error
 	GetActiveRooms(gameType models.GameType) ([]models.GameRoom, error)
+	GetPendingRoomByCreator(gameType models.GameType, creatorID uint) (*models.GameRoom, error)
 	CreateMove(move *models.GameMove) error
 	GetMoves(roomID uint) ([]models.GameMove, error)
 	GetStats(userID uint, gameType models.GameType) (*models.GameStats, error)
@@ -44,6 +45,13 @@ func (r *gameRepository) GetActiveRooms(gameType models.GameType) ([]models.Game
 	err := r.db.Where("type = ? AND status = ?", gameType, models.GamePending).
 		Preload("Creator").Find(&rooms).Error
 	return rooms, err
+}
+
+func (r *gameRepository) GetPendingRoomByCreator(gameType models.GameType, creatorID uint) (*models.GameRoom, error) {
+	var room models.GameRoom
+	err := r.db.Where("type = ? AND creator_id = ? AND status = ?", gameType, creatorID, models.GamePending).
+		Preload("Creator").First(&room).Error
+	return &room, err
 }
 
 func (r *gameRepository) CreateMove(move *models.GameMove) error {

@@ -12,6 +12,7 @@ import (
 // UserRepository defines the interface for user data operations
 type UserRepository interface {
 	GetByID(ctx context.Context, id uint) (*models.User, error)
+	GetByIDWithPosts(ctx context.Context, id uint, limit int) (*models.User, error)
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	GetByUsername(ctx context.Context, username string) (*models.User, error)
 	Create(ctx context.Context, user *models.User) error
@@ -32,7 +33,32 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 
 func (r *userRepository) GetByID(ctx context.Context, id uint) (*models.User, error) {
 	var user models.User
-	if err := r.db.WithContext(ctx).Preload("Posts").First(&user, id).Error; err != nil {
+	// Don't preload posts by default to avoid N+1 queries
+	if err := r.db.WithContext(ctx).First(&user, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, models.NewNotFoundError("User", id)
+		}
+		return nil, models.NewInternalError(err)
+	}
+	return &user, nil
+}
+
+// GetByIDWithPosts retrieves a user with a limited number of their posts
+// Use this when you need to display user posts to avoid N+1 queries
+func (r *userRepository) GetByIDWithPosts(ctx context.Context, id uint, limit int) (*models.User, error) {
+	var user models.User
+	if limit <= 0 {
+		limit = 10 // Default to 10 posts if not specified
+	}
+	if limit > 100 {
+		limit = 100 // Maximum 100 posts to prevent abuse
+	}
+
+	if err := r.db.WithContext(ctx).
+		Preload("Posts", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC").Limit(limit)
+		}).
+		First(&user, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, models.NewNotFoundError("User", id)
 		}

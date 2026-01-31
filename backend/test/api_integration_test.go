@@ -62,7 +62,10 @@ func TestSignupAndLogin(t *testing.T) {
 		"email":    email,
 		"password": "apitestpass123",
 	}
-	b, _ = json.Marshal(loginBody)
+	b, err = json.Marshal(loginBody)
+	if err != nil {
+		t.Fatalf("json.Marshal error: %v", err)
+	}
 	req = httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewReader(b))
 	req.Header.Set("Content-Type", "application/json")
 	res, err = app.Test(req, -1)

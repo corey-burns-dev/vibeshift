@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"gorm.io/gorm"
 )
 
 // CreateGameRoom handles the creation of a new game room
@@ -23,10 +25,18 @@ func (s *Server) CreateGameRoom(c *fiber.Ctx) error {
 	}
 
 	room := &models.GameRoom{
-		Type:         req.Type,
-		Status:       models.GamePending,
-		CreatorID:    userID,
-		CurrentState: "{}", // Initial empty state
+		Type:          req.Type,
+		Status:        models.GamePending,
+		CreatorID:     userID,
+		CurrentState:  "{}", // Initial empty state
+		Configuration: "{}", // Initial empty configuration
+	}
+
+	// If the creator already has a pending room for this game type, return it
+	if existing, err := s.gameRepo.GetPendingRoomByCreator(req.Type, userID); err == nil {
+		return c.JSON(existing)
+	} else if err != nil && err != gorm.ErrRecordNotFound {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, models.NewInternalError(err))
 	}
 
 	if err := s.gameRepo.CreateRoom(room); err != nil {
@@ -97,6 +107,24 @@ func (s *Server) WebSocketGameHandler() fiber.Handler {
 		defer func() {
 			s.gameHub.Unregister(userID, roomID, c)
 			c.Close()
+		}()
+
+		// Subscribe to Redis game room notifications
+		ctx := context.Background()
+		redisSub := s.redis.Subscribe(ctx, notifications.GameRoomChannel(roomID))
+		defer redisSub.Close()
+
+		// Channel to handle Redis messages
+		redisChan := redisSub.Channel()
+
+		// Launch goroutine to listen for Redis messages and forward to WebSocket
+		go func() {
+			for redisMsg := range redisChan {
+				if err := c.WriteMessage(websocket.TextMessage, []byte(redisMsg.Payload)); err != nil {
+					log.Printf("GameWS: Error writing Redis message to user %d: %v", userID, err)
+					return
+				}
+			}
 		}()
 
 		// Read loop

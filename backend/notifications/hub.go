@@ -13,13 +13,19 @@ import (
 // Hub is a minimal websocket hub that maps userID -> list of websocket connections.
 // It listens for Redis pub/sub messages (via Notifier) and fans them out to connected clients.
 type Hub struct {
-	mu    sync.RWMutex
-	conns map[uint]map[*websocket.Conn]struct{}
+	mu       sync.RWMutex
+	conns    map[uint]map[*websocket.Conn]struct{}
+	shutdown chan struct{}
+	done     chan struct{}
 }
 
 // NewHub creates a new Hub instance for managing notifications.
 func NewHub() *Hub {
-	return &Hub{conns: make(map[uint]map[*websocket.Conn]struct{})}
+	return &Hub{
+		conns:    make(map[uint]map[*websocket.Conn]struct{}),
+		shutdown: make(chan struct{}),
+		done:     make(chan struct{}),
+	}
 }
 
 // Register a connection for a given userID
@@ -73,4 +79,33 @@ func (h *Hub) StartWiring(ctx context.Context, n *Notifier) error {
 		}
 		h.Broadcast(userID, payload)
 	})
+}
+
+// Shutdown gracefully closes all websocket connections
+func (h *Hub) Shutdown(ctx context.Context) error {
+	close(h.shutdown)
+
+	// Close all connections gracefully
+	h.mu.Lock()
+	for userID, userConns := range h.conns {
+		for conn := range userConns {
+			// Send close message to client
+			if err := conn.WriteMessage(websocket.CloseMessage,
+				websocket.FormatCloseMessage(websocket.CloseGoingAway, "Server shutting down")); err != nil {
+				log.Printf("failed to write close message for user %d: %v", userID, err)
+			}
+			// Close the connection
+			if err := conn.Close(); err != nil {
+				log.Printf("failed to close websocket for user %d: %v", userID, err)
+			}
+		}
+	}
+	// Clear all connections
+	h.conns = make(map[uint]map[*websocket.Conn]struct{})
+	h.mu.Unlock()
+
+	// Signal completion
+	close(h.done)
+
+	return nil
 }

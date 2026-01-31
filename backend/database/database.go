@@ -134,6 +134,11 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
+	// Manual migration: Ensure opponent_id is nullable (GORM sometimes misses dropping NOT NULL)
+	if err := dbInstance.Exec("ALTER TABLE game_rooms ALTER COLUMN opponent_id DROP NOT NULL").Error; err != nil {
+		middleware.Logger.Warn("Failed to drop NOT NULL constraint on game_rooms.opponent_id (ignoring as it likely already is dropped)", slog.String("error", err.Error()))
+	}
+
 	middleware.Logger.Info("Database migration completed")
 
 	// Set connection pooling parameters

@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { MessageCircle, Send, Users } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import type { Conversation } from '@/api/types'
+import type { Conversation, Message, User } from '@/api/types'
 import { Navbar } from '@/components/Navbar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -44,6 +44,10 @@ export default function Messages() {
             ? dmConversations.filter((c: Conversation) => (c.unread_count ?? 0) > 0)
             : dmConversations
 
+    const selectedConversation = conversations.find(
+        (c: Conversation) => c.id === selectedConversationId
+    )
+
     // Auto-select first conversation when loaded
     useEffect(() => {
         if (conversations && conversations.length > 0 && !selectedConversationId) {
@@ -60,29 +64,30 @@ export default function Messages() {
         Record<number, { id: number; username?: string; online?: boolean; typing?: boolean }>
     >({})
 
+    // biome-ignore lint/correctness/useExhaustiveDependencies: scroll when new messages arrive
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [])
-
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [messages])
+    }, [messages.length])
 
     // Initialize participants from conversations data
     useEffect(() => {
         const conv = conversations?.find((c: Conversation) => c.id === selectedConversationId)
         if (!conv) return
-        const usersList: any[] = conv.participants || []
-        if (usersList && usersList.length > 0) {
-            const map: Record<number, any> = {}
-            usersList.forEach((u: any) => {
+        const usersList: User[] = conv.participants || []
+        if (usersList.length > 0) {
+            const map: Record<
+                number,
+                { id: number; username?: string; online?: boolean; typing?: boolean }
+            > = {}
+            for (const u of usersList) {
+                const uWithName = u as User & { name?: string; online?: boolean }
                 map[u.id] = {
                     id: u.id,
-                    username: u.username || u.name,
-                    online: !!u.online,
+                    username: u.username ?? uWithName.name,
+                    online: !!uWithName.online,
                     typing: false,
                 }
-            })
+            }
             setParticipants(map)
         }
     }, [conversations, selectedConversationId])
@@ -95,14 +100,14 @@ export default function Messages() {
             // LOGGING
             console.log('Messages: Received WebSocket message', { msg, selectedConversationId })
 
-            if (selectedConversationId && msg.conversation_id == selectedConversationId) {
-                queryClient.setQueryData(
+            if (selectedConversationId && msg.conversation_id === selectedConversationId) {
+                queryClient.setQueryData<Message[]>(
                     ['chat', 'messages', selectedConversationId],
-                    (old: any) => {
+                    (old) => {
                         console.log('Messages: Updating query cache for', selectedConversationId)
                         if (!old) return [msg]
                         if (Array.isArray(old)) {
-                            if (old.some((m: any) => m.id === msg.id)) return old
+                            if (old.some((m) => m.id === msg.id)) return old
                             return [...old, msg]
                         }
                         return old
@@ -186,7 +191,7 @@ export default function Messages() {
         })
     }
 
-    const getUserColor = (userId: number) => {
+    const _getUserColor = (userId: number) => {
         const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f39c12', '#9b59b6', '#e74c3c', '#3498db']
         return colors[userId % colors.length]
     }
@@ -346,58 +351,36 @@ export default function Messages() {
                 <div className="flex-1 flex flex-col overflow-hidden">
                     <div className="border-b p-4 shrink-0 bg-card">
                         <div className="flex items-center gap-3">
-                            {selectedConversationId &&
-                                conversations.find(
-                                    (c: Conversation) => c.id === selectedConversationId
-                                ) && (
-                                    <>
-                                        <Avatar className="w-8 h-8">
-                                            <AvatarImage
-                                                src={getConversationAvatar(
-                                                    conversations.find(
-                                                        (c: Conversation) =>
-                                                            c.id === selectedConversationId
-                                                    )!
-                                                )}
-                                            />
-                                            <AvatarFallback className="text-xs">
-                                                {getConversationName(
-                                                    conversations.find(
-                                                        (c: Conversation) =>
-                                                            c.id === selectedConversationId
-                                                    )!
-                                                )
-                                                    .substring(0, 2)
-                                                    .toUpperCase()}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <h3 className="font-semibold text-sm">
-                                                {getConversationName(
-                                                    conversations.find(
-                                                        (c: Conversation) =>
-                                                            c.id === selectedConversationId
-                                                    )!
-                                                )}
-                                            </h3>
-                                            <p className="text-xs text-muted-foreground">
-                                                {(() => {
-                                                    const conv = conversations.find(
-                                                        (c: Conversation) =>
-                                                            c.id === selectedConversationId
-                                                    )
-                                                    const otherUser = conv?.participants?.find(
+                            {selectedConversation && (
+                                <>
+                                    <Avatar className="w-8 h-8">
+                                        <AvatarImage
+                                            src={getConversationAvatar(selectedConversation)}
+                                        />
+                                        <AvatarFallback className="text-xs">
+                                            {getConversationName(selectedConversation)
+                                                .substring(0, 2)
+                                                .toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <h3 className="font-semibold text-sm">
+                                            {getConversationName(selectedConversation)}
+                                        </h3>
+                                        <p className="text-xs text-muted-foreground">
+                                            {(() => {
+                                                const otherUser =
+                                                    selectedConversation?.participants?.find(
                                                         (p) => p.id !== currentUser?.id
                                                     )
-                                                    return otherUser &&
-                                                        onlineUserIds.has(otherUser.id)
-                                                        ? 'Online'
-                                                        : 'Offline'
-                                                })()}
-                                            </p>
-                                        </div>
-                                    </>
-                                )}
+                                                return otherUser && onlineUserIds.has(otherUser.id)
+                                                    ? 'Online'
+                                                    : 'Offline'
+                                            })()}
+                                        </p>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -439,9 +422,7 @@ export default function Messages() {
                                                 >
                                                     <span
                                                         className="font-semibold text-sm"
-                                                        style={{
-                                                            color: getUserColor(msg.sender_id),
-                                                        }}
+                                                        data-user-id={msg.sender_id}
                                                     >
                                                         {isOwnMessage
                                                             ? 'You'
@@ -510,15 +491,9 @@ export default function Messages() {
                     </div>
                     <ScrollArea className="flex-1">
                         <div className="p-4">
-                            {selectedConversationId &&
-                                conversations.find(
-                                    (c: Conversation) => c.id === selectedConversationId
-                                ) &&
+                            {selectedConversation &&
                                 (() => {
-                                    const conv = conversations.find(
-                                        (c: Conversation) => c.id === selectedConversationId
-                                    )!
-                                    const otherUser = conv.participants?.find(
+                                    const otherUser = selectedConversation.participants?.find(
                                         (p) => p.id !== currentUser?.id
                                     )
                                     const isOnline = otherUser
@@ -528,15 +503,19 @@ export default function Messages() {
                                     return (
                                         <div className="text-center">
                                             <Avatar className="w-16 h-16 mx-auto mb-3">
-                                                <AvatarImage src={getConversationAvatar(conv)} />
+                                                <AvatarImage
+                                                    src={getConversationAvatar(
+                                                        selectedConversation
+                                                    )}
+                                                />
                                                 <AvatarFallback>
-                                                    {getConversationName(conv)
+                                                    {getConversationName(selectedConversation)
                                                         .substring(0, 2)
                                                         .toUpperCase()}
                                                 </AvatarFallback>
                                             </Avatar>
                                             <h3 className="font-semibold text-sm mb-1">
-                                                {getConversationName(conv)}
+                                                {getConversationName(selectedConversation)}
                                             </h3>
                                             <div className="flex items-center justify-center gap-1.5">
                                                 <div

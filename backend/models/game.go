@@ -11,7 +11,8 @@ import (
 type GameType string
 
 const (
-	TicTacToe GameType = "tictactoe"
+	TicTacToe   GameType = "tictactoe"
+	ConnectFour GameType = "connect4"
 )
 
 // GameStatus defines the current state of a game
@@ -33,7 +34,7 @@ type GameRoom struct {
 	Type          GameType       `gorm:"not null" json:"type"`
 	Status        GameStatus     `gorm:"default:'pending'" json:"status"`
 	CreatorID     uint           `gorm:"not null" json:"creator_id"`
-	OpponentID    uint           `json:"opponent_id,omitempty"`
+	OpponentID    *uint          `json:"opponent_id,omitempty"`
 	WinnerID      *uint          `json:"winner_id,omitempty"`
 	IsDraw        bool           `gorm:"default:false" json:"is_draw"`
 	Configuration string         `gorm:"type:json" json:"configuration,omitempty"` // e.g., board size, game-specific rules
@@ -45,14 +46,14 @@ type GameRoom struct {
 	Winner   User `gorm:"foreignKey:WinnerID" json:"winner,omitempty"`
 }
 
-// SetState sets the board state from a 3x3 array
-func (r *GameRoom) SetState(board [3][3]string) {
+// SetState sets the board state (abstracted as JSON)
+func (r *GameRoom) SetState(board interface{}) {
 	bytes, _ := json.Marshal(board)
 	r.CurrentState = string(bytes)
 }
 
-// GetState returns the board state as a 3x3 array
-func (r *GameRoom) GetState() [3][3]string {
+// GetTicTacToeState returns the board state as a 3x3 array
+func (r *GameRoom) GetTicTacToeState() [3][3]string {
 	var board [3][3]string
 	if r.CurrentState == "" || r.CurrentState == "{}" {
 		return board
@@ -61,9 +62,29 @@ func (r *GameRoom) GetState() [3][3]string {
 	return board
 }
 
-// CheckWin checks if there is a winner
+// GetConnectFourState returns the board state as a 6x7 array (rows x cols)
+func (r *GameRoom) GetConnectFourState() [6][7]string {
+	var board [6][7]string
+	if r.CurrentState == "" || r.CurrentState == "{}" {
+		return board
+	}
+	json.Unmarshal([]byte(r.CurrentState), &board)
+	return board
+}
+
+// CheckWin checks if there is a winner based on game type
 func (r *GameRoom) CheckWin() (string, bool) {
-	board := r.GetState()
+	if r.Type == TicTacToe {
+		return r.CheckTicTacToeWin()
+	} else if r.Type == ConnectFour {
+		return r.CheckConnectFourWin()
+	}
+	return "", false
+}
+
+// CheckTicTacToeWin checks for a winner in Tic-Tac-Toe
+func (r *GameRoom) CheckTicTacToeWin() (string, bool) {
+	board := r.GetTicTacToeState()
 
 	// Rows
 	for i := 0; i < 3; i++ {
@@ -105,6 +126,76 @@ func (r *GameRoom) CheckWin() (string, bool) {
 	return "", false
 }
 
+// CheckConnectFourWin checks for a winner in Connect Four
+func (r *GameRoom) CheckConnectFourWin() (string, bool) {
+	board := r.GetConnectFourState()
+	rows := 6
+	cols := 7
+
+	// Check Horizontal
+	for r := 0; r < rows; r++ {
+		for c := 0; c <= cols-4; c++ {
+			if board[r][c] != "" &&
+				board[r][c] == board[r][c+1] &&
+				board[r][c+1] == board[r][c+2] &&
+				board[r][c+2] == board[r][c+3] {
+				return board[r][c], true
+			}
+		}
+	}
+
+	// Check Vertical
+	for r := 0; r <= rows-4; r++ {
+		for c := 0; c < cols; c++ {
+			if board[r][c] != "" &&
+				board[r][c] == board[r+1][c] &&
+				board[r+1][c] == board[r+2][c] &&
+				board[r+2][c] == board[r+3][c] {
+				return board[r][c], true
+			}
+		}
+	}
+
+	// Check Diagonal (down-right)
+	for r := 0; r <= rows-4; r++ {
+		for c := 0; c <= cols-4; c++ {
+			if board[r][c] != "" &&
+				board[r][c] == board[r+1][c+1] &&
+				board[r+1][c+1] == board[r+2][c+2] &&
+				board[r+2][c+2] == board[r+3][c+3] {
+				return board[r][c], true
+			}
+		}
+	}
+
+	// Check Diagonal (up-right)
+	for r := 3; r < rows; r++ {
+		for c := 0; c <= cols-4; c++ {
+			if board[r][c] != "" &&
+				board[r][c] == board[r-1][c+1] &&
+				board[r-1][c+1] == board[r-2][c+2] &&
+				board[r-2][c+2] == board[r-3][c+3] {
+				return board[r][c], true
+			}
+		}
+	}
+
+	// Check Draw
+	isDraw := true
+	for c := 0; c < cols; c++ {
+		if board[0][c] == "" { // Top row has space
+			isDraw = false
+			break
+		}
+	}
+
+	if isDraw {
+		return "", true
+	}
+
+	return "", false
+}
+
 // GameMove represents a single move made in a game
 type GameMove struct {
 	ID         uint      `gorm:"primaryKey" json:"id"`
@@ -131,4 +222,9 @@ type GameStats struct {
 type TicTacToeMove struct {
 	X int `json:"x"`
 	Y int `json:"y"`
+}
+
+// MoveDetails for Connect Four
+type ConnectFourMove struct {
+	Column int `json:"column"`
 }
