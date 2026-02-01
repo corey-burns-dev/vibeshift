@@ -1,17 +1,14 @@
-import { useQueryClient } from '@tanstack/react-query'
-import { Send } from 'lucide-react'
+import { Compass, Send, UserCircle, Users } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { Message, User } from '@/api/types'
-import { ChatSidebar } from '@/components/chat/ChatSidebar'
+import { useNavigate, useParams } from 'react-router-dom'
+import type { Conversation, Message, User } from '@/api/types'
 import { MessageList } from '@/components/chat/MessageList'
 import { ParticipantsList } from '@/components/chat/ParticipantsList'
-import { Navbar } from '@/components/Navbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-// import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
     useAllChatrooms,
-    useConversation,
     useJoinChatroom,
     useJoinedChatrooms,
     useMessages,
@@ -20,13 +17,15 @@ import {
 import { useChatWebSocket } from '@/hooks/useChatWebSocket'
 import { usePresenceStore } from '@/hooks/usePresence'
 import { getCurrentUser } from '@/hooks/useUsers'
+import { cn } from '@/lib/utils'
 
 export default function Chat() {
+    const { id: urlChatId } = useParams<{ id: string }>()
+    const navigate = useNavigate()
     const [newMessage, setNewMessage] = useState('')
-    const [globalConversationId, setGlobalConversationId] = useState<number | null>(null)
     const [chatroomTab, setChatroomTab] = useState<'all' | 'joined'>('joined')
+    const [showParticipants, setShowParticipants] = useState(true)
     const [messageError, setMessageError] = useState<string | null>(null)
-    // removed unused scroll area ref to avoid repeated ref callbacks from Radix
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
     const onlineUserIds = usePresenceStore((state) => state.onlineUserIds)
@@ -37,60 +36,71 @@ export default function Chat() {
     const currentUser = useMemo(() => getCurrentUser(), [])
 
     // Chatroom queries
-    const { data: allChatrooms, isLoading: allLoading, error: allError } = useAllChatrooms()
+    const { data: allChatrooms = [], isLoading: allLoading, error: allError } = useAllChatrooms()
     const {
-        data: joinedChatrooms,
+        data: joinedChatrooms = [],
         isLoading: joinedLoading,
         error: joinedError,
     } = useJoinedChatrooms()
     const joinChatroom = useJoinChatroom()
 
     // Use the appropriate list based on active tab
-    const conversations = chatroomTab === 'all' ? allChatrooms : joinedChatrooms
+    const conversations = useMemo(
+        () =>
+            chatroomTab === 'all'
+                ? (allChatrooms as Conversation[])
+                : (joinedChatrooms as Conversation[]),
+        [chatroomTab, allChatrooms, joinedChatrooms]
+    )
+
     const convLoading = chatroomTab === 'all' ? allLoading : joinedLoading
     const convError = chatroomTab === 'all' ? allError : joinedError
 
-    // Auto-select first conversation when loaded
+    const selectedChatId = useMemo(
+        () => (urlChatId ? Number.parseInt(urlChatId) : null),
+        [urlChatId]
+    )
+
+    // Auto-select first conversation when loaded if none in URL
     useEffect(() => {
-        if (conversations && conversations.length > 0 && !globalConversationId) {
-            // Prefer joined conversations if possible
-            const joined = conversations.find((c) => ('is_joined' in c ? c.is_joined : true))
+        if (conversations && conversations.length > 0 && !selectedChatId) {
+            const joined = conversations.find((c) => c.is_joined)
             if (joined) {
-                setGlobalConversationId(joined.id)
-            } else {
-                setGlobalConversationId(conversations[0].id)
+                navigate(`/chat/${joined.id}`, { replace: true })
+            } else if (chatroomTab === 'joined') {
+                navigate(`/chat/${conversations[0].id}`, { replace: true })
             }
         }
-    }, [conversations, globalConversationId])
+    }, [conversations, selectedChatId, navigate, chatroomTab])
 
-    const { data: messages = [], isLoading } = useMessages(globalConversationId || 0)
-    const sendMessage = useSendMessage(globalConversationId || 0)
-    const queryClient = useQueryClient()
+    const { data: messages = [], isLoading } = useMessages(selectedChatId || 0)
+    const sendMessage = useSendMessage(selectedChatId || 0)
 
-    // Fetch specific conversation details to ensure we have the latest "is_joined" status
-    const { data: conversationDetails } = useConversation(globalConversationId || 0)
+    const currentConversation = useMemo(
+        () => conversations?.find((c) => c.id === selectedChatId),
+        [conversations, selectedChatId]
+    )
 
-    // Use specific details if available, otherwise fallback to list (though list might be stale)
-    const currentConversation =
-        conversationDetails || conversations?.find((c) => c.id === globalConversationId)
+    const isJoinedViaList = useMemo(
+        () => joinedChatrooms?.some((c) => c.id === selectedChatId),
+        [joinedChatrooms, selectedChatId]
+    )
 
-    const isJoinedViaList = joinedChatrooms?.some((c) => c.id === globalConversationId)
-    const userIsJoined = currentConversation?.is_joined || isJoinedViaList || false
+    const userIsJoined = useMemo(
+        () => currentConversation?.is_joined || isJoinedViaList || false,
+        [currentConversation, isJoinedViaList]
+    )
 
-    // Participants state
     const [participants, setParticipants] = useState<
         Record<number, { id: number; username?: string; online?: boolean; typing?: boolean }>
     >({})
 
-    // Keep chat scrolled to bottom when messages update
-    // biome-ignore lint/correctness/useExhaustiveDependencies: scroll when message list changes
     useEffect(() => {
-        requestAnimationFrame(() => {
+        if (messages.length > 0) {
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-        })
+        }
     }, [messages.length])
 
-    // Initialize participants from conversation details
     useEffect(() => {
         if (!currentConversation) return
         const usersList: User[] = currentConversation.participants || []
@@ -114,7 +124,7 @@ export default function Chat() {
                     map[u.id] = {
                         id: u.id,
                         username: u.username,
-                        online: !!(u as User & { online?: boolean }).online,
+                        online: onlineUserIds.has(u.id),
                         typing: false,
                     }
                 }
@@ -122,21 +132,9 @@ export default function Chat() {
         }
 
         setParticipants(map)
-    }, [currentConversation, currentUser])
+    }, [currentConversation, currentUser, onlineUserIds])
 
-    // ... (omitting lines for brevity, target content needs to match exactly)
-    // Actually, I should target the ScrollArea render part mainly.
-
-    // Let's split this into two calls or one contiguous block.
-    // The render part is further down.
-
-    // I will target the render part first.
-
-    // WebSocket handlers
-    const onMessage = useCallback((_msg: Message) => {
-        // useChatWebSocket now handles cache updates automatically.
-        // This callback can be used for side effects like playing a sound.
-    }, [])
+    const onMessage = useCallback((_msg: Message) => {}, [])
 
     const onPresence = useCallback(
         (userId: number, username: string, status: string) => {
@@ -145,7 +143,7 @@ export default function Chat() {
                 ...prev,
                 [userId]: { ...(prev?.[userId] || { id: userId, username }), online },
             }))
-            if (status === 'online') setOnline(userId)
+            if (online) setOnline(userId)
             else setOffline(userId)
         },
         [setOnline, setOffline]
@@ -174,24 +172,22 @@ export default function Chat() {
             }
             for (const u of participantsList) {
                 if (!currentUser || u.id !== currentUser.id) {
-                    const uWithName = u as User & { name?: string; online?: boolean }
                     map[u.id] = {
                         id: u.id,
-                        username: u.username ?? uWithName.name,
-                        online: !!uWithName.online,
+                        username: u.username,
+                        online: onlineUserIds.has(u.id),
                         typing: false,
                     }
                 }
             }
             setParticipants(map)
         },
-        [currentUser]
+        [currentUser, onlineUserIds]
     )
 
-    // Only connect WebSocket if user is joined
     const { isJoined: wsIsJoined } = useChatWebSocket({
-        conversationId: globalConversationId || 0,
-        enabled: !!globalConversationId && userIsJoined,
+        conversationId: selectedChatId || 0,
+        enabled: !!selectedChatId && userIsJoined,
         onMessage,
         onPresence,
         onConnectedUsers,
@@ -199,80 +195,24 @@ export default function Chat() {
     })
 
     const handleSendMessage = useCallback(() => {
-        if (!newMessage.trim() || !globalConversationId || !currentUser) return
-
-        const messageSize = new Blob([newMessage]).size
-        if (messageSize > 512) {
-            setMessageError(`Message too long (${messageSize}/512 bytes)`)
-            setTimeout(() => setMessageError(null), 3000)
-            return
-        }
-
-        setMessageError(null)
+        if (!newMessage.trim() || !selectedChatId || !currentUser) return
         const tempId = crypto.randomUUID()
         const messageContent = newMessage
 
-        // Create optimistic message
-        const tempMessage = {
-            id: Date.now(), // Temporary numeric ID for List keys, will be replaced
-            content: messageContent,
-            sender_id: currentUser.id,
-            sender: currentUser,
-            created_at: new Date().toISOString(),
-            conversation_id: globalConversationId,
-            message_type: 'text' as const,
-            metadata: { tempId }, // Store tempId in object for local check
-            isOptimistic: true,
-            is_read: true,
-            updated_at: new Date().toISOString(),
-        }
-
-        // Optimistically add to UI
-        queryClient.setQueryData<Message[]>(['chat', 'messages', globalConversationId], (old) => {
-            return Array.isArray(old) ? [...old, tempMessage] : [tempMessage]
-        })
-
-        setNewMessage('') // Clear input immediately
-
+        setNewMessage('')
         sendMessage.mutate(
+            { content: messageContent, message_type: 'text', metadata: { tempId } },
             {
-                content: messageContent,
-                message_type: 'text',
-                metadata: { tempId },
-            },
-            {
-                onSuccess: (serverMessage) => {
-                    // Replace optimistic message with server version
-                    queryClient.setQueryData<Message[]>(
-                        ['chat', 'messages', globalConversationId],
-                        (old) => {
-                            if (!Array.isArray(old)) return old
-                            return old.map((m) => {
-                                const mMeta = m.metadata as Record<string, unknown> | undefined
-                                if (mMeta?.tempId === tempId) return serverMessage
-                                return m
-                            })
-                        }
-                    )
+                onSuccess: () => {
+                    // Hook handles everything
                 },
-                onError: () => {
-                    // Remove optimistic message on failure
-                    queryClient.setQueryData<Message[]>(
-                        ['chat', 'messages', globalConversationId],
-                        (old) => {
-                            if (!Array.isArray(old)) return old
-                            return old.filter((m) => {
-                                const mMeta = m.metadata as Record<string, unknown> | undefined
-                                return mMeta?.tempId !== tempId
-                            })
-                        }
-                    )
-                    setNewMessage(messageContent) // Restore message
+                onError: (error) => {
+                    console.error('Failed to send message:', error)
                     setMessageError('Failed to send message')
                 },
             }
         )
-    }, [newMessage, globalConversationId, sendMessage, queryClient, currentUser])
+    }, [newMessage, selectedChatId, currentUser, sendMessage])
 
     const handleKeyPress = useCallback(
         (e: React.KeyboardEvent) => {
@@ -288,9 +228,12 @@ export default function Chat() {
         setNewMessage(val)
     }, [])
 
-    const handleSelectConversation = useCallback((id: number) => {
-        setGlobalConversationId(id)
-    }, [])
+    const handleSelectConversation = useCallback(
+        (id: number) => {
+            navigate(`/chat/${id}`)
+        },
+        [navigate]
+    )
 
     const handleJoinConversation = useCallback(
         (id: number) => {
@@ -301,93 +244,217 @@ export default function Chat() {
 
     return (
         <div className="h-screen bg-background flex flex-col overflow-hidden">
-            <Navbar />
-
-            {/* Error/Loading Banners */}
             {convError && (
                 <div className="bg-destructive/15 border-b border-destructive p-4">
                     <p className="text-sm text-destructive">
-                        Error loading conversations: {String(convError)}
+                        Error loading chatrooms: {String(convError)}
                     </p>
                 </div>
             )}
-            {/* ... other banners if needed ... */}
 
             <div className="flex-1 flex overflow-hidden">
-                <ChatSidebar
-                    activeTab={chatroomTab}
-                    setActiveTab={setChatroomTab}
-                    conversations={conversations}
-                    isLoading={convLoading}
-                    error={convError}
-                    selectedId={globalConversationId}
-                    onSelect={handleSelectConversation}
-                    onJoin={handleJoinConversation}
-                    isJoining={joinChatroom.isPending}
-                />
-
-                {/* Center - Chat Window */}
-                <div className="flex-1 flex flex-col overflow-hidden">
-                    <div className="border-b p-4 shrink-0 bg-card">
-                        <h3 className="font-semibold text-sm">
-                            {conversations?.find((c) => c.id === globalConversationId)?.name ||
-                                `Room ${globalConversationId}`}
-                        </h3>
+                {/* Left Sidebar - Chatrooms (200px) */}
+                <div className="w-[200px] border-r bg-card flex flex-col overflow-hidden shrink-0">
+                    <div className="p-4 border-b shrink-0 h-[60px] flex items-center justify-between">
+                        <h2 className="font-semibold text-sm flex items-center gap-2">
+                            <Compass className="w-4 h-4" />
+                            Chatrooms
+                        </h2>
+                        <div className="flex bg-muted p-0.5 rounded-lg">
+                            <button
+                                type="button"
+                                onClick={() => setChatroomTab('joined')}
+                                className={cn(
+                                    'px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all',
+                                    chatroomTab === 'joined'
+                                        ? 'bg-background shadow-sm text-primary'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                )}
+                            >
+                                Joined
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setChatroomTab('all')}
+                                className={cn(
+                                    'px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all',
+                                    chatroomTab === 'all'
+                                        ? 'bg-background shadow-sm text-primary'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                )}
+                            >
+                                All
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto flex flex-col">
-                        <MessageList
-                            messages={messages}
-                            isLoading={isLoading}
-                            currentUserId={currentUser?.id}
-                        />
-                        <div ref={messagesEndRef} />
+                    <ScrollArea className="flex-1">
+                        <div className="p-2 space-y-1">
+                            {convLoading ? (
+                                <div className="py-20 text-center text-xs text-muted-foreground">
+                                    Loading...
+                                </div>
+                            ) : conversations.length > 0 ? (
+                                conversations.map((conv) => (
+                                    <button
+                                        key={conv.id}
+                                        type="button"
+                                        onClick={() => handleSelectConversation(conv.id)}
+                                        className={cn(
+                                            'w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left',
+                                            selectedChatId === conv.id
+                                                ? 'bg-secondary text-foreground shadow-sm'
+                                                : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                                        )}
+                                    >
+                                        <div className="w-10 h-10 rounded-full bg-linear-to-tr from-primary/20 to-primary/5 flex items-center justify-center font-bold text-primary shrink-0 border">
+                                            {conv.name?.[0].toUpperCase() || 'C'}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between mb-0.5">
+                                                <span className="text-sm font-semibold truncate leading-none">
+                                                    {conv.name || `Room ${conv.id}`}
+                                                </span>
+                                                {conv.is_joined && (
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                                )}
+                                            </div>
+                                            <p className="text-xs opacity-70 truncate leading-none">
+                                                {conv.participants?.length || 0} members
+                                            </p>
+                                        </div>
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="py-20 text-center text-xs text-muted-foreground italic">
+                                    No rooms found.
+                                </div>
+                            )}
+                        </div>
+                    </ScrollArea>
+                </div>
+
+                {/* Center - Message Window */}
+                <div className="flex-1 flex flex-col overflow-hidden bg-background">
+                    <div className="border-b px-6 h-[60px] flex items-center justify-between shrink-0 bg-card/30 backdrop-blur-sm">
+                        <div className="flex items-center gap-3 shrink-0">
+                            {currentConversation && (
+                                <>
+                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs ring-1 ring-primary/20">
+                                        {currentConversation.name?.[0].toUpperCase() || 'C'}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-sm leading-none mb-1">
+                                            {currentConversation.name ||
+                                                `Room ${currentConversation.id}`}
+                                        </h3>
+                                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest leading-none">
+                                            {currentConversation.participants?.length || 0} MEMBERS
+                                        </p>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowParticipants(!showParticipants)}
+                            className={cn(
+                                'flex items-center gap-2 rounded-full px-4 border border-transparent transition-all',
+                                showParticipants
+                                    ? 'bg-primary/10 text-primary border-primary/20'
+                                    : 'text-muted-foreground hover:bg-muted'
+                            )}
+                        >
+                            <UserCircle className="w-4 h-4" />
+                            <span className="text-xs font-bold uppercase tracking-wider">
+                                {showParticipants ? 'Hide' : 'Show'} Members
+                            </span>
+                        </Button>
                     </div>
 
-                    {/* Message Input or Join Button */}
-                    <div className="border-t bg-card p-4 shrink-0">
-                        {messageError && (
-                            <p className="text-xs text-destructive mb-2">{messageError}</p>
-                        )}
+                    <ScrollArea className="flex-1">
+                        <div className="max-w-3xl mx-auto w-full p-6">
+                            <MessageList
+                                messages={messages}
+                                isLoading={isLoading}
+                                currentUserId={currentUser?.id}
+                            />
+                            <div ref={messagesEndRef} className="h-4" />
+                        </div>
+                    </ScrollArea>
 
-                        {userIsJoined ? (
-                            <div className="flex gap-2">
-                                <Input
-                                    placeholder={wsIsJoined ? 'Type a message...' : 'Connecting...'}
-                                    value={newMessage}
-                                    onChange={(e) => handleInputChange(e.target.value)}
-                                    onKeyDown={handleKeyPress}
-                                    disabled={!wsIsJoined}
-                                    className="flex-1"
-                                />
-                                <Button
-                                    onClick={handleSendMessage}
-                                    disabled={!newMessage.trim() || !wsIsJoined}
-                                >
-                                    <Send className="w-4 h-4" />
-                                </Button>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center p-4 gap-4">
-                                <p className="text-muted-foreground text-sm">
-                                    You are not a member of this chatroom.
+                    <div className="p-4 border-t bg-card/10">
+                        <div className="max-w-3xl mx-auto">
+                            {messageError && (
+                                <p className="text-xs text-destructive mb-2 font-medium px-4">
+                                    {messageError}
                                 </p>
-                                <Button
-                                    onClick={() =>
-                                        globalConversationId &&
-                                        handleJoinConversation(globalConversationId)
-                                    }
-                                    disabled={joinChatroom.isPending}
-                                    className="w-full sm:w-auto"
-                                >
-                                    {joinChatroom.isPending ? 'Joining...' : 'Join Chatroom'}
-                                </Button>
-                            </div>
-                        )}
+                            )}
+
+                            {userIsJoined ? (
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        placeholder={
+                                            wsIsJoined ? 'Type a message...' : 'Connecting...'
+                                        }
+                                        value={newMessage}
+                                        onChange={(e) => handleInputChange(e.target.value)}
+                                        onKeyDown={handleKeyPress}
+                                        disabled={!wsIsJoined}
+                                        className="flex-1 rounded-full bg-card border-none px-6 h-11 shadow-inner"
+                                    />
+                                    <Button
+                                        onClick={handleSendMessage}
+                                        disabled={!newMessage.trim() || !wsIsJoined}
+                                        className="rounded-full w-11 h-11 p-0 shadow-lg"
+                                    >
+                                        <Send className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center p-8 gap-4 bg-muted/30 rounded-3xl border border-dashed">
+                                    <p className="text-muted-foreground text-sm font-medium">
+                                        Join this room to participate in the conversation.
+                                    </p>
+                                    <Button
+                                        onClick={() =>
+                                            selectedChatId && handleJoinConversation(selectedChatId)
+                                        }
+                                        disabled={joinChatroom.isPending}
+                                        className="rounded-full px-8 shadow-md"
+                                    >
+                                        {joinChatroom.isPending ? 'Joining...' : 'Join Chatroom'}
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                <ParticipantsList participants={participants} onlineUserIds={onlineUserIds} />
+                {/* Right Sidebar - Active Users */}
+                <div
+                    className={cn(
+                        'border-l bg-card flex flex-col overflow-hidden transition-all duration-300 ease-in-out',
+                        showParticipants ? 'w-[250px] opacity-100' : 'w-0 opacity-0 border-none'
+                    )}
+                >
+                    <div className="p-4 border-b shrink-0 h-[60px] flex items-center">
+                        <h2 className="font-semibold text-sm flex items-center gap-2 whitespace-nowrap">
+                            <Users className="w-4 h-4" />
+                            Online Members
+                        </h2>
+                    </div>
+                    <ScrollArea className="flex-1">
+                        <div className="p-2">
+                            <ParticipantsList
+                                participants={participants}
+                                onlineUserIds={onlineUserIds}
+                            />
+                        </div>
+                    </ScrollArea>
+                </div>
             </div>
         </div>
     )

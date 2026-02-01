@@ -167,9 +167,42 @@ func Seed(db *gorm.DB) error {
 	}
 	log.Printf("✓ %d posts created", len(posts))
 
+	// Join users to conversations
+	if err := joinParticipants(db, users, conversations); err != nil {
+		return fmt.Errorf("failed to join participants: %w", err)
+	}
+	log.Printf("✓ Users joined to chat rooms")
+
 	log.Println("🎉 Database seeding completed successfully!")
-	log.Println("✨ Chat rooms are ready. Users will auto-join when they login.")
+	log.Println("✨ Chat rooms are populated. Users can start chatting immediately.")
 	log.Println("📧 All test users have the password: password123")
+	return nil
+}
+
+func joinParticipants(db *gorm.DB, users []models.User, conversations []models.Conversation) error {
+	//nolint:gosec // Weak random number generator is fine for seeding test data
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for _, conv := range conversations {
+		// Randomly pick a number of participants (3 to 15)
+		numParticipants := r.Intn(len(users)-3) + 3
+
+		// Shuffle users to pick random participants
+		perm := r.Perm(len(users))
+		for i := 0; i < numParticipants; i++ {
+			userID := users[perm[i]].ID
+			participant := models.ConversationParticipant{
+				ConversationID: conv.ID,
+				UserID:         userID,
+				JoinedAt:       time.Now().Add(-time.Hour * time.Duration(r.Intn(100))),
+				LastReadAt:     time.Now(),
+			}
+			// Use Clauses(clause.OnConflict{DoNothing: true}) if needed,
+			// but since Seed clears data, simple Create is fine.
+			if err := db.Create(&participant).Error; err != nil {
+				log.Printf("Failed to join user %d to conversation %d: %v", userID, conv.ID, err)
+			}
+		}
+	}
 	return nil
 }
 

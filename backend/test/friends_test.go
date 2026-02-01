@@ -96,7 +96,7 @@ func TestFriendEndpoints(t *testing.T) {
 		req.Header.Set("Authorization", "Bearer "+token1)
 		res, err := app.Test(req, -1)
 		assert.NoError(t, err)
-		defer res.Body.Close()
+		defer func() { _ = res.Body.Close() }()
 		assert.Equal(t, 201, res.StatusCode)
 
 		var resp struct {
@@ -110,7 +110,7 @@ func TestFriendEndpoints(t *testing.T) {
 		req.Header.Set("Authorization", "Bearer "+token3)
 		res, err = app.Test(req, -1)
 		assert.NoError(t, err)
-		defer res.Body.Close()
+		defer func() { _ = res.Body.Close() }()
 		assert.Equal(t, 200, res.StatusCode)
 	})
 
@@ -133,7 +133,7 @@ func registerUser(t *testing.T, app interface {
 	if err != nil {
 		t.Fatalf("signup error: %v", err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	var signupResp struct {
 		Token string `json:"token"`

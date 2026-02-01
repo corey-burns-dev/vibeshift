@@ -43,7 +43,7 @@ export function UserMenu({ user, children }: UserMenuProps) {
             { participant_ids: [user.id] },
             {
                 onSuccess: (conv) => {
-                    navigate(`/chat/${conv.id}`)
+                    navigate(`/messages/${conv.id}`)
                 },
             }
         )

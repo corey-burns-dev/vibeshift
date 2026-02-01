@@ -4,10 +4,13 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
+	"time"
 
+	"vibeshift/middleware"
 	"vibeshift/models"
 	"vibeshift/notifications"
 
@@ -166,12 +169,19 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 				}
 
 			case "typing":
-				// Typing indicator
+				// Typing indicator - limit to 10 per 10 seconds to prevent spam
 				if convIDFloat, ok := incomingMsg["conversation_id"].(float64); ok {
 					convID := uint(convIDFloat)
 					isTyping, _ := incomingMsg["is_typing"].(bool)
 
 					if s.notifier != nil && s.isUserParticipant(ctx, userID, convID) {
+						// Rate limit typing indicators
+						id := fmt.Sprintf("user:%d", userID)
+						allowed, _ := middleware.CheckRateLimit(ctx, s.redis, "typing", id, 10, 10*time.Second)
+						if !allowed {
+							return // Silently drop spammy typing indicators
+						}
+
 						if perr := s.notifier.PublishTypingIndicator(ctx, convID, userID, username, isTyping); perr != nil {
 							log.Printf("publish typing indicator error: %v", perr)
 						}
@@ -185,6 +195,22 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 					content, _ := incomingMsg["content"].(string)
 
 					if content != "" && s.isUserParticipant(ctx, userID, convID) {
+						// Rate limit messages - same as HTTP (15 per minute)
+						id := fmt.Sprintf("user:%d", userID)
+						allowed, _ := middleware.CheckRateLimit(ctx, s.redis, "send_chat", id, 15, time.Minute)
+						if !allowed {
+							response := notifications.ChatMessage{
+								Type: "error",
+								Payload: map[string]string{
+									"message": "Rate limit exceeded. Please wait a moment.",
+								},
+							}
+							if respJSON, err := json.Marshal(response); err == nil {
+								c.TrySend(respJSON)
+							}
+							return
+						}
+
 						// Create message in database
 						message := &models.Message{
 							ConversationID: convID,

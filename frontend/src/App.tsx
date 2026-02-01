@@ -1,14 +1,15 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, Compass, Lock, MessageSquare, Moon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { lazy, Suspense, useEffect } from 'react'
-import { Route, BrowserRouter as Router, Routes, useLocation } from 'react-router-dom'
-import { Navbar } from '@/components/Navbar'
+import { Link, Route, BrowserRouter as Router, Routes, useLocation } from 'react-router-dom'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { Sidebar } from '@/components/Sidebar'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
+import { useIsAuthenticated } from '@/hooks'
+import { cn } from '@/lib/utils'
 import { routePrefetchMap } from '@/utils/prefetch'
 
-// Lazy load pages
 const Login = lazy(() => import('@/pages/Login'))
 const Signup = lazy(() => import('@/pages/Signup'))
 const Posts = lazy(() => import('@/pages/Posts'))
@@ -21,7 +22,6 @@ const Games = lazy(() => import('@/pages/Games'))
 const TicTacToe = lazy(() => import('@/pages/games/TicTacToe'))
 const ConnectFour = lazy(() => import('@/pages/games/ConnectFour'))
 
-// Individual Game Placeholders
 const Chess = lazy(() => import('@/pages/games/Chess'))
 const Checkers = lazy(() => import('@/pages/games/Checkers'))
 const Trivia = lazy(() => import('@/pages/games/Trivia'))
@@ -46,112 +46,29 @@ function PageLoader() {
     )
 }
 
-// HomePage component (keeping it inline since it's lightweight)
 function HomePage() {
+    const isAuthenticated = useIsAuthenticated()
+    if (isAuthenticated) {
+        return <Posts />
+    }
     return (
-        <div className="min-h-screen bg-background">
-            <Navbar />
-            {/* Hero Section */}
-            <section className="max-w-6xl mx-auto px-4 py-20">
-                <div className="text-center mb-16">
-                    <h1 className="text-5xl font-bold text-foreground mb-4">
-                        Welcome to Vibeshift
-                    </h1>
-                    <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                        A modern full-stack application with a Go backend and React frontend,
-                        powered by TanStack Query and Tailwind CSS.
-                    </p>
-                    <div className="flex gap-4 justify-center flex-wrap">
-                        <Button size="lg">Get Started</Button>
-                        <Button size="lg" variant="outline">
-                            Learn More
-                        </Button>
-                    </div>
+        <div className="flex items-center justify-center min-h-screen px-4 bg-background">
+            <div className="max-w-2xl text-center">
+                <h1 className="text-6xl font-extrabold tracking-tight mb-4 bg-linear-to-tr from-primary to-primary/60 bg-clip-text text-transparent">
+                    Vibeshift
+                </h1>
+                <p className="text-xl text-muted-foreground mb-8">
+                    The next generation of social gaming and connection.
+                </p>
+                <div className="flex gap-4 justify-center">
+                    <Button size="lg" asChild>
+                        <Link to="/signup">Get Started</Link>
+                    </Button>
+                    <Button size="lg" variant="outline" asChild>
+                        <Link to="/login">Login</Link>
+                    </Button>
                 </div>
-            </section>
-
-            {/* Status Section */}
-            <section id="status" className="bg-card py-16 border-t">
-                <div className="max-w-6xl mx-auto px-4">
-                    <h2 className="text-3xl font-bold text-card-foreground mb-8">System Status</h2>
-                    <div className="grid md:grid-cols-3 gap-6">
-                        <div className="bg-card rounded-lg border p-6 shadow-sm">
-                            <h3 className="text-lg font-semibold mb-4">Features</h3>
-                            <ul className="space-y-3 text-muted-foreground">
-                                <li className="flex gap-2 items-center">
-                                    <Check className="w-4 h-4 text-primary shrink-0" />
-                                    <span>Real-time health checks</span>
-                                </li>
-                                <li className="flex gap-2 items-center">
-                                    <Check className="w-4 h-4 text-primary shrink-0" />
-                                    <span>Redis integration</span>
-                                </li>
-                                <li className="flex gap-2 items-center">
-                                    <Check className="w-4 h-4 text-primary shrink-0" />
-                                    <span>PostgreSQL support</span>
-                                </li>
-                                <li className="flex gap-2 items-center">
-                                    <Check className="w-4 h-4 text-primary shrink-0" />
-                                    <span>Modern UI with Tailwind</span>
-                                </li>
-                            </ul>
-                        </div>
-                        <div className="bg-card rounded-lg border p-6 shadow-sm">
-                            <h3 className="text-lg font-semibold mb-4">Stack</h3>
-                            <div className="space-y-2 text-muted-foreground text-sm">
-                                <p>
-                                    <strong>Frontend:</strong> React 19, TypeScript, Vite
-                                </p>
-                                <p>
-                                    <strong>Styling:</strong> Tailwind CSS, shadcn/ui
-                                </p>
-                                <p>
-                                    <strong>Data:</strong> TanStack Query
-                                </p>
-                                <p>
-                                    <strong>Backend:</strong> Go, Redis, PostgreSQL
-                                </p>
-                            </div>
-                        </div>
-                        <div className="bg-card rounded-lg border p-6 shadow-sm">
-                            <h3 className="text-lg font-semibold mb-4">Navigation</h3>
-                            <div className="space-y-2 text-muted-foreground text-sm">
-                                <p className="flex items-center gap-2">
-                                    <Compass className="w-4 h-4 text-primary shrink-0" />
-                                    <span>
-                                        <strong>Posts:</strong> Browse and create posts
-                                    </span>
-                                </p>
-                                <p className="flex items-center gap-2">
-                                    <MessageSquare className="w-4 h-4 text-primary shrink-0" />
-                                    <span>
-                                        <strong>Chat:</strong> Real-time messaging
-                                    </span>
-                                </p>
-                                <p className="flex items-center gap-2">
-                                    <Lock className="w-4 h-4 text-primary shrink-0" />
-                                    <span>
-                                        <strong>Auth:</strong> Login/Signup system
-                                    </span>
-                                </p>
-                                <p className="flex items-center gap-2">
-                                    <Moon className="w-4 h-4 text-primary shrink-0" />
-                                    <span>
-                                        <strong>Theme:</strong> Dark mode enabled
-                                    </span>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Footer */}
-            <footer className="bg-muted/50 text-muted-foreground py-8 border-t">
-                <div className="max-w-6xl mx-auto px-4 text-center">
-                    <p>© 2025 Vibeshift. All rights reserved.</p>
-                </div>
-            </footer>
+            </div>
         </div>
     )
 }
@@ -174,8 +91,6 @@ function RoutesWithPrefetch() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/posts" element={<Posts />} />
-
-                {/* Protected Routes */}
                 <Route
                     path="/chat"
                     element={
@@ -194,6 +109,14 @@ function RoutesWithPrefetch() {
                 />
                 <Route
                     path="/messages"
+                    element={
+                        <ProtectedRoute>
+                            <Messages />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/messages/:id"
                     element={
                         <ProtectedRoute>
                             <Messages />
@@ -224,8 +147,6 @@ function RoutesWithPrefetch() {
                         </ProtectedRoute>
                     }
                 />
-
-                {/* Games Hub */}
                 <Route
                     path="/games"
                     element={
@@ -250,8 +171,6 @@ function RoutesWithPrefetch() {
                         </ProtectedRoute>
                     }
                 />
-
-                {/* Game Catalog Placeholders */}
                 <Route
                     path="/games/chess"
                     element={
@@ -353,10 +272,29 @@ function RoutesWithPrefetch() {
     )
 }
 
+function MainLayout({ children }: { children: ReactNode }) {
+    const isAuthenticated = useIsAuthenticated()
+    return (
+        <div className="flex min-h-screen bg-background text-foreground transition-all duration-300">
+            <Sidebar />
+            <div
+                className={cn(
+                    'flex-1 flex flex-col min-w-0 transition-all duration-300',
+                    isAuthenticated ? 'ml-16' : ''
+                )}
+            >
+                {children}
+            </div>
+        </div>
+    )
+}
+
 export default function App() {
     return (
         <Router>
-            <RoutesWithPrefetch />
+            <MainLayout>
+                <RoutesWithPrefetch />
+            </MainLayout>
             <Toaster />
         </Router>
     )

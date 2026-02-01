@@ -32,49 +32,51 @@ export const ParticipantsList = memo(function ParticipantsList({
     )
 
     return (
-        <div className="w-[15%] border-l bg-card flex flex-col overflow-hidden">
-            <div className="p-4 border-b shrink-0">
-                <h3 className="font-semibold text-sm">Participants</h3>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-                <div className="space-y-4 p-4">
-                    {/* Online Users */}
-                    <div className="space-y-2">
-                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                            Online - {onlineParticipants.length}
-                        </h4>
-                        {onlineParticipants.length > 0 ? (
-                            onlineParticipants.map((user) => (
-                                <div key={user.id} className="flex items-center gap-2 text-sm">
-                                    <div className="relative">
-                                        <div className="w-2 h-2 rounded-full bg-green-500" />
-                                        {user.typing && (
-                                            <div className="absolute -right-1 -top-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
-                                        )}
-                                    </div>
-                                    <span className="truncate flex-1">{user.username}</span>
-                                </div>
-                            ))
-                        ) : (
-                            <p className="text-xs text-muted-foreground italic">No one is online</p>
-                        )}
-                    </div>
-
-                    {/* Offline Users */}
-                    <div className="space-y-2 pt-4 border-t">
-                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                            Offline - {offlineParticipants.length}
-                        </h4>
-                        {offlineParticipants.map((user) => (
+        <div className="space-y-6">
+            {/* Online Users */}
+            <div className="space-y-3">
+                <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2">
+                    Online — {onlineParticipants.length}
+                </h4>
+                {onlineParticipants.length > 0 ? (
+                    <div className="space-y-1">
+                        {onlineParticipants.map((user) => (
                             <div
                                 key={user.id}
-                                className="flex items-center gap-2 text-sm opacity-50"
+                                className="flex items-center gap-2 text-xs p-2 rounded-lg hover:bg-muted/50 transition-colors"
                             >
-                                <div className="w-2 h-2 rounded-full bg-muted-foreground/30" />
-                                <span className="truncate flex-1">{user.username}</span>
+                                <div className="relative">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                                    {user.typing && (
+                                        <div className="absolute -inset-1 bg-primary/20 rounded-full animate-ping" />
+                                    )}
+                                </div>
+                                <span className="truncate font-medium">{user.username}</span>
                             </div>
                         ))}
                     </div>
+                ) : (
+                    <p className="text-[10px] text-muted-foreground italic px-2">
+                        No one is online
+                    </p>
+                )}
+            </div>
+
+            {/* Offline Users */}
+            <div className="space-y-3">
+                <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2">
+                    Offline — {offlineParticipants.length}
+                </h4>
+                <div className="space-y-1">
+                    {offlineParticipants.map((user) => (
+                        <div
+                            key={user.id}
+                            className="flex items-center gap-2 text-xs p-2 rounded-lg opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all"
+                        >
+                            <div className="w-2 h-2 rounded-full bg-muted-foreground/30" />
+                            <span className="truncate">{user.username}</span>
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>
