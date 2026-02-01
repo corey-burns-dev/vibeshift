@@ -27,9 +27,7 @@ export const ParticipantsList = memo(function ParticipantsList({
         return (a.username || '').localeCompare(b.username || '')
     })
 
-    const onlineParticipants = sortedParticipants.filter(
-        (p) => p.online || onlineUserIds.has(p.id)
-    )
+    const onlineParticipants = sortedParticipants.filter((p) => p.online || onlineUserIds.has(p.id))
     const offlineParticipants = sortedParticipants.filter(
         (p) => !(p.online || onlineUserIds.has(p.id))
     )
@@ -48,25 +46,18 @@ export const ParticipantsList = memo(function ParticipantsList({
                         </h4>
                         {onlineParticipants.length > 0 ? (
                             onlineParticipants.map((user) => (
-                                <div
-                                    key={user.id}
-                                    className="flex items-center gap-2 text-sm"
-                                >
+                                <div key={user.id} className="flex items-center gap-2 text-sm">
                                     <div className="relative">
                                         <div className="w-2 h-2 rounded-full bg-green-500" />
                                         {user.typing && (
                                             <div className="absolute -right-1 -top-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
                                         )}
                                     </div>
-                                    <span className="truncate flex-1">
-                                        {user.username}
-                                    </span>
+                                    <span className="truncate flex-1">{user.username}</span>
                                 </div>
                             ))
                         ) : (
-                            <p className="text-xs text-muted-foreground italic">
-                                No one is online
-                            </p>
+                            <p className="text-xs text-muted-foreground italic">No one is online</p>
                         )}
                     </div>
 
@@ -81,9 +72,7 @@ export const ParticipantsList = memo(function ParticipantsList({
                                 className="flex items-center gap-2 text-sm opacity-50"
                             >
                                 <div className="w-2 h-2 rounded-full bg-muted-foreground/30" />
-                                <span className="truncate flex-1">
-                                    {user.username}
-                                </span>
+                                <span className="truncate flex-1">{user.username}</span>
                             </div>
                         ))}
                     </div>

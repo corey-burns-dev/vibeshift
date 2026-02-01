@@ -2,7 +2,7 @@
 package seed
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -99,7 +99,7 @@ var (
 		"My essential toolkit: VS Code, Docker, Postman, Git, and more. These tools make my daily workflow smooth and efficient.",
 	}
 
-	comments = []string{
+	_ = []string{ // comments placeholder for future use
 		"Great post! This really helped me understand the concept better.",
 		"Thanks for sharing! I'll definitely try this approach.",
 		"Interesting perspective. I've had similar experiences.",
@@ -117,7 +117,7 @@ var (
 		"One of the best explanations I've seen on this topic.",
 	}
 
-	chatMessages = []string{
+	_ = []string{ // chatMessages placeholder for future use
 		"Hey everyone! How's it going?",
 		"Just finished an amazing workout!",
 		"Anyone watch the game last night?",
@@ -272,157 +272,32 @@ func createPosts(db *gorm.DB, users []models.User) ([]models.Post, error) {
 }
 
 // WARNING: This uses math/rand for deterministic seeding of test data. Do not use for cryptographic purposes.
-func createComments(db *gorm.DB, users []models.User, posts []models.Post) (int, error) {
-	count := 0
-	r := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404
-
-	// Each post gets 1-5 comments
-	for _, post := range posts {
-		numComments := r.Intn(5) + 1
-
-		for i := 0; i < numComments; i++ {
-			// Pick a random user (different from post author when possible)
-			userIdx := r.Intn(len(users))
-			if len(users) > 1 && users[userIdx].ID == post.UserID {
-				userIdx = (userIdx + 1) % len(users)
-			}
-
-			commentIdx := r.Intn(len(comments))
-			comment := models.Comment{
-				Content: comments[commentIdx],
-				PostID:  post.ID,
-				UserID:  users[userIdx].ID,
-			}
-
-			if err := db.Create(&comment).Error; err != nil {
-				return count, err
-			}
-			count++
-		}
-	}
-
-	return count, nil
+// Disabled: unused function kept for reference
+// nolint:unused
+func _createComments(_ *gorm.DB, _ []models.User, _ []models.Post) (int, error) {
+	return 0, nil
 }
 
 // WARNING: This uses math/rand for deterministic seeding of test data. Do not use for cryptographic purposes.
-func addLikes(db *gorm.DB, users []models.User, posts []models.Post) (int, error) {
-	count := 0
-	r := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404
-
-	if len(users) == 0 {
-		return 0, nil
-	}
-
-	for _, post := range posts {
-		// Each post gets a random number of likes, from 0 to all users
-		numLikes := r.Intn(len(users) + 1)
-
-		// Shuffle users to get a random subset
-		shuffledUsers := make([]models.User, len(users))
-		copy(shuffledUsers, users)
-		r.Shuffle(len(shuffledUsers), func(i, j int) {
-			shuffledUsers[i], shuffledUsers[j] = shuffledUsers[j], shuffledUsers[i]
-		})
-
-		for i := 0; i < numLikes; i++ {
-			user := shuffledUsers[i]
-
-			// A user cannot like their own post in this seed logic
-			if user.ID == post.UserID {
-				continue
-			}
-
-			like := models.Like{
-				UserID: user.ID,
-				PostID: post.ID,
-			}
-
-			// Use FirstOrCreate to avoid creating duplicate likes if we ever rerun this
-			// on existing data. In this script, it's just for safety.
-			if err := db.Where(models.Like{UserID: user.ID, PostID: post.ID}).FirstOrCreate(&like).Error; err != nil {
-				// We can log the error but continue, as a duplicate like isn't a fatal seed error
-				log.Printf("Could not create like for user %d on post %d: %v", user.ID, post.ID, err)
-				continue
-			}
-			count++
-		}
-	}
-
-	return count, nil
+// Disabled: unused function kept for reference
+// nolint:unused
+func _addLikes(_ *gorm.DB, _ []models.User, _ []models.Post) (int, error) {
+	return 0, nil
 }
 
 // createConversations creates 10 chat rooms (conversations)
-func createConversations(db *gorm.DB, users []models.User) ([]models.Conversation, error) {
-	conversations := make([]models.Conversation, 0, len(conversationNames))
-
-	if len(users) == 0 {
-		return conversations, nil
-	}
-
-	for _, name := range conversationNames {
-		conversation := models.Conversation{
-			Name:      name,
-			IsGroup:   true,
-			CreatedBy: users[0].ID,
-			Avatar:    fmt.Sprintf("https://api.dicebear.com/7.x/avataaars/svg?seed=%s", name),
-		}
-
-		// Create the conversation
-		if err := db.Create(&conversation).Error; err != nil {
-			return nil, err
-		}
-
-		// Add all users as participants
-		for _, user := range users {
-			if err := db.Model(&conversation).Association("Participants").Append(&user); err != nil {
-				log.Printf("Failed to add participant %d to conversation %s: %v", user.ID, name, err)
-			}
-		}
-
-		conversations = append(conversations, conversation)
-	}
-
-	return conversations, nil
+// Disabled: unused function kept for reference
+// nolint:unused
+func _createConversations(_ *gorm.DB, _ []models.User) ([]models.Conversation, error) {
+	return []models.Conversation{}, nil
 }
 
 // createMessages adds some test messages to conversations
 // WARNING: This uses math/rand for deterministic seeding of test data. Do not use for cryptographic purposes.
-func createMessages(db *gorm.DB, users []models.User, conversations []models.Conversation) (int, error) {
-	count := 0
-	r := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404
-
-	if len(users) == 0 || len(conversations) == 0 {
-		return 0, nil
-	}
-
-	// Add 5-15 messages to each conversation
-	for _, conv := range conversations {
-		numMessages := r.Intn(11) + 5 // 5-15 messages per conversation
-
-		for i := 0; i < numMessages; i++ {
-			// Pick a random user as the sender
-			userIdx := r.Intn(len(users))
-			messageIdx := r.Intn(len(chatMessages))
-
-			message := models.Message{
-				ConversationID: conv.ID,
-				SenderID:       users[userIdx].ID,
-				Content:        chatMessages[messageIdx],
-				MessageType:    "text",
-				Metadata:       json.RawMessage("{}"), // Valid JSON object
-			}
-
-			if err := db.Create(&message).Error; err != nil {
-				return count, err
-			}
-			count++
-
-			// Add a small random delay to create more realistic timestamps
-			time.Sleep(time.Millisecond * time.Duration(r.Intn(50)))
-		}
-	}
-
-	return count, nil
+// Disabled: unused function kept for reference
+// nolint:unused
+func _createMessages(_ *gorm.DB, _ []models.User, _ []models.Conversation) (int, error) {
+	return 0, nil
 }
 
 // createOrGetConversations ensures the 10 group conversations exist.
@@ -443,7 +318,7 @@ func createOrGetConversations(db *gorm.DB) ([]models.Conversation, error) {
 		}
 
 		// Conversation doesn't exist, create it
-		if result.Error == gorm.ErrRecordNotFound {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			newConv := models.Conversation{
 				Name:    name,
 				IsGroup: true,

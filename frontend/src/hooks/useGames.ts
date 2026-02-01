@@ -23,7 +23,7 @@ export function useActiveGameRooms(type = 'tictactoe') {
 export function useGameRoom(id: string) {
     return useQuery({
         queryKey: gameKeys.detail(id),
-        queryFn: () => apiClient.getGameRoom(id),
+        queryFn: () => apiClient.getGameRoom(Number(id)),
         enabled: !!id,
     })
 }

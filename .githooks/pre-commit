@@ -1,0 +1,47 @@
+#!/bin/sh
+
+# Pro-grade Pre-commit Hook
+# 1. Formats code (Go & Biome)
+# 2. Re-stages fixed files
+# 3. Validates with linter
+
+echo "🚀 Running pre-commit quality checks..."
+
+# --- 1. Backend Formatting ---
+echo "🎨 Formatting Go code..."
+make fmt
+if [ $? -ne 0 ]; then
+    echo "❌ Go formatting failed."
+    exit 1
+fi
+# Re-stage any Go files modified by fmt
+git add backend/*.go backend/**/*.go
+
+# --- 2. Frontend Formatting ---
+echo "🎨 Formatting frontend code (Biome)..."
+make fmt-frontend
+if [ $? -ne 0 ]; then
+    echo "❌ Frontend formatting failed."
+    exit 1
+fi
+# Re-stage any frontend files modified by Biome
+git add frontend/src
+
+# --- 3. Backend Linting ---
+echo "🔍 Linting backend code..."
+make lint
+if [ $? -ne 0 ]; then
+    echo "❌ Backend linting failed. Please fix errors before committing."
+    exit 1
+fi
+
+# --- 4. Frontend Linting ---
+echo "🔍 Linting frontend code..."
+make lint-frontend
+if [ $? -ne 0 ]; then
+    echo "❌ Frontend linting failed. Please fix errors before committing."
+    exit 1
+fi
+
+echo "✅ All checks passed! Proceeding with commit."
+exit 0

@@ -457,7 +457,7 @@ func (s *Server) JoinChatroom(c *fiber.Ctx) error {
 
 	// Verify the conversation exists and is a group
 	var conv models.Conversation
-	if err := s.db.WithContext(ctx).First(&conv, roomID).Error; err != nil {
+	if queryErr := s.db.WithContext(ctx).First(&conv, roomID).Error; queryErr != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound,
 			models.NewNotFoundError("Chatroom", roomID))
 	}

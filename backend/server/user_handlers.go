@@ -3,6 +3,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"time"
 	"vibeshift/models"
 
@@ -20,7 +21,7 @@ func (s *Server) GetAllUsers(c *fiber.Ctx) error {
 	users, err := s.userRepo.List(ctx, limit, offset)
 	if err != nil {
 		// Check for timeout
-		if err == context.DeadlineExceeded {
+		if errors.Is(err, context.DeadlineExceeded) {
 			return c.Status(fiber.StatusGatewayTimeout).JSON(fiber.Map{
 				"error": "Request timeout",
 			})

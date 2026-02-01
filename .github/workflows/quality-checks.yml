@@ -1,0 +1,116 @@
+name: Quality Checks
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  frontend-lint:
+    runs-on: ubuntu-latest
+    name: Frontend Linting (Biome)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --cwd frontend
+
+      - name: Run Biome checks
+        run: bun --bun biome check ./frontend/src
+        working-directory: ./frontend
+
+  backend-lint:
+    runs-on: ubuntu-latest
+    name: Backend Linting (golangci-lint)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.25'
+
+      - uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          working-directory: ./backend
+          args: --timeout=5m
+
+  backend-tests:
+    runs-on: ubuntu-latest
+    name: Backend Tests
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: vibeshift_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.25'
+
+      - name: Run Go tests
+        run: go test -v ./...
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/vibeshift_test
+          REDIS_URL: redis://localhost:6379
+
+  format-check:
+    runs-on: ubuntu-latest
+    name: Code Format Check
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.25'
+
+      - name: Check Go formatting
+        run: |
+          if [ -n "$(go fmt ./...)" ]; then
+            echo "❌ Go code is not formatted. Run 'make fmt' locally."
+            exit 1
+          fi
+        working-directory: ./backend
+
+      - name: Install frontend dependencies
+        run: bun install --cwd frontend
+
+      - name: Check Biome formatting
+        run: bun --bun biome format --check ./
+        working-directory: ./frontend

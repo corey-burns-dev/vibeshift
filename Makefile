@@ -195,7 +195,7 @@ config-check:
 # Code quality
 fmt:
 	@echo "$(BLUE)Formatting Go code...$(NC)"
-	$(GO) fmt ./...
+	cd backend && $(GO) fmt ./...
 	@echo "$(GREEN)✓ Code formatted$(NC)"
 
 lint:

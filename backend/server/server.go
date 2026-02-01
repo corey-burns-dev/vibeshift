@@ -91,15 +91,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	return server, nil
 }
 
-// contextWithTimeout creates a context with a reasonable timeout for DB operations
-// Default is 5 seconds, can be customized based on operation
-func (s *Server) contextWithTimeout(c *fiber.Ctx, timeout time.Duration) (context.Context, context.CancelFunc) {
-	if timeout == 0 {
-		timeout = 5 * time.Second
-	}
-	return context.WithTimeout(c.Context(), timeout)
-}
-
 // SetupMiddleware configures middleware for the Fiber app
 func (s *Server) SetupMiddleware(app *fiber.App) {
 	// Request ID for tracing

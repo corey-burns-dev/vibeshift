@@ -74,9 +74,10 @@ func (r *GameRoom) GetConnectFourState() [6][7]string {
 
 // CheckWin checks if there is a winner based on game type
 func (r *GameRoom) CheckWin() (string, bool) {
-	if r.Type == TicTacToe {
+	switch r.Type {
+	case TicTacToe:
 		return r.CheckTicTacToeWin()
-	} else if r.Type == ConnectFour {
+	case ConnectFour:
 		return r.CheckConnectFourWin()
 	}
 	return "", false

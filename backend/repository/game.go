@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"vibeshift/models"
 
 	"gorm.io/gorm"
@@ -67,7 +68,7 @@ func (r *gameRepository) GetMoves(roomID uint) ([]models.GameMove, error) {
 func (r *gameRepository) GetStats(userID uint, gameType models.GameType) (*models.GameStats, error) {
 	var stats models.GameStats
 	err := r.db.Where("user_id = ? AND game_type = ?", userID, gameType).First(&stats).Error
-	if err != nil && err == gorm.ErrRecordNotFound {
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		stats = models.GameStats{UserID: userID, GameType: gameType}
 		err = r.db.Create(&stats).Error
 	}

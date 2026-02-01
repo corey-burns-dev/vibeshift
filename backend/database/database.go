@@ -135,8 +135,8 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 	}
 
 	// Manual migration: Ensure opponent_id is nullable (GORM sometimes misses dropping NOT NULL)
-	if err := dbInstance.Exec("ALTER TABLE game_rooms ALTER COLUMN opponent_id DROP NOT NULL").Error; err != nil {
-		middleware.Logger.Warn("Failed to drop NOT NULL constraint on game_rooms.opponent_id (ignoring as it likely already is dropped)", slog.String("error", err.Error()))
+	if migrateErr := dbInstance.Exec("ALTER TABLE game_rooms ALTER COLUMN opponent_id DROP NOT NULL").Error; migrateErr != nil {
+		middleware.Logger.Warn("Failed to drop NOT NULL constraint on game_rooms.opponent_id (ignoring as it likely already is dropped)", slog.String("error", migrateErr.Error()))
 	}
 
 	middleware.Logger.Info("Database migration completed")
