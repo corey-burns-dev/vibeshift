@@ -57,7 +57,7 @@ export default function Chat() {
     const convError = chatroomTab === 'all' ? allError : joinedError
 
     const selectedChatId = useMemo(
-        () => (urlChatId ? Number.parseInt(urlChatId) : null),
+        () => (urlChatId ? Number.parseInt(urlChatId, 10) : null),
         [urlChatId]
     )
 

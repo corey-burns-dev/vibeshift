@@ -29,6 +29,7 @@ func TestUserEndpoints(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	res, err := app.Test(req, -1)
 	assert.NoError(t, err)
+	defer func() { _ = res.Body.Close() }()
 	assert.Equal(t, 201, res.StatusCode)
 
 	var signupResp struct {
@@ -48,6 +49,7 @@ func TestUserEndpoints(t *testing.T) {
 		req.Header.Set("Authorization", "Bearer "+token)
 		res, err := app.Test(req, -1)
 		assert.NoError(t, err)
+		defer func() { _ = res.Body.Close() }()
 		assert.Equal(t, 200, res.StatusCode)
 	})
 
@@ -62,6 +64,7 @@ func TestUserEndpoints(t *testing.T) {
 		req.Header.Set("Authorization", "Bearer "+token)
 		res, err := app.Test(req, -1)
 		assert.NoError(t, err)
+		defer func() { _ = res.Body.Close() }()
 		assert.Equal(t, 200, res.StatusCode)
 
 		var updateResp struct {
@@ -89,6 +92,8 @@ func TestPostCRUDEndpoints(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	res, err := app.Test(req, -1)
 	assert.NoError(t, err)
+	defer func() { _ = res.Body.Close() }()
+	assert.Equal(t, 201, res.StatusCode)
 	token := ""
 	var signupResp struct {
 		Token string `json:"token"`
@@ -110,6 +115,7 @@ func TestPostCRUDEndpoints(t *testing.T) {
 		req.Header.Set("Authorization", "Bearer "+token)
 		res, err := app.Test(req, -1)
 		assert.NoError(t, err)
+		defer func() { _ = res.Body.Close() }()
 		assert.Equal(t, 201, res.StatusCode)
 
 		var postResp struct {
@@ -124,6 +130,7 @@ func TestPostCRUDEndpoints(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/posts/"+itoa(postID), nil)
 		res, err := app.Test(req, -1)
 		assert.NoError(t, err)
+		defer func() { _ = res.Body.Close() }()
 		assert.Equal(t, 200, res.StatusCode)
 	})
 
@@ -139,6 +146,7 @@ func TestPostCRUDEndpoints(t *testing.T) {
 		req.Header.Set("Authorization", "Bearer "+token)
 		res, err := app.Test(req, -1)
 		assert.NoError(t, err)
+		defer func() { _ = res.Body.Close() }()
 		assert.Equal(t, 200, res.StatusCode)
 
 		var updateResp struct {
@@ -154,6 +162,7 @@ func TestPostCRUDEndpoints(t *testing.T) {
 		req.Header.Set("Authorization", "Bearer "+token)
 		res, err := app.Test(req, -1)
 		assert.NoError(t, err)
+		defer func() { _ = res.Body.Close() }()
 		assert.Equal(t, 204, res.StatusCode) // Assuming 204 No Content for delete
 	})
 
@@ -162,6 +171,7 @@ func TestPostCRUDEndpoints(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/posts/"+itoa(postID), nil)
 		res, err := app.Test(req, -1)
 		assert.NoError(t, err)
+		defer func() { _ = res.Body.Close() }()
 		assert.Equal(t, 404, res.StatusCode)
 	})
 }

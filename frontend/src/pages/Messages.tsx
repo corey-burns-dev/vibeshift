@@ -47,7 +47,7 @@ export default function Messages() {
     )
 
     const selectedConversationId = useMemo(
-        () => (urlConvId ? Number.parseInt(urlConvId) : null),
+        () => (urlConvId ? Number.parseInt(urlConvId, 10) : null),
         [urlConvId]
     )
 

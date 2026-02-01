@@ -7,9 +7,13 @@ import { MessageList } from '@/components/chat/MessageList'
 
 // Mock UserMenu since it uses navigation and other hooks
 vi.mock('@/components/UserMenu', () => ({
-    UserMenu: ({ children, user }: { children: React.ReactNode; user: any }) => (
-        <div data-testid={`user-menu-${user.id}`}>{children}</div>
-    ),
+    UserMenu: ({
+        children,
+        user,
+    }: {
+        children: React.ReactNode
+        user: { id: number | string }
+    }) => <div data-testid={`user-menu-${user.id}`}>{children}</div>,
 }))
 
 const createWrapper = () => {
