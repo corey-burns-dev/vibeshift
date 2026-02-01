@@ -39,10 +39,8 @@ export default function Users() {
     }
 
     return (
-        <div className="min-h-screen bg-background">
-            <Navbar />
-
-            <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex-1 overflow-y-auto px-4 py-8 bg-background">
+            <div className="max-w-7xl mx-auto">
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">

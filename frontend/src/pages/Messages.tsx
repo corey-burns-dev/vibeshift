@@ -214,7 +214,7 @@ export default function Messages() {
     )
 
     return (
-        <div className="h-screen bg-background flex flex-col overflow-hidden">
+        <div className="flex-1 bg-background flex flex-col overflow-hidden">
             {convError && (
                 <div className="bg-destructive/15 border-b border-destructive p-4">
                     <p className="text-sm text-destructive">

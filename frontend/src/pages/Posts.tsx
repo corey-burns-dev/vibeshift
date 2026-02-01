@@ -399,300 +399,302 @@ export default function Posts() {
     }
 
     return (
-        <div className="max-w-2xl mx-auto px-4 py-6">
-            {/* Create Post */}
-            {isAuthenticated && (
-                <Card className="mb-6 overflow-hidden border-none shadow-sm hover:shadow-md transition-shadow">
-                    <CardContent className="p-4 pt-6">
-                        <div className="flex gap-3 mb-4">
-                            <Avatar className="w-10 h-10 ring-2 ring-primary/5">
-                                <AvatarImage
-                                    src={
-                                        currentUser?.avatar ||
-                                        `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.username}`
-                                    }
-                                />
-                                <AvatarFallback>
-                                    {currentUser?.username?.[0]?.toUpperCase() || 'U'}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 space-y-3">
-                                <label
-                                    htmlFor="post-content"
-                                    className={cn(
-                                        'bg-muted px-4 py-2.5 rounded-3xl transition-all cursor-text block',
-                                        !isExpandingPost && 'hover:bg-muted/80'
-                                    )}
-                                >
-                                    <Textarea
-                                        id="post-content"
-                                        placeholder={`What's on your mind, ${currentUser?.username}?`}
-                                        value={newPostContent}
-                                        onChange={(e) => {
-                                            setNewPostContent(e.target.value)
-                                            if (!isExpandingPost) setIsExpandingPost(true)
-                                        }}
-                                        onFocus={() => {
-                                            if (!isExpandingPost) setIsExpandingPost(true)
-                                        }}
-                                        className="resize-none bg-transparent border-none focus-visible:ring-0 p-0 text-[15px] min-h-[40px] placeholder:text-muted-foreground/60 w-full shadow-none focus:ring-0"
-                                        rows={isExpandingPost ? 3 : 1}
-                                        disabled={createPostMutation.isPending}
+        <div className="flex-1 overflow-y-auto py-6">
+            <div className="max-w-2xl mx-auto px-4">
+                {/* Create Post */}
+                {isAuthenticated && (
+                    <Card className="mb-6 overflow-hidden border-none shadow-sm hover:shadow-md transition-shadow">
+                        <CardContent className="p-4 pt-6">
+                            <div className="flex gap-3 mb-4">
+                                <Avatar className="w-10 h-10 ring-2 ring-primary/5">
+                                    <AvatarImage
+                                        src={
+                                            currentUser?.avatar ||
+                                            `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.username}`
+                                        }
                                     />
-                                </label>
+                                    <AvatarFallback>
+                                        {currentUser?.username?.[0]?.toUpperCase() || 'U'}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 space-y-3">
+                                    <label
+                                        htmlFor="post-content"
+                                        className={cn(
+                                            'bg-muted px-4 py-2.5 rounded-3xl transition-all cursor-text block',
+                                            !isExpandingPost && 'hover:bg-muted/80'
+                                        )}
+                                    >
+                                        <Textarea
+                                            id="post-content"
+                                            placeholder={`What's on your mind, ${currentUser?.username}?`}
+                                            value={newPostContent}
+                                            onChange={(e) => {
+                                                setNewPostContent(e.target.value)
+                                                if (!isExpandingPost) setIsExpandingPost(true)
+                                            }}
+                                            onFocus={() => {
+                                                if (!isExpandingPost) setIsExpandingPost(true)
+                                            }}
+                                            className="resize-none bg-transparent border-none focus-visible:ring-0 p-0 text-[15px] min-h-[40px] placeholder:text-muted-foreground/60 w-full shadow-none focus:ring-0"
+                                            rows={isExpandingPost ? 3 : 1}
+                                            disabled={createPostMutation.isPending}
+                                        />
+                                    </label>
 
-                                {isExpandingPost && (
-                                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                                        <input
-                                            type="text"
-                                            placeholder="Post Title (optional)..."
-                                            value={newPostTitle}
-                                            onChange={(e) => setNewPostTitle(e.target.value)}
-                                            className="w-full text-sm font-semibold bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40"
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Image URL (optional)..."
-                                            value={newPostImage}
-                                            onChange={(e) => setNewPostImage(e.target.value)}
-                                            className="w-full text-sm bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40"
-                                        />
-                                        <div className="flex justify-between items-center pt-2">
-                                            <div className="flex gap-1">
+                                    {isExpandingPost && (
+                                        <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                            <input
+                                                type="text"
+                                                placeholder="Post Title (optional)..."
+                                                value={newPostTitle}
+                                                onChange={(e) => setNewPostTitle(e.target.value)}
+                                                className="w-full text-sm font-semibold bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40"
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="Image URL (optional)..."
+                                                value={newPostImage}
+                                                onChange={(e) => setNewPostImage(e.target.value)}
+                                                className="w-full text-sm bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40"
+                                            />
+                                            <div className="flex justify-between items-center pt-2">
+                                                <div className="flex gap-1">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        type="button"
+                                                        onClick={() => setIsExpandingPost(false)}
+                                                        className="text-xs font-semibold text-muted-foreground"
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                </div>
                                                 <Button
-                                                    variant="ghost"
+                                                    onClick={handleNewPost}
                                                     size="sm"
-                                                    type="button"
-                                                    onClick={() => setIsExpandingPost(false)}
-                                                    className="text-xs font-semibold text-muted-foreground"
+                                                    disabled={
+                                                        !newPostContent.trim() ||
+                                                        createPostMutation.isPending
+                                                    }
+                                                    className="rounded-full px-6 shadow-sm"
                                                 >
-                                                    Cancel
+                                                    {createPostMutation.isPending ? (
+                                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                    ) : (
+                                                        <Send className="w-4 h-4 mr-2" />
+                                                    )}
+                                                    Post
                                                 </Button>
                                             </div>
-                                            <Button
-                                                onClick={handleNewPost}
-                                                size="sm"
-                                                disabled={
-                                                    !newPostContent.trim() ||
-                                                    createPostMutation.isPending
-                                                }
-                                                className="rounded-full px-6 shadow-sm"
-                                            >
-                                                {createPostMutation.isPending ? (
-                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                ) : (
-                                                    <Send className="w-4 h-4 mr-2" />
-                                                )}
-                                                Post
-                                            </Button>
                                         </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {!isExpandingPost && (
-                            <div className="flex border-t pt-3 justify-around">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="gap-2 text-muted-foreground flex-1 hover:bg-muted"
-                                    onClick={() => setIsExpandingPost(true)}
-                                >
-                                    <Video className="w-4 h-4 text-red-500" />
-                                    <span className="text-xs font-semibold">Live</span>
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="gap-2 text-muted-foreground flex-1 hover:bg-muted"
-                                    onClick={() => setIsExpandingPost(true)}
-                                >
-                                    <Image className="w-4 h-4 text-green-500" />
-                                    <span className="text-xs font-semibold">Media</span>
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="gap-2 text-muted-foreground flex-1 hover:bg-muted"
-                                    onClick={() => setIsExpandingPost(true)}
-                                >
-                                    <Smile className="w-4 h-4 text-yellow-500" />
-                                    <span className="text-xs font-semibold">Feeling</span>
-                                </Button>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Posts Feed */}
-            <div className="space-y-6">
-                {posts.map((post) => (
-                    <Card key={post.id}>
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    {post.user && (
-                                        <UserMenu user={post.user}>
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className="cursor-pointer hover:opacity-80 transition-opacity">
-                                                    <AvatarImage
-                                                        src={
-                                                            post.user.avatar ||
-                                                            `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user.username}`
-                                                        }
-                                                    />
-                                                    <AvatarFallback>
-                                                        {post.user.username?.[0]?.toUpperCase() ||
-                                                            'U'}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <div>
-                                                    <p className="font-semibold cursor-pointer hover:underline">
-                                                        {post.user.username}
-                                                    </p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {formatDistanceToNow(
-                                                            new Date(post.created_at),
-                                                            {
-                                                                addSuffix: true,
-                                                            }
-                                                        )}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </UserMenu>
                                     )}
                                 </div>
                             </div>
-                        </CardHeader>
-                        <CardContent>
-                            {editingPostId === post.id ? (
-                                <div>
-                                    <input
-                                        type="text"
-                                        placeholder="Post title"
-                                        value={editingPostTitle}
-                                        onChange={(e) => setEditingPostTitle(e.target.value)}
-                                        className="w-full mb-2 px-3 py-2 border rounded-md"
-                                    />
-                                    <Textarea
-                                        value={editingPostContent}
-                                        onChange={(e) => setEditingPostContent(e.target.value)}
-                                        rows={4}
-                                        className="mb-2"
-                                    />
-                                    <div className="flex justify-end gap-2">
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={cancelEditPost}
-                                        >
-                                            Cancel
-                                        </Button>
-                                        <Button size="sm" onClick={() => saveEditPost(post.id)}>
-                                            Save
-                                        </Button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <>
-                                    <h3 className="font-semibold text-lg mb-2">{post.title}</h3>
-                                    <p className="mb-4">{post.content}</p>
-                                </>
-                            )}
 
-                            {post.image_url && (
-                                <div className="mb-4 rounded-lg overflow-hidden">
-                                    <img
-                                        src={post.image_url}
-                                        alt={`Post: ${post.title}`}
-                                        className="w-full h-auto object-cover"
-                                        loading="lazy"
-                                    />
-                                </div>
-                            )}
-
-                            <div className="flex items-center justify-between pt-4 border-t">
-                                <div className="flex items-center gap-6">
-                                    <Button
-                                        variant={post.liked ? 'default' : 'ghost'}
-                                        size="sm"
-                                        onClick={() => handleLikeToggle(post)}
-                                        disabled={!isAuthenticated || likingPostId === post.id}
-                                        aria-label={`Like post by ${post.user?.username}`}
-                                    >
-                                        <Heart
-                                            className={`w-4 h-4 mr-2 ${post.liked ? 'fill-current' : ''}`}
-                                        />
-                                        {post.likes_count}
-                                    </Button>
-                                    {/* Post owner actions */}
-                                    {currentUser && currentUser.id === post.user_id && (
-                                        <>
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => startEditPost(post)}
-                                            >
-                                                Edit
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="destructive"
-                                                onClick={() => removePost(post.id)}
-                                            >
-                                                Delete
-                                            </Button>
-                                        </>
-                                    )}
+                            {!isExpandingPost && (
+                                <div className="flex border-t pt-3 justify-around">
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => toggleComments(post.id)}
-                                        className={
-                                            expandedComments.has(post.id) ? 'text-blue-500' : ''
-                                        }
-                                        aria-label={`${
-                                            expandedComments.has(post.id) ? 'Hide' : 'Show'
-                                        } comments for post by ${post.user?.username}`}
+                                        className="gap-2 text-muted-foreground flex-1 hover:bg-muted"
+                                        onClick={() => setIsExpandingPost(true)}
                                     >
-                                        <MessageCircle className="w-4 h-4 mr-2" />
-                                        {`Comments (${post.comments_count ?? 0})`}
+                                        <Video className="w-4 h-4 text-red-500" />
+                                        <span className="text-xs font-semibold">Live</span>
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="gap-2 text-muted-foreground flex-1 hover:bg-muted"
+                                        onClick={() => setIsExpandingPost(true)}
+                                    >
+                                        <Image className="w-4 h-4 text-green-500" />
+                                        <span className="text-xs font-semibold">Media</span>
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="gap-2 text-muted-foreground flex-1 hover:bg-muted"
+                                        onClick={() => setIsExpandingPost(true)}
+                                    >
+                                        <Smile className="w-4 h-4 text-yellow-500" />
+                                        <span className="text-xs font-semibold">Feeling</span>
                                     </Button>
                                 </div>
-                            </div>
-
-                            {/* Comments Section */}
-                            {expandedComments.has(post.id) && <PostComments postId={post.id} />}
+                            )}
                         </CardContent>
                     </Card>
-                ))}
-
-                {/* Loading indicator for infinite scroll */}
-                {isFetchingNextPage && (
-                    <div className="flex justify-center py-4">
-                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                    </div>
                 )}
 
-                {/* End of feed */}
-                {!hasNextPage && posts.length > 0 && (
-                    <div className="text-center py-4 text-muted-foreground text-sm">
-                        You've reached the end!
-                    </div>
-                )}
+                {/* Posts Feed */}
+                <div className="space-y-6">
+                    {posts.map((post) => (
+                        <Card key={post.id}>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        {post.user && (
+                                            <UserMenu user={post.user}>
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="cursor-pointer hover:opacity-80 transition-opacity">
+                                                        <AvatarImage
+                                                            src={
+                                                                post.user.avatar ||
+                                                                `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user.username}`
+                                                            }
+                                                        />
+                                                        <AvatarFallback>
+                                                            {post.user.username?.[0]?.toUpperCase() ||
+                                                                'U'}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <p className="font-semibold cursor-pointer hover:underline">
+                                                            {post.user.username}
+                                                        </p>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {formatDistanceToNow(
+                                                                new Date(post.created_at),
+                                                                {
+                                                                    addSuffix: true,
+                                                                }
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </UserMenu>
+                                        )}
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                {editingPostId === post.id ? (
+                                    <div>
+                                        <input
+                                            type="text"
+                                            placeholder="Post title"
+                                            value={editingPostTitle}
+                                            onChange={(e) => setEditingPostTitle(e.target.value)}
+                                            className="w-full mb-2 px-3 py-2 border rounded-md"
+                                        />
+                                        <Textarea
+                                            value={editingPostContent}
+                                            onChange={(e) => setEditingPostContent(e.target.value)}
+                                            rows={4}
+                                            className="mb-2"
+                                        />
+                                        <div className="flex justify-end gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={cancelEditPost}
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button size="sm" onClick={() => saveEditPost(post.id)}>
+                                                Save
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <h3 className="font-semibold text-lg mb-2">{post.title}</h3>
+                                        <p className="mb-4">{post.content}</p>
+                                    </>
+                                )}
 
-                {/* Empty state */}
-                {posts.length === 0 && (
-                    <div className="text-center py-12">
-                        <p className="text-muted-foreground mb-4">No posts yet</p>
-                        {isAuthenticated && (
-                            <p className="text-sm">Be the first to create a post!</p>
-                        )}
-                    </div>
-                )}
+                                {post.image_url && (
+                                    <div className="mb-4 rounded-lg overflow-hidden">
+                                        <img
+                                            src={post.image_url}
+                                            alt={`Post: ${post.title}`}
+                                            className="w-full h-auto object-cover"
+                                            loading="lazy"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="flex items-center justify-between pt-4 border-t">
+                                    <div className="flex items-center gap-6">
+                                        <Button
+                                            variant={post.liked ? 'default' : 'ghost'}
+                                            size="sm"
+                                            onClick={() => handleLikeToggle(post)}
+                                            disabled={!isAuthenticated || likingPostId === post.id}
+                                            aria-label={`Like post by ${post.user?.username}`}
+                                        >
+                                            <Heart
+                                                className={`w-4 h-4 mr-2 ${post.liked ? 'fill-current' : ''}`}
+                                            />
+                                            {post.likes_count}
+                                        </Button>
+                                        {/* Post owner actions */}
+                                        {currentUser && currentUser.id === post.user_id && (
+                                            <>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => startEditPost(post)}
+                                                >
+                                                    Edit
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    onClick={() => removePost(post.id)}
+                                                >
+                                                    Delete
+                                                </Button>
+                                            </>
+                                        )}
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => toggleComments(post.id)}
+                                            className={
+                                                expandedComments.has(post.id) ? 'text-blue-500' : ''
+                                            }
+                                            aria-label={`${
+                                                expandedComments.has(post.id) ? 'Hide' : 'Show'
+                                            } comments for post by ${post.user?.username}`}
+                                        >
+                                            <MessageCircle className="w-4 h-4 mr-2" />
+                                            {`Comments (${post.comments_count ?? 0})`}
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {/* Comments Section */}
+                                {expandedComments.has(post.id) && <PostComments postId={post.id} />}
+                            </CardContent>
+                        </Card>
+                    ))}
+
+                    {/* Loading indicator for infinite scroll */}
+                    {isFetchingNextPage && (
+                        <div className="flex justify-center py-4">
+                            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                        </div>
+                    )}
+
+                    {/* End of feed */}
+                    {!hasNextPage && posts.length > 0 && (
+                        <div className="text-center py-4 text-muted-foreground text-sm">
+                            You've reached the end!
+                        </div>
+                    )}
+
+                    {/* Empty state */}
+                    {posts.length === 0 && (
+                        <div className="text-center py-12">
+                            <p className="text-muted-foreground mb-4">No posts yet</p>
+                            {isAuthenticated && (
+                                <p className="text-sm">Be the first to create a post!</p>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     )

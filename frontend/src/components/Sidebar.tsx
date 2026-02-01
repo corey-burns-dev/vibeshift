@@ -48,7 +48,7 @@ export function Sidebar() {
     return (
         <nav
             className={cn(
-                'fixed left-0 top-0 h-screen w-16 border-r bg-background flex flex-col transition-all duration-300 z-50 group/sidebar',
+                'relative h-full min-h-screen w-16 border-r bg-background flex flex-col transition-all duration-300 z-50 group/sidebar shrink-0',
                 isHovered && 'w-64 shadow-xl'
             )}
             onMouseEnter={() => setIsHovered(true)}

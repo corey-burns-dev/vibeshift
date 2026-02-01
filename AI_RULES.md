@@ -170,6 +170,14 @@ function MyComponent() {
 * **Pattern:** Follow Radix UI + Tailwind (Shadcn-like architecture).
 * **Location:** Primitives in `components/ui/`, features in `components/{feature}/`.
 
+### 🌐 Cross-Browser Layout Standards
+
+* **Flex-Flow Strategy:** Prefer standard Flexbox/Grid flow over `fixed` or `absolute` positioning for major layout containers (Sidebar, Main Content).
+* **Sidebar Pattern:** The Sidebar should be a flex child (`shrink-0`) of the main wrapper. This ensures the content area automatically resizes and never overlaps, regardless of the browser (Firefox/Safari).
+* **Avoid Margin Offsets:** Do not use hardcoded `ml-16` or `ml-64` to offset fixed elements. Rely on flex-grow (`flex-1`) for the content area.
+* **Scroll Management:** Major page containers should use `overflow-y-auto` combined with `flex-1` to ensure correct scrollbar behavior and prevented "jumping" in Firefox.
+* **Screen Dimensions:** Use `h-screen w-screen` on the root layout wrapper and `flex-1 overflow-hidden` on nested containers to maintain strict viewport boundaries.
+
 ### Testing
 
 * **Framework:** Vitest + React Testing Library.

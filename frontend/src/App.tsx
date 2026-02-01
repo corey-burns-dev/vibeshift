@@ -7,7 +7,6 @@ import { Sidebar } from '@/components/Sidebar'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { useIsAuthenticated } from '@/hooks'
-import { cn } from '@/lib/utils'
 import { routePrefetchMap } from '@/utils/prefetch'
 
 const Login = lazy(() => import('@/pages/Login'))
@@ -275,14 +274,9 @@ function RoutesWithPrefetch() {
 function MainLayout({ children }: { children: ReactNode }) {
     const isAuthenticated = useIsAuthenticated()
     return (
-        <div className="flex min-h-screen bg-background text-foreground transition-all duration-300">
-            <Sidebar />
-            <div
-                className={cn(
-                    'flex-1 flex flex-col min-w-0 transition-all duration-300',
-                    isAuthenticated ? 'ml-16' : ''
-                )}
-            >
+        <div className="flex h-screen w-screen bg-background text-foreground transition-all duration-300">
+            {isAuthenticated && <Sidebar />}
+            <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 overflow-hidden">
                 {children}
             </div>
         </div>

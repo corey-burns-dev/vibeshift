@@ -184,8 +184,7 @@ export default function Games() {
     }
 
     return (
-        <div className="min-h-screen bg-background">
-            <Navbar />
+        <div className="flex-1 overflow-y-auto bg-background">
             <main className="max-w-7xl mx-auto px-4 py-12">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
                     <div>
