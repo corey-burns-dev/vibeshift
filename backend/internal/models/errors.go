@@ -67,6 +67,14 @@ func NewInternalError(err error) *AppError {
 	}
 }
 
+// NewForbiddenError creates a new forbidden error with the given message.
+func NewForbiddenError(message string) *AppError {
+	return &AppError{
+		Code:    "FORBIDDEN",
+		Message: message,
+	}
+}
+
 // RespondWithError creates a standardized error response
 func RespondWithError(c *fiber.Ctx, status int, err error) error {
 	var response ErrorResponse

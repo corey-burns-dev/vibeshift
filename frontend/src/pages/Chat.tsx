@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
     useAllChatrooms,
+    useConversation,
     useJoinChatroom,
     useJoinedChatrooms,
     useMessages,
@@ -65,6 +66,8 @@ export default function Chat() {
         [urlChatId]
     )
 
+    const { data: selectedConversation } = useConversation(selectedChatId || 0)
+
     // Auto-select first conversation when loaded if none in URL
     useEffect(() => {
         if (activeRooms && activeRooms.length > 0 && !selectedChatId) {
@@ -77,9 +80,18 @@ export default function Chat() {
     const { data: messages = [], isLoading } = useMessages(selectedChatId || 0)
     const sendMessage = useSendMessage(selectedChatId || 0)
 
+    const fallbackConversation = useMemo(() => {
+        if (!selectedChatId) return null
+        return (
+            conversations?.find((c) => c.id === selectedChatId) ||
+            activeRooms?.find((c) => c.id === selectedChatId) ||
+            null
+        )
+    }, [conversations, activeRooms, selectedChatId])
+
     const currentConversation = useMemo(
-        () => conversations?.find((c) => c.id === selectedChatId),
-        [conversations, selectedChatId]
+        () => selectedConversation || fallbackConversation,
+        [selectedConversation, fallbackConversation]
     )
 
     const isJoinedViaList = useMemo(
@@ -87,10 +99,18 @@ export default function Chat() {
         [joinedChatrooms, selectedChatId]
     )
 
-    const userIsJoined = useMemo(
-        () => currentConversation?.is_joined || isJoinedViaList || false,
-        [currentConversation, isJoinedViaList]
-    )
+    const userIsJoined = useMemo(() => {
+        if (!currentConversation) return false
+        const fromChatrooms = (currentConversation as Conversation & { is_joined?: boolean })
+            .is_joined
+        if (typeof fromChatrooms === 'boolean') return fromChatrooms
+        if (!currentUser) return isJoinedViaList
+        return (
+            currentConversation.participants?.some((p) => p.id === currentUser.id) ||
+            isJoinedViaList ||
+            false
+        )
+    }, [currentConversation, currentUser, isJoinedViaList])
 
     const [participants, setParticipants] = useState<
         Record<number, { id: number; username?: string; online?: boolean; typing?: boolean }>
@@ -103,14 +123,26 @@ export default function Chat() {
     }, [messages.length])
 
     useEffect(() => {
-        if (!currentConversation) return
+        if (!selectedChatId) {
+            setParticipants({})
+            return
+        }
+
+        if (!currentConversation) {
+            setParticipants({})
+            return
+        }
+
         const usersList: User[] = currentConversation.participants || []
         const map: Record<
             number,
             { id: number; username?: string; online?: boolean; typing?: boolean }
         > = {}
 
-        if (currentUser) {
+        const shouldIncludeCurrentUser =
+            !!currentUser && (userIsJoined || usersList.some((u) => u.id === currentUser.id))
+
+        if (currentUser && shouldIncludeCurrentUser) {
             map[currentUser.id] = {
                 id: currentUser.id,
                 username: currentUser.username,
@@ -133,7 +165,7 @@ export default function Chat() {
         }
 
         setParticipants(map)
-    }, [currentConversation, currentUser, onlineUserIds])
+    }, [selectedChatId, currentConversation, currentUser, onlineUserIds, userIsJoined])
 
     const onMessage = useCallback((_msg: Message) => {}, [])
 
@@ -163,7 +195,7 @@ export default function Chat() {
                 number,
                 { id: number; username?: string; online?: boolean; typing?: boolean }
             > = {}
-            if (currentUser) {
+            if (currentUser && userIsJoined) {
                 map[currentUser.id] = {
                     id: currentUser.id,
                     username: currentUser.username,
@@ -183,7 +215,7 @@ export default function Chat() {
             }
             setParticipants(map)
         },
-        [currentUser, onlineUserIds]
+        [currentUser, onlineUserIds, userIsJoined]
     )
 
     const { isJoined: wsIsJoined } = useChatWebSocket({
@@ -263,18 +295,18 @@ export default function Chat() {
             )}
 
             <div className="flex-1 flex overflow-hidden">
-                <div className="w-[240px] border-r bg-card flex flex-col overflow-hidden shrink-0">
-                    <div className="p-4 border-b shrink-0 h-[60px] flex items-center justify-between bg-muted/20">
-                        <h2 className="font-bold text-xs flex items-center gap-2 uppercase tracking-tighter">
-                            <Compass className="w-4 h-4 text-primary" />
+                <div className="w-[210px] border-r bg-card flex flex-col overflow-hidden shrink-0">
+                    <div className="px-3 py-2 border-b shrink-0 h-11 flex items-center justify-between bg-muted/20">
+                        <h2 className="font-bold text-[11px] flex items-center gap-2 uppercase tracking-tighter">
+                            <Compass className="w-3.5 h-3.5 text-primary" />
                             Discover Rooms
                         </h2>
                     </div>
 
                     <div className="flex-1 flex flex-col overflow-hidden">
-                        <div className="p-3 space-y-2 flex-1">
+                        <div className="p-2 space-y-1.5 flex-1">
                             {convLoading ? (
-                                <div className="py-20 text-center text-xs text-muted-foreground animate-pulse">
+                                <div className="py-16 text-center text-[11px] text-muted-foreground animate-pulse">
                                     Scanning frequencies...
                                 </div>
                             ) : paginatedConversations.length > 0 ? (
@@ -284,46 +316,46 @@ export default function Chat() {
                                         type="button"
                                         onClick={() => handleSelectConversation(conv.id)}
                                         className={cn(
-                                            'w-full flex items-center gap-3 p-3 rounded-2xl transition-all text-left border border-transparent',
+                                            'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-all text-left border border-transparent',
                                             selectedChatId === conv.id
                                                 ? 'bg-primary/10 border-primary/20 text-foreground'
                                                 : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground hover:border-muted'
                                         )}
                                     >
-                                        <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-primary/20 to-primary/5 flex items-center justify-center font-black text-primary shrink-0 border border-primary/10 shadow-sm">
+                                        <div className="w-8 h-8 rounded-lg bg-linear-to-tr from-primary/20 to-primary/5 flex items-center justify-center font-black text-primary shrink-0 border border-primary/10 shadow-sm text-xs">
                                             {conv.name?.[0].toUpperCase() || 'C'}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between mb-0.5">
-                                                <span className="text-sm font-bold truncate leading-none">
+                                                <span className="text-[13px] font-bold truncate leading-none">
                                                     {conv.name || `Room ${conv.id}`}
                                                 </span>
                                             </div>
-                                            <p className="text-[10px] font-black uppercase opacity-50 truncate leading-none tracking-tight">
+                                            <p className="text-[9px] font-black uppercase opacity-50 truncate leading-none tracking-tight">
                                                 {conv.participants?.length || 0} members
                                             </p>
                                         </div>
                                     </button>
                                 ))
                             ) : (
-                                <div className="py-20 text-center text-xs text-muted-foreground italic">
+                                <div className="py-16 text-center text-[11px] text-muted-foreground italic">
                                     Silence in the void.
                                 </div>
                             )}
                         </div>
 
                         {/* Pagination Controls */}
-                        <div className="p-3 border-t bg-muted/5 flex items-center justify-between gap-2">
+                        <div className="px-2 py-2 border-t bg-muted/5 flex items-center justify-between gap-2">
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                                 disabled={page === 1}
-                                className="h-8 w-8 rounded-lg"
+                                className="h-7 w-7 rounded-lg"
                             >
-                                <ChevronLeft className="w-4 h-4" />
+                                <ChevronLeft className="w-3.5 h-3.5" />
                             </Button>
-                            <span className="text-[10px] font-black uppercase tracking-tighter opacity-50">
+                            <span className="text-[9px] font-black uppercase tracking-tighter opacity-50">
                                 Page {page} / {totalPages || 1}
                             </span>
                             <Button
@@ -331,9 +363,9 @@ export default function Chat() {
                                 size="icon"
                                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                 disabled={page >= totalPages}
-                                className="h-8 w-8 rounded-lg"
+                                className="h-7 w-7 rounded-lg"
                             >
-                                <ChevronRight className="w-4 h-4" />
+                                <ChevronRight className="w-3.5 h-3.5" />
                             </Button>
                         </div>
                     </div>
@@ -342,9 +374,9 @@ export default function Chat() {
                 {/* Center - Message Window */}
                 <div className="flex-1 flex flex-col overflow-hidden bg-background">
                     {/* Active Rooms Bar */}
-                    <div className="h-14 border-b bg-card/50 flex items-center px-4 gap-2 overflow-x-auto no-scrollbar">
-                        <div className="flex items-center gap-2 pr-4 border-r mr-2 h-8">
-                            <span className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground whitespace-nowrap">
+                    <div className="h-11 border-b bg-card/50 flex items-center px-3 gap-2 overflow-x-auto no-scrollbar">
+                        <div className="flex items-center gap-2 pr-3 border-r mr-2 h-7">
+                            <span className="text-[9px] font-black uppercase tracking-tighter text-muted-foreground whitespace-nowrap">
                                 Active Rooms
                             </span>
                         </div>
@@ -354,7 +386,7 @@ export default function Chat() {
                                 type="button"
                                 onClick={() => navigate(`/chat/${room.id}`)}
                                 className={cn(
-                                    'group flex items-center gap-2 px-3 py-1.5 rounded-full transition-all shrink-0 border',
+                                    'group flex items-center gap-2 px-2.5 py-1 rounded-full transition-all shrink-0 border',
                                     selectedChatId === room.id
                                         ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 border-primary'
                                         : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border-transparent'
@@ -362,7 +394,7 @@ export default function Chat() {
                             >
                                 <div
                                     className={cn(
-                                        'w-5 h-5 rounded-full flex items-center justify-center font-black text-[10px] ring-1',
+                                        'w-4 h-4 rounded-full flex items-center justify-center font-black text-[9px] ring-1',
                                         selectedChatId === room.id
                                             ? 'bg-white/20 ring-white/30'
                                             : 'bg-primary/10 text-primary ring-primary/20'
@@ -370,26 +402,26 @@ export default function Chat() {
                                 >
                                     {room.name?.[0].toUpperCase() || 'C'}
                                 </div>
-                                <span className="text-xs font-bold whitespace-nowrap truncate max-w-[100px]">
+                                <span className="text-[11px] font-bold whitespace-nowrap truncate max-w-[110px]">
                                     {room.name || `Room ${room.id}`}
                                 </span>
                             </button>
                         ))}
                     </div>
 
-                    <div className="border-b px-6 h-[60px] flex items-center justify-between shrink-0 bg-card/30 backdrop-blur-sm">
+                    <div className="border-b px-4 h-12 flex items-center justify-between shrink-0 bg-card/30 backdrop-blur-sm">
                         <div className="flex items-center gap-3 shrink-0">
                             {currentConversation && (
                                 <>
-                                    <div className="w-8 h-8 rounded-lg bg-linear-to-tr from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-black text-xs shadow-md ring-1 ring-primary/20">
+                                    <div className="w-7 h-7 rounded-md bg-linear-to-tr from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-black text-[10px] shadow-md ring-1 ring-primary/20">
                                         {currentConversation.name?.[0].toUpperCase() || 'C'}
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-sm leading-none mb-1">
+                                        <h3 className="font-bold text-[13px] leading-none mb-1">
                                             {currentConversation.name ||
                                                 `Room ${currentConversation.id}`}
                                         </h3>
-                                        <p className="text-[10px] text-primary font-black uppercase tracking-tighter leading-none flex items-center gap-1.5">
+                                        <p className="text-[9px] text-primary font-black uppercase tracking-tighter leading-none flex items-center gap-1.5">
                                             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                                             {currentConversation.participants?.length || 0} Members
                                             Active
@@ -405,14 +437,14 @@ export default function Chat() {
                                 size="sm"
                                 onClick={() => setShowParticipants(!showParticipants)}
                                 className={cn(
-                                    'flex items-center gap-2 rounded-xl px-4 border transition-all h-9',
+                                    'flex items-center gap-2 rounded-lg px-3 border transition-all h-8 text-[10px]',
                                     showParticipants
                                         ? 'bg-primary/10 text-primary border-primary/20'
                                         : 'text-muted-foreground hover:bg-muted border-transparent'
                                 )}
                             >
-                                <Users className="w-4 h-4" />
-                                <span className="text-xs font-black uppercase tracking-tighter">
+                                <Users className="w-3.5 h-3.5" />
+                                <span className="font-black uppercase tracking-tighter">
                                     {showParticipants ? 'Hide' : 'Show'} Members
                                 </span>
                             </Button>
@@ -420,20 +452,20 @@ export default function Chat() {
                     </div>
 
                     <ScrollArea className="flex-1">
-                        <div className="max-w-3xl mx-auto w-full p-6">
+                        <div className="max-w-2xl mx-auto w-full p-4">
                             <MessageList
                                 messages={messages}
                                 isLoading={isLoading}
                                 currentUserId={currentUser?.id}
                             />
-                            <div ref={messagesEndRef} className="h-4" />
+                            <div ref={messagesEndRef} className="h-3" />
                         </div>
                     </ScrollArea>
 
-                    <div className="p-4 border-t bg-card/10">
-                        <div className="max-w-3xl mx-auto">
+                    <div className="p-3 border-t bg-card/10">
+                        <div className="max-w-2xl mx-auto">
                             {messageError && (
-                                <p className="text-xs text-destructive mb-2 font-medium px-4">
+                                <p className="text-[11px] text-destructive mb-2 font-medium px-4">
                                     {messageError}
                                 </p>
                             )}
@@ -448,19 +480,19 @@ export default function Chat() {
                                         onChange={(e) => handleInputChange(e.target.value)}
                                         onKeyDown={handleKeyPress}
                                         disabled={!wsIsJoined}
-                                        className="flex-1 rounded-full bg-card border-none px-6 h-11 shadow-inner"
+                                        className="flex-1 rounded-full bg-card border-none px-4 h-9 shadow-inner text-[13px]"
                                     />
                                     <Button
                                         onClick={handleSendMessage}
                                         disabled={!newMessage.trim() || !wsIsJoined}
-                                        className="rounded-full w-11 h-11 p-0 shadow-lg"
+                                        className="rounded-full w-9 h-9 p-0 shadow-lg"
                                     >
-                                        <Send className="w-4 h-4" />
+                                        <Send className="w-3.5 h-3.5" />
                                     </Button>
                                 </div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center p-8 gap-4 bg-muted/30 rounded-3xl border border-dashed">
-                                    <p className="text-muted-foreground text-sm font-medium">
+                                <div className="flex flex-col items-center justify-center p-5 gap-3 bg-muted/30 rounded-2xl border border-dashed">
+                                    <p className="text-muted-foreground text-[13px] font-medium">
                                         Join this room to participate in the conversation.
                                     </p>
                                     <Button
@@ -468,7 +500,7 @@ export default function Chat() {
                                             selectedChatId && handleJoinConversation(selectedChatId)
                                         }
                                         disabled={joinChatroom.isPending}
-                                        className="rounded-full px-8 shadow-md"
+                                        className="rounded-full px-6 h-9 shadow-md text-[13px]"
                                     >
                                         {joinChatroom.isPending ? 'Joining...' : 'Join Chatroom'}
                                     </Button>
@@ -482,12 +514,14 @@ export default function Chat() {
                 <div
                     className={cn(
                         'border-l bg-card flex flex-col overflow-hidden transition-all duration-300 ease-in-out',
-                        showParticipants ? 'w-[250px] opacity-100' : 'w-0 opacity-0 border-none'
+                        showParticipants
+                            ? 'w-[210px] opacity-100'
+                            : 'w-0 opacity-0 border-none pointer-events-none'
                     )}
                 >
-                    <div className="p-4 border-b shrink-0 h-[60px] flex items-center">
-                        <h2 className="font-semibold text-sm flex items-center gap-2 whitespace-nowrap">
-                            <Users className="w-4 h-4" />
+                    <div className="px-3 py-2 border-b shrink-0 h-11 flex items-center">
+                        <h2 className="font-semibold text-[12px] flex items-center gap-2 whitespace-nowrap">
+                            <Users className="w-3.5 h-3.5" />
                             Online Members
                         </h2>
                     </div>

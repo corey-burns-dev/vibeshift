@@ -133,6 +133,8 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 		&models.GameRoom{},
 		&models.GameMove{},
 		&models.GameStats{},
+		&models.Stream{},
+		&models.StreamMessage{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)

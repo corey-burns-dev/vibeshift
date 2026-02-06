@@ -1,9 +1,10 @@
+// API
+
 import { useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import { Heart, Image, Loader2, MessageCircle, Send, Smile, Video } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-// API
 import { apiClient } from '@/api/client'
 // Types
 import type { Post } from '@/api/types'
@@ -211,7 +212,7 @@ export default function Posts() {
                                             onFocus={() => {
                                                 if (!isExpandingPost) setIsExpandingPost(true)
                                             }}
-                                            className="resize-none bg-transparent border-none focus-visible:ring-0 p-0 text-[15px] min-h-[40px] placeholder:text-muted-foreground/60 w-full shadow-none focus:ring-0"
+                                            className="resize-none bg-transparent border-none focus-visible:ring-0 p-0 text-[15px] min-h-10 placeholder:text-muted-foreground/60 w-full shadow-none focus:ring-0"
                                             rows={isExpandingPost ? 3 : 1}
                                             disabled={createPostMutation.isPending}
                                         />
@@ -409,7 +410,7 @@ export default function Posts() {
                                                     onChange={(e) =>
                                                         setEditingPostContent(e.target.value)
                                                     }
-                                                    className="min-h-[100px] border-none focus-visible:ring-0 p-0 -ml-1 resize-none"
+                                                    className="min-h-25 border-none focus-visible:ring-0 p-0 -ml-1 resize-none"
                                                     onClick={(event) => event.stopPropagation()}
                                                 />
                                                 <div className="flex justify-end gap-2 pt-2">

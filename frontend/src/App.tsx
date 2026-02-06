@@ -35,6 +35,10 @@ const Snake = lazy(() => import('@/pages/games/Snake'))
 const Battleship = lazy(() => import('@/pages/games/Battleship'))
 const Othello = lazy(() => import('@/pages/games/Othello'))
 
+// Streams
+const Streams = lazy(() => import('@/pages/Streams'))
+const Stream = lazy(() => import('@/pages/Stream'))
+
 function PageLoader() {
     return (
         <div className="min-h-screen bg-background flex items-center justify-center">
@@ -265,6 +269,22 @@ function RoutesWithPrefetch() {
                     element={
                         <ProtectedRoute>
                             <Othello />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/streams"
+                    element={
+                        <ProtectedRoute>
+                            <Streams />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/streams/:id"
+                    element={
+                        <ProtectedRoute>
+                            <Stream />
                         </ProtectedRoute>
                     }
                 />

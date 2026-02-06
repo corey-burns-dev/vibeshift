@@ -6,6 +6,7 @@ import {
     Menu,
     MessageCircle,
     MessageSquare,
+    Radio,
     Search,
     Users,
 } from 'lucide-react'
@@ -21,7 +22,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { getCurrentUser, useIsAuthenticated, useLogout } from '@/hooks'
+import { getCurrentUser, useIsAuthenticated, useLogout, useStreams } from '@/hooks'
 import { cn } from '@/lib/utils'
 
 export function Sidebar() {
@@ -35,11 +36,15 @@ export function Sidebar() {
         { icon: Home, label: 'Home', path: '/' },
         { icon: Search, label: 'Search', path: '/users' },
         { icon: Compass, label: 'Explore', path: '/posts' },
+        { icon: Radio, label: 'Streams', path: '/streams' },
         { icon: MessageSquare, label: 'Chatrooms', path: '/chat' },
         { icon: MessageCircle, label: 'Messages', path: '/messages' },
         { icon: Users, label: 'Friends', path: '/friends' },
         { icon: Gamepad2, label: 'Games', path: '/games' },
     ]
+
+    const { data: streamsData } = useStreams()
+    const liveStreams = streamsData?.streams.filter((s) => s.is_live).slice(0, 5) || []
 
     if (!isAuthenticated) return null
 
@@ -101,6 +106,53 @@ export function Sidebar() {
                     )
                 })}
             </div>
+
+            {/* Live Channels */}
+            {liveStreams.length > 0 && (
+                <div className="px-2 py-2 border-t">
+                    <h3
+                        className={cn(
+                            'px-4 text-xs font-semibold text-muted-foreground mb-2 transition-all duration-300',
+                            isHovered ? 'opacity-100' : 'opacity-0'
+                        )}
+                    >
+                        LIVE CHANNELS
+                    </h3>
+                    <div className="space-y-1">
+                        {liveStreams.map((stream) => (
+                            <Link
+                                key={stream.id}
+                                to={`/streams/${stream.id}`}
+                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 transition-all duration-200 group/channel"
+                            >
+                                <div className="relative shrink-0">
+                                    <Avatar className="w-8 h-8 border">
+                                        <AvatarImage src={stream.user?.avatar} />
+                                        <AvatarFallback>
+                                            {stream.user?.username?.[0]?.toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-red-500 border-2 border-background rounded-full animate-pulse" />
+                                </div>
+                                <div
+                                    className={cn(
+                                        'flex flex-col min-w-0 transition-all duration-300 overflow-hidden',
+                                        isHovered ? 'w-auto opacity-100 ml-1' : 'w-0 opacity-0 ml-0'
+                                    )}
+                                >
+                                    <span className="text-sm font-semibold truncate">
+                                        {stream.title}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground truncate">
+                                        {stream.category || 'Variety'} • {stream.viewer_count}{' '}
+                                        viewers
+                                    </span>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="p-2 border-t">
                 <div className="flex items-center p-2 rounded-lg hover:bg-secondary/50 transition-all duration-300">

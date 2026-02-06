@@ -41,6 +41,7 @@ type Server struct {
 	chatRepo    repository.ChatRepository
 	friendRepo  repository.FriendRepository
 	gameRepo    repository.GameRepository
+	streamRepo  repository.StreamRepository
 	notifier    *notifications.Notifier
 	hub         *notifications.Hub
 	chatHub     *notifications.ChatHub
@@ -67,6 +68,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	chatRepo := repository.NewChatRepository(db)
 	friendRepo := repository.NewFriendRepository(db)
 	gameRepo := repository.NewGameRepository(db)
+	streamRepo := repository.NewStreamRepository(db)
 
 	server := &Server{
 		config:      cfg,
@@ -78,6 +80,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		chatRepo:    chatRepo,
 		friendRepo:  friendRepo,
 		gameRepo:    gameRepo,
+		streamRepo:  streamRepo,
 	}
 
 	// Initialize notifier and hub if Redis is available
@@ -223,6 +226,23 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	games.Get("/rooms/active", s.GetActiveGameRooms)
 	games.Get("/stats/:type", s.GetGameStats)
 	games.Get("/rooms/:id", s.GetGameRoom)
+
+	// Stream routes - public browse
+	publicStreams := api.Group("/streams")
+	publicStreams.Get("/", s.GetStreams)
+	publicStreams.Get("/categories", s.GetStreamCategories)
+	publicStreams.Get("/:id", s.GetStream)
+	publicStreams.Get("/:id/messages", s.GetStreamMessages)
+
+	// Stream routes - protected
+	streams := protected.Group("/streams")
+	streams.Get("/me", s.GetMyStreams)
+	streams.Post("/", s.CreateStream)
+	streams.Put("/:id", s.UpdateStream)
+	streams.Delete("/:id", s.DeleteStream)
+	streams.Post("/:id/go-live", s.GoLive)
+	streams.Post("/:id/end", s.EndStream)
+	streams.Post("/:id/messages", middleware.RateLimit(s.redis, 30, time.Minute, "stream_chat"), s.SendStreamMessage)
 
 	// Websocket endpoints - protected by AuthRequired
 	ws := api.Group("/ws", s.AuthRequired())
