@@ -1,3 +1,8 @@
+import Hls from 'hls.js'
+import { ChevronLeft, Eye, MessageSquare, Radio, Send, Settings } from 'lucide-react'
+import type { FormEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import type { StreamMessage } from '@/api/types'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -13,11 +18,6 @@ import {
 } from '@/hooks/useStreams'
 import { getCurrentUser } from '@/hooks/useUsers'
 import { cn } from '@/lib/utils'
-import Hls from 'hls.js'
-import { ChevronLeft, Eye, MessageSquare, Radio, Send, Settings } from 'lucide-react'
-import type { FormEvent } from 'react'
-import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
 
 const HlsPlayer = ({ streamUrl }: { streamUrl: string }) => {
     const videoRef = useRef<HTMLVideoElement>(null)
