@@ -174,7 +174,7 @@ func (s *Server) RejectFriendRequest(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, deleteErr)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 // GetFriends handles GET /api/friends
@@ -185,11 +185,6 @@ func (s *Server) GetFriends(c *fiber.Ctx) error {
 	friends, err := s.friendRepo.GetFriends(ctx, userID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
-	}
-
-	// Hide passwords
-	for i := range friends {
-		friends[i].Password = ""
 	}
 
 	return c.JSON(friends)

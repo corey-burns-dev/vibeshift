@@ -89,7 +89,7 @@ func (s *Server) Signup(c *fiber.Ctx) error {
 	}
 
 	// Generate JWT token
-	token, err := s.generateToken(user.ID)
+	token, err := s.generateToken(user.ID, user.Username)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError,
 			models.NewInternalError(err))
@@ -139,7 +139,7 @@ func (s *Server) Login(c *fiber.Ctx) error {
 	}
 
 	// Generate JWT token
-	token, err := s.generateToken(user.ID)
+	token, err := s.generateToken(user.ID, user.Username)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError,
 			models.NewInternalError(err))
@@ -151,8 +151,8 @@ func (s *Server) Login(c *fiber.Ctx) error {
 	})
 }
 
-// generateToken creates a JWT token for the given user ID
-func (s *Server) generateToken(userID uint) (string, error) {
+// generateToken creates a JWT token for the given user ID and username
+func (s *Server) generateToken(userID uint, username string) (string, error) {
 	// Validate secret exists
 	if s.config.JWTSecret == "" {
 		return "", fmt.Errorf("JWT secret not configured")
@@ -160,13 +160,14 @@ func (s *Server) generateToken(userID uint) (string, error) {
 
 	now := time.Now()
 	claims := jwt.MapClaims{
-		"sub": strconv.FormatUint(uint64(userID), 10), // Subject (user ID as string)
-		"iss": "vibeshift-api",                        // Issuer
-		"aud": "vibeshift-client",                     // Audience
-		"exp": now.Add(time.Hour * 24 * 7).Unix(),     // Expiration (7 days)
-		"iat": now.Unix(),                             // Issued at
-		"nbf": now.Unix(),                             // Not before
-		"jti": s.generateJTI(),                        // JWT ID (unique identifier)
+		"sub":      strconv.FormatUint(uint64(userID), 10), // Subject (user ID as string)
+		"username": username,                               // Username (cached in token)
+		"iss":      "vibeshift-api",                        // Issuer
+		"aud":      "vibeshift-client",                     // Audience
+		"exp":      now.Add(time.Hour * 24 * 7).Unix(),     // Expiration (7 days)
+		"iat":      now.Unix(),                             // Issued at
+		"nbf":      now.Unix(),                             // Not before
+		"jti":      s.generateJTI(),                        // JWT ID (unique identifier)
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

@@ -118,7 +118,6 @@ export default function ConnectFour() {
         }
 
         ws.current.onopen = () => {
-            console.log('Connect 4 WebSocket connected')
             setConnectionError(false)
             connectionErrorRef.current = false
             if (shouldAutoJoinRef.current && !hasJoined.current) {
@@ -183,7 +182,7 @@ export default function ConnectFour() {
         }
 
         ws.current.onclose = () => {
-            console.log('Connect 4 WebSocket closed')
+            // Connection closed
         }
 
         return () => ws.current?.close()

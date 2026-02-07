@@ -124,9 +124,7 @@ export function useChatWebSocket({
             if (ws !== wsRef.current) return
 
             try {
-                // Log raw message for debugging
-                console.log('WS Message:', event.data)
-
+                // Raw message received
                 const data: ChatWebSocketMessage = JSON.parse(event.data)
 
                 if (data.error) {
@@ -274,7 +272,6 @@ export function useChatWebSocket({
             // Attempt to reconnect after 3 seconds if still enabled
             if (enabled) {
                 reconnectTimeoutRef.current = window.setTimeout(() => {
-                    console.log('Attempting to reconnect...')
                     connect()
                 }, 3000)
             }

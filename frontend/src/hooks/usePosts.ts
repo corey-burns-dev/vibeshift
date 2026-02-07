@@ -164,26 +164,8 @@ export function useLikePost() {
     return useMutation({
         mutationFn: (postId: number) => apiClient.likePost(postId),
         onSuccess: (updatedPost) => {
-            console.log(
-                'Like toggle response - liked:',
-                updatedPost.liked,
-                'count:',
-                updatedPost.likes_count,
-                'id:',
-                updatedPost.id
-            )
             // Update cache with server response, merging with existing data
             updatePostInCache(queryClient, updatedPost.id, (oldPost) => {
-                console.log(
-                    'Cache update - OLD liked:',
-                    oldPost.liked,
-                    'count:',
-                    oldPost.likes_count,
-                    '→ NEW liked:',
-                    updatedPost.liked,
-                    'count:',
-                    updatedPost.likes_count
-                )
                 return {
                     ...oldPost,
                     ...updatedPost,

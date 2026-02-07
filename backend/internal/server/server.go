@@ -35,6 +35,9 @@ type Server struct {
 	config       *config.Config
 	db           *gorm.DB
 	redis        *redis.Client
+	app          *fiber.App
+	shutdownCtx  context.Context
+	shutdownFn   context.CancelFunc
 	userRepo     repository.UserRepository
 	postRepo     repository.PostRepository
 	commentRepo  repository.CommentRepository
@@ -47,7 +50,6 @@ type Server struct {
 	chatHub      *notifications.ChatHub
 	gameHub      *notifications.GameHub
 	videoChatHub *notifications.VideoChatHub
-	// Add other repositories as needed
 }
 
 // NewServer creates a new server instance with all dependencies
@@ -294,7 +296,6 @@ func (s *Server) HealthCheck(c *fiber.Ctx) error {
 }
 
 // AuthRequired returns the authentication middleware
-// AuthRequired returns the authentication middleware
 func (s *Server) AuthRequired() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Extract token from "Bearer <token>" or "token" query parameter (for WebSockets)
@@ -418,6 +419,10 @@ func (s *Server) optionalUserID(c *fiber.Ctx) (uint, bool) {
 
 // Start starts the server
 func (s *Server) Start() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	s.shutdownCtx = ctx
+	s.shutdownFn = cancel
+
 	app := fiber.New(fiber.Config{
 		AppName: "Social Media API",
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
@@ -427,6 +432,7 @@ func (s *Server) Start() error {
 				models.NewInternalError(err))
 		},
 	})
+	s.app = app
 
 	s.SetupMiddleware(app)
 	s.SetupRoutes(app)
@@ -434,7 +440,7 @@ func (s *Server) Start() error {
 	// Wire notifications hub to Redis subscriber if available
 	if s.hub != nil && s.notifier != nil {
 		go func() {
-			if err := s.hub.StartWiring(context.Background(), s.notifier); err != nil {
+			if err := s.hub.StartWiring(s.shutdownCtx, s.notifier); err != nil {
 				log.Printf("failed to start notification hub wiring: %v", err)
 			}
 		}()
@@ -443,7 +449,7 @@ func (s *Server) Start() error {
 	// Wire chat hub to Redis subscriber if available
 	if s.chatHub != nil && s.notifier != nil {
 		go func() {
-			if err := s.chatHub.StartWiring(context.Background(), s.notifier); err != nil {
+			if err := s.chatHub.StartWiring(s.shutdownCtx, s.notifier); err != nil {
 				log.Printf("failed to start chat hub wiring: %v", err)
 			}
 		}()
@@ -452,7 +458,7 @@ func (s *Server) Start() error {
 	// Wire game hub to Redis subscriber if available
 	if s.gameHub != nil && s.notifier != nil {
 		go func() {
-			if err := s.gameHub.StartWiring(context.Background(), s.notifier); err != nil {
+			if err := s.gameHub.StartWiring(s.shutdownCtx, s.notifier); err != nil {
 				log.Printf("failed to start game hub wiring: %v", err)
 			}
 		}()
@@ -461,7 +467,7 @@ func (s *Server) Start() error {
 	// Wire video chat hub to Redis subscriber if available
 	if s.videoChatHub != nil && s.notifier != nil {
 		go func() {
-			if err := s.videoChatHub.StartWiring(context.Background(), s.notifier); err != nil {
+			if err := s.videoChatHub.StartWiring(s.shutdownCtx, s.notifier); err != nil {
 				log.Printf("failed to start video chat hub wiring: %v", err)
 			}
 		}()
@@ -473,6 +479,18 @@ func (s *Server) Start() error {
 
 // Shutdown gracefully shuts down the server
 func (s *Server) Shutdown(ctx context.Context) error {
+	// Cancel the server-scoped context to stop all wiring goroutines
+	if s.shutdownFn != nil {
+		s.shutdownFn()
+	}
+
+	// Shutdown the HTTP/WS server
+	if s.app != nil {
+		if err := s.app.ShutdownWithContext(ctx); err != nil {
+			log.Printf("error shutting down HTTP server: %v", err)
+		}
+	}
+
 	// Close WebSocket connections gracefully
 	if s.hub != nil {
 		if err := s.hub.Shutdown(ctx); err != nil {

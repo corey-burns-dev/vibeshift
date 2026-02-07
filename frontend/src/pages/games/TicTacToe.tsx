@@ -131,7 +131,6 @@ export default function TicTacToe() {
         }
 
         ws.current.onopen = () => {
-            console.log('WebSocket connected')
             setConnectionError(false)
             connectionErrorRef.current = false
             // If we computed that we should auto-join, do so (uses stable ref)
@@ -198,7 +197,7 @@ export default function TicTacToe() {
         }
 
         ws.current.onclose = () => {
-            console.log('WebSocket closed')
+            // Connection closed
         }
 
         return () => {

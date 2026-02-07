@@ -3,11 +3,21 @@ package server
 import (
 	"encoding/json"
 	"log"
+	"time"
 
 	"vibeshift/internal/notifications"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+)
+
+const (
+	// videoChatPingInterval is how often the server pings idle connections
+	videoChatPingInterval = 30 * time.Second
+	// videoChatPongTimeout is how long to wait for a pong before considering the peer dead
+	videoChatPongTimeout = 40 * time.Second
+	// videoChatMaxMessageSize allows for large SDP payloads
+	videoChatMaxMessageSize = 16384
 )
 
 // WebSocketVideoChatHandler handles WebSocket connections for WebRTC video chat signaling.
@@ -52,8 +62,26 @@ func (s *Server) WebSocketVideoChatHandler() fiber.Handler {
 		// Ensure cleanup on disconnect
 		defer s.videoChatHub.Leave(roomID, userID)
 
+		// Configure read limits and pong handler for heartbeat
+		conn.SetReadLimit(videoChatMaxMessageSize)
+		_ = conn.SetReadDeadline(time.Now().Add(videoChatPongTimeout))
+		conn.SetPongHandler(func(string) error {
+			return conn.SetReadDeadline(time.Now().Add(videoChatPongTimeout))
+		})
+
+		// Start ping ticker to detect dead connections
+		pingTicker := time.NewTicker(videoChatPingInterval)
+		defer pingTicker.Stop()
+
+		go func() {
+			for range pingTicker.C {
+				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+					return
+				}
+			}
+		}()
+
 		// Read loop — relay signaling messages
-		conn.SetReadLimit(4096) // SDP can be large
 		for {
 			_, message, err := conn.ReadMessage()
 			if err != nil {

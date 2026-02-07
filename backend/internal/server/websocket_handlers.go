@@ -306,7 +306,11 @@ func (s *Server) validateChatToken(tokenString string) (uint, string, error) {
 			return nil, fiber.NewError(fiber.StatusUnauthorized, "Invalid signing method")
 		}
 		return []byte(s.config.JWTSecret), nil
-	})
+	},
+		jwt.WithIssuer("vibeshift-api"),
+		jwt.WithAudience("vibeshift-client"),
+		jwt.WithValidMethods([]string{"HS256"}),
+	)
 
 	if err != nil || !token.Valid {
 		return 0, "", err
@@ -327,7 +331,12 @@ func (s *Server) validateChatToken(tokenString string) (uint, string, error) {
 		return 0, "", err
 	}
 
-	// Get username from database
+	// Use username from claims if available, otherwise fall back to DB
+	if username, ok := claims["username"].(string); ok && username != "" {
+		return uint(userID), username, nil
+	}
+
+	// Fallback: fetch username from DB
 	user, err := s.userRepo.GetByID(context.Background(), uint(userID))
 	if err != nil {
 		return 0, "", err

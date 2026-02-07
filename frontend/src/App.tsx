@@ -305,6 +305,7 @@ function RoutesWithPrefetch() {
 }
 
 import { BottomBar } from '@/components/BottomBar'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { MobileHeader } from '@/components/MobileHeader'
 import { TopBar } from '@/components/TopBar'
 
@@ -340,7 +341,9 @@ export default function App() {
     return (
         <Router>
             <MainLayout>
-                <RoutesWithPrefetch />
+                <ErrorBoundary>
+                    <RoutesWithPrefetch />
+                </ErrorBoundary>
             </MainLayout>
             <Toaster />
         </Router>

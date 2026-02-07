@@ -1,5 +1,4 @@
 import { MessageCircle, User as UserIcon, UserMinus, UserPlus, Video } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 import type { User } from '@/api/types'
 import {
     ContextMenu,
@@ -9,9 +8,7 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger,
 } from '@/components/ui/context-menu'
-import { useCreateConversation } from '@/hooks/useChat'
-import { useFriendshipStatus, useRemoveFriend, useSendFriendRequest } from '@/hooks/useFriends'
-import { getCurrentUser } from '@/hooks/useUsers'
+import { useUserActions } from '@/hooks/useUserActions'
 
 interface UserContextMenuProps {
     user: User
@@ -19,33 +16,19 @@ interface UserContextMenuProps {
 }
 
 export function UserContextMenu({ user, children }: UserContextMenuProps) {
-    const navigate = useNavigate()
-    const currentUser = getCurrentUser()
-    const { data: statusData, isLoading } = useFriendshipStatus(user.id)
-    const sendRequest = useSendFriendRequest()
-    const removeFriend = useRemoveFriend()
-    const createConversation = useCreateConversation()
-
-    const isSelf = currentUser && currentUser.id === user.id
-    const status = statusData?.status || 'none'
-
-    const handleMessage = () => {
-        createConversation.mutate(
-            { participant_ids: [user.id] },
-            {
-                onSuccess: (conv) => {
-                    navigate(`/messages/${conv.id}`)
-                },
-            }
-        )
-    }
-
-    const handleVideoChat = () => {
-        // Generate a room ID based on sorted user IDs for consistency
-        const ids = [currentUser?.id ?? 0, user.id].sort((a, b) => a - b)
-        const roomId = `vc-${ids[0]}-${ids[1]}`
-        navigate(`/videochat?room=${encodeURIComponent(roomId)}`)
-    }
+    const {
+        isSelf,
+        handleViewProfile,
+        handleMessage,
+        handleVideoChat,
+        handleAddFriend,
+        handleRemoveFriend,
+        canAddFriend,
+        addFriendDisabled,
+        addFriendLabel,
+        isFriend,
+        removeFriendPending,
+    } = useUserActions(user)
 
     if (isSelf) {
         return <>{children}</>
@@ -65,7 +48,7 @@ export function UserContextMenu({ user, children }: UserContextMenuProps) {
                 </ContextMenuLabel>
                 <ContextMenuSeparator />
 
-                <ContextMenuItem onClick={() => navigate(`/users/${user.id}`)}>
+                <ContextMenuItem onClick={handleViewProfile}>
                     <UserIcon className="mr-2 h-4 w-4" />
                     <span>View Profile</span>
                 </ContextMenuItem>
@@ -82,27 +65,18 @@ export function UserContextMenu({ user, children }: UserContextMenuProps) {
 
                 <ContextMenuSeparator />
 
-                {(status === 'none' ||
-                    status === 'pending_sent' ||
-                    status === 'pending_received') && (
-                    <ContextMenuItem
-                        onClick={() => sendRequest.mutate(user.id)}
-                        disabled={sendRequest.isPending || isLoading || status === 'pending_sent'}
-                    >
+                {canAddFriend && (
+                    <ContextMenuItem onClick={handleAddFriend} disabled={addFriendDisabled}>
                         <UserPlus className="mr-2 h-4 w-4" />
-                        <span>{status === 'pending_sent' ? 'Request Sent' : 'Add Friend'}</span>
+                        <span>{addFriendLabel}</span>
                     </ContextMenuItem>
                 )}
 
-                {status === 'friends' && (
+                {isFriend && (
                     <ContextMenuItem
-                        onClick={() => {
-                            if (confirm(`Remove ${user.username} from friends?`)) {
-                                removeFriend.mutate(user.id)
-                            }
-                        }}
+                        onClick={handleRemoveFriend}
                         className="text-destructive focus:text-destructive"
-                        disabled={removeFriend.isPending}
+                        disabled={removeFriendPending}
                     >
                         <UserMinus className="mr-2 h-4 w-4" />
                         <span>Remove Friend</span>

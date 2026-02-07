@@ -90,13 +90,18 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 	var err error
 
 	// Build PostgreSQL connection string
+	sslMode := cfg.DBSSLMode
+	if sslMode == "" {
+		sslMode = "disable"
+	}
 	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		cfg.DBHost,
 		cfg.DBPort,
 		cfg.DBUser,
 		cfg.DBPassword,
 		cfg.DBName,
+		sslMode,
 	)
 
 	// Custom GORM logger that uses slog and ignores ErrRecordNotFound

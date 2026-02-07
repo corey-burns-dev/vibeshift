@@ -18,9 +18,13 @@ type Config struct {
 	DBUser         string `mapstructure:"DB_USER"`
 	DBPassword     string `mapstructure:"DB_PASSWORD"`
 	DBName         string `mapstructure:"DB_NAME"`
+	DBSSLMode      string `mapstructure:"DB_SSLMODE"`
 	RedisURL       string `mapstructure:"REDIS_URL"`
 	AllowedOrigins string `mapstructure:"ALLOWED_ORIGINS"`
 	Env            string `mapstructure:"APP_ENV"`
+	TURNURL        string `mapstructure:"TURN_URL"`
+	TURNUsername   string `mapstructure:"TURN_USERNAME"`
+	TURNPassword   string `mapstructure:"TURN_PASSWORD"`
 }
 
 // LoadConfig loads application configuration from file and environment variables.
@@ -61,6 +65,10 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("JWT_SECRET", "your-secret-key-change-in-production")
 	viper.SetDefault("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173")
 	viper.SetDefault("APP_ENV", "development")
+	viper.SetDefault("DB_SSLMODE", "disable")
+	viper.SetDefault("TURN_URL", "")
+	viper.SetDefault("TURN_USERNAME", "")
+	viper.SetDefault("TURN_PASSWORD", "")
 
 	var config Config
 	if err := viper.Unmarshal(&config); err != nil {
@@ -82,8 +90,25 @@ func (c *Config) Validate() error {
 	if c.JWTSecret == "" {
 		return errors.New("JWT_SECRET is required")
 	}
+
+	isProduction := c.Env == "production" || c.Env == "prod"
+
 	if len(c.JWTSecret) < 32 {
+		if isProduction {
+			return errors.New("JWT_SECRET must be at least 32 characters in production")
+		}
 		log.Println("WARNING: JWT_SECRET is shorter than 32 characters. Consider using a stronger secret for production.")
 	}
+
+	// Reject well-known default secrets in production
+	if isProduction && c.JWTSecret == "your-secret-key-change-in-production" {
+		return errors.New("JWT_SECRET must be changed from the default value in production")
+	}
+
+	// Enforce SSL for database in production
+	if isProduction && (c.DBSSLMode == "" || c.DBSSLMode == "disable") {
+		log.Println("WARNING: DB_SSLMODE is 'disable' in production. Set DB_SSLMODE=require for encrypted connections.")
+	}
+
 	return nil
 }

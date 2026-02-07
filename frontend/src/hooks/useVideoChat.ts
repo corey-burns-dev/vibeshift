@@ -23,12 +23,30 @@ interface VideoChatSignal {
     payload?: any
 }
 
-const ICE_SERVERS: RTCConfiguration = {
-    iceServers: [
+// Build ICE server config — includes TURN when env vars are set
+function buildIceConfig(): RTCConfiguration {
+    const servers: RTCIceServer[] = [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-    ],
+    ]
+
+    const turnUrl = import.meta.env.VITE_TURN_URL as string | undefined
+    const turnUser = import.meta.env.VITE_TURN_USERNAME as string | undefined
+    const turnPass = import.meta.env.VITE_TURN_PASSWORD as string | undefined
+
+    if (turnUrl) {
+        servers.push({
+            urls: turnUrl,
+            username: turnUser ?? '',
+            credential: turnPass ?? '',
+        })
+    }
+
+    return { iceServers: servers }
 }
+
+const MAX_RECONNECT_ATTEMPTS = 5
+const RECONNECT_BASE_DELAY_MS = 1000
 
 interface UseVideoChatOptions {
     roomId: string
@@ -48,6 +66,9 @@ export function useVideoChat({ roomId, enabled = true }: UseVideoChatOptions) {
     const peerConnectionsRef = useRef<Map<number, RTCPeerConnection>>(new Map())
     const localStreamRef = useRef<MediaStream | null>(null)
     const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+    const reconnectAttemptsRef = useRef(0)
+    const intentionalDisconnectRef = useRef(false)
+    const iceConfig = useRef(buildIceConfig())
 
     // Remove a remote stream and close peer connection
     const removePeer = useCallback((userId: number) => {
@@ -69,7 +90,7 @@ export function useVideoChat({ roomId, enabled = true }: UseVideoChatOptions) {
                 existing.close()
             }
 
-            const pc = new RTCPeerConnection(ICE_SERVERS)
+            const pc = new RTCPeerConnection(iceConfig.current)
             peerConnectionsRef.current.set(userId, pc)
 
             // Add local tracks to the connection
@@ -243,11 +264,27 @@ export function useVideoChat({ roomId, enabled = true }: UseVideoChatOptions) {
     // Connect WebSocket and acquire media
     const connect = useCallback(async () => {
         if (!enabled || !roomId) return
+        intentionalDisconnectRef.current = false
 
         const token = localStorage.getItem('token')
         if (!token) {
             setError('Not authenticated')
             return
+        }
+
+        // Pre-check camera/mic permission before prompting
+        try {
+            const cameraPermission = await navigator.permissions.query({
+                name: 'camera' as PermissionName,
+            })
+            if (cameraPermission.state === 'denied') {
+                setError(
+                    'Camera permission is denied. Please allow camera access in your browser settings.'
+                )
+                return
+            }
+        } catch {
+            // permissions.query may not be supported for camera — proceed anyway
         }
 
         // Acquire camera + mic
@@ -275,6 +312,7 @@ export function useVideoChat({ roomId, enabled = true }: UseVideoChatOptions) {
         ws.onopen = () => {
             setIsConnected(true)
             setError(null)
+            reconnectAttemptsRef.current = 0
         }
 
         ws.onmessage = (event) => {
@@ -288,6 +326,18 @@ export function useVideoChat({ roomId, enabled = true }: UseVideoChatOptions) {
 
         ws.onclose = () => {
             setIsConnected(false)
+
+            // Auto-reconnect with exponential backoff (unless intentional disconnect)
+            if (
+                !intentionalDisconnectRef.current &&
+                reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS
+            ) {
+                const delay = RECONNECT_BASE_DELAY_MS * 2 ** reconnectAttemptsRef.current
+                reconnectAttemptsRef.current += 1
+                reconnectTimeoutRef.current = setTimeout(() => {
+                    connect()
+                }, delay)
+            }
         }
 
         ws.onerror = () => {
@@ -298,6 +348,15 @@ export function useVideoChat({ roomId, enabled = true }: UseVideoChatOptions) {
 
     // Disconnect everything
     const disconnect = useCallback(() => {
+        intentionalDisconnectRef.current = true
+
+        // Clear any pending reconnect
+        if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current)
+            reconnectTimeoutRef.current = undefined
+        }
+        reconnectAttemptsRef.current = 0
+
         // Close all peer connections
         for (const [, pc] of peerConnectionsRef.current) {
             pc.close()
