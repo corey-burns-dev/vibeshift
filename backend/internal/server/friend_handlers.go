@@ -53,11 +53,11 @@ func (s *Server) SendFriendRequest(c *fiber.Ctx) error {
 		}
 	}
 
-	// Create friend request — auto-accept so everyone can add everyone instantly
+	// Create a pending friend request; addressee can accept or reject later.
 	friendship := &models.Friendship{
 		RequesterID: userID,
 		AddresseeID: uint(targetUserID),
-		Status:      models.FriendshipStatusAccepted,
+		Status:      models.FriendshipStatusPending,
 	}
 
 	if createErr := s.friendRepo.Create(ctx, friendship); createErr != nil {

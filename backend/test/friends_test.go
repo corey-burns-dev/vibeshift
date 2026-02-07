@@ -111,7 +111,7 @@ func TestFriendEndpoints(t *testing.T) {
 		res, err = app.Test(req, -1)
 		assert.NoError(t, err)
 		defer func() { _ = res.Body.Close() }()
-		assert.Equal(t, 200, res.StatusCode)
+		assert.Equal(t, 204, res.StatusCode)
 	})
 
 	// Let's get User 3's ID properly in `registerUser` helper
