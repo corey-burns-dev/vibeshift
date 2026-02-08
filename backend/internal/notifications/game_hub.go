@@ -34,6 +34,9 @@ type GameHub struct {
 	notifier *Notifier
 }
 
+// Name returns a human-readable identifier for this hub.
+func (h *GameHub) Name() string { return "game hub" }
+
 // NewGameHub creates a new GameHub instance
 func NewGameHub(db *gorm.DB, notifier *Notifier) *GameHub {
 	return &GameHub{

@@ -24,6 +24,9 @@ type ChatHub struct {
 	userConns map[uint]map[*Client]bool
 }
 
+// Name returns a human-readable identifier for this hub.
+func (h *ChatHub) Name() string { return "chat hub" }
+
 // ChatMessage represents a message broadcast to a conversation
 type ChatMessage struct {
 	Type           string      `json:"type"` // "message", "typing", "presence", "read", "room_message", "user_status", "connected_users"

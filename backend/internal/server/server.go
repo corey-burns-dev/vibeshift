@@ -30,6 +30,14 @@ import (
 	"gorm.io/gorm"
 )
 
+// wireableHub is implemented by every WebSocket hub that can be wired to
+// Redis pub/sub and gracefully shut down.
+type wireableHub interface {
+	Name() string
+	StartWiring(ctx context.Context, n *notifications.Notifier) error
+	Shutdown(ctx context.Context) error
+}
+
 // Server holds all dependencies and provides handlers
 type Server struct {
 	config       *config.Config
@@ -50,6 +58,7 @@ type Server struct {
 	chatHub      *notifications.ChatHub
 	gameHub      *notifications.GameHub
 	videoChatHub *notifications.VideoChatHub
+	hubs         []wireableHub // all hubs for wiring/shutdown iteration
 }
 
 // NewServer creates a new server instance with all dependencies
@@ -93,6 +102,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		server.chatHub = notifications.NewChatHub()
 		server.gameHub = notifications.NewGameHub(db, server.notifier)
 		server.videoChatHub = notifications.NewVideoChatHub()
+		server.hubs = []wireableHub{server.hub, server.chatHub, server.gameHub, server.videoChatHub}
 	}
 
 	return server, nil
@@ -180,8 +190,8 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	// Define specific /:id/:resource routes BEFORE generic /:id route
 	users.Get("/:id/cached", s.GetUserCached)
 	users.Get("/:id/posts", s.GetUserPosts)
-	users.Post("/:id/promote-admin", s.PromoteToAdmin)
-	users.Post("/:id/demote-admin", s.DemoteFromAdmin)
+	users.Post("/:id/promote-admin", s.AdminRequired(), s.PromoteToAdmin)
+	users.Post("/:id/demote-admin", s.AdminRequired(), s.DemoteFromAdmin)
 	users.Get("/:id", s.GetUserProfile)
 
 	// Friend routes
@@ -300,6 +310,25 @@ func (s *Server) HealthCheck(c *fiber.Ctx) error {
 		},
 		"time": time.Now(),
 	})
+}
+
+// AdminRequired returns middleware that rejects non-admin users with 403.
+// Must be placed after AuthRequired so that userID is available in locals.
+func (s *Server) AdminRequired() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID").(uint)
+
+		admin, err := s.isAdmin(c, userID)
+		if err != nil {
+			return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+		}
+		if !admin {
+			return models.RespondWithError(c, fiber.StatusForbidden,
+				models.NewUnauthorizedError("Admin access required"))
+		}
+
+		return c.Next()
+	}
 }
 
 // AuthRequired returns the authentication middleware
@@ -444,40 +473,16 @@ func (s *Server) Start() error {
 	s.SetupMiddleware(app)
 	s.SetupRoutes(app)
 
-	// Wire notifications hub to Redis subscriber if available
-	if s.hub != nil && s.notifier != nil {
-		go func() {
-			if err := s.hub.StartWiring(s.shutdownCtx, s.notifier); err != nil {
-				log.Printf("failed to start notification hub wiring: %v", err)
-			}
-		}()
-	}
-
-	// Wire chat hub to Redis subscriber if available
-	if s.chatHub != nil && s.notifier != nil {
-		go func() {
-			if err := s.chatHub.StartWiring(s.shutdownCtx, s.notifier); err != nil {
-				log.Printf("failed to start chat hub wiring: %v", err)
-			}
-		}()
-	}
-
-	// Wire game hub to Redis subscriber if available
-	if s.gameHub != nil && s.notifier != nil {
-		go func() {
-			if err := s.gameHub.StartWiring(s.shutdownCtx, s.notifier); err != nil {
-				log.Printf("failed to start game hub wiring: %v", err)
-			}
-		}()
-	}
-
-	// Wire video chat hub to Redis subscriber if available
-	if s.videoChatHub != nil && s.notifier != nil {
-		go func() {
-			if err := s.videoChatHub.StartWiring(s.shutdownCtx, s.notifier); err != nil {
-				log.Printf("failed to start video chat hub wiring: %v", err)
-			}
-		}()
+	// Wire all hubs to Redis subscriber if available
+	if s.notifier != nil {
+		for _, h := range s.hubs {
+			h := h
+			go func() {
+				if err := h.StartWiring(s.shutdownCtx, s.notifier); err != nil {
+					log.Printf("failed to start %s wiring: %v", h.Name(), err)
+				}
+			}()
+		}
 	}
 
 	log.Printf("Server starting on port %s...", s.config.Port)
@@ -499,27 +504,9 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 
 	// Close WebSocket connections gracefully
-	if s.hub != nil {
-		if err := s.hub.Shutdown(ctx); err != nil {
-			log.Printf("error shutting down notification hub: %v", err)
-		}
-	}
-
-	if s.chatHub != nil {
-		if err := s.chatHub.Shutdown(ctx); err != nil {
-			log.Printf("error shutting down chat hub: %v", err)
-		}
-	}
-
-	if s.gameHub != nil {
-		if err := s.gameHub.Shutdown(ctx); err != nil {
-			log.Printf("error shutting down game hub: %v", err)
-		}
-	}
-
-	if s.videoChatHub != nil {
-		if err := s.videoChatHub.Shutdown(ctx); err != nil {
-			log.Printf("error shutting down video chat hub: %v", err)
+	for _, h := range s.hubs {
+		if err := h.Shutdown(ctx); err != nil {
+			log.Printf("error shutting down %s: %v", h.Name(), err)
 		}
 	}
 

@@ -2,7 +2,6 @@
 package server
 
 import (
-	"fmt"
 	"time"
 	"vibeshift/internal/models"
 
@@ -13,17 +12,15 @@ import (
 func (s *Server) CreateComment(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	userID := c.Locals("userID").(uint)
-	postIDParam := c.Params("id")
 
-	// Validate post ID
-	var postID uint
-	if _, err := fmt.Sscan(postIDParam, &postID); err != nil {
-		return models.RespondWithError(c, fiber.StatusBadRequest, models.NewValidationError("Invalid post ID"))
+	postID, err := s.parseID(c, "id")
+	if err != nil {
+		return nil
 	}
 
 	// Verify post exists
-	if _, err := s.postRepo.GetByID(ctx, postID, 0); err != nil {
-		return models.RespondWithError(c, fiber.StatusNotFound, err)
+	if _, postErr := s.postRepo.GetByID(ctx, postID, 0); postErr != nil {
+		return models.RespondWithError(c, fiber.StatusNotFound, postErr)
 	}
 
 	var req struct {
@@ -42,8 +39,8 @@ func (s *Server) CreateComment(c *fiber.Ctx) error {
 		PostID:  postID,
 	}
 
-	if err := s.commentRepo.Create(ctx, comment); err != nil {
-		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	if createErr := s.commentRepo.Create(ctx, comment); createErr != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, createErr)
 	}
 
 	// Load created comment with user
@@ -56,7 +53,7 @@ func (s *Server) CreateComment(c *fiber.Ctx) error {
 	if post, postErr := s.postRepo.GetByID(ctx, postID, userID); postErr == nil {
 		commentsCount = post.CommentsCount
 	}
-	s.publishBroadcastEvent("comment_created", map[string]interface{}{
+	s.publishBroadcastEvent(EventCommentCreated, map[string]interface{}{
 		"post_id":        postID,
 		"comment":        created,
 		"comments_count": commentsCount,
@@ -69,15 +66,15 @@ func (s *Server) CreateComment(c *fiber.Ctx) error {
 // GetComments returns all comments for a post (public)
 func (s *Server) GetComments(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	postIDParam := c.Params("id")
-	var postID uint
-	if _, err := fmt.Sscan(postIDParam, &postID); err != nil {
-		return models.RespondWithError(c, fiber.StatusBadRequest, models.NewValidationError("Invalid post ID"))
+
+	postID, err := s.parseID(c, "id")
+	if err != nil {
+		return nil
 	}
 
 	// Verify post exists
-	if _, err := s.postRepo.GetByID(ctx, postID, 0); err != nil {
-		return models.RespondWithError(c, fiber.StatusNotFound, err)
+	if _, postErr := s.postRepo.GetByID(ctx, postID, 0); postErr != nil {
+		return models.RespondWithError(c, fiber.StatusNotFound, postErr)
 	}
 
 	comments, err := s.commentRepo.ListByPost(ctx, postID)
@@ -92,10 +89,10 @@ func (s *Server) GetComments(c *fiber.Ctx) error {
 func (s *Server) UpdateComment(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	userID := c.Locals("userID").(uint)
-	commentIDParam := c.Params("commentId")
-	var commentID uint
-	if _, err := fmt.Sscan(commentIDParam, &commentID); err != nil {
-		return models.RespondWithError(c, fiber.StatusBadRequest, models.NewValidationError("Invalid comment ID"))
+
+	commentID, err := s.parseID(c, "commentId")
+	if err != nil {
+		return nil
 	}
 
 	comment, err := s.commentRepo.GetByID(ctx, commentID)
@@ -131,7 +128,7 @@ func (s *Server) UpdateComment(c *fiber.Ctx) error {
 	if post, postErr := s.postRepo.GetByID(ctx, comment.PostID, userID); postErr == nil {
 		commentsCount = post.CommentsCount
 	}
-	s.publishBroadcastEvent("comment_updated", map[string]interface{}{
+	s.publishBroadcastEvent(EventCommentUpdated, map[string]interface{}{
 		"post_id":        comment.PostID,
 		"comment":        updated,
 		"comments_count": commentsCount,
@@ -145,10 +142,10 @@ func (s *Server) UpdateComment(c *fiber.Ctx) error {
 func (s *Server) DeleteComment(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	userID := c.Locals("userID").(uint)
-	commentIDParam := c.Params("commentId")
-	var commentID uint
-	if _, err := fmt.Sscan(commentIDParam, &commentID); err != nil {
-		return models.RespondWithError(c, fiber.StatusBadRequest, models.NewValidationError("Invalid comment ID"))
+
+	commentID, err := s.parseID(c, "commentId")
+	if err != nil {
+		return nil
 	}
 
 	comment, err := s.commentRepo.GetByID(ctx, commentID)
@@ -158,11 +155,11 @@ func (s *Server) DeleteComment(c *fiber.Ctx) error {
 
 	if comment.UserID != userID {
 		// Check if user is admin
-		var user models.User
-		if err := s.db.WithContext(ctx).First(&user, userID).Error; err != nil {
-			return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+		admin, adminErr := s.isAdmin(c, userID)
+		if adminErr != nil {
+			return models.RespondWithError(c, fiber.StatusInternalServerError, adminErr)
 		}
-		if !user.IsAdmin {
+		if !admin {
 			return models.RespondWithError(c, fiber.StatusForbidden, models.NewUnauthorizedError("You can only delete your own comments"))
 		}
 	}
@@ -175,7 +172,7 @@ func (s *Server) DeleteComment(c *fiber.Ctx) error {
 	if post, postErr := s.postRepo.GetByID(ctx, comment.PostID, userID); postErr == nil {
 		commentsCount = post.CommentsCount
 	}
-	s.publishBroadcastEvent("comment_deleted", map[string]interface{}{
+	s.publishBroadcastEvent(EventCommentDeleted, map[string]interface{}{
 		"post_id":        comment.PostID,
 		"comment_id":     commentID,
 		"comments_count": commentsCount,

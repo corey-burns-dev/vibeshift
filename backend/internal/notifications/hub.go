@@ -20,6 +20,9 @@ type Hub struct {
 	done     chan struct{}
 }
 
+// Name returns a human-readable identifier for this hub.
+func (h *Hub) Name() string { return "notification hub" }
+
 // NewHub creates a new Hub instance for managing notifications.
 func NewHub() *Hub {
 	return &Hub{

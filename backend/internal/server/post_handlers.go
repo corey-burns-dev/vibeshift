@@ -18,11 +18,10 @@ func (s *Server) SearchPosts(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusBadRequest, models.NewValidationError("Search query is required"))
 	}
 
-	limit := c.QueryInt("limit", 10)
-	offset := c.QueryInt("offset", 0)
+	page := parsePagination(c, 10)
 	userID, _ := s.optionalUserID(c)
 
-	posts, err := s.postRepo.Search(ctx, q, limit, offset, userID)
+	posts, err := s.postRepo.Search(ctx, q, page.Limit, page.Offset, userID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
@@ -68,7 +67,7 @@ func (s *Server) CreatePost(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
-	s.publishBroadcastEvent("post_created", map[string]interface{}{
+	s.publishBroadcastEvent(EventPostCreated, map[string]interface{}{
 		"post_id":    post.ID,
 		"author_id":  post.UserID,
 		"created_at": time.Now().UTC().Format(time.RFC3339Nano),
@@ -80,11 +79,10 @@ func (s *Server) CreatePost(c *fiber.Ctx) error {
 // GetPosts handles GET /api/posts
 func (s *Server) GetPosts(c *fiber.Ctx) error {
 	ctx := c.Context()
-	limit := c.QueryInt("limit", 20)
-	offset := c.QueryInt("offset", 0)
+	page := parsePagination(c, 20)
 	userID, _ := s.optionalUserID(c)
 
-	posts, err := s.postRepo.List(ctx, limit, offset, userID)
+	posts, err := s.postRepo.List(ctx, page.Limit, page.Offset, userID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
@@ -95,18 +93,13 @@ func (s *Server) GetPosts(c *fiber.Ctx) error {
 // GetPost handles GET /api/posts/:id
 func (s *Server) GetPost(c *fiber.Ctx) error {
 	ctx := c.Context()
-	id, err := c.ParamsInt("id")
+	id, err := s.parseID(c, "id")
 	if err != nil {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid post ID"))
+		return nil
 	}
 	userID, _ := s.optionalUserID(c)
 
-	if id < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid post ID"))
-	}
-	post, err := s.postRepo.GetByID(ctx, uint(id), userID)
+	post, err := s.postRepo.GetByID(ctx, id, userID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound, err)
 	}
@@ -117,21 +110,15 @@ func (s *Server) GetPost(c *fiber.Ctx) error {
 // GetUserPosts handles GET /api/users/:id/posts
 func (s *Server) GetUserPosts(c *fiber.Ctx) error {
 	ctx := c.Context()
-	userIDParam, err := c.ParamsInt("id")
+	userIDParam, err := s.parseID(c, "id")
 	if err != nil {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid user ID"))
+		return nil
 	}
 
-	limit := c.QueryInt("limit", 20)
-	offset := c.QueryInt("offset", 0)
+	page := parsePagination(c, 20)
 	currentUserID, _ := s.optionalUserID(c)
 
-	if userIDParam < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid user ID"))
-	}
-	posts, err := s.postRepo.GetByUserID(ctx, uint(userIDParam), limit, offset, currentUserID)
+	posts, err := s.postRepo.GetByUserID(ctx, userIDParam, page.Limit, page.Offset, currentUserID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
@@ -143,10 +130,9 @@ func (s *Server) GetUserPosts(c *fiber.Ctx) error {
 func (s *Server) UpdatePost(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
-	postID, err := c.ParamsInt("id")
+	postID, err := s.parseID(c, "id")
 	if err != nil {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid post ID"))
+		return nil
 	}
 
 	var req struct {
@@ -161,12 +147,8 @@ func (s *Server) UpdatePost(c *fiber.Ctx) error {
 	}
 
 	// Get existing post
-	if postID < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid post ID"))
-	}
 	var post *models.Post
-	post, err = s.postRepo.GetByID(ctx, uint(postID), userID)
+	post, err = s.postRepo.GetByID(ctx, postID, userID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound, err)
 	}
@@ -199,36 +181,30 @@ func (s *Server) UpdatePost(c *fiber.Ctx) error {
 func (s *Server) DeletePost(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
-	postID, err := c.ParamsInt("id")
+	postID, err := s.parseID(c, "id")
 	if err != nil {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid post ID"))
+		return nil
 	}
 
 	// Get existing post to check ownership
-	if postID < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid post ID"))
-	}
-	post, err := s.postRepo.GetByID(ctx, uint(postID), userID)
+	post, err := s.postRepo.GetByID(ctx, postID, userID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound, err)
 	}
 
 	// Check ownership or admin status
 	if post.UserID != userID {
-		// Check if user is admin
-		var user models.User
-		if err := s.db.WithContext(ctx).First(&user, userID).Error; err != nil {
-			return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+		admin, adminErr := s.isAdmin(c, userID)
+		if adminErr != nil {
+			return models.RespondWithError(c, fiber.StatusInternalServerError, adminErr)
 		}
-		if !user.IsAdmin {
+		if !admin {
 			return models.RespondWithError(c, fiber.StatusForbidden,
 				models.NewUnauthorizedError("You can only delete your own posts"))
 		}
 	}
 
-	if err := s.postRepo.Delete(ctx, uint(postID)); err != nil {
+	if err := s.postRepo.Delete(ctx, postID); err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
@@ -240,25 +216,24 @@ func (s *Server) DeletePost(c *fiber.Ctx) error {
 func (s *Server) LikePost(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
-	postID, err := c.ParamsInt("id")
-	if err != nil || postID < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid post ID"))
+	postID, err := s.parseID(c, "id")
+	if err != nil {
+		return nil
 	}
 
 	// Check if already liked
 	var existingLike models.Like
-	err = s.db.WithContext(ctx).Where("user_id = ? AND post_id = ?", userID, uint(postID)).First(&existingLike).Error
+	err = s.db.WithContext(ctx).Where("user_id = ? AND post_id = ?", userID, postID).First(&existingLike).Error
 
 	switch {
 	case err == nil:
 		// Already liked, so unlike it
-		if uerr := s.postRepo.Unlike(ctx, userID, uint(postID)); uerr != nil {
+		if uerr := s.postRepo.Unlike(ctx, userID, postID); uerr != nil {
 			return models.RespondWithError(c, fiber.StatusInternalServerError, uerr)
 		}
 	case errors.Is(err, gorm.ErrRecordNotFound):
 		// Not liked, so like it
-		if lerr := s.postRepo.Like(ctx, userID, uint(postID)); lerr != nil {
+		if lerr := s.postRepo.Like(ctx, userID, postID); lerr != nil {
 			return models.RespondWithError(c, fiber.StatusInternalServerError, lerr)
 		}
 	default:
@@ -267,12 +242,12 @@ func (s *Server) LikePost(c *fiber.Ctx) error {
 	}
 
 	// Return updated post
-	post, err := s.postRepo.GetByID(ctx, uint(postID), userID)
+	post, err := s.postRepo.GetByID(ctx, postID, userID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
-	s.publishBroadcastEvent("post_reaction_updated", map[string]interface{}{
+	s.publishBroadcastEvent(EventPostReactionUpdated, map[string]interface{}{
 		"post_id":        post.ID,
 		"likes_count":    post.LikesCount,
 		"comments_count": post.CommentsCount,
@@ -286,23 +261,22 @@ func (s *Server) LikePost(c *fiber.Ctx) error {
 func (s *Server) UnlikePost(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
-	postID, err := c.ParamsInt("id")
-	if err != nil || postID < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid post ID"))
+	postID, err := s.parseID(c, "id")
+	if err != nil {
+		return nil
 	}
 
-	if unlikeErr := s.postRepo.Unlike(ctx, userID, uint(postID)); unlikeErr != nil {
+	if unlikeErr := s.postRepo.Unlike(ctx, userID, postID); unlikeErr != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, unlikeErr)
 	}
 
 	// Return updated post
-	post, err := s.postRepo.GetByID(ctx, uint(postID), userID)
+	post, err := s.postRepo.GetByID(ctx, postID, userID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
-	s.publishBroadcastEvent("post_reaction_updated", map[string]interface{}{
+	s.publishBroadcastEvent(EventPostReactionUpdated, map[string]interface{}{
 		"post_id":        post.ID,
 		"likes_count":    post.LikesCount,
 		"comments_count": post.CommentsCount,

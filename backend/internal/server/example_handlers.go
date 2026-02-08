@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -16,14 +15,13 @@ import (
 
 // GetUserCached demonstrates cache-aside for GET /users/:id/cached
 func (s *Server) GetUserCached(c *fiber.Ctx) error {
-	idStr := c.Params("id")
-	id64, err := strconv.ParseUint(idStr, 10, 32)
+	id, err := s.parseID(c, "id")
 	if err != nil {
-		return models.RespondWithError(c, fiber.StatusBadRequest, models.NewValidationError("invalid user id"))
+		return nil
 	}
 	var user models.User
 
-	u, err := s.userRepo.GetByID(context.Background(), uint(id64))
+	u, err := s.userRepo.GetByID(context.Background(), id)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, models.NewInternalError(err))
 	}
@@ -94,7 +92,7 @@ func (s *Server) notifyFriendsPresence(userID uint, status string) {
 		return
 	}
 	for _, friend := range friends {
-		s.publishUserEvent(friend.ID, "friend_presence_changed", map[string]interface{}{
+		s.publishUserEvent(friend.ID, EventFriendPresenceChanged, map[string]interface{}{
 			"user_id":    user.ID,
 			"username":   user.Username,
 			"avatar":     user.Avatar,

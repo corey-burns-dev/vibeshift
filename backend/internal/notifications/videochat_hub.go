@@ -51,6 +51,9 @@ type VideoChatHub struct {
 	rooms map[string]map[uint]*videoChatPeer
 }
 
+// Name returns a human-readable identifier for this hub.
+func (h *VideoChatHub) Name() string { return "video chat hub" }
+
 // NewVideoChatHub creates a new VideoChatHub
 func NewVideoChatHub() *VideoChatHub {
 	return &VideoChatHub{

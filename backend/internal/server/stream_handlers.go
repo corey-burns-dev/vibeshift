@@ -42,14 +42,13 @@ type UpdateStreamRequest struct {
 // @Router /api/streams [get]
 func (s *Server) GetStreams(c *fiber.Ctx) error {
 	category := c.Query("category", "")
-	limit := c.QueryInt("limit", 20)
-	offset := c.QueryInt("offset", 0)
+	page := parsePagination(c, 20)
 
-	if limit > 50 {
-		limit = 50
+	if page.Limit > 50 {
+		page.Limit = 50
 	}
 
-	streams, total, err := s.streamRepo.GetLiveStreams(c.Context(), category, limit, offset)
+	streams, total, err := s.streamRepo.GetLiveStreams(c.Context(), category, page.Limit, page.Offset)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError,
 			models.NewInternalError(err))
@@ -58,8 +57,8 @@ func (s *Server) GetStreams(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"streams": streams,
 		"total":   total,
-		"limit":   limit,
-		"offset":  offset,
+		"limit":   page.Limit,
+		"offset":  page.Offset,
 	})
 }
 
@@ -71,13 +70,12 @@ func (s *Server) GetStreams(c *fiber.Ctx) error {
 // @Success 200 {object} models.Stream
 // @Router /api/streams/{id} [get]
 func (s *Server) GetStream(c *fiber.Ctx) error {
-	id, err := c.ParamsInt("id")
-	if err != nil || id < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid stream ID"))
+	id, err := s.parseID(c, "id")
+	if err != nil {
+		return nil
 	}
 
-	stream, err := s.streamRepo.GetStreamByID(c.Context(), uint(id))
+	stream, err := s.streamRepo.GetStreamByID(c.Context(), id)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound,
 			models.NewNotFoundError("Stream", id))
@@ -148,13 +146,12 @@ func (s *Server) CreateStream(c *fiber.Ctx) error {
 func (s *Server) UpdateStream(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uint)
 
-	id, err := c.ParamsInt("id")
-	if err != nil || id < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid stream ID"))
+	id, err := s.parseID(c, "id")
+	if err != nil {
+		return nil
 	}
 
-	stream, err := s.streamRepo.GetStreamByID(c.Context(), uint(id))
+	stream, err := s.streamRepo.GetStreamByID(c.Context(), id)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound,
 			models.NewNotFoundError("Stream", id))
@@ -211,13 +208,12 @@ func (s *Server) UpdateStream(c *fiber.Ctx) error {
 func (s *Server) DeleteStream(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uint)
 
-	id, err := c.ParamsInt("id")
-	if err != nil || id < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid stream ID"))
+	id, err := s.parseID(c, "id")
+	if err != nil {
+		return nil
 	}
 
-	stream, err := s.streamRepo.GetStreamByID(c.Context(), uint(id))
+	stream, err := s.streamRepo.GetStreamByID(c.Context(), id)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound,
 			models.NewNotFoundError("Stream", id))
@@ -228,7 +224,7 @@ func (s *Server) DeleteStream(c *fiber.Ctx) error {
 			models.NewForbiddenError("You can only delete your own streams"))
 	}
 
-	if err := s.streamRepo.DeleteStream(c.Context(), uint(id)); err != nil {
+	if err := s.streamRepo.DeleteStream(c.Context(), id); err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError,
 			models.NewInternalError(err))
 	}
@@ -245,13 +241,12 @@ func (s *Server) DeleteStream(c *fiber.Ctx) error {
 func (s *Server) GoLive(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uint)
 
-	id, err := c.ParamsInt("id")
-	if err != nil || id < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid stream ID"))
+	id, err := s.parseID(c, "id")
+	if err != nil {
+		return nil
 	}
 
-	stream, err := s.streamRepo.GetStreamByID(c.Context(), uint(id))
+	stream, err := s.streamRepo.GetStreamByID(c.Context(), id)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound,
 			models.NewNotFoundError("Stream", id))
@@ -267,13 +262,13 @@ func (s *Server) GoLive(c *fiber.Ctx) error {
 			models.NewValidationError("Stream is already live"))
 	}
 
-	if err := s.streamRepo.SetStreamLive(c.Context(), uint(id), true); err != nil {
+	if err := s.streamRepo.SetStreamLive(c.Context(), id, true); err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError,
 			models.NewInternalError(err))
 	}
 
 	// Fetch updated stream
-	stream, _ = s.streamRepo.GetStreamByID(c.Context(), uint(id))
+	stream, _ = s.streamRepo.GetStreamByID(c.Context(), id)
 
 	return c.JSON(stream)
 }
@@ -287,13 +282,12 @@ func (s *Server) GoLive(c *fiber.Ctx) error {
 func (s *Server) EndStream(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uint)
 
-	id, err := c.ParamsInt("id")
-	if err != nil || id < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid stream ID"))
+	id, err := s.parseID(c, "id")
+	if err != nil {
+		return nil
 	}
 
-	stream, err := s.streamRepo.GetStreamByID(c.Context(), uint(id))
+	stream, err := s.streamRepo.GetStreamByID(c.Context(), id)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound,
 			models.NewNotFoundError("Stream", id))
@@ -309,13 +303,13 @@ func (s *Server) EndStream(c *fiber.Ctx) error {
 			models.NewValidationError("Stream is not live"))
 	}
 
-	if err := s.streamRepo.SetStreamLive(c.Context(), uint(id), false); err != nil {
+	if err := s.streamRepo.SetStreamLive(c.Context(), id, false); err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError,
 			models.NewInternalError(err))
 	}
 
 	// Fetch updated stream
-	stream, _ = s.streamRepo.GetStreamByID(c.Context(), uint(id))
+	stream, _ = s.streamRepo.GetStreamByID(c.Context(), id)
 
 	return c.JSON(stream)
 }
@@ -348,20 +342,18 @@ func (s *Server) GetMyStreams(c *fiber.Ctx) error {
 // @Success 200 {array} models.StreamMessage
 // @Router /api/streams/{id}/messages [get]
 func (s *Server) GetStreamMessages(c *fiber.Ctx) error {
-	id, err := c.ParamsInt("id")
-	if err != nil || id < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid stream ID"))
+	id, err := s.parseID(c, "id")
+	if err != nil {
+		return nil
 	}
 
-	limit := c.QueryInt("limit", 50)
-	offset := c.QueryInt("offset", 0)
+	page := parsePagination(c, 50)
 
-	if limit > 100 {
-		limit = 100
+	if page.Limit > 100 {
+		page.Limit = 100
 	}
 
-	messages, err := s.streamRepo.GetStreamMessages(c.Context(), uint(id), limit, offset)
+	messages, err := s.streamRepo.GetStreamMessages(c.Context(), id, page.Limit, page.Offset)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError,
 			models.NewInternalError(err))
@@ -382,14 +374,13 @@ func (s *Server) GetStreamMessages(c *fiber.Ctx) error {
 func (s *Server) SendStreamMessage(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uint)
 
-	id, err := c.ParamsInt("id")
-	if err != nil || id < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid stream ID"))
+	id, err := s.parseID(c, "id")
+	if err != nil {
+		return nil
 	}
 
 	// Verify stream exists
-	_, err = s.streamRepo.GetStreamByID(c.Context(), uint(id))
+	_, err = s.streamRepo.GetStreamByID(c.Context(), id)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound,
 			models.NewNotFoundError("Stream", id))
@@ -409,7 +400,7 @@ func (s *Server) SendStreamMessage(c *fiber.Ctx) error {
 	}
 
 	msg := &models.StreamMessage{
-		StreamID:  uint(id),
+		StreamID:  id,
 		UserID:    userID,
 		Content:   req.Content,
 		CreatedAt: time.Now(),

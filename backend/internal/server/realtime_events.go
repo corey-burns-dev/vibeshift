@@ -8,6 +8,24 @@ import (
 	"vibeshift/internal/models"
 )
 
+// Event type constants prevent typos in event names.
+const (
+	EventPostCreated            = "post_created"
+	EventPostReactionUpdated    = "post_reaction_updated"
+	EventCommentCreated         = "comment_created"
+	EventCommentUpdated         = "comment_updated"
+	EventCommentDeleted         = "comment_deleted"
+	EventMessageReceived        = "message_received"
+	EventFriendRequestReceived  = "friend_request_received"
+	EventFriendRequestSent      = "friend_request_sent"
+	EventFriendRequestAccepted  = "friend_request_accepted"
+	EventFriendAdded            = "friend_added"
+	EventFriendRequestRejected  = "friend_request_rejected"
+	EventFriendRequestCancelled = "friend_request_cancelled"
+	EventFriendRemoved          = "friend_removed"
+	EventFriendPresenceChanged  = "friend_presence_changed"
+)
+
 func (s *Server) publishUserEvent(userID uint, eventType string, payload map[string]interface{}) {
 	event := map[string]interface{}{
 		"type":    eventType,

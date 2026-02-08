@@ -13,18 +13,13 @@ import (
 func (s *Server) SendFriendRequest(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
-	targetUserID, err := c.ParamsInt("userId")
+	targetUserID, err := s.parseID(c, "userId")
 	if err != nil {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid user ID"))
+		return nil
 	}
 
 	// Cannot send friend request to yourself
-	if targetUserID < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid user ID"))
-	}
-	if userID == uint(targetUserID) {
+	if userID == targetUserID {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
 			models.NewValidationError("Cannot send friend request to yourself"))
 	}
@@ -36,7 +31,7 @@ func (s *Server) SendFriendRequest(c *fiber.Ctx) error {
 	}
 
 	// Check if friendship already exists
-	existing, getFriendshipErr := s.friendRepo.GetFriendshipBetweenUsers(ctx, userID, uint(targetUserID))
+	existing, getFriendshipErr := s.friendRepo.GetFriendshipBetweenUsers(ctx, userID, targetUserID)
 	if getFriendshipErr != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, getFriendshipErr)
 	}
@@ -58,7 +53,7 @@ func (s *Server) SendFriendRequest(c *fiber.Ctx) error {
 	// Create a pending friend request; addressee can accept or reject later.
 	friendship := &models.Friendship{
 		RequesterID: userID,
-		AddresseeID: uint(targetUserID),
+		AddresseeID: targetUserID,
 		Status:      models.FriendshipStatusPending,
 	}
 
@@ -73,12 +68,12 @@ func (s *Server) SendFriendRequest(c *fiber.Ctx) error {
 	}
 
 	// Notify both users so UI updates immediately.
-	s.publishUserEvent(friendship.AddresseeID, "friend_request_received", map[string]interface{}{
+	s.publishUserEvent(friendship.AddresseeID, EventFriendRequestReceived, map[string]interface{}{
 		"request_id": friendship.ID,
 		"from_user":  userSummary(friendship.Requester),
 		"created_at": time.Now().UTC().Format(time.RFC3339Nano),
 	})
-	s.publishUserEvent(friendship.RequesterID, "friend_request_sent", map[string]interface{}{
+	s.publishUserEvent(friendship.RequesterID, EventFriendRequestSent, map[string]interface{}{
 		"request_id": friendship.ID,
 		"to_user":    userSummary(friendship.Addressee),
 		"created_at": time.Now().UTC().Format(time.RFC3339Nano),
@@ -117,14 +112,13 @@ func (s *Server) GetSentRequests(c *fiber.Ctx) error {
 func (s *Server) AcceptFriendRequest(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
-	requestID, err := c.ParamsInt("requestId")
-	if err != nil || requestID < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid request ID"))
+	requestID, err := s.parseID(c, "requestId")
+	if err != nil {
+		return nil
 	}
 
 	// Get the friendship request
-	friendship, err := s.friendRepo.GetByID(ctx, uint(requestID))
+	friendship, err := s.friendRepo.GetByID(ctx, requestID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound, err)
 	}
@@ -142,22 +136,22 @@ func (s *Server) AcceptFriendRequest(c *fiber.Ctx) error {
 	}
 
 	// Accept the request
-	if updateErr := s.friendRepo.UpdateStatus(ctx, uint(requestID), models.FriendshipStatusAccepted); updateErr != nil {
+	if updateErr := s.friendRepo.UpdateStatus(ctx, requestID, models.FriendshipStatusAccepted); updateErr != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, updateErr)
 	}
 
 	// Get updated friendship
-	friendship, err = s.friendRepo.GetByID(ctx, uint(requestID))
+	friendship, err = s.friendRepo.GetByID(ctx, requestID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
-	s.publishUserEvent(friendship.RequesterID, "friend_request_accepted", map[string]interface{}{
+	s.publishUserEvent(friendship.RequesterID, EventFriendRequestAccepted, map[string]interface{}{
 		"request_id":  friendship.ID,
 		"friend_user": userSummary(friendship.Addressee),
 		"created_at":  time.Now().UTC().Format(time.RFC3339Nano),
 	})
-	s.publishUserEvent(friendship.AddresseeID, "friend_added", map[string]interface{}{
+	s.publishUserEvent(friendship.AddresseeID, EventFriendAdded, map[string]interface{}{
 		"request_id":  friendship.ID,
 		"friend_user": userSummary(friendship.Requester),
 		"created_at":  time.Now().UTC().Format(time.RFC3339Nano),
@@ -170,14 +164,13 @@ func (s *Server) AcceptFriendRequest(c *fiber.Ctx) error {
 func (s *Server) RejectFriendRequest(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
-	requestID, err := c.ParamsInt("requestId")
-	if err != nil || requestID < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid request ID"))
+	requestID, err := s.parseID(c, "requestId")
+	if err != nil {
+		return nil
 	}
 
 	// Get the friendship request
-	friendship, err := s.friendRepo.GetByID(ctx, uint(requestID))
+	friendship, err := s.friendRepo.GetByID(ctx, requestID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound, err)
 	}
@@ -195,13 +188,13 @@ func (s *Server) RejectFriendRequest(c *fiber.Ctx) error {
 	}
 
 	// Delete the request (reject)
-	if deleteErr := s.friendRepo.Delete(ctx, uint(requestID)); deleteErr != nil {
+	if deleteErr := s.friendRepo.Delete(ctx, requestID); deleteErr != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, deleteErr)
 	}
 
-	eventType := "friend_request_rejected"
+	eventType := EventFriendRequestRejected
 	if friendship.RequesterID == userID {
-		eventType = "friend_request_cancelled"
+		eventType = EventFriendRequestCancelled
 	}
 	s.publishUserEvent(friendship.RequesterID, eventType, map[string]interface{}{
 		"request_id":  friendship.ID,
@@ -234,20 +227,19 @@ func (s *Server) GetFriends(c *fiber.Ctx) error {
 func (s *Server) GetFriendshipStatus(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
-	targetUserID, err := c.ParamsInt("userId")
-	if err != nil || targetUserID < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid user ID"))
+	targetUserID, err := s.parseID(c, "userId")
+	if err != nil {
+		return nil
 	}
 
 	// Check if target user exists
-	_, getUserErr := s.userRepo.GetByID(ctx, uint(targetUserID))
+	_, getUserErr := s.userRepo.GetByID(ctx, targetUserID)
 	if getUserErr != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound, getUserErr)
 	}
 
 	// Get friendship status
-	friendship, getFriendshipErr := s.friendRepo.GetFriendshipBetweenUsers(ctx, userID, uint(targetUserID))
+	friendship, getFriendshipErr := s.friendRepo.GetFriendshipBetweenUsers(ctx, userID, targetUserID)
 	if getFriendshipErr != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, getFriendshipErr)
 	}
@@ -281,14 +273,13 @@ func (s *Server) GetFriendshipStatus(c *fiber.Ctx) error {
 func (s *Server) RemoveFriend(c *fiber.Ctx) error {
 	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
-	targetUserID, err := c.ParamsInt("userId")
-	if err != nil || targetUserID < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid user ID"))
+	targetUserID, err := s.parseID(c, "userId")
+	if err != nil {
+		return nil
 	}
 
 	// Check if friendship exists and is accepted
-	friendship, getFriendshipErr := s.friendRepo.GetFriendshipBetweenUsers(ctx, userID, uint(targetUserID))
+	friendship, getFriendshipErr := s.friendRepo.GetFriendshipBetweenUsers(ctx, userID, targetUserID)
 	if getFriendshipErr != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, getFriendshipErr)
 	}
@@ -298,15 +289,15 @@ func (s *Server) RemoveFriend(c *fiber.Ctx) error {
 	}
 
 	// Remove friendship
-	if removeErr := s.friendRepo.RemoveFriendship(ctx, userID, uint(targetUserID)); removeErr != nil {
+	if removeErr := s.friendRepo.RemoveFriendship(ctx, userID, targetUserID); removeErr != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, removeErr)
 	}
 
-	s.publishUserEvent(userID, "friend_removed", map[string]interface{}{
-		"user_id":    uint(targetUserID),
+	s.publishUserEvent(userID, EventFriendRemoved, map[string]interface{}{
+		"user_id":    targetUserID,
 		"removed_at": time.Now().UTC().Format(time.RFC3339Nano),
 	})
-	s.publishUserEvent(uint(targetUserID), "friend_removed", map[string]interface{}{
+	s.publishUserEvent(targetUserID, EventFriendRemoved, map[string]interface{}{
 		"user_id":    userID,
 		"removed_at": time.Now().UTC().Format(time.RFC3339Nano),
 	})

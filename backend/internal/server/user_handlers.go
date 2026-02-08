@@ -15,10 +15,9 @@ func (s *Server) GetAllUsers(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
 	defer cancel()
 
-	limit := c.QueryInt("limit", 100)
-	offset := c.QueryInt("offset", 0)
+	page := parsePagination(c, 100)
 
-	users, err := s.userRepo.List(ctx, limit, offset)
+	users, err := s.userRepo.List(ctx, page.Limit, page.Offset)
 	if err != nil {
 		// Check for timeout
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -29,45 +28,33 @@ func (s *Server) GetAllUsers(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
-	// Hide passwords
-	for i := range users {
-		users[i].Password = ""
-	}
-
 	return c.JSON(users)
 }
 
 // GetUserProfile handles GET /api/users/:id
 func (s *Server) GetUserProfile(c *fiber.Ctx) error {
-	ctx := c.Context()
-	id, err := c.ParamsInt("id")
-	if err != nil || id < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid user ID"))
+	id, err := s.parseID(c, "id")
+	if err != nil {
+		return nil
 	}
 
-	user, err := s.userRepo.GetByID(ctx, uint(id))
+	user, err := s.userRepo.GetByID(c.Context(), id)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound, err)
 	}
 
-	// Hide password
-	user.Password = ""
 	return c.JSON(user)
 }
 
 // GetMyProfile handles GET /api/users/me
 func (s *Server) GetMyProfile(c *fiber.Ctx) error {
-	ctx := c.Context()
 	userID := c.Locals("userID").(uint)
 
-	user, err := s.userRepo.GetByID(ctx, userID)
+	user, err := s.userRepo.GetByID(c.Context(), userID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusNotFound, err)
 	}
 
-	// Hide password
-	user.Password = ""
 	return c.JSON(user)
 }
 
@@ -108,30 +95,16 @@ func (s *Server) UpdateMyProfile(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
-	// Hide password before returning
-	user.Password = ""
 	return c.JSON(user)
 }
 
 // PromoteToAdmin handles POST /api/users/:id/promote-admin (admin only)
+// Admin check is enforced by AdminRequired middleware on the route.
 func (s *Server) PromoteToAdmin(c *fiber.Ctx) error {
 	ctx := c.Context()
-	requesterID := c.Locals("userID").(uint)
-	targetID, err := c.ParamsInt("id")
-	if err != nil || targetID < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid user ID"))
-	}
-
-	// Check if requester is admin
-	var requester models.User
-	if err := s.db.WithContext(ctx).First(&requester, requesterID).Error; err != nil {
-		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
-	}
-
-	if !requester.IsAdmin {
-		return models.RespondWithError(c, fiber.StatusForbidden,
-			models.NewUnauthorizedError("Only admins can promote users to admin"))
+	targetID, err := s.parseID(c, "id")
+	if err != nil {
+		return nil
 	}
 
 	// Get target user
@@ -146,29 +119,16 @@ func (s *Server) PromoteToAdmin(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
-	target.Password = ""
 	return c.JSON(fiber.Map{"message": "User promoted to admin", "user": target})
 }
 
 // DemoteFromAdmin handles POST /api/users/:id/demote-admin (admin only)
+// Admin check is enforced by AdminRequired middleware on the route.
 func (s *Server) DemoteFromAdmin(c *fiber.Ctx) error {
 	ctx := c.Context()
-	requesterID := c.Locals("userID").(uint)
-	targetID, err := c.ParamsInt("id")
-	if err != nil || targetID < 0 {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid user ID"))
-	}
-
-	// Check if requester is admin
-	var requester models.User
-	if err := s.db.WithContext(ctx).First(&requester, requesterID).Error; err != nil {
-		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
-	}
-
-	if !requester.IsAdmin {
-		return models.RespondWithError(c, fiber.StatusForbidden,
-			models.NewUnauthorizedError("Only admins can demote users from admin"))
+	targetID, err := s.parseID(c, "id")
+	if err != nil {
+		return nil
 	}
 
 	// Get target user
@@ -183,6 +143,5 @@ func (s *Server) DemoteFromAdmin(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
-	target.Password = ""
 	return c.JSON(fiber.Map{"message": "User demoted from admin", "user": target})
 }
