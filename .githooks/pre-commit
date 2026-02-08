@@ -1,47 +1,41 @@
 #!/bin/sh
 
-# Pro-grade Pre-commit Hook
-# 1. Formats code (Go & Biome)
-# 2. Re-stages fixed files
-# 3. Validates with linter
+# Sanctum Pro-grade Pre-commit Hook
+# 1. Formats and Lints Backend (Go)
+# 2. Formats and Lints Frontend (Biome)
+# 3. Re-stages only modified files
 
 echo "🚀 Running pre-commit quality checks..."
 
-# --- 1. Backend Formatting ---
-echo "🎨 Formatting Go code..."
+# --- 1. Backend Quality ---
+echo "🎨 Formatting and 🔍 Linting Go code..."
+# Run formatting first
 make fmt
 if [ $? -ne 0 ]; then
     echo "❌ Go formatting failed."
     exit 1
 fi
-# Re-stage any Go files modified by fmt
-git add backend/*.go backend/**/*.go
 
-# --- 2. Frontend Formatting ---
-echo "🎨 Formatting frontend code (Biome)..."
-make fmt-frontend
-if [ $? -ne 0 ]; then
-    echo "❌ Frontend formatting failed."
-    exit 1
-fi
-# Re-stage any frontend files modified by Biome
-git add frontend/src
-
-# --- 3. Backend Linting ---
-echo "🔍 Linting backend code..."
+# Run linter
 make lint
 if [ $? -ne 0 ]; then
     echo "❌ Backend linting failed. Please fix errors before committing."
     exit 1
 fi
 
-# --- 4. Frontend Linting ---
-echo "🔍 Linting frontend code..."
+# --- 2. Frontend Quality ---
+echo "🎨 Formatting and 🔍 Linting frontend code (Biome)..."
+# 'make lint-frontend' runs 'biome check --write', which handles both
 make lint-frontend
 if [ $? -ne 0 ]; then
-    echo "❌ Frontend linting failed. Please fix errors before committing."
+    echo "❌ Frontend quality checks failed."
     exit 1
 fi
+
+# --- 3. Smart Re-staging ---
+# Only re-stage files that were already staged but modified by fmt/lint
+echo "📦 Re-staging formatted files..."
+git diff --name-only --cached | xargs git add
 
 echo "✅ All checks passed! Proceeding with commit."
 exit 0

@@ -1,3 +1,7 @@
+import { useQueries } from '@tanstack/react-query'
+import { Calendar, Edit, Heart, MessageCircle, ShieldCheck, UserRound } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { apiClient } from '@/api/client'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -10,10 +14,6 @@ import { useFriends } from '@/hooks/useFriends'
 import { usePosts } from '@/hooks/usePosts'
 import { useAllUsers, useMyProfile, useUpdateMyProfile } from '@/hooks/useUsers'
 import { getAvatarUrl } from '@/lib/chat-utils'
-import { useQueries } from '@tanstack/react-query'
-import { Calendar, Edit, Heart, MessageCircle, ShieldCheck, UserRound } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 
 export default function Profile() {
     const [isEditing, setIsEditing] = useState(false)

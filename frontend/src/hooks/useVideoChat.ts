@@ -1,7 +1,7 @@
 // WebRTC video chat hook — manages camera/mic, peer connections, and signaling via WebSocket
 
-import { getWsBaseUrl } from '@/lib/chat-utils'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { getWsBaseUrl } from '@/lib/chat-utils'
 
 interface PeerInfo {
     userId: number

@@ -1,8 +1,8 @@
+import { memo } from 'react'
 import type { Message } from '@/api/types'
 import { UserMenu } from '@/components/UserMenu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { formatTimestamp, getAvatarUrl, getUserColor } from '@/lib/chat-utils'
-import { memo } from 'react'
 
 interface MessageItemProps {
     message: Message

@@ -1,3 +1,7 @@
+import { useQueryClient } from '@tanstack/react-query'
+import { MessageCircle, Send, Trash2, Users } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import type { Conversation, Message, User } from '@/api/types'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -12,10 +16,6 @@ import {
 import { useChatWebSocket } from '@/hooks/useChatWebSocket'
 import { usePresenceStore } from '@/hooks/usePresence'
 import { getCurrentUser } from '@/hooks/useUsers'
-import { useQueryClient } from '@tanstack/react-query'
-import { MessageCircle, Send, Trash2, Users } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
 
 export default function Messages() {
     const { id: urlConvId } = useParams<{ id: string }>()

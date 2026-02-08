@@ -1,3 +1,5 @@
+import { LogOut, Settings, User } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { ModeToggle } from '@/components/mode-toggle'
 import { topRouteNav, topServiceNav } from '@/components/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -12,8 +14,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { getCurrentUser, useIsAuthenticated, useLogout } from '@/hooks'
 import { getInitials } from '@/lib/chat-utils'
-import { LogOut, Settings, User } from 'lucide-react'
-import { Link } from 'react-router-dom'
 
 const navLinks = [...topRouteNav, ...topServiceNav]
 

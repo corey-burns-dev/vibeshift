@@ -1,10 +1,10 @@
+import { Loader2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import type { User } from '@/api/types'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { getAvatarUrl, getInitials } from '@/lib/chat-utils'
-import { Loader2 } from 'lucide-react'
-import { Link } from 'react-router-dom'
 
 export type FriendAction = 'add' | 'cancel' | 'accept' | 'reject' | 'remove'
 

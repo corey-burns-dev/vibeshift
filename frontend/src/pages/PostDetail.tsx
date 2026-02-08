@@ -1,16 +1,16 @@
+import { formatDistanceToNow } from 'date-fns'
+import { ArrowLeft, Heart, Loader2 } from 'lucide-react'
+import { Link, useParams } from 'react-router-dom'
 import { PostCaption } from '@/components/posts/PostCaption'
 import { PostComments } from '@/components/posts/PostComments'
+import { UserMenu } from '@/components/UserMenu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { UserMenu } from '@/components/UserMenu'
 import { useLikePost, usePost } from '@/hooks/usePosts'
 import { useIsAuthenticated } from '@/hooks/useUsers'
 import { getAvatarUrl } from '@/lib/chat-utils'
 import { cn } from '@/lib/utils'
-import { formatDistanceToNow } from 'date-fns'
-import { ArrowLeft, Heart, Loader2 } from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
 
 export default function PostDetail() {
     const { id } = useParams()

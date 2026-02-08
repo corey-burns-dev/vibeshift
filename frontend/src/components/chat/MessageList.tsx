@@ -1,6 +1,6 @@
+import { memo } from 'react'
 import type { Message } from '@/api/types'
 import { MessageItem } from '@/components/chat/MessageItem'
-import { memo } from 'react'
 
 interface MessageListProps {
     messages: Message[]

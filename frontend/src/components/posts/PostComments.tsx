@@ -1,3 +1,7 @@
+import { useQueryClient } from '@tanstack/react-query'
+import { formatDistanceToNow } from 'date-fns'
+import { Loader2, Send } from 'lucide-react'
+import { memo, useCallback, useState } from 'react'
 import { apiClient } from '@/api/client'
 import { UserMenu } from '@/components/UserMenu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -6,10 +10,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { useCreateComment, useDeleteComment, usePostComments } from '@/hooks/useComments'
 import { getCurrentUser } from '@/hooks/useUsers'
 import { getAvatarUrl } from '@/lib/chat-utils'
-import { useQueryClient } from '@tanstack/react-query'
-import { formatDistanceToNow } from 'date-fns'
-import { Loader2, Send } from 'lucide-react'
-import { memo, useCallback, useState } from 'react'
 
 export const PostComments = memo(function PostComments({ postId }: { postId: number }) {
     const [newComment, setNewComment] = useState('')

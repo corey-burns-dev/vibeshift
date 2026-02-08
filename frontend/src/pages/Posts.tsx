@@ -1,11 +1,11 @@
 // API
 
-import { apiClient } from '@/api/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import { Heart, Image, Loader2, MessageCircle, Send, Smile, Video } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { apiClient } from '@/api/client'
 // Types
 import type { Post } from '@/api/types'
 import { PostCaption } from '@/components/posts/PostCaption'

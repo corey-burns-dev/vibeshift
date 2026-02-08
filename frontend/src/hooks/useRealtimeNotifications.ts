@@ -1,10 +1,10 @@
-import { apiClient } from '@/api/client'
-import { usePresenceStore } from '@/hooks/usePresence'
-import { getWsBaseUrl } from '@/lib/chat-utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { create } from 'zustand'
+import { apiClient } from '@/api/client'
+import { usePresenceStore } from '@/hooks/usePresence'
+import { getWsBaseUrl } from '@/lib/chat-utils'
 
 type RealtimeEventType =
     | 'post_created'

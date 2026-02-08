@@ -1,7 +1,8 @@
 // usePresence - Real-time online status tracking using zustand
-import { getWsBaseUrl } from '@/lib/chat-utils'
+
 import { useEffect, useRef } from 'react'
 import { create } from 'zustand'
+import { getWsBaseUrl } from '@/lib/chat-utils'
 
 // Zustand store for global presence state
 interface PresenceState {

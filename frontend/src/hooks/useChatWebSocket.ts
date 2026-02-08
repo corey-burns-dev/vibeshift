@@ -1,9 +1,9 @@
 // WebSocket hook for real-time chat
 
-import type { Message, User } from '@/api/types'
-import { getWsBaseUrl } from '@/lib/chat-utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { Message, User } from '@/api/types'
+import { getWsBaseUrl } from '@/lib/chat-utils'
 
 interface ChatWebSocketMessage {
     type:
