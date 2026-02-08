@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"vibeshift/internal/models"
+	"sanctum/internal/models"
 )
 
 // Event type constants prevent typos in event names.

@@ -3,7 +3,7 @@ package notifications
 import (
 	"regexp"
 	"testing"
-	"vibeshift/internal/models"
+	"sanctum/internal/models"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gofiber/websocket/v2"

@@ -9,7 +9,7 @@ DB_HOST: "localhost"
 DB_PORT: "5432"
 DB_USER: "user"
 DB_PASSWORD: "password"
-DB_NAME: "vibeshift"
+DB_NAME: "sanctum"
 
 # Redis connection
 REDIS_URL: "localhost:6379"

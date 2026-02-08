@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"vibeshift/internal/models"
+	"sanctum/internal/models"
 
 	"github.com/gofiber/websocket/v2"
 	"gorm.io/gorm"

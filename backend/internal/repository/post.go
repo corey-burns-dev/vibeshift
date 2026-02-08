@@ -3,7 +3,7 @@ package repository
 
 import (
 	"context"
-	"vibeshift/internal/models"
+	"sanctum/internal/models"
 
 	"gorm.io/gorm"
 )

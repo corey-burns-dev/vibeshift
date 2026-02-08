@@ -4,7 +4,7 @@ import (
 	"context"
 	"regexp"
 	"testing"
-	"vibeshift/internal/models"
+	"sanctum/internal/models"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"

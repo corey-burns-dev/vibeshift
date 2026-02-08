@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 	"time"
-	"vibeshift/internal/config"
+	"sanctum/internal/config"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"

@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sanctum/internal/config"
 	"strconv"
 	"testing"
 	"time"
-	"vibeshift/internal/config"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -48,27 +48,27 @@ func TestServer_AuthRequired(t *testing.T) {
 	}{
 		{
 			name:           "Valid Token",
-			authHeader:     "Bearer " + generateToken(123, "vibeshift-api", "vibeshift-client", time.Hour),
+			authHeader:     "Bearer " + generateToken(123, "sanctum-api", "sanctum-client", time.Hour),
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "Valid Token via Query Param",
-			tokenParam:     generateToken(123, "vibeshift-api", "vibeshift-client", time.Hour),
+			tokenParam:     generateToken(123, "sanctum-api", "sanctum-client", time.Hour),
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "Expired Token",
-			authHeader:     "Bearer " + generateToken(123, "vibeshift-api", "vibeshift-client", -time.Hour),
+			authHeader:     "Bearer " + generateToken(123, "sanctum-api", "sanctum-client", -time.Hour),
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
 			name:           "Invalid Issuer",
-			authHeader:     "Bearer " + generateToken(123, "wrong-issuer", "vibeshift-client", time.Hour),
+			authHeader:     "Bearer " + generateToken(123, "wrong-issuer", "sanctum-client", time.Hour),
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
 			name:           "Invalid Audience",
-			authHeader:     "Bearer " + generateToken(123, "vibeshift-api", "wrong-audience", time.Hour),
+			authHeader:     "Bearer " + generateToken(123, "sanctum-api", "wrong-audience", time.Hour),
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
@@ -83,7 +83,7 @@ func TestServer_AuthRequired(t *testing.T) {
 		{
 			name: "Invalid Subject Type (Mocked Manually)",
 			authHeader: "Bearer " + func() string {
-				claims := jwt.MapClaims{"sub": 123, "iss": "vibeshift-api", "aud": "vibeshift-client", "exp": time.Now().Add(time.Hour).Unix()}
+				claims := jwt.MapClaims{"sub": 123, "iss": "sanctum-api", "aud": "sanctum-client", "exp": time.Now().Add(time.Hour).Unix()}
 				token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 				str, _ := token.SignedString([]byte(secret))
 				return str

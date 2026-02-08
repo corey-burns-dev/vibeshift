@@ -23,7 +23,7 @@ Your Sanctum full-stack social media app is **well-structured** but has several 
 ```bash
 # Current state
 .env file exists with:
-- POSTGRES_PASSWORD=vibeshift_password
+- POSTGRES_PASSWORD=sanctum_password
 - Database credentials
 ```
 
@@ -76,13 +76,13 @@ if err := s.hub.StartWiring(context.Background(), s.notifier); err != nil {
 
 ```yaml
 # Current defaults are dev-only quality
-POSTGRES_PASSWORD: vibeshift_password  # ⚠️ Too weak
+POSTGRES_PASSWORD: sanctum_password  # ⚠️ Too weak
 ```
 
 **Fix:**
 
 - Use strong generated passwords for production
-- Never use `vibeshift_password` in production
+- Never use `sanctum_password` in production
 - Use secrets management (Docker secrets, vault, etc.)
 
 ---

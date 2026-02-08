@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"vibeshift/internal/middleware"
-	"vibeshift/internal/models"
-	"vibeshift/internal/notifications"
+	"sanctum/internal/middleware"
+	"sanctum/internal/models"
+	"sanctum/internal/notifications"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -280,8 +280,8 @@ func (s *Server) validateChatToken(tokenString string) (uint, string, error) {
 		}
 		return []byte(s.config.JWTSecret), nil
 	},
-		jwt.WithIssuer("vibeshift-api"),
-		jwt.WithAudience("vibeshift-client"),
+		jwt.WithIssuer("sanctum-api"),
+		jwt.WithAudience("sanctum-client"),
 		jwt.WithValidMethods([]string{"HS256"}),
 	)
 

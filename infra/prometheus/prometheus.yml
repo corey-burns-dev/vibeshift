@@ -3,7 +3,7 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'vibeshift-app'
+  - job_name: 'sanctum-app'
     static_configs:
       - targets: ['app:8375']
 

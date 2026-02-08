@@ -4,9 +4,9 @@ package main
 import (
 	"flag"
 	"log"
-	"vibeshift/internal/config"
-	"vibeshift/internal/database"
-	"vibeshift/internal/seed"
+	"sanctum/internal/config"
+	"sanctum/internal/database"
+	"sanctum/internal/seed"
 )
 
 func main() {

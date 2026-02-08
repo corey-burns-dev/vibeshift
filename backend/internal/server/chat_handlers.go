@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
-	"vibeshift/internal/models"
-	"vibeshift/internal/notifications"
+	"sanctum/internal/models"
+	"sanctum/internal/notifications"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"

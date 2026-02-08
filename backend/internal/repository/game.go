@@ -2,7 +2,7 @@ package repository
 
 import (
 	"errors"
-	"vibeshift/internal/models"
+	"sanctum/internal/models"
 
 	"gorm.io/gorm"
 )

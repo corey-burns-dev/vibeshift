@@ -6,10 +6,10 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sanctum/internal/config"
+	"sanctum/internal/server"
 	"syscall"
 	"time"
-	"vibeshift/internal/config"
-	"vibeshift/internal/server"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -20,7 +20,7 @@ import (
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support
-// @contact.email support@vibeshift.com
+// @contact.email support@sanctum.dev
 
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT

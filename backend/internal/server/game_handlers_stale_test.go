@@ -3,7 +3,7 @@ package server
 import (
 	"testing"
 	"time"
-	"vibeshift/internal/models"
+	"sanctum/internal/models"
 
 	"github.com/stretchr/testify/assert"
 )

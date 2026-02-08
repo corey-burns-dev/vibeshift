@@ -1,4 +1,4 @@
-module vibeshift
+module sanctum
 
 go 1.25
 

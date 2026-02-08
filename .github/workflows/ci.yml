@@ -8,15 +8,15 @@ on:
 
 jobs:
   backend-checks:
-    name: Backend Tests & Lint
+    name: Backend Checks
     runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:16-alpine
         env:
           POSTGRES_DB: sanctum_test
-          POSTGRES_USER: user
-          POSTGRES_PASSWORD: password
+          POSTGRES_USER: sanctum_user
+          POSTGRES_PASSWORD: sanctum_password
         ports:
           - 5432:5432
         options: >-
@@ -44,30 +44,32 @@ jobs:
           cache: true
           cache-dependency-path: backend/go.sum
 
-      - name: Verify dependencies
-        working-directory: ./backend
-        run: go mod verify
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.61.0
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      - name: Run Tests with Race Detector
-        working-directory: ./backend
+      - name: Run Format Check
+        run: |
+          make fmt
+          git diff --exit-code
+
+      - name: Run Linter
+        run: make lint
+
+      - name: Run Tests
         env:
           DB_HOST: localhost
           DB_PORT: 5432
-          DB_USER: user
-          DB_PASSWORD: password
+          DB_USER: sanctum_user
+          DB_PASSWORD: sanctum_password
           DB_NAME: sanctum_test
           REDIS_URL: localhost:6379
-        run: go test -v -race -coverprofile=coverage.out ./...
-
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v4
-        with:
-          version: latest
-          working-directory: backend
-          args: --timeout=5m
+          APP_ENV: test
+        run: make test-backend
 
   frontend-checks:
-    name: Frontend Lint & Build
+    name: Frontend Checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -78,14 +80,12 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        working-directory: ./frontend
-        run: bun install
+        run: make install
 
-      - name: Run Biome checks
-        working-directory: ./frontend
-        run: bun --bun biome check ./src
+      - name: Run Lint
+        run: make lint-frontend
 
-      - name: Build
+      - name: Run Build
         working-directory: ./frontend
         run: bun run build
 

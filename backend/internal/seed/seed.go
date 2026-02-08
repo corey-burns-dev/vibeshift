@@ -7,7 +7,7 @@ import (
 	"math/rand"
 	"strings"
 	"time"
-	"vibeshift/internal/models"
+	"sanctum/internal/models"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"

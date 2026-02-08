@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"vibeshift/internal/config"
-	"vibeshift/internal/server"
+	"sanctum/internal/config"
+	"sanctum/internal/server"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"

@@ -220,7 +220,7 @@ fmt-frontend:
 
 lint-frontend:
 	@echo "$(BLUE)Linting frontend code with Biome...$(NC)"
-	cd frontend && $(BUN) --bun biome check --write .
+	cd frontend && $(BUN) --bun biome check .
 	@echo "$(GREEN)✓ Frontend linting passed$(NC)"
 
 # Frontend dependencies

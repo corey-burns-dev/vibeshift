@@ -1,9 +1,0 @@
-# config.yml
-PORT: "8375"
-DB_HOST: "localhost"
-DB_PORT: "5432"
-DB_USER: "vibeshift_user"
-DB_PASSWORD: "vibeshift_password"
-DB_NAME: "vibeshift"
-REDIS_URL: "localhost:6379"
-JWT_SECRET: "your-secret-key-change-in-production"

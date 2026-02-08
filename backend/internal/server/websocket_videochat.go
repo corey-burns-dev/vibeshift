@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"vibeshift/internal/notifications"
+	"sanctum/internal/notifications"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"

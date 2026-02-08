@@ -15,9 +15,9 @@ echo -e "${BLUE}║        Sanctum - Quick Deployment Fixes                     
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-# Check if we're in the vibeshift root directory
+# Check if we're in the sanctum root directory
 if [ ! -f "compose.yml" ] || [ ! -d "backend" ]; then
-    echo -e "${RED}❌ Error: Please run this script from the vibeshift root directory${NC}"
+    echo -e "${RED}❌ Error: Please run this script from the sanctum root directory${NC}"
     exit 1
 fi
 
@@ -59,7 +59,7 @@ cat > .env.example << 'EOF'
 
 # Database Configuration
 POSTGRES_USER=your_db_user
-POSTGRES_DB=vibeshift
+POSTGRES_DB=sanctum
 POSTGRES_PASSWORD=CHANGE_ME_TO_STRONG_PASSWORD_MIN_32_CHARS
 
 # Application Port
@@ -360,8 +360,8 @@ cat > PRODUCTION_CHECKLIST.md << 'EOF'
 
 - [ ] Build Docker images with production tags
   ```bash
-  docker build -t vibeshift-backend:v1.0.0 .
-  docker build -t vibeshift-frontend:v1.0.0 ./frontend
+  docker build -t sanctum-backend:v1.0.0 .
+  docker build -t sanctum-frontend:v1.0.0 ./frontend
   ```
 
 - [ ] Push images to container registry

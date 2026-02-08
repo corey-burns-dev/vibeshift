@@ -16,8 +16,8 @@ Welcome! We're excited to have you contribute to Sanctum. This guide will help y
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/yourusername/vibeshift.git
-   cd vibeshift
+   git clone https://github.com/yourusername/sanctum.git
+   cd sanctum
    ```
 
 2. **Install dependencies:**
@@ -235,7 +235,7 @@ docker compose logs -f app --tail=100
 
 ```bash
 # Connect to Postgres
-docker compose exec postgres psql -U postgres -d vibeshift
+docker compose exec postgres psql -U postgres -d sanctum
 
 # Connect to Redis
 docker compose exec redis redis-cli

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"vibeshift/internal/models"
+	"sanctum/internal/models"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"

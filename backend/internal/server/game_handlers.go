@@ -6,8 +6,8 @@ import (
 	"log"
 	"strconv"
 	"time"
-	"vibeshift/internal/models"
-	"vibeshift/internal/notifications"
+	"sanctum/internal/models"
+	"sanctum/internal/notifications"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"

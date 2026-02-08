@@ -3,7 +3,7 @@ package server
 import (
 	"net/http/httptest"
 	"testing"
-	"vibeshift/internal/middleware"
+	"sanctum/internal/middleware"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/helmet"

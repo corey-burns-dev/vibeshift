@@ -3,8 +3,8 @@ package server
 import (
 	"context"
 	"testing"
-	"vibeshift/internal/config"
-	"vibeshift/internal/models"
+	"sanctum/internal/config"
+	"sanctum/internal/models"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

@@ -3,18 +3,18 @@ version: '3.8'
 services:
   dozzle:
     image: amir20/dozzle:latest
-    container_name: vibeshift_dozzle
+    container_name: sanctum_dozzle
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
       - "8081:8080"
     restart: unless-stopped
     networks:
-      - vibeshift_default
+      - sanctum_default
 
   uptime-kuma:
     image: louislam/uptime-kuma:1
-    container_name: vibeshift_uptime_kuma
+    container_name: sanctum_uptime_kuma
     volumes:
       - uptime_kuma_data:/app/data
     ports:
@@ -27,5 +27,5 @@ volumes:
   uptime_kuma_data:
 
 networks:
-  vibeshift_default:
+  sanctum_default:
     external: true

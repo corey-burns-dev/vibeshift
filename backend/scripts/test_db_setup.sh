@@ -6,9 +6,9 @@ set -euo pipefail
 
 export DB_HOST=${DB_HOST:-postgres_test}
 export DB_PORT=${DB_PORT:-5432}
-export DB_USER=${DB_USER:-vibeshift_user}
-export DB_PASSWORD=${DB_PASSWORD:-vibeshift_password}
-export DB_NAME=${DB_NAME:-vibeshift_test}
+export DB_USER=${DB_USER:-sanctum_user}
+export DB_PASSWORD=${DB_PASSWORD:-sanctum_password}
+export DB_NAME=${DB_NAME:-sanctum_test}
 
 # Wait for Postgres to be ready
 echo "Waiting for test database to be ready at $DB_HOST:$DB_PORT..."

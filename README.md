@@ -24,8 +24,8 @@ Sanctum is a Reddit-style social platform focused on creativity, hobbies, and sh
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/corey-burns-dev/vibeshift.git
-   cd vibeshift
+   git clone https://github.com/corey-burns-dev/sanctum.git
+   cd sanctum
    ```
 
 2. **Set up environment variables:**
@@ -96,7 +96,7 @@ Sanctum is a Reddit-style social platform focused on creativity, hobbies, and sh
 ## Project Structure
 
 ```txt
-vibeshift/
+sanctum/
 ├── cmd/
 │   └── server/              # Go server entrypoint
 ├── internal/

@@ -42,15 +42,15 @@ services:
   postgres_test:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: vibeshift_test
-      POSTGRES_USER: vibeshift_user
-      POSTGRES_PASSWORD: vibeshift_password
+      POSTGRES_DB: sanctum_test
+      POSTGRES_USER: sanctum_user
+      POSTGRES_PASSWORD: sanctum_password
     ports:
       - "5433:5432"
     volumes:
       - postgres_test_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vibeshift_user -d vibeshift_test"]
+      test: ["CMD-SHELL", "pg_isready -U sanctum_user -d sanctum_test"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -69,9 +69,9 @@ services:
     environment:
       - DB_HOST=postgres_test
       - DB_PORT=5432
-      - DB_USER=vibeshift_user
-      - DB_PASSWORD=vibeshift_password
-      - DB_NAME=vibeshift_test
+      - DB_USER=sanctum_user
+      - DB_PASSWORD=sanctum_password
+      - DB_NAME=sanctum_test
       - REDIS_URL=redis:6379
       - GIN_MODE=release
       - APP_ENV=testing

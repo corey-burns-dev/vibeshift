@@ -9,14 +9,14 @@ import (
 	"strings"
 	"time"
 
-	_ "vibeshift/docs" // swagger docs
-	"vibeshift/internal/cache"
-	"vibeshift/internal/config"
-	"vibeshift/internal/database"
-	"vibeshift/internal/middleware"
-	"vibeshift/internal/models"
-	"vibeshift/internal/notifications"
-	"vibeshift/internal/repository"
+	_ "sanctum/docs" // swagger docs
+	"sanctum/internal/cache"
+	"sanctum/internal/config"
+	"sanctum/internal/database"
+	"sanctum/internal/middleware"
+	"sanctum/internal/models"
+	"sanctum/internal/notifications"
+	"sanctum/internal/repository"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -375,11 +375,11 @@ func (s *Server) AuthRequired() fiber.Handler {
 		}
 
 		// Validate issuer and audience
-		if issuer, issuerOk := claims["iss"].(string); !issuerOk || issuer != "vibeshift-api" {
+		if issuer, issuerOk := claims["iss"].(string); !issuerOk || issuer != "sanctum-api" {
 			return models.RespondWithError(c, fiber.StatusUnauthorized,
 				models.NewUnauthorizedError("Invalid token issuer"))
 		}
-		if audience, audienceOk := claims["aud"].(string); !audienceOk || audience != "vibeshift-client" {
+		if audience, audienceOk := claims["aud"].(string); !audienceOk || audience != "sanctum-client" {
 			return models.RespondWithError(c, fiber.StatusUnauthorized,
 				models.NewUnauthorizedError("Invalid token audience"))
 		}

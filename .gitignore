@@ -16,8 +16,12 @@ tmp/
 !Dockerfile.test
 
 # Docker
-docker-compose.override.yml
+compose.override.yml
 .env.local
+
+# Config
+config.yml
+backend/config.yml
 
 # Build artifacts
 /build
@@ -28,4 +32,4 @@ docker-compose.override.yml
 # OS
 *.swp
 *~
-vibeshift
+sanctum

@@ -2,9 +2,9 @@
 PORT: '8376' # Different port than dev
 DB_HOST: 'localhost'
 DB_PORT: '5433' # Mapped port for postgres_test
-DB_USER: 'vibeshift_user'
-DB_PASSWORD: 'vibeshift_password'
-DB_NAME: 'vibeshift_test'
+DB_USER: 'sanctum_user'
+DB_PASSWORD: 'sanctum_password'
+DB_NAME: 'sanctum_test'
 REDIS_URL: 'localhost:6379'
 JWT_SECRET: 'test-secret-key-12345678901234567890123456789012'
 APP_ENV: 'test'

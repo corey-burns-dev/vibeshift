@@ -127,7 +127,7 @@ export DB_NAME="social_media"
 go run main.go
 
 # Or build first
-go build -o vibeshift && ./vibeshift
+go build -o sanctum && ./sanctum
 ```
 
 ## Next Steps

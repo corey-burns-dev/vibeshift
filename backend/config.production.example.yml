@@ -7,8 +7,8 @@ PORT: "8375"
 # Database
 DB_HOST: "postgres"
 DB_PORT: "5432"
-DB_USER: "vibeshift_admin"
-DB_NAME: "vibeshift_prod"
+DB_USER: "sanctum_admin"
+DB_NAME: "sanctum_prod"
 
 # Security
 # ALLOWED_ORIGINS: "https://your-domain.com"

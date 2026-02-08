@@ -3,7 +3,7 @@ package server
 
 import (
 	"time"
-	"vibeshift/internal/models"
+	"sanctum/internal/models"
 
 	"github.com/gofiber/fiber/v2"
 )

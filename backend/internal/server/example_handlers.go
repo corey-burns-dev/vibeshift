@@ -10,7 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 
-	"vibeshift/internal/models"
+	"sanctum/internal/models"
 )
 
 // GetUserCached demonstrates cache-aside for GET /users/:id/cached

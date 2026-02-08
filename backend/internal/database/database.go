@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"log/slog"
 	"time"
-	"vibeshift/internal/config"
-	"vibeshift/internal/middleware"
-	"vibeshift/internal/models"
+	"sanctum/internal/config"
+	"sanctum/internal/middleware"
+	"sanctum/internal/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

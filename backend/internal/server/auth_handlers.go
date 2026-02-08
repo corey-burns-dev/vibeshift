@@ -3,10 +3,10 @@ package server
 
 import (
 	"fmt"
+	"sanctum/internal/models"
+	"sanctum/internal/validation"
 	"strconv"
 	"time"
-	"vibeshift/internal/models"
-	"vibeshift/internal/validation"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -162,8 +162,8 @@ func (s *Server) generateToken(userID uint, username string) (string, error) {
 	claims := jwt.MapClaims{
 		"sub":      strconv.FormatUint(uint64(userID), 10), // Subject (user ID as string)
 		"username": username,                               // Username (cached in token)
-		"iss":      "vibeshift-api",                        // Issuer
-		"aud":      "vibeshift-client",                     // Audience
+		"iss":      "sanctum-api",                          // Issuer
+		"aud":      "sanctum-client",                       // Audience
 		"exp":      now.Add(time.Hour * 24 * 7).Unix(),     // Expiration (7 days)
 		"iat":      now.Unix(),                             // Issued at
 		"nbf":      now.Unix(),                             // Not before

@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 	"testing"
-	"vibeshift/internal/models"
+	"sanctum/internal/models"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/sqlite"

@@ -3,7 +3,7 @@ version: '3.8'
 services:
   prometheus:
     image: prom/prometheus:v2.49.1
-    container_name: vibeshift_prometheus
+    container_name: sanctum_prometheus
     volumes:
       - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
@@ -14,21 +14,21 @@ services:
       - '--web.console.templates=/usr/share/prometheus/consoles'
     restart: unless-stopped
     networks:
-      - vibeshift_default
+      - sanctum_default
 
   loki:
     image: grafana/loki:2.9.4
-    container_name: vibeshift_loki
+    container_name: sanctum_loki
     volumes:
       - ./infra/loki/loki-config.yml:/etc/loki/local-config.yaml
     command: -config.file=/etc/loki/local-config.yaml
     restart: unless-stopped
     networks:
-      - vibeshift_default
+      - sanctum_default
 
   promtail:
     image: grafana/promtail:2.9.4
-    container_name: vibeshift_promtail
+    container_name: sanctum_promtail
     volumes:
       - /var/log:/var/log
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
@@ -36,11 +36,11 @@ services:
     command: -config.file=/etc/promtail/config.yml
     restart: unless-stopped
     networks:
-      - vibeshift_default
+      - sanctum_default
 
   grafana:
     image: grafana/grafana:10.3.1
-    container_name: vibeshift_grafana
+    container_name: sanctum_grafana
     ports:
       - "3000:3000"
     volumes:
@@ -51,11 +51,11 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     restart: unless-stopped
     networks:
-      - vibeshift_default
+      - sanctum_default
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.47.2
-    container_name: vibeshift_cadvisor
+    container_name: sanctum_cadvisor
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -73,5 +73,5 @@ volumes:
   grafana_data:
 
 networks:
-  vibeshift_default:
+  sanctum_default:
     external: true
