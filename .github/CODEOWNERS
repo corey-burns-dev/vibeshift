@@ -1,0 +1,27 @@
+# Default owner (everything)
+* @corey-burns-dev
+
+# Repo meta / policies
+/.github/ @corey-burns-dev
+/CONTRIBUTING.md @corey-burns-dev
+/README.md @corey-burns-dev
+
+# Frontend
+/frontend/ @corey-burns-dev
+
+# Backend
+/backend/ @corey-burns-dev
+
+# Infra / deployment / docs / scripts
+/infra/ @corey-burns-dev
+/docs/ @corey-burns-dev
+/scripts/ @corey-burns-dev
+
+# Docker + compose + build system
+/Dockerfile @corey-burns-dev
+/Dockerfile.dev @corey-burns-dev
+/Dockerfile.test @corey-burns-dev
+/compose*.yml @corey-burns-dev
+/Makefile @corey-burns-dev
+/.golangci.yml @corey-burns-dev
+/.air.toml @corey-burns-dev
