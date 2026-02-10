@@ -93,6 +93,18 @@ Sanctum is a Reddit-style social platform focused on creativity, hobbies, and sh
 - `make env` — Initialize .env file
 - `make clean` — Clean containers, volumes, and artifacts
 
+### Admin Role
+
+- `make admin-list` — List current admin users
+- `make admin-promote user_id=<id>` — Promote a user to admin
+- `make admin-demote user_id=<id>` — Demote an admin user
+- `make admin-bootstrap-me email=<email>` — Make exactly one admin (you)
+
+Admin guide: `docs/ADMIN_ROLE.md`
+
+Signup Sanctum onboarding TODO and backend endpoint contract:
+`docs/ONBOARDING_SANCTUMS_TODO.md`
+
 ## Project Structure
 
 ```txt

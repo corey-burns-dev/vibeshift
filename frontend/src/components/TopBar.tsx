@@ -1,4 +1,4 @@
-import { Bell, LogOut, Search, User } from 'lucide-react'
+import { Bell, LogOut, Search, ShieldCheck, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { ModeToggle } from '@/components/mode-toggle'
@@ -72,6 +72,13 @@ export function TopBar() {
 
   const pageTitle = getRouteTitle(location.pathname)
   const navItems = [...topRouteNav, ...topServiceNav]
+  if (currentUser?.is_admin) {
+    navItems.push({
+      icon: ShieldCheck,
+      label: 'Sanctum Admin',
+      path: '/admin/sanctum-requests',
+    })
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 hidden md:block">
@@ -184,9 +191,16 @@ export function TopBar() {
                 <DropdownMenuContent className="w-56" align="end">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {currentUser.username}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium leading-none">
+                          {currentUser.username}
+                        </p>
+                        {currentUser.is_admin ? (
+                          <span className="rounded-full border border-primary/40 bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary">
+                            Admin
+                          </span>
+                        ) : null}
+                      </div>
                       <p className="text-xs leading-none text-muted-foreground">
                         {currentUser.email}
                       </p>

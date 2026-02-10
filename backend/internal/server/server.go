@@ -17,6 +17,7 @@ import (
 	"sanctum/internal/models"
 	"sanctum/internal/notifications"
 	"sanctum/internal/repository"
+	"sanctum/internal/seed"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -93,6 +94,10 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		friendRepo:  friendRepo,
 		gameRepo:    gameRepo,
 		streamRepo:  streamRepo,
+	}
+
+	if err := seed.Sanctums(db); err != nil {
+		return nil, fmt.Errorf("failed to seed built-in sanctums: %w", err)
 	}
 
 	// Initialize notifier and hub if Redis is available
@@ -179,8 +184,18 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	publicPosts.Get("/:id/comments", s.GetComments)
 	publicPosts.Get("/:id", s.GetPost)
 
+	// Public sanctum routes
+	sanctums := api.Group("/sanctums")
+	sanctums.Get("/", s.GetSanctums)
+	sanctums.Get("/:slug", s.GetSanctumBySlug)
+
 	// Protected routes
 	protected := api.Group("", s.AuthRequired())
+
+	// Sanctum request routes
+	sanctumRequests := protected.Group("/sanctums/requests")
+	sanctumRequests.Post("/", s.CreateSanctumRequest)
+	sanctumRequests.Get("/me", s.GetMySanctumRequests)
 
 	// User routes
 	users := protected.Group("/users")
@@ -271,6 +286,13 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	ws.Get("/chat", s.WebSocketChatHandler())           // Real-time chat
 	ws.Get("/game", s.WebSocketGameHandler())           // Multiplayer games
 	ws.Get("/videochat", s.WebSocketVideoChatHandler()) // WebRTC video chat signaling
+
+	// Admin routes
+	admin := protected.Group("/admin", s.AdminRequired())
+	adminSanctumRequests := admin.Group("/sanctum-requests")
+	adminSanctumRequests.Get("/", s.GetAdminSanctumRequests)
+	adminSanctumRequests.Post("/:id/approve", s.ApproveSanctumRequest)
+	adminSanctumRequests.Post("/:id/reject", s.RejectSanctumRequest)
 }
 
 // HealthCheck handles health check requests

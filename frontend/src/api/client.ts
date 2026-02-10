@@ -1,11 +1,14 @@
 import { logger } from '../lib/logger'
 import type {
+  AdminSanctumRequestActionResponse,
+  AdminSanctumRequestStatus,
   AuthResponse,
   Comment,
   Conversation,
   CreateCommentRequest,
   CreateConversationRequest,
   CreatePostRequest,
+  CreateSanctumRequestInput,
   CreateStreamRequest,
   FriendRequest,
   FriendshipStatus,
@@ -14,6 +17,8 @@ import type {
   Message,
   PaginationParams,
   Post,
+  SanctumDTO,
+  SanctumRequest,
   SearchParams,
   SendMessageRequest,
   SignupRequest,
@@ -393,6 +398,54 @@ class ApiClient {
   async joinChatroom(chatroomId: number): Promise<{ message: string }> {
     return this.request(`/chatrooms/${chatroomId}/join`, {
       method: 'POST',
+    })
+  }
+
+  // Sanctums
+  async getSanctums(): Promise<SanctumDTO[]> {
+    return this.request('/sanctums')
+  }
+
+  async getSanctum(slug: string): Promise<SanctumDTO> {
+    return this.request(`/sanctums/${slug}`)
+  }
+
+  async createSanctumRequest(
+    payload: CreateSanctumRequestInput
+  ): Promise<SanctumRequest> {
+    return this.request('/sanctums/requests', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  async getMySanctumRequests(): Promise<SanctumRequest[]> {
+    return this.request('/sanctums/requests/me')
+  }
+
+  async getAdminSanctumRequests(
+    status: AdminSanctumRequestStatus
+  ): Promise<SanctumRequest[]> {
+    return this.request(`/admin/sanctum-requests?status=${status}`)
+  }
+
+  async approveSanctumRequest(
+    id: number,
+    review_notes?: string
+  ): Promise<AdminSanctumRequestActionResponse> {
+    return this.request(`/admin/sanctum-requests/${id}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ review_notes }),
+    })
+  }
+
+  async rejectSanctumRequest(
+    id: number,
+    review_notes?: string
+  ): Promise<SanctumRequest> {
+    return this.request(`/admin/sanctum-requests/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ review_notes }),
     })
   }
 

@@ -48,6 +48,11 @@ const Othello = lazy(() => import('@/pages/games/Othello'))
 const Streams = lazy(() => import('@/pages/Streams'))
 const Stream = lazy(() => import('@/pages/Stream'))
 const VideoChat = lazy(() => import('@/pages/VideoChat'))
+const Sanctums = lazy(() => import('@/pages/Sanctums'))
+const SanctumDetail = lazy(() => import('@/pages/SanctumDetail'))
+const SanctumRequestForm = lazy(() => import('@/pages/SanctumRequestForm'))
+const MySanctumRequests = lazy(() => import('@/pages/MySanctumRequests'))
+const AdminSanctumRequests = lazy(() => import('@/pages/AdminSanctumRequests'))
 
 function PageLoader() {
   return (
@@ -362,6 +367,32 @@ function RoutesWithPrefetch() {
           element={
             <ProtectedRoute>
               <VideoChat />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/sanctums" element={<Sanctums />} />
+        <Route path="/s/:slug" element={<SanctumDetail />} />
+        <Route
+          path="/sanctums/request"
+          element={
+            <ProtectedRoute>
+              <SanctumRequestForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sanctums/requests"
+          element={
+            <ProtectedRoute>
+              <MySanctumRequests />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/sanctum-requests"
+          element={
+            <ProtectedRoute>
+              <AdminSanctumRequests />
             </ProtectedRoute>
           }
         />

@@ -48,3 +48,37 @@ If host Go is unavailable, run equivalent commands with `docker compose run --rm
 - Prefer targeted package tests while iterating.
 - Run full backend test suite before merge.
 - Keep tests behavior-focused and avoid changing runtime behavior during refactors.
+
+## Sanctum Coverage
+
+Sanctum-specific automated coverage now includes:
+
+- Unit: `internal/validation/sanctum_test.go`
+- HTTP integration: `test/sanctums_integration_test.go`
+- Migration + seeding: `test/sanctum_migration_seed_test.go`
+
+### Sanctum-Focused Commands
+
+From `backend/`:
+
+```bash
+go test ./internal/validation -run Sanctum -count=1
+go test ./test -run Sanctum -count=1
+go test ./...
+```
+
+### Required Environment Variables
+
+The integration and migration tests use PostgreSQL and expect these env vars
+(defaults are applied if omitted):
+
+- `DB_HOST` (default `localhost`)
+- `DB_PORT` (default `5432`)
+- `DB_USER` (default `sanctum_user`)
+- `DB_PASSWORD` (default `sanctum_password`)
+- `DB_NAME` (default `sanctum_test`)
+- `APP_ENV=test` (recommended for config profile loading)
+
+Redis is required for the server boot path in integration tests:
+
+- `REDIS_URL` (default in test profile: `localhost:6379`)

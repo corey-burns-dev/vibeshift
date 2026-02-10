@@ -221,3 +221,42 @@ export interface StreamsResponse {
   limit: number
   offset: number
 }
+
+export interface SanctumDTO {
+  id: number
+  name: string
+  slug: string
+  description: string
+  status: string
+  default_chat_room_id: number
+  created_at: string
+  updated_at: string
+}
+
+export type SanctumRequestStatus = 'pending' | 'approved' | 'rejected'
+
+export interface SanctumRequest {
+  id: number
+  user_id: number
+  requested_name: string
+  requested_slug: string
+  reason: string
+  status: SanctumRequestStatus
+  review_notes?: string
+  reviewed_by?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateSanctumRequestInput {
+  requested_name: string
+  requested_slug: string
+  reason: string
+}
+
+export type AdminSanctumRequestStatus = 'pending' | 'approved' | 'rejected'
+
+export interface AdminSanctumRequestActionResponse {
+  sanctum: SanctumDTO
+  request: SanctumRequest
+}

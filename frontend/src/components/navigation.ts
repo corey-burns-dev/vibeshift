@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 import {
   Gamepad2,
   Home,
+  Landmark,
   MessageCircle,
   MessageSquare,
   Radio,
@@ -28,6 +29,7 @@ export const topRouteNav: NavItem[] = [
 ]
 
 export const topServiceNav: NavItem[] = [
+  { icon: Landmark, label: 'Sanctums', path: '/sanctums' },
   { icon: Users, label: 'Friends', path: '/friends' },
   { icon: Gamepad2, label: 'Games', path: '/games' },
   { icon: Radio, label: 'Streams', path: '/streams' },
@@ -50,6 +52,11 @@ const routeTitles: Array<{ path: string; title: string }> = [
   { path: '/videochat', title: 'Video Chat' },
   { path: '/messages', title: 'Messages' },
   { path: '/chat', title: 'Chatrooms' },
+  { path: '/admin/sanctum-requests', title: 'Sanctum Requests (Admin)' },
+  { path: '/sanctums/requests', title: 'My Sanctum Requests' },
+  { path: '/sanctums/request', title: 'Request Sanctum' },
+  { path: '/sanctums', title: 'Sanctums' },
+  { path: '/s', title: 'Sanctum' },
   { path: '/friends', title: 'Friends' },
   { path: '/streams', title: 'Streams' },
   { path: '/games', title: 'Games' },

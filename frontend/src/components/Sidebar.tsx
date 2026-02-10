@@ -1,4 +1,4 @@
-import { LogOut, Sparkles, User } from 'lucide-react'
+import { LogOut, ShieldCheck, Sparkles, User } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { ModeToggle } from '@/components/mode-toggle'
 import { isRouteActive, sideNavSections } from '@/components/navigation'
@@ -23,6 +23,21 @@ export function Sidebar() {
 
   if (!isAuthenticated) return null
 
+  const navSections = sideNavSections.map(section => ({
+    ...section,
+    items: [...section.items],
+  }))
+  if (currentUser?.is_admin) {
+    const services = navSections.find(section => section.title === 'Services')
+    if (services) {
+      services.items.push({
+        icon: ShieldCheck,
+        label: 'Sanctum Admin',
+        path: '/admin/sanctum-requests',
+      })
+    }
+  }
+
   return (
     <nav className="flex h-full min-h-[calc(100vh-6rem)] flex-col rounded-3xl border border-border/70 bg-card/70 p-4 shadow-xl backdrop-blur-xl">
       <Link
@@ -41,7 +56,7 @@ export function Sidebar() {
       </Link>
 
       <div className="space-y-5 overflow-y-auto pr-1">
-        {sideNavSections.map((section, sectionIndex) => (
+        {navSections.map((section, sectionIndex) => (
           <section key={section.title} className="space-y-1.5">
             <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
               {section.title}
@@ -146,9 +161,16 @@ export function Sidebar() {
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">
-              {currentUser?.username || 'User'}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="truncate text-sm font-semibold">
+                {currentUser?.username || 'User'}
+              </p>
+              {currentUser?.is_admin ? (
+                <span className="rounded-full border border-primary/40 bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary">
+                  Admin
+                </span>
+              ) : null}
+            </div>
             <p className="truncate text-xs text-muted-foreground">
               {currentUser?.email || 'No email'}
             </p>

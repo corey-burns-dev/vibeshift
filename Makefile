@@ -19,7 +19,7 @@ GREEN := \033[1;32m
 YELLOW := \033[1;33m
 NC := \033[0m # No Color
 
-.PHONY: help dev dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions clean test test-backend test-api test-e2e test-up test-down seed deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down
+.PHONY: help dev dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions clean test test-backend test-frontend test-api test-e2e test-e2e-smoke test-up test-down seed admin-list admin-promote admin-demote admin-bootstrap-me deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down
 
 # Default target
 help:
@@ -65,11 +65,17 @@ help:
 	@echo ""
 	@echo "$(GREEN)Testing:$(NC)"
 	@echo "  make test               - 🧪 Run backend tests"
+	@echo "  make test-frontend      - 🧪 Run frontend unit tests (Vitest)"
 	@echo "  make test-api           - 🧪 Test all API endpoints"
-	@echo "  make test-e2e           - 🧪 Run comprehensive E2E test (game create/join/chat)"
+	@echo "  make test-e2e-smoke     - 🧪 Run Playwright Sanctum smoke tests"
+	@echo "  make test-e2e           - 🧪 Run full Playwright E2E suite"
 	@echo ""
 	@echo "$(GREEN)Database:$(NC)"
 	@echo "  make seed               - 🌱 Seed database with test data"
+	@echo "  make admin-list         - 👑 List admin users"
+	@echo "  make admin-promote user_id=<id> - 👑 Promote user to admin"
+	@echo "  make admin-demote user_id=<id>  - 👑 Demote admin user"
+	@echo "  make admin-bootstrap-me email=<email> - 👑 Make exactly one admin (you)"
 	@echo ""
 	@echo "$(GREEN)Utilities:$(NC)"
 	@echo "  make env                - ⚙️  Initialize .env file"
@@ -271,6 +277,10 @@ test-backend:
 	@sleep 5
 	cd backend && APP_ENV=test $(GO) test ./...
 
+test-frontend:
+	@echo "$(BLUE)Running frontend unit tests...$(NC)"
+	cd frontend && $(BUN) run test:run
+
 test-api:
 	@echo "$(BLUE)Running API endpoint tests...$(NC)"
 	./test-api.sh
@@ -281,11 +291,16 @@ test-up:
 test-down:
 	$(DOCKER_COMPOSE) $(COMPOSE_FILES) down
 
-# E2E Testing
+# E2E Testing (Playwright)
+test-e2e-smoke:
+	@echo "$(BLUE)Running Playwright smoke E2E tests...$(NC)"
+	@echo "$(YELLOW)⚠️  Ensure backend and frontend are running (make dev or run both locally)$(NC)"
+	cd frontend && PLAYWRIGHT_BASE_URL=http://localhost:5173 PLAYWRIGHT_API_URL=http://localhost:8375/api $(BUN) run test:e2e:smoke
+
 test-e2e:
-	@echo "$(BLUE)Running comprehensive E2E test...$(NC)"
-	@echo "$(YELLOW)⚠️  Ensure backend is running (make dev-backend or make dev)$(NC)"
-	bash scripts/e2e.sh
+	@echo "$(BLUE)Running full Playwright E2E suite...$(NC)"
+	@echo "$(YELLOW)⚠️  Ensure backend and frontend are running (make dev or run both locally)$(NC)"
+	cd frontend && PLAYWRIGHT_BASE_URL=http://localhost:5173 PLAYWRIGHT_API_URL=http://localhost:8375/api $(BUN) run test:e2e
 
 # Database seeding
 seed:
@@ -301,6 +316,26 @@ seed-clean:
 	cd backend && $(GO) run cmd/seed/main.go -clean=true
 	@echo "$(GREEN)✓ Database seeded successfully!$(NC)"
 	@echo "$(YELLOW)📧 Test users password: password123$(NC)"
+
+# Admin management
+admin-list:
+	@echo "$(BLUE)Listing admin users...$(NC)"
+	cd backend && APP_ENV=development $(GO) run ./cmd/admin/main.go list-admins
+
+admin-promote:
+	@if [ -z "$(user_id)" ]; then echo "Usage: make admin-promote user_id=<id>"; exit 1; fi
+	@echo "$(BLUE)Promoting user $(user_id) to admin...$(NC)"
+	cd backend && APP_ENV=development $(GO) run ./cmd/admin/main.go promote $(user_id)
+
+admin-demote:
+	@if [ -z "$(user_id)" ]; then echo "Usage: make admin-demote user_id=<id>"; exit 1; fi
+	@echo "$(BLUE)Demoting user $(user_id) from admin...$(NC)"
+	cd backend && APP_ENV=development $(GO) run ./cmd/admin/main.go demote $(user_id)
+
+admin-bootstrap-me:
+	@if [ -z "$(email)" ]; then echo "Usage: make admin-bootstrap-me email=<email>"; exit 1; fi
+	@echo "$(BLUE)Bootstrapping single-admin mode for $(email)...$(NC)"
+	./scripts/admin_bootstrap_me.sh "$(email)"
 
 # Dependency Management
 deps-install-backend:

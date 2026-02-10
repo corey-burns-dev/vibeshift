@@ -47,6 +47,10 @@ func main() {
 		}
 	}
 
+	if err := seed.Sanctums(database.DB); err != nil {
+		log.Fatalf("❌ Built-in sanctum seeding failed: %v", err)
+	}
+
 	if *preset != "" {
 		if err := s.ApplyPreset(*preset); err != nil {
 			log.Fatalf("❌ Preset seeding failed: %v", err)

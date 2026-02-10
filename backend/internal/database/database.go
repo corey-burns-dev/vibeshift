@@ -84,8 +84,7 @@ func (l *CustomGormLogger) Trace(ctx context.Context, begin time.Time, fc func()
 	}
 }
 
-// Connect opens a database connection using the provided configuration and performs
-// automatic migration for the application models, then returns the gorm DB instance.
+// Connect opens a database connection using the provided configuration and returns the gorm DB instance.
 func Connect(cfg *config.Config) (*gorm.DB, error) {
 	var err error
 
@@ -125,32 +124,38 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 
 	middleware.Logger.Info("Database connected successfully")
 
-	// Auto migrate models
-	err = dbInstance.AutoMigrate(
-		&models.User{},
-		&models.Post{},
-		&models.Comment{},
-		&models.Like{},
-		&models.Conversation{},
-		&models.Message{},
-		&models.ConversationParticipant{},
-		&models.Friendship{},
-		&models.GameRoom{},
-		&models.GameMove{},
-		&models.GameStats{},
-		&models.Stream{},
-		&models.StreamMessage{},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to migrate database: %w", err)
-	}
+	isProduction := cfg.Env == "production" || cfg.Env == "prod"
+	if !isProduction {
+		// Keep AutoMigrate in non-production for developer/test ergonomics.
+		err = dbInstance.AutoMigrate(
+			&models.User{},
+			&models.Post{},
+			&models.Comment{},
+			&models.Like{},
+			&models.Conversation{},
+			&models.Message{},
+			&models.ConversationParticipant{},
+			&models.Friendship{},
+			&models.GameRoom{},
+			&models.GameMove{},
+			&models.GameStats{},
+			&models.Stream{},
+			&models.StreamMessage{},
+			&models.Sanctum{},
+			&models.SanctumRequest{},
+			&models.SanctumMembership{},
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to migrate database: %w", err)
+		}
 
-	// Manual migration: Ensure opponent_id is nullable (GORM sometimes misses dropping NOT NULL)
-	if migrateErr := dbInstance.Exec("ALTER TABLE game_rooms ALTER COLUMN opponent_id DROP NOT NULL").Error; migrateErr != nil {
-		middleware.Logger.Warn("Failed to drop NOT NULL constraint on game_rooms.opponent_id (ignoring as it likely already is dropped)", slog.String("error", migrateErr.Error()))
-	}
+		// Manual migration: Ensure opponent_id is nullable (GORM sometimes misses dropping NOT NULL)
+		if migrateErr := dbInstance.Exec("ALTER TABLE game_rooms ALTER COLUMN opponent_id DROP NOT NULL").Error; migrateErr != nil {
+			middleware.Logger.Warn("Failed to drop NOT NULL constraint on game_rooms.opponent_id (ignoring as it likely already is dropped)", slog.String("error", migrateErr.Error()))
+		}
 
-	middleware.Logger.Info("Database migration completed")
+		middleware.Logger.Info("Database migration completed")
+	}
 
 	// Set connection pooling parameters
 	sqlDB, err := dbInstance.DB()
