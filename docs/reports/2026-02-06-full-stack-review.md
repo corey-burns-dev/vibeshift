@@ -1,3 +1,5 @@
+> Historical Snapshot: point-in-time report retained for reference.
+
 # Sanctum Full-Stack Engineering Review
 
 **Date:** 2026-02-06

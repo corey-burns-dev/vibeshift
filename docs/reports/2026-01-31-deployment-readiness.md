@@ -1,3 +1,5 @@
+> Historical Snapshot: point-in-time report retained for reference.
+
 # 🚀 Sanctum: Deployment Readiness Report
 
 **Generated:** 2026-01-31  

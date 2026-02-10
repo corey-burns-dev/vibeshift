@@ -17,9 +17,8 @@ tools:
 
 # Backend Feature Agent (Go / Postgres / Redis)
 
-# Frontend Feature Agent (React / TS / Tailwind / Biome)
 
-> This agent follows all rules defined in `.github/agents/_conventions.md`.
+> Follow `/AI.md` for repo-wide rules and constraints.
 
 ## Purpose
 

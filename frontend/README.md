@@ -1,18 +1,26 @@
 # Frontend (Vite + React + TanStack Query)
 
-This is a minimal React + TypeScript frontend scaffolded with Vite and configured to proxy backend calls to `http://localhost:8375` for `/health` and `/ping` during development.
+Frontend application for Sanctum, built with React + TypeScript + Vite.
 
-Quick start (from repo root):
+## Quick Start
 
-```fish
+From repo root:
+
+```bash
 cd frontend
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
-The dev server runs at `http://localhost:5173` by default and proxies `/health` and `/ping` to the Go backend at `http://localhost:8375`.
+Dev server default: `http://localhost:5173`
 
-Notes:
+## Useful Commands
 
-- The app includes `@tanstack/react-query` and a small example hook `useHealth` that fetches `/health`.
-- If you prefer to use `yarn` or `npm`, adjust commands accordingly.
+```bash
+bun run build
+bun run test
+bun run lint
+bun run format
+```
+
+For repo-wide rules and constraints, see `/AI.md`.

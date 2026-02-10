@@ -1,37 +1,47 @@
-# Sanctum Frontend Context
+# Frontend AI Guide
 
-## Tech Stack
+See `/AI.md` for global agent and repo rules.
 
-- **Framework:** React 19
-- **Build Tool:** Vite 7
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS 4, Shadcn, Lucide React (Icons), `tailwindcss-animate`.
-- **State Management:** TanStack Query (React Query) v5.
-- **Routing:** React Router v7.
-- **Forms:** React Hook Form + Zod.
-- **Testing:** Vitest + Testing Library.
-- **Runtime:** Bun (implied by `bun.lock`, `package.json` scripts).
+## Scope
 
-## Architecture
+This file covers frontend-only conventions for work in `frontend/`.
 
-- **Structure:**
-  - `src/api/`: API client definition (`client.ts`) and types.
-  - `src/components/`: Reusable UI components (`ui/` for shadcn-like primitives).
-  - `src/hooks/`: Custom hooks (e.g., `useAuth`, `useChat`).
-  - `src/pages/`: Route components.
-  - `src/lib/`: Utilities (`utils.ts`, `validations.ts`).
-- **Entry Point:** `src/main.tsx`.
+## Structure
 
-## Configuration
+- `src/api/`: API client and request/response types.
+- `src/hooks/`: TanStack Query hooks and feature hooks.
+- `src/components/`: reusable UI pieces (`ui/` for shared primitives).
+- `src/pages/`: route-level screens.
+- `src/lib/`: shared utilities and validation helpers.
+- `src/styles/`: global styling.
 
-- **Vite Config:** `vite.config.ts`
-  - Proxies `/health` and `/ping` to backend.
-  - Port: 5173 (default).
-  - Alias: `@` -> `/src`.
-- **Env:** `VITE_API_URL` (defaults to `http://localhost:8375/api`).
+## API and Hook Patterns
 
-## Development
+- Keep HTTP details in `src/api/client.ts`.
+- Use typed interfaces from `src/api/types.ts`.
+- Prefer hooks in `src/hooks/` for server interactions.
+- Do not fetch directly in page/component render logic when a shared hook pattern exists.
 
-- **Run:** `bun run dev` (or `npm run dev` / `pnpm dev`).
-- **Lint/Format:** Biome (`bun biome check .`).
-- **Test:** `vitest`.
+## TanStack Query Conventions
+
+- Use stable query keys and co-locate keys with hooks.
+- Mutations must define explicit invalidation behavior.
+- Prefer optimistic updates only when rollback behavior is defined.
+- Avoid duplicating server state into local component state unless necessary for UX.
+
+## UI and Layout Conventions
+
+- Preserve existing Tailwind + Radix-style component patterns.
+- Keep components focused and composable.
+- Preserve accessibility basics: keyboard access, labels/aria-labels, visible focus.
+
+## Frontend Commands
+
+Run from `frontend/`:
+
+- `bun install`
+- `bun run dev`
+- `bun run build`
+- `bun run test`
+- `bun run lint`
+- `bun run format`

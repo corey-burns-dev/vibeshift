@@ -440,7 +440,7 @@ echo "   ${BLUE}git add .env.example .dockerignore frontend/.dockerignore Docker
 echo "   ${BLUE}git commit -m 'security: add production hardening and remove .env from version control'${NC}"
 echo ""
 echo "4. ${YELLOW}Review remaining issues:${NC}"
-echo "   • See DEPLOYMENT_READINESS_REPORT.md for full details"
+echo "   • See docs/reports/2026-01-31-deployment-readiness.md for full details"
 echo "   • Fix error handling violations (search for '_ =' in backend code)"
 echo "   • Set up proper database migrations"
 echo ""

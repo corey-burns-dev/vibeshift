@@ -1,7 +1,11 @@
+> Historical Snapshot: point-in-time report retained for reference.
+
 # Full-Stack Review — Implementation Report
 
 **Commit:** `2ef0c79` — `fix: implement full-stack review fixes`  
-**Date:** June 2025  
+**Date:** June 2025
+
+> Note: filename uses `2025-06-01` because only month/year were documented in the source report (inferred day).  
 **Scope:** 19 files changed, +611 / -195 lines across backend and frontend
 
 ---
