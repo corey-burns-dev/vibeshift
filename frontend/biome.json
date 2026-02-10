@@ -1,15 +1,16 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
 	"files": {
-		"experimentalScannerIgnores": [
-			"frontend/dist/**",
-			"**/dist/**",
-			"**/.astro/**",
-			"**/.next/**",
-			"**/build/**"
+		"includes": [
+			"**",
+			"!!**/frontend/dist",
+			"!!**/dist",
+			"!!**/.astro",
+			"!!**/.next",
+			"!!**/build",
+			"**/*.{js,jsx,ts,tsx,json,jsonc,mjs,cjs}"
 		],
-		"ignoreUnknown": false,
-		"includes": ["**/*.{js,jsx,ts,tsx,json,jsonc,mjs,cjs}"]
+		"ignoreUnknown": false
 	},
 	"formatter": {
 		"attributePosition": "auto",
