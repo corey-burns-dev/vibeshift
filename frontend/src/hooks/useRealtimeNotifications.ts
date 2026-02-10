@@ -349,9 +349,6 @@ export function useRealtimeNotifications(enabled = true) {
                 description: 'Tap to open chat',
                 duration: 7000,
                 className: 'border border-emerald-500/40',
-                onClick: () => {
-                  void openDirectMessage(friendID)
-                },
                 action: {
                   label: 'Message',
                   onClick: () => {
