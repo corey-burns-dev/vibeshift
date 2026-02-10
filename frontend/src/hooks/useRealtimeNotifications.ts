@@ -59,11 +59,18 @@ export interface AppNotification {
   description: string
   createdAt: string
   read: boolean
+  meta?: {
+    type?: string
+    requestId?: number
+    userId?: number
+  }
 }
 
 interface NotificationStore {
   items: AppNotification[]
   add: (item: Omit<AppNotification, 'id' | 'read'>) => void
+  remove: (id: string) => void
+  markRead: (id: string) => void
   markAllRead: () => void
   unreadCount: () => number
 }
@@ -80,6 +87,14 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
         },
         ...state.items,
       ].slice(0, 30),
+    })),
+  remove: id =>
+    set(state => ({
+      items: state.items.filter(i => i.id !== id),
+    })),
+  markRead: id =>
+    set(state => ({
+      items: state.items.map(i => (i.id === id ? { ...i, read: true } : i)),
     })),
   markAllRead: () =>
     set(state => ({
@@ -303,6 +318,10 @@ export function useRealtimeNotifications(enabled = true) {
             const username = asString(
               (payload.from_user as Record<string, unknown>)?.username
             )
+            const requestId = asNumber(payload.request_id ?? payload.id)
+            const fromUserId = asNumber(
+              (payload.from_user as Record<string, unknown>)?.id
+            )
             if (username) {
               toast.message('New friend request', {
                 description: `${username} sent you a request`,
@@ -311,6 +330,7 @@ export function useRealtimeNotifications(enabled = true) {
                 title: 'New friend request',
                 description: `${username} sent you a request`,
                 createdAt: new Date().toISOString(),
+                meta: { type: 'friend_request', requestId, userId: fromUserId },
               })
             }
             break

@@ -8,9 +8,8 @@ import { useSignup } from '@/hooks/useAuth'
 const navigateMock = vi.fn()
 
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>(
-    'react-router-dom'
-  )
+  const actual =
+    await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
   return {
     ...actual,
     useNavigate: () => navigateMock,
@@ -51,7 +50,9 @@ describe('useSignup onboarding behavior', () => {
           delete store[key]
         },
         clear: () => {
-          Object.keys(store).forEach(key => delete store[key])
+          for (const key of Object.keys(store)) {
+            delete store[key]
+          }
         },
       },
     })

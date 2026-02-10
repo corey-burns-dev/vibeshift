@@ -2,11 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { SanctumDTO } from '@/api/types'
 import { buildSanctumSections } from '@/lib/sanctums'
 
-const makeSanctum = (
-  id: number,
-  name: string,
-  slug: string
-): SanctumDTO => ({
+const makeSanctum = (id: number, name: string, slug: string): SanctumDTO => ({
   id,
   name,
   slug,
@@ -34,7 +30,11 @@ describe('buildSanctumSections', () => {
 
     const sections = buildSanctumSections(sanctums)
 
-    expect(sections.system.map(s => s.slug)).toEqual(['atrium', 'herald', 'support'])
+    expect(sections.system.map(s => s.slug)).toEqual([
+      'atrium',
+      'herald',
+      'support',
+    ])
     expect(sections.featured.map(s => s.slug)).toEqual([
       'development',
       'gaming',

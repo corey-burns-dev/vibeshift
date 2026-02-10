@@ -19,6 +19,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { getCurrentUser, useIsAuthenticated, useLogout } from '@/hooks'
+import {
+  useAcceptFriendRequest,
+  useRejectFriendRequest,
+} from '@/hooks/useFriends'
 import { useNotificationStore } from '@/hooks/useRealtimeNotifications'
 import { cn } from '@/lib/utils'
 
@@ -67,6 +71,9 @@ export function TopBar() {
   const notifications = useNotificationStore(state => state.items)
   const unreadCount = useNotificationStore(state => state.unreadCount())
   const markAllRead = useNotificationStore(state => state.markAllRead)
+  const removeNotification = useNotificationStore(state => state.remove)
+  const acceptReq = useAcceptFriendRequest()
+  const rejectReq = useRejectFriendRequest()
 
   if (!isAuthenticated) return null
 
@@ -153,7 +160,7 @@ export function TopBar() {
                   notifications.slice(0, 8).map(item => (
                     <DropdownMenuItem
                       key={item.id}
-                      className="flex flex-col items-start gap-1 py-2"
+                      className="flex flex-col items-start gap-2 py-2"
                     >
                       <div className="flex w-full items-start justify-between gap-2">
                         <span className="text-xs font-semibold">
@@ -163,9 +170,40 @@ export function TopBar() {
                           <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
                         )}
                       </div>
-                      <span className="line-clamp-2 text-[11px] text-muted-foreground">
-                        {item.description}
-                      </span>
+                      <div className="flex w-full items-center justify-between gap-2">
+                        <span className="line-clamp-2 text-[11px] text-muted-foreground flex-1">
+                          {item.description}
+                        </span>
+                        {item.meta?.type === 'friend_request' &&
+                        item.meta.requestId ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              className="text-[11px] rounded-md bg-emerald-600 px-2 py-1 text-emerald-foreground"
+                              onClick={() => {
+                                if (item.meta?.requestId) {
+                                  acceptReq.mutate(item.meta.requestId)
+                                  removeNotification(item.id)
+                                }
+                              }}
+                            >
+                              Accept
+                            </button>
+                            <button
+                              type="button"
+                              className="text-[11px] rounded-md bg-destructive px-2 py-1 text-destructive-foreground"
+                              onClick={() => {
+                                if (item.meta?.requestId) {
+                                  rejectReq.mutate(item.meta.requestId)
+                                  removeNotification(item.id)
+                                }
+                              }}
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
                     </DropdownMenuItem>
                   ))
                 )}

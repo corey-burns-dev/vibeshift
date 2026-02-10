@@ -7,7 +7,8 @@ import { ADMIN_STATE_PATH, AUTH_DIR, USER_STATE_PATH } from './fixtures/auth'
 const API_BASE_RAW =
   process.env.PLAYWRIGHT_API_URL || 'http://localhost:8375/api'
 const API_BASE = API_BASE_RAW.endsWith('/') ? API_BASE_RAW : `${API_BASE_RAW}/`
-const FRONTEND_ORIGIN = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173'
+const FRONTEND_ORIGIN =
+  process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173'
 
 type SignupResponse = {
   token: string
@@ -122,8 +123,14 @@ export default async function globalSetup() {
 
     const adminUser = { ...admin.user, is_admin: true }
 
-    fs.writeFileSync(USER_STATE_PATH, JSON.stringify(buildStorageState(user.token, user.user), null, 2))
-    fs.writeFileSync(ADMIN_STATE_PATH, JSON.stringify(buildStorageState(admin.token, adminUser), null, 2))
+    fs.writeFileSync(
+      USER_STATE_PATH,
+      JSON.stringify(buildStorageState(user.token, user.user), null, 2)
+    )
+    fs.writeFileSync(
+      ADMIN_STATE_PATH,
+      JSON.stringify(buildStorageState(admin.token, adminUser), null, 2)
+    )
   } finally {
     await api.dispose()
   }

@@ -91,7 +91,11 @@ describe('Sanctum routes', () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByRole('heading', { name: 'The Atrium' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Open Chat' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'The Atrium' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Open Chat' })
+    ).toBeInTheDocument()
   })
 })

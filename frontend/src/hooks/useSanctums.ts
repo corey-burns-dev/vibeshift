@@ -3,8 +3,8 @@ import { apiClient } from '@/api/client'
 import type {
   AdminSanctumRequestActionResponse,
   AdminSanctumRequestStatus,
-  CreateSanctumRequestInput,
   BulkSanctumMembershipsInput,
+  CreateSanctumRequestInput,
   SanctumRequest,
 } from '@/api/types'
 

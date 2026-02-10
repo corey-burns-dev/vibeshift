@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { ADMIN_STATE_PATH, USER_STATE_PATH, readTokenFromStorageState } from './fixtures/auth'
+import {
+  ADMIN_STATE_PATH,
+  readTokenFromStorageState,
+  USER_STATE_PATH,
+} from './fixtures/auth'
 import { createSanctumRequest, uniqueSlug } from './utils/api'
 
 test.describe('Sanctum admin approve flow', () => {
@@ -23,7 +27,10 @@ test.describe('Sanctum admin approve flow', () => {
 
     await page.goto('/admin/sanctum-requests')
 
-    const row = page.locator('article').filter({ hasText: `/${slug}` }).first()
+    const row = page
+      .locator('article')
+      .filter({ hasText: `/${slug}` })
+      .first()
     await expect(row).toBeVisible()
     await row.getByRole('button', { name: 'Approve' }).click()
 

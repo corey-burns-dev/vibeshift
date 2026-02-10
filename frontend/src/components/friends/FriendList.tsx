@@ -1,5 +1,6 @@
-import { MessageCircle, UserX } from 'lucide-react'
+import { Link as LinkIcon, MessageCircle, UserX } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -75,7 +76,25 @@ export function FriendList() {
                 {friend.username}
               </CardTitle>
               <CardDescription className="truncate text-xs">
-                {onlineUserIds.has(friend.id) ? 'Online now' : friend.email}
+                {onlineUserIds.has(friend.id) ? (
+                  'Online now'
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <span className="truncate">{friend.email}</span>
+                    <button
+                      type="button"
+                      className="text-[11px] inline-flex items-center gap-1 rounded px-2 py-0.5 bg-muted/60 hover:bg-muted"
+                      onClick={() => {
+                        const url = `${window.location.origin}/users/${friend.id}`
+                        void navigator.clipboard.writeText(url)
+                        toast.success('Profile URL copied')
+                      }}
+                    >
+                      <LinkIcon className="w-3 h-3" />
+                      <span>Share</span>
+                    </button>
+                  </span>
+                )}
               </CardDescription>
             </div>
             <span

@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test'
-import { USER_STATE_PATH, readTokenFromStorageState } from './fixtures/auth'
-import { approveSanctumRequest, createSanctumRequest, uniqueSlug } from './utils/api'
+import { readTokenFromStorageState, USER_STATE_PATH } from './fixtures/auth'
+import {
+  approveSanctumRequest,
+  createSanctumRequest,
+  uniqueSlug,
+} from './utils/api'
 
 test.describe('Sanctum access control', () => {
   test.use({ storageState: USER_STATE_PATH })

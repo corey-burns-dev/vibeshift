@@ -1,5 +1,5 @@
-import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import OnboardingSanctums from '@/pages/OnboardingSanctums'
@@ -8,16 +8,51 @@ const navigateMock = vi.fn()
 const mutateAsyncMock = vi.fn()
 
 const sanctums = [
-  { id: 1, name: 'The Atrium', slug: 'atrium', description: 'Core', status: 'active', default_chat_room_id: 1, created_at: '', updated_at: '' },
-  { id: 2, name: 'The Forge', slug: 'development', description: 'Dev', status: 'active', default_chat_room_id: 2, created_at: '', updated_at: '' },
-  { id: 3, name: 'The Game Room', slug: 'gaming', description: 'Games', status: 'active', default_chat_room_id: 3, created_at: '', updated_at: '' },
-  { id: 4, name: 'The Anime Hall', slug: 'anime', description: 'Anime', status: 'active', default_chat_room_id: 4, created_at: '', updated_at: '' },
+  {
+    id: 1,
+    name: 'The Atrium',
+    slug: 'atrium',
+    description: 'Core',
+    status: 'active',
+    default_chat_room_id: 1,
+    created_at: '',
+    updated_at: '',
+  },
+  {
+    id: 2,
+    name: 'The Forge',
+    slug: 'development',
+    description: 'Dev',
+    status: 'active',
+    default_chat_room_id: 2,
+    created_at: '',
+    updated_at: '',
+  },
+  {
+    id: 3,
+    name: 'The Game Room',
+    slug: 'gaming',
+    description: 'Games',
+    status: 'active',
+    default_chat_room_id: 3,
+    created_at: '',
+    updated_at: '',
+  },
+  {
+    id: 4,
+    name: 'The Anime Hall',
+    slug: 'anime',
+    description: 'Anime',
+    status: 'active',
+    default_chat_room_id: 4,
+    created_at: '',
+    updated_at: '',
+  },
 ]
 
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>(
-    'react-router-dom'
-  )
+  const actual =
+    await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
   return {
     ...actual,
     useNavigate: () => navigateMock,

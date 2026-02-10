@@ -4,10 +4,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import {
-  useSanctums,
-  useUpsertMySanctumMemberships,
-} from '@/hooks/useSanctums'
+import { useSanctums, useUpsertMySanctumMemberships } from '@/hooks/useSanctums'
 
 const REQUIRED_SLUG = 'atrium'
 const DEFAULT_SLUGS = new Set(['atrium', 'development', 'gaming'])

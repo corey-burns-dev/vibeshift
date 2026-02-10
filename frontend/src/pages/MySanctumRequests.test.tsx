@@ -49,7 +49,11 @@ describe('MySanctumRequests', () => {
 
   it('renders multiple statuses', () => {
     mockedUseMySanctumRequests.mockReturnValue({
-      data: [request('pending', 1), request('approved', 2), request('rejected', 3)],
+      data: [
+        request('pending', 1),
+        request('approved', 2),
+        request('rejected', 3),
+      ],
       isLoading: false,
       isError: false,
       error: null,
