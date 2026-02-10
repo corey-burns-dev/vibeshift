@@ -1,104 +1,105 @@
-# Project Implementation Checklist
+# Project Implementation Checklist (Merged & Updated)
 
 ## 🔴 Critical - Tier 1: Production Readiness
 
-### Observability & Monitoring
+### CI/CD & Repo Hygiene
 
-- [ ] **Implement Custom Prometheus Metrics**
-  - Add custom collectors for Redis error rates
-  - Track database query P95 latency
-  - Monitor WebSocket connection counts per room
-  - Track message throughput rates
+- [ ] **Fix and Harden CI Pipeline**
+  - Pin GitHub Actions to stable versions (checkout, setup-go, buildx)
+  - Ensure `go test ./...` runs on every PR
+  - Add nightly `go test -race ./...` job
+  - Fail CI on linting, formatting, or test errors
+  - Optionally add OpenAPI drift check (generate + diff)
 
-- [ ] **Add Distributed Tracing**
-  - Integrate OpenTelemetry for end-to-end request tracing
-  - Trace requests through API → Service → Database → Redis
-  - Add trace context propagation across WebSocket connections
-  - Configure sampling rates for production
+### Health & Availability
 
-- [ ] **Enhance Logging Coverage**
-  - Add structured logging to all repository methods
-  - Log WebSocket connection lifecycle events (connect, disconnect, errors)
-  - Include correlation IDs in all async operations
-
-### Database & Caching
-
-- [ ] **Implement Read/Write Database Separation**
-  - Configure GORM with separate read replica connections
-  - Route all SELECT queries to read replicas
-  - Ensure write operations use primary database
-  - Add fallback logic if read replica is unavailable
-
-- [ ] **Migrate from Auto-Migration to Controlled Migrations**
-  - Remove GORM AutoMigrate from production code
-  - Implement migration tool (e.g., golang-migrate, goose)
-  - Create rollback procedures for all migrations
-  - Add migration version tracking
-
-- [ ] **Define Caching Strategy with TTLs**
-  - Cache user profiles with 5-minute TTL
-  - Cache room metadata with 10-minute TTL
-  - Cache message history (last 50 messages) with 2-minute TTL
-  - Implement cache invalidation on user updates
-  - Implement cache invalidation on room updates
-  - Add cache-aside pattern for all read-heavy operations
+- [ ] **Split Health Endpoints Correctly**
+  - `/health/live` → process is up
+  - `/health/ready` → DB, Redis, dependencies
+  - Ensure JSON status reflects failures correctly
+  - Wire readiness into Docker Compose / orchestration
 
 ### Authentication & Security
 
-- [ ] **Implement JWT Refresh Token Strategy**
-  - Create refresh token endpoint (`POST /auth/refresh`)
-  - Store refresh tokens in Redis with 30-day TTL
-  - Reduce access token lifetime from 7 days to 15 minutes
+- [ ] **JWT Refresh & Session Strategy**
+  - Reduce access token lifetime to ~15 minutes
+  - Implement refresh tokens (Redis, 30-day TTL)
   - Implement refresh token rotation
+  - Add logout + logout-all (revocation)
 
-- [ ] **Add Token Revocation Support**
-  - Create token blacklist in Redis
-  - Add logout endpoint that blacklists current token
-  - Add "logout all sessions" functionality
-  - Implement token blacklist cleanup job
+- [ ] **Decide and Enforce Auth Storage Model**
+  - Decide: bearer tokens (memory/localStorage) vs httpOnly cookies
+  - If cookies are used → add CSRF protection
+  - Document the decision and threat model
 
-- [ ] **Enforce WebSocket Connection Limits**
-  - Limit users to 10 concurrent WebSocket connections
-  - Track connections per user in Redis
-  - Add connection cleanup on disconnect
-  - Implement server-side heartbeat (ping/pong every 30s)
+- [ ] **Harden Security Headers**
+  - Add Content-Security-Policy (CSP)
+  - Tighten Helmet / Fiber security config
+  - Disable dev dashboards in production
+
+### Database & Data Safety
+
+- [ ] **Replace AutoMigrate with Controlled Migrations**
+  - Remove AutoMigrate from production paths
+  - Introduce migration tool (goose or golang-migrate)
+  - Convert manual schema fixes into real migrations
+  - Ensure rollback support
+
+- [ ] **Mandatory Database Indexing Pass**
+  - Posts: `(user_id, created_at)`
+  - Comments: `(post_id, created_at)`
+  - Likes: unique `(post_id, user_id)`
+  - Messages: `(conversation_id, created_at)`
+  - Friendships: unique user pair constraint
+
+### WebSockets & Abuse Controls
+
+- [ ] **WebSocket Guardrails**
+  - Enforce per-user connection limits
+  - Heartbeat ping/pong + cleanup
+  - Redis-backed connection tracking
+  - Rate-limit abusive message types
+
+---
 
 ## 🟡 High Priority - Tier 2: Scale-Ready Architecture
 
 ### Code Architecture
 
 - [ ] **Introduce Service Layer**
-  - Create `/internal/service` package
-  - Extract business logic from handlers to service layer
-  - Pattern: Handler → Service → Repository
-  - Handlers should only handle I/O, validation, and serialization
-  - Services should contain all business rules and orchestration
+  - Handler → Service → Repository
+  - Move orchestration and business rules to services
+  - Keep handlers I/O-only
 
-- [ ] **Refactor to Use API Contracts as Source of Truth**
-  - Generate server stubs from OpenAPI spec
-  - Generate client SDKs from OpenAPI spec
-  - Enforce spec-first development workflow
-  - Add CI validation that code matches spec
+### Observability
+
+- [ ] **Prometheus Metrics (Real, Not UI)**
+  - Replace Fiber monitor with `/metrics` endpoint
+  - Track DB latency, Redis errors, WS connections
+  - Optional: keep monitor UI for non-prod
+
+- [ ] **Distributed Tracing**
+  - OpenTelemetry integration
+  - Trace API → Service → DB/Redis
+  - Add sampling config for prod
+
+### Runtime Config Safety
+
+- [ ] **Fail-Fast Configuration Validation**
+  - Validate required env vars on boot
+  - Validate CORS origins, cookie flags, SSL modes
+  - Crash early on invalid config
 
 ### Background Processing
 
-- [ ] **Implement Job Queue for Async Operations**
-  - Integrate job queue library (Asynq or Machinery)
-  - Move email notifications to background jobs
-  - Move WebSocket notifications to background jobs (except real-time chat)
-  - Move welcome bot messages to background jobs
-  - Add retry logic with exponential backoff
-  - Implement dead letter queue for failed jobs
+- [ ] **Async Job Queue**
+  - Introduce Asynq or equivalent
+  - Move notifications, bots, non-critical work
+  - Retries + dead letter queue
 
-### Deployment & Health
+---
 
-- [ ] **Add Health/Readiness Probes to App Service**
-  - Create `/health/live` endpoint (checks if server is running)
-  - Create `/health/ready` endpoint (checks DB, Redis, dependencies)
-  - Update `compose.yml` with health check configuration
-  - Configure appropriate timeouts and intervals
-
-## 🟢 Medium Priority - Modern Chat Features
+## 🟢 Medium Priority - Product & UX Features
 
 ### Core Interaction Patterns
 
@@ -203,6 +204,8 @@
   - Show mute expiration in UI
   - Auto-unmute after expiration
 
+---
+
 ## 🔵 Low Priority - Quality of Life
 
 ### Advanced Features
@@ -253,30 +256,14 @@
 
 ---
 
-## 📝 Implementation Notes
+## ✅ Summary of What Was Added
 
-**For AI Agents:**
+- CI trustworthiness (pinning, race tests)
+- Auth storage + CSRF/CSP decisions
+- Correct health probe semantics
+- Mandatory DB indexing (high ROI)
+- Real Prometheus metrics vs dev UI
+- Fail-fast runtime config validation
+- WebSocket abuse guardrails
 
-- Each checkbox represents a discrete task
-- Tasks include specific endpoints, models, and technical details
-- Prioritize Tier 1 (🔴) before Tier 2 (🟡)
-- Review existing code patterns before implementing
-- Ensure all database changes include migrations
-- Add tests for each new feature
-- Update OpenAPI spec with new endpoints
-
-**Current Strengths:**
-
-- ✅ Structured logging with slog
-- ✅ Redis Pub/Sub for WebSocket scaling
-- ✅ Basic rate limiting
-- ✅ WebSocket hub architecture
-- ✅ Integration test suite
-
-**Immediate Next Steps:**
-
-1. Implement Service layer refactor
-2. Add database read/write separation
-3. Integrate job queue for async processing
-4. Add distributed tracing
-5. Implement JWT refresh tokens
+This version is **production-correct**, not just feature-complete.
