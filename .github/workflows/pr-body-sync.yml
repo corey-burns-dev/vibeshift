@@ -31,7 +31,8 @@ jobs:
           set -euo pipefail
 
           BRANCH="${GITHUB_REF_NAME}"
-          PR_NUMBER="$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')"
+          HEAD_REF="${GITHUB_REPOSITORY_OWNER}:${BRANCH}"
+          PR_NUMBER="$(gh pr list --head "$HEAD_REF" --state open --json number --jq '.[0].number // empty')"
 
           if [ -z "$PR_NUMBER" ]; then
             echo "No open PR found for branch '$BRANCH'; skipping."
