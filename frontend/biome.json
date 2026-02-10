@@ -1,19 +1,10 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
   "files": {
-    "includes": [
-      "**",
-      "!!**/frontend/dist",
-      "!!**/dist",
-      "!!**/.astro",
-      "!!**/.next",
-      "!!**/build",
-      "**/*.{js,jsx,ts,tsx,json,jsonc,mjs,cjs}"
-    ],
+    "includes": ["**", "!!**/dist", "!!**/.astro", "!!**/.next", "!!**/build"],
     "ignoreUnknown": false
   },
   "formatter": {
-    "attributePosition": "auto",
     "enabled": true,
     "formatWithErrors": false,
     "indentStyle": "space",
@@ -24,7 +15,6 @@
   "javascript": {
     "formatter": {
       "arrowParentheses": "asNeeded",
-      "attributePosition": "auto",
       "bracketSameLine": false,
       "bracketSpacing": true,
       "jsxQuoteStyle": "double",
