@@ -122,7 +122,7 @@ func (s *Server) GetSanctumBySlug(c *fiber.Ctx) error {
 	var roomID *uint
 	if err := s.db.WithContext(ctx).Select("id").Where("sanctum_id = ?", sanctum.ID).First(&room).Error; err == nil {
 		roomID = &room.ID
-	} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
