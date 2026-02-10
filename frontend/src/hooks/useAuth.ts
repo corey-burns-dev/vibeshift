@@ -19,9 +19,7 @@ export function useSignup() {
       // Invalidate any cached user data
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] })
 
-      // TODO(onboarding/sanctums): switch to `/onboarding/sanctums` after signup
-      // once backend exposes Sanctum follow/join endpoints.
-      navigate('/posts')
+      navigate('/onboarding/sanctums')
     },
   })
 }

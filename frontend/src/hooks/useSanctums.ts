@@ -4,6 +4,7 @@ import type {
   AdminSanctumRequestActionResponse,
   AdminSanctumRequestStatus,
   CreateSanctumRequestInput,
+  BulkSanctumMembershipsInput,
   SanctumRequest,
 } from '@/api/types'
 
@@ -13,6 +14,8 @@ export const sanctumKeys = {
   detail: (slug: string) => [...sanctumKeys.all, 'detail', slug] as const,
   requests: () => [...sanctumKeys.all, 'requests'] as const,
   myRequests: () => [...sanctumKeys.requests(), 'me'] as const,
+  memberships: () => [...sanctumKeys.all, 'memberships'] as const,
+  myMemberships: () => [...sanctumKeys.memberships(), 'me'] as const,
   adminRequests: (status: AdminSanctumRequestStatus) =>
     [...sanctumKeys.requests(), 'admin', status] as const,
 }
@@ -48,6 +51,25 @@ export function useMySanctumRequests() {
   return useQuery({
     queryKey: sanctumKeys.myRequests(),
     queryFn: () => apiClient.getMySanctumRequests(),
+  })
+}
+
+export function useMySanctumMemberships() {
+  return useQuery({
+    queryKey: sanctumKeys.myMemberships(),
+    queryFn: () => apiClient.getMySanctumMemberships(),
+  })
+}
+
+export function useUpsertMySanctumMemberships() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: BulkSanctumMembershipsInput) =>
+      apiClient.upsertMySanctumMemberships(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: sanctumKeys.myMemberships() })
+    },
   })
 }
 

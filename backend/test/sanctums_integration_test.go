@@ -3,12 +3,153 @@ package test
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
 	"testing"
 
 	"sanctum/internal/database"
 	"sanctum/internal/models"
 	"sanctum/internal/seed"
 )
+
+func TestSanctumMembershipsBulkAndMe(t *testing.T) {
+	app := newSanctumTestApp(t)
+	user := signupSanctumUser(t, app, "membership_user")
+	other := signupSanctumUser(t, app, "membership_other")
+
+	t.Run("requires auth", func(t *testing.T) {
+		getReq := jsonReq(t, http.MethodGet, "/api/sanctums/memberships/me", nil)
+		getResp, getErr := app.Test(getReq, -1)
+		if getErr != nil {
+			t.Fatalf("get memberships: %v", getErr)
+		}
+		defer func() { _ = getResp.Body.Close() }()
+		if getResp.StatusCode != http.StatusUnauthorized {
+			t.Fatalf("expected GET 401 got %d", getResp.StatusCode)
+		}
+
+		postReq := jsonReq(t, http.MethodPost, "/api/sanctums/memberships/bulk", map[string]any{
+			"sanctum_slugs": []string{"atrium", "development", "gaming"},
+		})
+		postResp, postErr := app.Test(postReq, -1)
+		if postErr != nil {
+			t.Fatalf("post memberships: %v", postErr)
+		}
+		defer func() { _ = postResp.Body.Close() }()
+		if postResp.StatusCode != http.StatusUnauthorized {
+			t.Fatalf("expected POST 401 got %d", postResp.StatusCode)
+		}
+	})
+
+	t.Run("bulk upsert and scoped retrieval", func(t *testing.T) {
+		seedReq := authReq(t, http.MethodPost, "/api/sanctums/memberships/bulk", other.Token, map[string]any{
+			"sanctum_slugs": []string{"atrium", "movies", "television"},
+		})
+		seedResp, seedErr := app.Test(seedReq, -1)
+		if seedErr != nil {
+			t.Fatalf("seed other memberships: %v", seedErr)
+		}
+		_ = seedResp.Body.Close()
+
+		saveReq := authReq(t, http.MethodPost, "/api/sanctums/memberships/bulk", user.Token, map[string]any{
+			"sanctum_slugs": []string{"atrium", "development", "gaming"},
+		})
+		saveResp, saveErr := app.Test(saveReq, -1)
+		if saveErr != nil {
+			t.Fatalf("save memberships: %v", saveErr)
+		}
+		defer func() { _ = saveResp.Body.Close() }()
+		if saveResp.StatusCode != http.StatusOK {
+			t.Fatalf("expected 200 got %d", saveResp.StatusCode)
+		}
+
+		var saved []struct {
+			Sanctum struct {
+				Slug string `json:"slug"`
+			} `json:"sanctum"`
+		}
+		if err := json.NewDecoder(saveResp.Body).Decode(&saved); err != nil {
+			t.Fatalf("decode save memberships: %v", err)
+		}
+		if len(saved) != 3 {
+			t.Fatalf("expected 3 memberships got %d", len(saved))
+		}
+
+		getReq := authReq(t, http.MethodGet, "/api/sanctums/memberships/me", user.Token, nil)
+		getResp, getErr := app.Test(getReq, -1)
+		if getErr != nil {
+			t.Fatalf("get memberships: %v", getErr)
+		}
+		defer func() { _ = getResp.Body.Close() }()
+		if getResp.StatusCode != http.StatusOK {
+			t.Fatalf("expected 200 got %d", getResp.StatusCode)
+		}
+
+		var rows []struct {
+			UserID  uint `json:"user_id"`
+			Sanctum struct {
+				Slug string `json:"slug"`
+			} `json:"sanctum"`
+		}
+		if err := json.NewDecoder(getResp.Body).Decode(&rows); err != nil {
+			t.Fatalf("decode get memberships: %v", err)
+		}
+		if len(rows) != 3 {
+			t.Fatalf("expected 3 rows got %d", len(rows))
+		}
+
+		got := make([]string, 0, len(rows))
+		for _, row := range rows {
+			if row.UserID != user.ID {
+				t.Fatalf("expected user_id=%d got %d", user.ID, row.UserID)
+			}
+			got = append(got, row.Sanctum.Slug)
+		}
+		sort.Strings(got)
+		want := []string{"atrium", "development", "gaming"}
+		sort.Strings(want)
+		for i := range want {
+			if got[i] != want[i] {
+				t.Fatalf("expected slug %s at pos %d got %s", want[i], i, got[i])
+			}
+		}
+
+		resaveReq := authReq(t, http.MethodPost, "/api/sanctums/memberships/bulk", user.Token, map[string]any{
+			"sanctum_slugs": []string{"atrium", "anime", "development"},
+		})
+		resaveResp, resaveErr := app.Test(resaveReq, -1)
+		if resaveErr != nil {
+			t.Fatalf("resave memberships: %v", resaveErr)
+		}
+		_ = resaveResp.Body.Close()
+
+		verifyReq := authReq(t, http.MethodGet, "/api/sanctums/memberships/me", user.Token, nil)
+		verifyResp, verifyErr := app.Test(verifyReq, -1)
+		if verifyErr != nil {
+			t.Fatalf("verify memberships: %v", verifyErr)
+		}
+		defer func() { _ = verifyResp.Body.Close() }()
+
+		var rowsAfter []struct {
+			Sanctum struct {
+				Slug string `json:"slug"`
+			} `json:"sanctum"`
+		}
+		if err := json.NewDecoder(verifyResp.Body).Decode(&rowsAfter); err != nil {
+			t.Fatalf("decode verify memberships: %v", err)
+		}
+		slugsAfter := make([]string, 0, len(rowsAfter))
+		for _, row := range rowsAfter {
+			slugsAfter = append(slugsAfter, row.Sanctum.Slug)
+		}
+		sort.Strings(slugsAfter)
+		wantAfter := []string{"anime", "atrium", "development"}
+		for i := range wantAfter {
+			if slugsAfter[i] != wantAfter[i] {
+				t.Fatalf("expected slug %s at pos %d got %s", wantAfter[i], i, slugsAfter[i])
+			}
+		}
+	})
+}
 
 func TestGetSanctumsStableAfterReseed(t *testing.T) {
 	app := newSanctumTestApp(t)

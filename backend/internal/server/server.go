@@ -196,6 +196,9 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	sanctumRequests := protected.Group("/sanctums/requests")
 	sanctumRequests.Post("/", s.CreateSanctumRequest)
 	sanctumRequests.Get("/me", s.GetMySanctumRequests)
+	sanctumMemberships := protected.Group("/sanctums/memberships")
+	sanctumMemberships.Get("/me", s.GetMySanctumMemberships)
+	sanctumMemberships.Post("/bulk", s.UpsertMySanctumMemberships)
 
 	// User routes
 	users := protected.Group("/users")

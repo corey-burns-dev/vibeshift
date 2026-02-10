@@ -260,3 +260,16 @@ export interface AdminSanctumRequestActionResponse {
   sanctum: SanctumDTO
   request: SanctumRequest
 }
+
+export interface SanctumMembership {
+  sanctum_id: number
+  user_id: number
+  role: 'owner' | 'mod' | 'member'
+  created_at: string
+  updated_at: string
+  sanctum: SanctumDTO
+}
+
+export interface BulkSanctumMembershipsInput {
+  sanctum_slugs: string[]
+}

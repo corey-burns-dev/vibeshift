@@ -63,7 +63,7 @@ describe('useSignup onboarding behavior', () => {
     localStorage?.removeItem?.('user')
   })
 
-  it('redirects to /posts after successful signup (onboarding pending backend follow/join API)', async () => {
+  it('redirects to /onboarding/sanctums after successful signup', async () => {
     vi.mocked(apiClient.signup).mockResolvedValue({
       token: 'token-123',
       user: {
@@ -87,7 +87,6 @@ describe('useSignup onboarding behavior', () => {
     })
 
     expect(localStorage.getItem('token')).toBe('token-123')
-    expect(navigateMock).toHaveBeenCalledWith('/posts')
-    expect(navigateMock).not.toHaveBeenCalledWith('/onboarding/sanctums')
+    expect(navigateMock).toHaveBeenCalledWith('/onboarding/sanctums')
   })
 })

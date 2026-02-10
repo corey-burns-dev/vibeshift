@@ -59,7 +59,7 @@ async function signup(
 
 async function promoteAdmin(userID: number) {
   const host = process.env.PGHOST || process.env.DB_HOST || 'localhost'
-  const port = Number(process.env.PGPORT || process.env.DB_PORT || '5432')
+  const port = Number(process.env.PGPORT || process.env.DB_PORT || '5433')
   const user =
     process.env.PGUSER ||
     process.env.DB_USER ||
@@ -76,6 +76,7 @@ async function promoteAdmin(userID: number) {
   const candidates = [
     configuredDatabase,
     'sanctum_test',
+    'sanctum',
     'aichat',
     'social_media',
     'postgres',

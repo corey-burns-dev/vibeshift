@@ -1,52 +1,38 @@
-# TODO: Signup Onboarding for Sanctums
+# Sanctum Signup Onboarding
 
-Status: **Not implemented intentionally**.
+Status: **Implemented**.
 
-Reason: the current API does not expose a user-facing Sanctum follow/join
-mechanism that can persist onboarding selections.
+## Behavior
 
-Current Sanctum API supports:
+After successful signup, users are redirected to:
 
-- `GET /api/sanctums`
-- `GET /api/sanctums/{slug}`
-- `POST /api/sanctums/requests`
-- `GET /api/sanctums/requests/me`
-- Admin moderation routes for requests
+- `/onboarding/sanctums`
 
-## Minimal backend API needed
+On this page:
 
-To support `/onboarding/sanctums` after signup with forced Atrium + min 3 picks,
-add the following protected endpoints:
+- Atrium (`atrium`) is required and cannot be deselected.
+- Forge (`development`) and Game Room (`gaming`) are preselected.
+- User must keep at least 3 sanctums selected.
+- Submit saves selections and redirects to `/posts`.
 
-1. `POST /api/sanctums/memberships/bulk`
-- Auth required.
+## Backend API contract
+
+Protected endpoints:
+
+1. `GET /api/sanctums/memberships/me`
+- Returns the current user's sanctum memberships with sanctum metadata.
+
+2. `POST /api/sanctums/memberships/bulk`
 - Request body:
-  - `{ "sanctum_ids": number[] }` (or slugs)
+  - `{ "sanctum_slugs": string[] }`
 - Behavior:
-  - idempotent upsert into `sanctum_memberships` with role `member`
-  - enforces active sanctums only
-  - enforces max size (e.g. 20)
+  - validates all slugs are active sanctums
+  - upserts membership rows for selected sanctums
+  - removes unselected rows for role `member` (keeps owner/mod rows)
 - Response:
-  - `{ "joined": number, "sanctum_ids": number[] }`
+  - array of membership rows with nested sanctum details
 
-2. `GET /api/sanctums/memberships/me`
-- Auth required.
-- Returns followed/joined sanctums for current user.
+## Notes
 
-Optional convenience endpoint:
-
-3. `POST /api/sanctums/{id}/join`
-- Single join action, idempotent.
-
-## Frontend behavior once API exists
-
-- Add route `/onboarding/sanctums` after signup.
-- Require at least 3 selections.
-- Force include `atrium`.
-- Preselect `development` (Forge) and `gaming` (Game Room).
-- Submit via `POST /api/sanctums/memberships/bulk`.
-- Redirect to `/` (or `/posts`) on success.
-
-## Current code TODO marker
-
-- `frontend/src/hooks/useAuth.ts` includes a TODO at signup success redirect.
+- Onboarding constraints (Atrium required + minimum 3) are enforced in frontend UX.
+- Backend bulk endpoint is generic and can be reused for profile preference updates.
