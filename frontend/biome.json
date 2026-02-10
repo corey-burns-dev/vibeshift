@@ -1,73 +1,68 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
-	"files": {
-		"includes": [
-			"**",
-			"!!**/frontend/dist",
-			"!!**/dist",
-			"!!**/.astro",
-			"!!**/.next",
-			"!!**/build",
-			"**/*.{js,jsx,ts,tsx,json,jsonc,mjs,cjs}"
-		],
-		"ignoreUnknown": false
-	},
-	"formatter": {
-		"attributePosition": "auto",
-		"enabled": true,
-		"formatWithErrors": false,
-		"indentStyle": "space",
-		"indentWidth": 2,
-		"lineEnding": "lf",
-		"lineWidth": 80
-	},
-	"javascript": {
-		"formatter": {
-			"arrowParentheses": "asNeeded",
-			"attributePosition": "auto",
-			"bracketSameLine": false,
-			"bracketSpacing": true,
-			"jsxQuoteStyle": "double",
-			"quoteProperties": "asNeeded",
-			"quoteStyle": "single",
-			"semicolons": "asNeeded",
-			"trailingCommas": "es5"
-		},
-		"globals": [
-			"$RefreshReg$",
-			"$RefreshIntercept$",
-			"__REACT_REFRESH_RUNTIME__",
-			"__vite_plugin_react_preamble_installed__"
-		]
-	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"correctness": {
-				"noUnusedVariables": "error",
-				"useExhaustiveDependencies": "warn"
-			},
-			"recommended": true,
-			"style": {
-				"noNonNullAssertion": "warn",
-				"useConst": "error",
-				"useImportType": "error"
-			},
-			"suspicious": {
-				"noExplicitAny": "warn"
-			}
-		}
-	},
-	"overrides": [
-		{
-			"includes": ["src/pages/ConnectFour.tsx", "src/pages/TicTacToe.tsx"],
-			"linter": {
-				"rules": {
-					"suspicious": {
-						"noArrayIndexKey": "off"
-					}
-				}
-			}
-		}
-	]
+  "$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
+  "files": {
+    "includes": ["**", "!!**/dist", "!!**/.astro", "!!**/.next", "!!**/build"],
+    "ignoreUnknown": false
+  },
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 80
+  },
+  "javascript": {
+    "formatter": {
+      "arrowParentheses": "asNeeded",
+      "bracketSameLine": false,
+      "bracketSpacing": true,
+      "jsxQuoteStyle": "double",
+      "quoteProperties": "asNeeded",
+      "quoteStyle": "single",
+      "semicolons": "asNeeded",
+      "trailingCommas": "es5"
+    },
+    "globals": [
+      "$RefreshReg$",
+      "$RefreshIntercept$",
+      "__REACT_REFRESH_RUNTIME__",
+      "__vite_plugin_react_preamble_installed__"
+    ]
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "correctness": {
+        "noUnusedVariables": "error",
+        "useExhaustiveDependencies": "warn"
+      },
+      "recommended": true,
+      "style": {
+        "noNonNullAssertion": "warn",
+        "useConst": "error",
+        "useImportType": "error"
+      },
+      "suspicious": {
+        "noExplicitAny": "warn"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["src/pages/ConnectFour.tsx", "src/pages/TicTacToe.tsx"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noArrayIndexKey": "off"
+          }
+        }
+      }
+    }
+  ]
 }

@@ -16,6 +16,18 @@ make test
 
 This is the default and most portable path for agent/local usage.
 
+## Database Migrations
+
+From `backend/`:
+
+```bash
+go run ./cmd/migrate/main.go up
+go run ./cmd/migrate/main.go down
+go run ./cmd/migrate/main.go version
+```
+
+Production runtime no longer relies on `AutoMigrate`; apply SQL migrations before starting the server in production.
+
 ## Containerized Alternatives
 
 Use when you need direct Go invocation inside containerized backend environment:

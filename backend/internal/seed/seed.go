@@ -28,7 +28,7 @@ func NewSeeder(db *gorm.DB) *Seeder {
 // for test/setup workflows only.
 func (s *Seeder) ClearAll() error {
 	log.Println("🗑️  Clearing all existing data...")
-	sql := `TRUNCATE TABLE comments, likes, posts, conversation_participants, messages, conversations, users, friendships, game_rooms, game_moves RESTART IDENTITY CASCADE;`
+	sql := `TRUNCATE TABLE comments, likes, posts, conversation_participants, messages, conversations, sanctum_memberships, sanctum_requests, sanctums, stream_messages, streams, users, friendships, game_rooms, game_moves RESTART IDENTITY CASCADE;`
 	return s.db.Exec(sql).Error
 }
 

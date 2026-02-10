@@ -16,10 +16,14 @@ set -e
 	docker compose exec -T postgres psql -U "$POSTGRES_USER" -d postgres -c "DROP DATABASE IF EXISTS \"$POSTGRES_DB\";"
 	docker compose exec -T postgres psql -U "$POSTGRES_USER" -d postgres -c "CREATE DATABASE \"$POSTGRES_DB\";"
 
-# Run migrations (auto-migrate will run on backend start)
+# Run migrations explicitly
+echo "Running migrations..."
+cd backend && go run ./cmd/migrate/main.go up
+
 # Seed the database
 echo "Seeding database..."
-cd backend && go run cmd/seed/main.go
+go run ./cmd/seed/main.go
+cd ..
 
 	# Restart app service
 	echo "Restarting app service..."

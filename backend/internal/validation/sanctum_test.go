@@ -1,0 +1,38 @@
+package validation
+
+import "testing"
+
+func TestValidateSanctumSlug(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		slug string
+		ok   bool
+	}{
+		{name: "valid movies", slug: "movies", ok: true},
+		{name: "valid pcgaming", slug: "pcgaming", ok: true},
+		{name: "valid ai-hub", slug: "ai-hub", ok: true},
+		{name: "too short", slug: "ab", ok: false},
+		{name: "too long", slug: "abcdefghijklmnopqrstuvwxyz", ok: false},
+		{name: "uppercase", slug: "Movies", ok: false},
+		{name: "underscore", slug: "pc_gaming", ok: false},
+		{name: "space", slug: "pc gaming", ok: false},
+		{name: "symbol", slug: "pc!gaming", ok: false},
+		{name: "leading hyphen", slug: "-linux", ok: false},
+		{name: "trailing hyphen", slug: "linux-", ok: false},
+		{name: "reserved", slug: "admin", ok: false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateSanctumSlug(tc.slug)
+			if tc.ok && err != nil {
+				t.Fatalf("expected valid slug, got error: %v", err)
+			}
+			if !tc.ok && err == nil {
+				t.Fatalf("expected invalid slug, got nil error")
+			}
+		})
+	}
+}

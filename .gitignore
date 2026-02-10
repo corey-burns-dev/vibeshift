@@ -16,6 +16,10 @@ tmp/
 *.out
 *.test
 !Dockerfile.test
+# PR automation artifacts
+.tmp/
+PR_BODY.md
+
 
 # Docker
 compose.override.yml

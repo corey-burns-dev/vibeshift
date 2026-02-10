@@ -66,10 +66,29 @@ jobs:
           bash scripts/gen_pr_body.sh "origin/${{ steps.pr.outputs.base_ref }}" PR_BODY.md
 
       - name: Update PR body
-        if: steps.pr.outputs.has_pr == 'true'
+        if: >
+          steps.pr.outputs.has_pr == 'true' &&
+          (
+            github.event_name != 'pull_request' ||
+            (
+              github.actor != 'dependabot[bot]' &&
+              github.event.pull_request.head.repo.full_name == github.repository
+            )
+          )
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           gh pr edit "${{ steps.pr.outputs.pr_number }}" --body-file PR_BODY.md
           echo "Updated PR #${{ steps.pr.outputs.pr_number }}"
+
+      - name: Skip PR body update in read-only PR contexts
+        if: >
+          steps.pr.outputs.has_pr == 'true' &&
+          github.event_name == 'pull_request' &&
+          (
+            github.actor == 'dependabot[bot]' ||
+            github.event.pull_request.head.repo.full_name != github.repository
+          )
+        run: |
+          echo "Skipping PR #${{ steps.pr.outputs.pr_number }} body update: read-only token context (Dependabot or fork PR)."

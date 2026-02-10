@@ -39,7 +39,7 @@ type UpdateStreamRequest struct {
 // @Param limit query int false "Limit results" default(20)
 // @Param offset query int false "Offset for pagination" default(0)
 // @Success 200 {object} map[string]interface{}
-// @Router /api/streams [get]
+// @Router /streams [get]
 func (s *Server) GetStreams(c *fiber.Ctx) error {
 	category := c.Query("category", "")
 	page := parsePagination(c, 20)
@@ -68,7 +68,7 @@ func (s *Server) GetStreams(c *fiber.Ctx) error {
 // @Produce json
 // @Param id path int true "Stream ID"
 // @Success 200 {object} models.Stream
-// @Router /api/streams/{id} [get]
+// @Router /streams/{id} [get]
 func (s *Server) GetStream(c *fiber.Ctx) error {
 	id, err := s.parseID(c, "id")
 	if err != nil {
@@ -91,7 +91,7 @@ func (s *Server) GetStream(c *fiber.Ctx) error {
 // @Produce json
 // @Param stream body CreateStreamRequest true "Stream data"
 // @Success 201 {object} models.Stream
-// @Router /api/streams [post]
+// @Router /streams [post]
 func (s *Server) CreateStream(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uint)
 
@@ -142,7 +142,7 @@ func (s *Server) CreateStream(c *fiber.Ctx) error {
 // @Param id path int true "Stream ID"
 // @Param stream body UpdateStreamRequest true "Stream data"
 // @Success 200 {object} models.Stream
-// @Router /api/streams/{id} [put]
+// @Router /streams/{id} [put]
 func (s *Server) UpdateStream(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uint)
 
@@ -204,7 +204,7 @@ func (s *Server) UpdateStream(c *fiber.Ctx) error {
 // @Tags Streams
 // @Param id path int true "Stream ID"
 // @Success 204
-// @Router /api/streams/{id} [delete]
+// @Router /streams/{id} [delete]
 func (s *Server) DeleteStream(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uint)
 
@@ -237,7 +237,7 @@ func (s *Server) DeleteStream(c *fiber.Ctx) error {
 // @Tags Streams
 // @Param id path int true "Stream ID"
 // @Success 200 {object} models.Stream
-// @Router /api/streams/{id}/go-live [post]
+// @Router /streams/{id}/go-live [post]
 func (s *Server) GoLive(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uint)
 
@@ -278,7 +278,7 @@ func (s *Server) GoLive(c *fiber.Ctx) error {
 // @Tags Streams
 // @Param id path int true "Stream ID"
 // @Success 200 {object} models.Stream
-// @Router /api/streams/{id}/end [post]
+// @Router /streams/{id}/end [post]
 func (s *Server) EndStream(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uint)
 
@@ -319,7 +319,7 @@ func (s *Server) EndStream(c *fiber.Ctx) error {
 // @Tags Streams
 // @Produce json
 // @Success 200 {array} models.Stream
-// @Router /api/streams/me [get]
+// @Router /streams/me [get]
 func (s *Server) GetMyStreams(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uint)
 
@@ -340,7 +340,7 @@ func (s *Server) GetMyStreams(c *fiber.Ctx) error {
 // @Param limit query int false "Limit results" default(50)
 // @Param offset query int false "Offset for pagination" default(0)
 // @Success 200 {array} models.StreamMessage
-// @Router /api/streams/{id}/messages [get]
+// @Router /streams/{id}/messages [get]
 func (s *Server) GetStreamMessages(c *fiber.Ctx) error {
 	id, err := s.parseID(c, "id")
 	if err != nil {
@@ -370,7 +370,7 @@ func (s *Server) GetStreamMessages(c *fiber.Ctx) error {
 // @Param id path int true "Stream ID"
 // @Param message body map[string]string true "Message content"
 // @Success 201 {object} models.StreamMessage
-// @Router /api/streams/{id}/messages [post]
+// @Router /streams/{id}/messages [post]
 func (s *Server) SendStreamMessage(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uint)
 
@@ -425,7 +425,7 @@ func (s *Server) SendStreamMessage(c *fiber.Ctx) error {
 // @Tags Streams
 // @Produce json
 // @Success 200 {array} string
-// @Router /api/streams/categories [get]
+// @Router /streams/categories [get]
 func (s *Server) GetStreamCategories(c *fiber.Ctx) error {
 	return c.JSON(models.StreamCategories)
 }

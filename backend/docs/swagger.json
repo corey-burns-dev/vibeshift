@@ -21,35 +21,80 @@
     "host": "localhost:8375",
     "basePath": "/api",
     "paths": {
-        "/api/streams": {
+        "/admin/sanctum-requests": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List sanctum requests by status. Defaults to pending.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Streams"
+                    "sanctums-admin"
                 ],
-                "summary": "Get live streams",
+                "summary": "List sanctum requests for admins",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Filter by category",
-                        "name": "category",
+                        "description": "Filter status",
+                        "name": "status",
                         "in": "query"
-                    },
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.SanctumRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/sanctum-requests/{id}/approve": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Approve a pending sanctum request and create sanctum, owner membership, and default chat room.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sanctums-admin"
+                ],
+                "summary": "Approve sanctum request",
+                "parameters": [
                     {
                         "type": "integer",
-                        "default": 20,
-                        "description": "Limit results",
-                        "name": "limit",
-                        "in": "query"
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     },
                     {
-                        "type": "integer",
-                        "default": 0,
-                        "description": "Offset for pagination",
-                        "name": "offset",
-                        "in": "query"
+                        "description": "Optional review notes",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "review_notes": {
+                                    "type": "string"
+                                }
+                            }
+                        }
                     }
                 ],
                 "responses": {
@@ -57,12 +102,39 @@
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "properties": {
+                                "request": {
+                                    "$ref": "#/definitions/models.SanctumRequest"
+                                },
+                                "sanctum": {
+                                    "$ref": "#/definitions/server.SanctumDTO"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
-            },
+            }
+        },
+        "/admin/sanctum-requests/{id}/reject": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Reject a pending sanctum request.",
                 "consumes": [
                     "application/json"
                 ],
@@ -70,291 +142,48 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Streams"
+                    "sanctums-admin"
                 ],
-                "summary": "Create a new stream",
+                "summary": "Reject sanctum request",
                 "parameters": [
                     {
-                        "description": "Stream data",
-                        "name": "stream",
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Optional review notes",
+                        "name": "request",
                         "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/server.CreateStreamRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/models.Stream"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/streams/categories": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Streams"
-                ],
-                "summary": "Get stream categories",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/streams/me": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Streams"
-                ],
-                "summary": "Get my streams",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Stream"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/streams/{id}": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Streams"
-                ],
-                "summary": "Get stream by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Stream ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Stream"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Streams"
-                ],
-                "summary": "Update a stream",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Stream ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Stream data",
-                        "name": "stream",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/server.UpdateStreamRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Stream"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "tags": [
-                    "Streams"
-                ],
-                "summary": "Delete a stream",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Stream ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    }
-                }
-            }
-        },
-        "/api/streams/{id}/end": {
-            "post": {
-                "tags": [
-                    "Streams"
-                ],
-                "summary": "End streaming",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Stream ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Stream"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/streams/{id}/go-live": {
-            "post": {
-                "tags": [
-                    "Streams"
-                ],
-                "summary": "Start streaming (go live)",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Stream ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Stream"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/streams/{id}/messages": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Streams"
-                ],
-                "summary": "Get stream chat messages",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Stream ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "default": 50,
-                        "description": "Limit results",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 0,
-                        "description": "Offset for pagination",
-                        "name": "offset",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.StreamMessage"
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Streams"
-                ],
-                "summary": "Send stream chat message",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Stream ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Message content",
-                        "name": "message",
-                        "in": "body",
-                        "required": true,
                         "schema": {
                             "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
+                            "properties": {
+                                "review_notes": {
+                                    "type": "string"
+                                }
                             }
                         }
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.StreamMessage"
+                            "$ref": "#/definitions/models.SanctumRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -506,9 +335,513 @@
                     }
                 }
             }
+        },
+        "/sanctums": {
+            "get": {
+                "description": "List active sanctums.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sanctums"
+                ],
+                "summary": "List sanctums",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/server.SanctumDTO"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/sanctums/requests": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Submit a request for a new sanctum.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sanctums"
+                ],
+                "summary": "Create sanctum request",
+                "parameters": [
+                    {
+                        "description": "Sanctum request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "reason": {
+                                    "type": "string"
+                                },
+                                "requested_name": {
+                                    "type": "string"
+                                },
+                                "requested_slug": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.SanctumRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/sanctums/requests/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List sanctum requests submitted by the current user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sanctums"
+                ],
+                "summary": "Get my sanctum requests",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.SanctumRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/sanctums/{slug}": {
+            "get": {
+                "description": "Fetch active sanctum detail by slug.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sanctums"
+                ],
+                "summary": "Get sanctum by slug",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Sanctum slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/server.SanctumDTO"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/streams": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Streams"
+                ],
+                "summary": "Get live streams",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Limit results",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Offset for pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Streams"
+                ],
+                "summary": "Create a new stream",
+                "parameters": [
+                    {
+                        "description": "Stream data",
+                        "name": "stream",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/server.CreateStreamRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Stream"
+                        }
+                    }
+                }
+            }
+        },
+        "/streams/categories": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Streams"
+                ],
+                "summary": "Get stream categories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/streams/me": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Streams"
+                ],
+                "summary": "Get my streams",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Stream"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/streams/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Streams"
+                ],
+                "summary": "Get stream by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stream ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Stream"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Streams"
+                ],
+                "summary": "Update a stream",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stream ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Stream data",
+                        "name": "stream",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/server.UpdateStreamRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Stream"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Streams"
+                ],
+                "summary": "Delete a stream",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stream ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/streams/{id}/end": {
+            "post": {
+                "tags": [
+                    "Streams"
+                ],
+                "summary": "End streaming",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stream ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Stream"
+                        }
+                    }
+                }
+            }
+        },
+        "/streams/{id}/go-live": {
+            "post": {
+                "tags": [
+                    "Streams"
+                ],
+                "summary": "Start streaming (go live)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stream ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Stream"
+                        }
+                    }
+                }
+            }
+        },
+        "/streams/{id}/messages": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Streams"
+                ],
+                "summary": "Get stream chat messages",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stream ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Limit results",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Offset for pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.StreamMessage"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Streams"
+                ],
+                "summary": "Send stream chat message",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Stream ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Message content",
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.StreamMessage"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "models.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "details": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Post": {
             "type": "object",
             "properties": {
@@ -549,6 +882,75 @@
                     "type": "integer"
                 }
             }
+        },
+        "models.SanctumRequest": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "requested_by_user": {
+                    "$ref": "#/definitions/models.User"
+                },
+                "requested_by_user_id": {
+                    "type": "integer"
+                },
+                "requested_name": {
+                    "type": "string"
+                },
+                "requested_slug": {
+                    "type": "string"
+                },
+                "review_notes": {
+                    "type": "string"
+                },
+                "reviewed_by_user": {
+                    "$ref": "#/definitions/models.User"
+                },
+                "reviewed_by_user_id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.SanctumRequestStatus"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SanctumRequestStatus": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "approved",
+                "rejected"
+            ],
+            "x-enum-varnames": [
+                "SanctumRequestStatusPending",
+                "SanctumRequestStatusApproved",
+                "SanctumRequestStatusRejected"
+            ]
+        },
+        "models.SanctumStatus": {
+            "type": "string",
+            "enum": [
+                "active",
+                "pending",
+                "rejected",
+                "banned"
+            ],
+            "x-enum-varnames": [
+                "SanctumStatusActive",
+                "SanctumStatusPending",
+                "SanctumStatusRejected",
+                "SanctumStatusBanned"
+            ]
         },
         "models.Stream": {
             "type": "object",
@@ -699,6 +1101,38 @@
                     "type": "string",
                     "maxLength": 255,
                     "minLength": 1
+                }
+            }
+        },
+        "server.SanctumDTO": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by_user_id": {
+                    "type": "integer"
+                },
+                "default_chat_room_id": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.SanctumStatus"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
