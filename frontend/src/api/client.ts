@@ -3,6 +3,7 @@ import type {
   AdminSanctumRequestActionResponse,
   AdminSanctumRequestStatus,
   AuthResponse,
+  BulkSanctumMembershipsInput,
   Comment,
   Conversation,
   CreateCommentRequest,
@@ -18,6 +19,7 @@ import type {
   PaginationParams,
   Post,
   SanctumDTO,
+  SanctumMembership,
   SanctumRequest,
   SearchParams,
   SendMessageRequest,
@@ -421,6 +423,19 @@ class ApiClient {
 
   async getMySanctumRequests(): Promise<SanctumRequest[]> {
     return this.request('/sanctums/requests/me')
+  }
+
+  async getMySanctumMemberships(): Promise<SanctumMembership[]> {
+    return this.request('/sanctums/memberships/me')
+  }
+
+  async upsertMySanctumMemberships(
+    payload: BulkSanctumMembershipsInput
+  ): Promise<SanctumMembership[]> {
+    return this.request('/sanctums/memberships/bulk', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
   }
 
   async getAdminSanctumRequests(

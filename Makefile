@@ -295,12 +295,12 @@ test-down:
 test-e2e-smoke:
 	@echo "$(BLUE)Running Playwright smoke E2E tests...$(NC)"
 	@echo "$(YELLOW)⚠️  Ensure backend and frontend are running (make dev or run both locally)$(NC)"
-	cd frontend && PLAYWRIGHT_BASE_URL=http://localhost:5173 PLAYWRIGHT_API_URL=http://localhost:8375/api $(BUN) run test:e2e:smoke
+	cd frontend && PLAYWRIGHT_BASE_URL=http://localhost:5173 PLAYWRIGHT_API_URL=http://localhost:8375/api DB_HOST=localhost DB_PORT=5433 DB_USER=sanctum_user DB_PASSWORD=sanctum_password DB_NAME=sanctum_test $(BUN) run test:e2e:smoke
 
 test-e2e:
 	@echo "$(BLUE)Running full Playwright E2E suite...$(NC)"
 	@echo "$(YELLOW)⚠️  Ensure backend and frontend are running (make dev or run both locally)$(NC)"
-	cd frontend && PLAYWRIGHT_BASE_URL=http://localhost:5173 PLAYWRIGHT_API_URL=http://localhost:8375/api $(BUN) run test:e2e
+	cd frontend && PLAYWRIGHT_BASE_URL=http://localhost:5173 PLAYWRIGHT_API_URL=http://localhost:8375/api DB_HOST=localhost DB_PORT=5433 DB_USER=sanctum_user DB_PASSWORD=sanctum_password DB_NAME=sanctum_test $(BUN) run test:e2e
 
 # Database seeding
 seed:

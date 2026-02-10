@@ -53,6 +53,7 @@ const SanctumDetail = lazy(() => import('@/pages/SanctumDetail'))
 const SanctumRequestForm = lazy(() => import('@/pages/SanctumRequestForm'))
 const MySanctumRequests = lazy(() => import('@/pages/MySanctumRequests'))
 const AdminSanctumRequests = lazy(() => import('@/pages/AdminSanctumRequests'))
+const OnboardingSanctums = lazy(() => import('@/pages/OnboardingSanctums'))
 
 function PageLoader() {
   return (
@@ -385,6 +386,14 @@ function RoutesWithPrefetch() {
           element={
             <ProtectedRoute>
               <MySanctumRequests />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/onboarding/sanctums"
+          element={
+            <ProtectedRoute>
+              <OnboardingSanctums />
             </ProtectedRoute>
           }
         />
