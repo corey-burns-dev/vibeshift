@@ -103,4 +103,6 @@ Historical and point-in-time analyses are in `docs/reports/` and should be treat
   - Added backend flag manager with boolean and percentage rollout support in `backend/internal/featureflags/manager.go`
   - Added admin visibility endpoint `GET /api/admin/feature-flags`
   - Added rollout guidance in `docs/FEATURE_FLAGS.md`
-- [ ] **Rollback-ready deployment process**
+- [x] **Rollback-ready deployment process**
+  - Added rollback playbook in `docs/ROLLBACK_RUNBOOK.md`
+  - Added guarded rollback helper `scripts/rollback_to_ref.sh` (dry-run default, execute mode with readiness checks and auto-fallback)

@@ -62,3 +62,6 @@ Notes:
 - Dependabot is enabled for Actions and Go modules; review Dependabot PRs and test updates locally.
 
 If CI fails on formatting or linting, fix locally and push; do not merge until checks are green.
+
+Operational rollback procedure:
+- See `docs/ROLLBACK_RUNBOOK.md` (including `scripts/rollback_to_ref.sh` dry-run and execute modes).
