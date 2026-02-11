@@ -14,6 +14,7 @@ type PostRepository interface {
 	Create(ctx context.Context, post *models.Post) error
 	GetByID(ctx context.Context, id uint, currentUserID uint) (*models.Post, error)
 	GetByUserID(ctx context.Context, userID uint, limit, offset int, currentUserID uint) ([]*models.Post, error)
+	GetBySanctumID(ctx context.Context, sanctumID uint, limit, offset int, currentUserID uint) ([]*models.Post, error)
 	List(ctx context.Context, limit, offset int, currentUserID uint) ([]*models.Post, error)
 	Search(ctx context.Context, query string, limit, offset int, currentUserID uint) ([]*models.Post, error)
 	Update(ctx context.Context, post *models.Post) error
@@ -52,6 +53,24 @@ func (r *postRepository) GetByUserID(ctx context.Context, userID uint, limit, of
 	err := r.db.WithContext(ctx).
 		Preload("User").
 		Where("user_id = ?", userID).
+		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&posts).Error
+	if err != nil {
+		return posts, err
+	}
+	for _, p := range posts {
+		r.populatePostDetails(ctx, p, currentUserID)
+	}
+	return posts, err
+}
+
+func (r *postRepository) GetBySanctumID(ctx context.Context, sanctumID uint, limit, offset int, currentUserID uint) ([]*models.Post, error) {
+	var posts []*models.Post
+	err := r.db.WithContext(ctx).
+		Preload("User").
+		Where("sanctum_id = ?", sanctumID).
 		Order("created_at DESC").
 		Limit(limit).
 		Offset(offset).

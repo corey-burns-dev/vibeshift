@@ -22,6 +22,8 @@ type RealtimeEventType =
   | 'friend_removed'
   | 'friend_presence_changed'
   | 'friends_online_snapshot'
+  | 'sanctum_request_created'
+  | 'sanctum_request_reviewed'
 
 interface RealtimeEvent {
   type?: RealtimeEventType
@@ -394,6 +396,57 @@ export function useRealtimeNotifications(enabled = true) {
               : []
             // Always apply snapshot, even when empty, so stale online badges clear.
             setInitialOnlineUsers(userIDs)
+            break
+          }
+          case 'sanctum_request_created': {
+            void queryClient.invalidateQueries({
+              queryKey: ['sanctums', 'requests', 'admin', 'pending'],
+            })
+            const name = asString(payload.requested_name)
+            if (name) {
+              toast.info('New Sanctum Request', {
+                description: `A request for "${name}" has been submitted.`,
+              })
+            }
+            break
+          }
+          case 'sanctum_request_reviewed': {
+            void queryClient.invalidateQueries({
+              queryKey: ['sanctums', 'requests', 'admin'],
+            })
+            void queryClient.invalidateQueries({
+              queryKey: ['sanctums', 'list'],
+            })
+
+            const status = asString(payload.status)
+            const requestId = asNumber(payload.id)
+
+            // If we have the current user stored, we can check if it's their request
+            const userStr = localStorage.getItem('user')
+            if (userStr) {
+              try {
+                const user = JSON.parse(userStr)
+                if (user && user.id) {
+                  // We don't have the requester ID in the reviewed payload reliably without more work,
+                  // but we can just invalidate myRequests and the user will see the update.
+                  void queryClient.invalidateQueries({
+                    queryKey: ['sanctums', 'requests', 'me'],
+                  })
+
+                  if (status === 'approved') {
+                    toast.success('Sanctum request approved!', {
+                      description: 'Your request to create a sanctum was accepted.',
+                    })
+                  } else if (status === 'rejected') {
+                    toast.error('Sanctum request rejected', {
+                      description: 'Your request to create a sanctum was denied.',
+                    })
+                  }
+                }
+              } catch (e) {
+                // ignore
+              }
+            }
             break
           }
         }

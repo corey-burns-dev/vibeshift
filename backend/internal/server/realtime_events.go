@@ -24,7 +24,22 @@ const (
 	EventFriendRequestCancelled = "friend_request_cancelled"
 	EventFriendRemoved          = "friend_removed"
 	EventFriendPresenceChanged  = "friend_presence_changed"
+	EventSanctumRequestCreated  = "sanctum_request_created"
+	EventSanctumRequestReviewed = "sanctum_request_reviewed"
 )
+
+func (s *Server) publishAdminEvent(eventType string, payload map[string]interface{}) {
+	// Find all admin IDs
+	var adminIDs []uint
+	if err := s.db.Model(&models.User{}).Where("is_admin = ?", true).Pluck("id", &adminIDs).Error; err != nil {
+		log.Printf("failed to fetch admin IDs for %s event: %v", eventType, err)
+		return
+	}
+
+	for _, adminID := range adminIDs {
+		s.publishUserEvent(adminID, eventType, payload)
+	}
+}
 
 func (s *Server) publishUserEvent(userID uint, eventType string, payload map[string]interface{}) {
 	event := map[string]interface{}{

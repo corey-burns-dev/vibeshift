@@ -3,6 +3,7 @@ package server
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	"sanctum/internal/models"
@@ -36,9 +37,10 @@ func (s *Server) CreatePost(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uint)
 
 	var req struct {
-		Title    string `json:"title"`
-		Content  string `json:"content"`
-		ImageURL string `json:"image_url,omitempty"`
+		Title     string `json:"title"`
+		Content   string `json:"content"`
+		ImageURL  string `json:"image_url,omitempty"`
+		SanctumID *uint  `json:"sanctum_id,omitempty"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
@@ -52,10 +54,11 @@ func (s *Server) CreatePost(c *fiber.Ctx) error {
 	}
 
 	post := &models.Post{
-		Title:    req.Title,
-		Content:  req.Content,
-		ImageURL: req.ImageURL,
-		UserID:   userID,
+		Title:     req.Title,
+		Content:   req.Content,
+		ImageURL:  req.ImageURL,
+		UserID:    userID,
+		SanctumID: req.SanctumID,
 	}
 
 	if err := s.postRepo.Create(ctx, post); err != nil {
@@ -82,6 +85,18 @@ func (s *Server) GetPosts(c *fiber.Ctx) error {
 	ctx := c.Context()
 	page := parsePagination(c, 20)
 	userID, _ := s.optionalUserID(c)
+
+	sanctumIDStr := c.Query("sanctum_id")
+	if sanctumIDStr != "" {
+		sanctumID, err := strconv.ParseUint(sanctumIDStr, 10, 32)
+		if err == nil {
+			posts, err := s.postRepo.GetBySanctumID(ctx, uint(sanctumID), page.Limit, page.Offset, userID)
+			if err != nil {
+				return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+			}
+			return c.JSON(posts)
+		}
+	}
 
 	posts, err := s.postRepo.List(ctx, page.Limit, page.Offset, userID)
 	if err != nil {
