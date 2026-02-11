@@ -19,7 +19,7 @@ GREEN := \033[1;32m
 YELLOW := \033[1;33m
 NC := \033[0m # No Color
 
-.PHONY: help dev dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions clean test test-backend test-frontend test-api test-e2e test-e2e-smoke test-up test-down seed admin-list admin-promote admin-demote admin-bootstrap-me deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down
+.PHONY: help dev dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions clean test test-backend test-frontend test-api test-e2e test-e2e-smoke test-up test-down seed admin-list admin-promote admin-demote admin-bootstrap-me deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down report report-open
 
 # Default target
 help:
@@ -79,6 +79,8 @@ help:
 	@echo ""
 	@echo "$(GREEN)Utilities:$(NC)"
 	@echo "  make env                - ⚙️  Initialize .env file"
+	@echo "  make report slug=<name> - 📝 Create a timestamped report in docs/reports/"
+	@echo "  make report-open        - 📝 Show most recent report file path"
 	@echo "  make restart            - 🔄 Restart all services"
 	@echo "  make clean              - 🧹 Clean containers, volumes, and artifacts"
 	@echo "  make check-versions     - 🔍 Check latest Docker image versions"
@@ -257,6 +259,22 @@ restart: down dev
 
 check-versions:
 	@bash scripts/check-versions.sh
+
+report:
+	@if [ -z "$(slug)" ]; then \
+		echo "$(YELLOW)Usage: make report slug=<short-kebab-slug>$(NC)"; \
+		echo "Example: make report slug=auth-refresh-fix"; \
+		exit 1; \
+	fi
+	@./scripts/new_report.sh "$(slug)"
+
+report-open:
+	@latest="$$(ls -1 docs/reports/*.md 2>/dev/null | grep -v 'REPORT_TEMPLATE.md' | sort | tail -n 1)"; \
+	if [ -z "$$latest" ]; then \
+		echo "$(YELLOW)No report files found in docs/reports.$(NC)"; \
+		exit 1; \
+	fi; \
+	echo "$$latest"
 
 clean:
 	@echo "$(BLUE)Cleaning up containers, volumes, and artifacts...$(NC)"

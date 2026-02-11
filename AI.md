@@ -17,6 +17,7 @@ This file is the single source of truth for repo-wide AI and contributor rules.
 ## Environment and Tooling Assumptions
 
 - Docker-first workflow is the default for backend and infrastructure tasks.
+- Default interactive shell for local commands is Fish (`/bin/fish`).
 - Some agent environments do not have Go installed on host.
 - Frontend runtime and package manager is Bun.
 - Frontend lint/format is Biome.
@@ -78,6 +79,8 @@ This file is the single source of truth for repo-wide AI and contributor rules.
 - Read existing implementation patterns before editing.
 - State what changed, how to validate, and any followups.
 - For larger tasks, split work into small atomic commits.
+- For substantial tasks, add a report in `docs/reports/` named `YYYY-MM-DD-HHMM-<slug>.md`.
+- Use `docs/reports/REPORT_TEMPLATE.md` for report structure and include validation details.
 
 ## Related Docs
 

@@ -1,4 +1,4 @@
-# Copilot Instructions
+# Antigravity Instructions
 
 Repo-wide AI and engineering rules are maintained in `/AI.md`.
 

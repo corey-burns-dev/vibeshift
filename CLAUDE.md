@@ -1,4 +1,4 @@
-# Copilot Instructions
+# Claude Instructions
 
 Repo-wide AI and engineering rules are maintained in `/AI.md`.
 

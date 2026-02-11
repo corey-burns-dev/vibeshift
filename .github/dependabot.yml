@@ -1,71 +1,83 @@
 version: 2
 updates:
-  - package-ecosystem: 'gomod'
-    directory: '/backend'
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: 'weekly'
-      day: 'monday'
-      time: '09:00'
-      timezone: 'America/New_York'
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "gomod"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "gomod"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
     commit-message:
-      prefix: 'deps(go)'
-    labels: ['dependencies', 'go']
+      prefix: "deps(go)"
+    labels: ["dependencies", "go"]
     open-pull-requests-limit: 5
     ignore:
-      - dependency-name: '*'
-        update-types: ['version-update:semver-major']
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       go-minor:
-        patterns: ['*']
-        update-types: ['minor', 'patch']
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
-  - package-ecosystem: 'npm'
-    directory: '/frontend'
+  - package-ecosystem: "npm"
+    directory: "/frontend"
     schedule:
-      interval: 'weekly'
-      day: 'monday'
-      time: '09:00'
-      timezone: 'America/New_York'
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
     commit-message:
-      prefix: 'deps(frontend)'
-    labels: ['dependencies', 'frontend']
+      prefix: "deps(frontend)"
+    labels: ["dependencies", "frontend"]
     open-pull-requests-limit: 5
     ignore:
-      - dependency-name: '*'
-        update-types: ['version-update:semver-major']
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       npm-minor:
-        patterns: ['*']
-        update-types: ['minor', 'patch']
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
-  - package-ecosystem: 'docker'
-    directory: '/'
+  - package-ecosystem: "docker"
+    directory: "/"
     schedule:
-      interval: 'weekly'
-      day: 'monday'
-      time: '09:00'
-      timezone: 'America/New_York'
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
     commit-message:
-      prefix: 'deps(docker)'
-    labels: ['dependencies', 'docker']
+      prefix: "deps(docker)"
+    labels: ["dependencies", "docker"]
     open-pull-requests-limit: 5
     groups:
       docker-minor:
-        patterns: ['*']
-        update-types: ['minor', 'patch']
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
-  - package-ecosystem: 'github-actions'
-    directory: '/'
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: 'weekly'
-      day: 'monday'
-      time: '09:00'
-      timezone: 'America/New_York'
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
     commit-message:
-      prefix: 'ci'
-    labels: ['ci', 'dependencies']
+      prefix: "ci"
+    labels: ["ci", "dependencies"]
     open-pull-requests-limit: 5
     groups:
       actions-minor:
-        patterns: ['*']
-        update-types: ['minor', 'patch']
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
