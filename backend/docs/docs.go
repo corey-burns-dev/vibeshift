@@ -361,6 +361,90 @@ const docTemplate = `{
                 }
             }
         },
+        "/sanctums/memberships/bulk": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upsert current user's followed sanctums by slug and keep owner/mod memberships intact.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sanctums"
+                ],
+                "summary": "Save sanctums I follow",
+                "parameters": [
+                    {
+                        "description": "Sanctum follow list",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "sanctum_slugs": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/server.SanctumMembershipDTO"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/sanctums/memberships/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List sanctum memberships for the current user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sanctums"
+                ],
+                "summary": "Get my sanctum memberships",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/server.SanctumMembershipDTO"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/sanctums/requests": {
             "post": {
                 "security": [
@@ -885,6 +969,19 @@ const docTemplate = `{
                 }
             }
         },
+        "models.SanctumMembershipRole": {
+            "type": "string",
+            "enum": [
+                "owner",
+                "mod",
+                "member"
+            ],
+            "x-enum-varnames": [
+                "SanctumMembershipRoleOwner",
+                "SanctumMembershipRoleMod",
+                "SanctumMembershipRoleMember"
+            ]
+        },
         "models.SanctumRequest": {
             "type": "object",
             "properties": {
@@ -1135,6 +1232,29 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "server.SanctumMembershipDTO": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/models.SanctumMembershipRole"
+                },
+                "sanctum": {
+                    "$ref": "#/definitions/server.SanctumDTO"
+                },
+                "sanctum_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },

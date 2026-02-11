@@ -40,6 +40,16 @@ definitions:
       user_id:
         type: integer
     type: object
+  models.SanctumMembershipRole:
+    enum:
+    - owner
+    - mod
+    - member
+    type: string
+    x-enum-varnames:
+    - SanctumMembershipRoleOwner
+    - SanctumMembershipRoleMod
+    - SanctumMembershipRoleMember
   models.SanctumRequest:
     properties:
       created_at:
@@ -212,6 +222,21 @@ definitions:
         $ref: '#/definitions/models.SanctumStatus'
       updated_at:
         type: string
+    type: object
+  server.SanctumMembershipDTO:
+    properties:
+      created_at:
+        type: string
+      role:
+        $ref: '#/definitions/models.SanctumMembershipRole'
+      sanctum:
+        $ref: '#/definitions/server.SanctumDTO'
+      sanctum_id:
+        type: integer
+      updated_at:
+        type: string
+      user_id:
+        type: integer
     type: object
   server.UpdateStreamRequest:
     properties:
@@ -479,6 +504,59 @@ paths:
           schema:
             $ref: '#/definitions/models.ErrorResponse'
       summary: Get sanctum by slug
+      tags:
+      - sanctums
+  /sanctums/memberships/bulk:
+    post:
+      consumes:
+      - application/json
+      description: Upsert current user's followed sanctums by slug and keep owner/mod
+        memberships intact.
+      parameters:
+      - description: Sanctum follow list
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            sanctum_slugs:
+              items:
+                type: string
+              type: array
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/server.SanctumMembershipDTO'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Save sanctums I follow
+      tags:
+      - sanctums
+  /sanctums/memberships/me:
+    get:
+      description: List sanctum memberships for the current user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/server.SanctumMembershipDTO'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get my sanctum memberships
       tags:
       - sanctums
   /sanctums/requests:
