@@ -34,6 +34,7 @@ This file is the single source of truth for repo-wide AI and contributor rules.
 ### Frontend
 
 - React + TypeScript + Vite in `frontend/`.
+- React Router for Navigation
 - TanStack Query for server state.
 - Tailwind CSS and Radix-style component patterns.
 

@@ -1,17 +1,92 @@
 import { MessageCircle, Minus, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo } from 'react'
-import type { Message } from '@/api/types'
+import { useLocation } from 'react-router-dom'
+import { toast } from 'sonner'
+import type { Conversation, Message } from '@/api/types'
 import { ChatDockConversationList } from '@/components/chat/ChatDockConversationList'
 import { ChatDockConversationView } from '@/components/chat/ChatDockConversationView'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useConversation, useConversations } from '@/hooks/useChat'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 import { getCurrentUser } from '@/hooks/useUsers'
+import { getDirectMessageName } from '@/lib/chat-utils'
 import { cn } from '@/lib/utils'
 import { useChatContext } from '@/providers/ChatProvider'
 import { useChatDockStore } from '@/stores/useChatDockStore'
 
+interface ChatDockPanelContentProps {
+  view: 'list' | 'conversation'
+  conversationName: string
+  conversations: Conversation[]
+  activeConversationId: number | null
+  activeConversation: Conversation | undefined
+  currentUserId: number | undefined
+  onMinimize: () => void
+  onClose: () => void
+  onSelectConversation: (id: number) => void
+  sendTyping: (isTyping: boolean) => void
+}
+
+function ChatDockPanelContent({
+  view,
+  conversationName,
+  conversations,
+  activeConversationId,
+  activeConversation,
+  currentUserId,
+  onMinimize,
+  onClose,
+  onSelectConversation,
+  sendTyping,
+}: ChatDockPanelContentProps) {
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex items-center justify-between border-b border-border/50 px-4 py-2.5">
+        <h2 className="truncate text-sm font-semibold">
+          {view === 'conversation' ? conversationName : 'Messages'}
+        </h2>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={onMinimize}
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={onClose}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      {view === 'list' ? (
+        <ChatDockConversationList
+          conversations={conversations}
+          currentUserId={currentUserId}
+          onSelect={onSelectConversation}
+        />
+      ) : activeConversationId ? (
+        <ChatDockConversationView
+          conversationId={activeConversationId}
+          conversation={activeConversation}
+          currentUserId={currentUserId}
+          sendTyping={sendTyping}
+        />
+      ) : null}
+    </div>
+  )
+}
+
 export function ChatDock() {
   const currentUser = getCurrentUser()
+  const isMobile = useIsMobile()
+  const location = useLocation()
   const {
     isOpen,
     minimized,
@@ -32,6 +107,7 @@ export function ChatDock() {
   )
 
   const {
+    isConnected,
     joinRoom,
     leaveRoom,
     sendTyping: ctxSendTyping,
@@ -44,7 +120,8 @@ export function ChatDock() {
     [conversations]
   )
 
-  // Join all conversation rooms
+  // Join all conversation rooms; re-run when socket opens so late-connect doesn't drop joins
+  // biome-ignore lint/correctness/useExhaustiveDependencies: isConnected needed to retry room joins when socket opens late
   useEffect(() => {
     for (const id of conversationIds) {
       joinRoom(id)
@@ -55,9 +132,10 @@ export function ChatDock() {
         leaveRoom(id)
       }
     }
-  }, [conversationIds, joinRoom, leaveRoom])
+  }, [conversationIds, isConnected, joinRoom, leaveRoom])
 
-  // Join/leave active conversation
+  // Join/leave active conversation; re-run when socket opens for late-connect
+  // biome-ignore lint/correctness/useExhaustiveDependencies: isConnected needed to retry room join when socket opens late
   useEffect(() => {
     if (activeConversationId) {
       joinRoom(activeConversationId)
@@ -68,21 +146,50 @@ export function ChatDock() {
         }
       }
     }
-  }, [activeConversationId, conversationIds, joinRoom, leaveRoom])
+  }, [activeConversationId, conversationIds, isConnected, joinRoom, leaveRoom])
 
-  // Register message callback
+  // Register message callback: increment unread and show toast when appropriate.
+  // Re-run when pathname changes so we re-register after leaving /messages or /chat
+  // (those pages take over the callback while mounted).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pathname intentionally re-runs to re-register callback
   useEffect(() => {
     const handleMessage = (message: Message, conversationId: number) => {
+      if (message.sender_id === currentUser?.id) return
+
       const state = useChatDockStore.getState()
-      if (
-        conversationId !== state.activeConversationId ||
-        !state.isOpen ||
-        state.minimized
-      ) {
-        if (message.sender_id !== currentUser?.id) {
-          incrementUnread(conversationId)
-        }
-      }
+      const isCurrentConversation =
+        conversationId === state.activeConversationId &&
+        state.isOpen &&
+        !state.minimized
+      if (isCurrentConversation) return
+
+      incrementUnread(conversationId)
+
+      // Show toast when dock is closed, minimized, or another conversation is active
+      const conv = conversations.find(
+        (c: Conversation) => c.id === conversationId
+      )
+      const conversationName = conv
+        ? conv.is_group
+          ? conv.name || 'Unnamed Group'
+          : getDirectMessageName(conv, currentUser?.id)
+        : 'Message'
+      const senderName = message.sender?.username ?? 'Someone'
+      const preview =
+        message.content.length > 50
+          ? `${message.content.slice(0, 50)}…`
+          : message.content
+
+      toast.message(`${senderName} in ${conversationName}`, {
+        description: preview || 'New message',
+        action: {
+          label: 'Open',
+          onClick: () => {
+            useChatDockStore.getState().open()
+            useChatDockStore.getState().setActiveConversation(conversationId)
+          },
+        },
+      })
     }
 
     setOnMessage(handleMessage)
@@ -90,7 +197,39 @@ export function ChatDock() {
     return () => {
       setOnMessage(undefined)
     }
-  }, [currentUser?.id, incrementUnread, setOnMessage])
+  }, [
+    currentUser?.id,
+    conversations,
+    incrementUnread,
+    setOnMessage,
+    location.pathname,
+  ])
+
+  // Keyboard shortcuts: Cmd/Ctrl+K toggle, Escape close (when not typing)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement
+      const isTyping =
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      if (isTyping) return
+
+      if (e.key === 'Escape') {
+        if (isOpen && !minimized) {
+          e.preventDefault()
+          close()
+        }
+        return
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        toggle()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, minimized, close, toggle])
 
   const sendTyping = useCallback(
     (isTyping: boolean) => {
@@ -130,59 +269,59 @@ export function ChatDock() {
         )}
       </button>
 
-      {/* Panel */}
-      {isOpen && !minimized && (
-        <div
-          className={cn(
-            'fixed z-[60] flex flex-col rounded-xl border border-border bg-background shadow-2xl',
-            // Desktop
-            'bottom-20 right-6 h-[500px] w-[380px]',
-            // Mobile
-            'max-md:inset-x-2 max-md:bottom-20 max-md:h-[70dvh] max-md:w-auto'
-          )}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-border/50 px-4 py-2.5">
-            <h2 className="truncate text-sm font-semibold">
-              {view === 'conversation' ? conversationName : 'Messages'}
-            </h2>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={minimize}
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={close}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Body */}
-          {view === 'list' ? (
-            <ChatDockConversationList
+      {/* Panel: mobile = full-screen sheet, desktop = floating panel */}
+      {isOpen &&
+        !minimized &&
+        (isMobile ? (
+          <Dialog
+            open={isOpen && !minimized}
+            onOpenChange={open => {
+              if (!open) close()
+            }}
+          >
+            <DialogContent
+              className={cn(
+                'bottom-0 left-0 right-0 top-auto z-[60] flex h-[90dvh] max-h-[90dvh] translate-x-0 translate-y-0 flex-col gap-0 rounded-t-xl border-t p-0',
+                'data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom',
+                '[&>button]:hidden'
+              )}
+              aria-describedby={undefined}
+            >
+              <DialogTitle className="sr-only">Messages</DialogTitle>
+              <ChatDockPanelContent
+                view={view}
+                conversationName={conversationName}
+                conversations={conversations}
+                activeConversationId={activeConversationId}
+                activeConversation={activeConversation}
+                currentUserId={currentUser?.id}
+                onMinimize={minimize}
+                onClose={close}
+                onSelectConversation={setActiveConversation}
+                sendTyping={sendTyping}
+              />
+            </DialogContent>
+          </Dialog>
+        ) : (
+          <div
+            className={cn(
+              'fixed bottom-20 right-6 z-[60] flex h-[500px] w-[380px] flex-col rounded-xl border border-border bg-background shadow-2xl'
+            )}
+          >
+            <ChatDockPanelContent
+              view={view}
+              conversationName={conversationName}
               conversations={conversations}
+              activeConversationId={activeConversationId}
+              activeConversation={activeConversation}
               currentUserId={currentUser?.id}
-              onSelect={setActiveConversation}
-            />
-          ) : activeConversationId ? (
-            <ChatDockConversationView
-              conversationId={activeConversationId}
-              conversation={activeConversation}
-              currentUserId={currentUser?.id}
+              onMinimize={minimize}
+              onClose={close}
+              onSelectConversation={setActiveConversation}
               sendTyping={sendTyping}
             />
-          ) : null}
-        </div>
-      )}
+          </div>
+        ))}
     </>
   )
 }

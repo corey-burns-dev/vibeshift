@@ -8,6 +8,7 @@ import {
   getDirectMessageAvatar,
   getDirectMessageName,
 } from '@/lib/chat-utils'
+import { cn } from '@/lib/utils'
 import { useChatDockStore } from '@/stores/useChatDockStore'
 
 interface ChatDockConversationListProps {
@@ -76,7 +77,10 @@ export function ChatDockConversationList({
               key={conv.id}
               type="button"
               onClick={() => onSelect(conv.id)}
-              className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent/50"
+              className={cn(
+                'flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent/50',
+                unread > 0 && 'bg-primary/5'
+              )}
             >
               <div className="relative shrink-0">
                 <Avatar className="h-9 w-9">
@@ -92,7 +96,14 @@ export function ChatDockConversationList({
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-sm font-medium">{name}</span>
+                  <span
+                    className={cn(
+                      'truncate text-sm',
+                      unread > 0 ? 'font-semibold' : 'font-medium'
+                    )}
+                  >
+                    {name}
+                  </span>
                   {time && (
                     <span className="shrink-0 text-[10px] text-muted-foreground">
                       {formatTimestamp(time)}

@@ -108,205 +108,100 @@ Transform the existing full-page chat views (`/chat` for chatrooms, `/messages` 
 
 ---
 
-## 🔄 Phase 3: Enhanced Notifications & Unread Counts (PLANNED)
+## ✅ Phase 3: Enhanced Notifications & Unread Counts (COMPLETED)
 
-### Goals
-
-Improve user awareness of new messages with toast notifications and better unread count management.
-
-### Implementation Plan
+### What was built
 
 #### 3.1 Toast Notifications for Incoming Messages
 
-**When to show toasts:**
-- Dock is closed OR minimized
-- Message is from another user (not the current user)
-- Message is in a conversation that's not currently active
+- **`frontend/src/components/chat/ChatDock.tsx`**
+  - In the `setOnMessage` callback: when the message is from another user and the dock is closed, minimized, or a different conversation is active, show a sonner toast.
+  - Toast title: `{senderName} in {conversationName}` (sender from `message.sender?.username` or "Someone", conversation name from list or "Message").
+  - Description: message preview truncated to 50 chars.
+  - Action button "Open": calls `open()` then `setActiveConversation(conversationId)` so the dock opens and switches to that conversation.
 
-**Toast content:**
-- Sender name + avatar
-- Message preview (truncated to ~50 chars)
-- Click action: opens dock and switches to that conversation
+#### 3.2 Unread Count Management
 
-**Files to modify:**
+- **`frontend/src/stores/useChatDockStore.ts`**
+  - Added Zustand `persist` middleware with `partialize: state => ({ unreadCounts: state.unreadCounts })` so unread counts survive refresh (storage key: `chat-dock-storage`).
+  - Added `resetUnreadBulk(conversationIds: number[])` for bulk-reset (e.g. when syncing with backend or clearing multiple after full-page read).
 
-1. **`frontend/src/components/chat/ChatDock.tsx`**
-   - In the `setOnMessage` callback, check dock state (`isOpen`, `minimized`, `activeConversationId`)
-   - If message should trigger toast, call `toast()` from `sonner`
-   - Toast onClick: `open()`, `setActiveConversation(conversationId)`
+- **`frontend/src/components/chat/ChatDockConversationList.tsx`**
+  - Conversation names with unread > 0 use `font-semibold`; others stay `font-medium`.
+  - Rows with unread > 0 have subtle background `bg-primary/5`.
 
-2. **Consider permission for browser notifications (optional)**
-   - If user grants permission, show browser notifications when tab is not focused
-   - Use `Notification` API with same content as toasts
+#### 3.3 Full-Page View Sync
 
-#### 3.2 Improve Unread Count Management
+- **`frontend/src/pages/Messages.tsx`** and **`frontend/src/pages/Chat.tsx`**
+  - When the user is viewing a conversation on the full-page (selected conversation ID in URL), an effect calls `useChatDockStore.getState().resetUnread(selectedConversationId)` so the dock’s unread count for that conversation stays in sync.
 
-**Current behavior:**
-- Unread counts increment via `onRoomMessage` callback
-- Counts reset when conversation becomes active
+### Not implemented (optional / future)
 
-**Enhancements:**
-- Persist unread counts to localStorage (survive refresh)
-- Add unread count to conversation list items (already has unread badge)
-- Consider marking conversations as "unread" vs "read" visually (bold text for unread)
-
-**Files to modify:**
-
-1. **`frontend/src/stores/useChatDockStore.ts`**
-   - Add Zustand persist middleware for `unreadCounts`
-   - Add action to bulk-reset unread counts when user reads messages via full-page view
-
-2. **`frontend/src/components/chat/ChatDockConversationList.tsx`**
-   - Apply bold font weight to conversation names with unread > 0
-   - Consider adding a subtle background highlight for unread conversations
-
-#### 3.3 Sync with Backend Unread Counts (if available)
-
-**If backend provides `unread_count` per conversation:**
-- Initialize Zustand `unreadCounts` from backend data on load
-- Reconcile local increments with server truth periodically
-
-**Files to check:**
-- `frontend/src/hooks/useChat.ts` -- see if `useConversations()` returns unread counts
-- Backend conversation endpoints -- check response schema
+- Browser `Notification` API when tab is not focused (optional).
+- Syncing `unreadCounts` from backend `unread_count` per conversation (when/if backend provides it).
 
 ---
 
-## 🔄 Phase 4: Polished UX & Persistence (PLANNED)
+## ✅ Phase 4: Polished UX & Persistence (COMPLETED)
 
-### Goals
-
-Add localStorage persistence for dock state and improve mobile experience.
-
-### Implementation Plan
+### What was built
 
 #### 4.1 Persist Dock State to localStorage
 
-**What to persist:**
-- `activeConversationId` -- resume where user left off
-- `drafts` -- preserve unsent message text across sessions
-- `unreadCounts` -- preserve unread counts across refresh (if not synced from backend)
-- `isOpen` -- optionally remember if dock was open (may be annoying if it auto-opens)
+- **`frontend/src/stores/useChatDockStore.ts`**
+  - Extended `partialize` to persist `activeConversationId`, `drafts`, and `unreadCounts` (same storage key `chat-dock-storage`).
+  - `isOpen` and `minimized` are not persisted (dock starts closed on load; avoids auto-opening).
 
-**Files to modify:**
+#### 4.2 Mobile Full-Screen Sheet
 
-1. **`frontend/src/stores/useChatDockStore.ts`**
-   - Add Zustand `persist` middleware
-   - Selective persistence (e.g., don't persist `minimized` state)
-   - Example:
-     ```ts
-     import { persist } from 'zustand/middleware'
+- **`frontend/src/hooks/useMediaQuery.ts`** (new)
+  - `useMediaQuery(query)` and `useIsMobile()` (max-width 767px, matches Tailwind `md`).
+- **`frontend/src/components/chat/ChatDock.tsx`**
+  - On mobile: panel renders inside a **Dialog** (existing `DialogContent`) styled as a bottom sheet: full width, bottom-anchored, 90dvh height, slide-in-from-bottom animation, backdrop. Built-in Dialog close button hidden; header keeps Minus/X.
+  - On desktop: unchanged floating panel (bottom-right, 380×500).
+  - Shared header + body extracted into `ChatDockPanelContent` for both branches.
 
-     export const useChatDockStore = create<ChatDockState>()(
-       persist(
-         (set, get) => ({
-           // ... state and actions
-         }),
-         {
-           name: 'chat-dock-storage',
-           partialize: (state) => ({
-             activeConversationId: state.activeConversationId,
-             drafts: state.drafts,
-             unreadCounts: state.unreadCounts,
-           }),
-         }
-       )
-     )
-     ```
+#### 4.3 Keyboard Shortcuts
 
-#### 4.2 Mobile Full-Screen Sheet (Optional Enhancement)
-
-**Current mobile behavior:**
-- Dock panel: `max-md:inset-x-2 max-md:bottom-20 max-md:h-[70dvh]`
-- Works well but could be more immersive
-
-**Potential enhancement:**
-- When dock opens on mobile, render as a full-screen modal/sheet
-- Use `Dialog` or `Sheet` component from shadcn/ui
-- Slide up from bottom with backdrop
-- Close button in top-left, keep header consistent
-
-**Files to modify:**
-
-1. **`frontend/src/components/chat/ChatDock.tsx`**
-   - Wrap panel in `<Sheet>` component on mobile breakpoint
-   - Use `useMediaQuery` to detect mobile viewport
-   - Adjust header layout for sheet context
-
-#### 4.3 Keyboard Shortcuts (Optional)
-
-**Potential shortcuts:**
-- `Cmd/Ctrl + K` -- toggle dock (like VS Code command palette)
-- `Escape` -- close dock when open
-- Arrow keys to navigate conversation list
-
-**Files to modify:**
-
-1. **`frontend/src/components/chat/ChatDock.tsx`**
-   - Add global keyboard event listener
-   - Use `useEffect` to register/cleanup listener
-   - Check if input is focused (avoid capturing when user is typing)
+- **`frontend/src/components/chat/ChatDock.tsx`**
+  - **`Cmd/Ctrl + K`** — toggles dock (open/close or restore if minimized).
+  - **`Escape`** — closes dock when open (and not minimized).
+  - Shortcuts are disabled when focus is in an `INPUT`, `TEXTAREA`, or contenteditable so typing is not intercepted.
+  - Arrow-key navigation in the conversation list was not added (optional enhancement).
 
 ---
 
-## 🔄 Phase 5: Refactor Existing Pages to Use ChatProvider (PLANNED)
+## ✅ Phase 5: Refactor Existing Pages to Use ChatProvider (COMPLETED)
 
-### Goals
+### What was built
 
-Eliminate duplicate WebSocket connections by migrating `/chat` and `/messages` pages to use `ChatProvider` context.
+#### 5.1 Messages Page
 
-### Implementation Plan
+- **`frontend/src/pages/Messages.tsx`**
+  - Replaced `useChatWebSocket()` with `useChatContext()`
+  - Join/leave active conversation via `joinRoom` / `leaveRoom`
+  - Register callbacks: `setOnTyping`, `setOnPresence`, `setOnConnectedUsers`; cleanup on unmount
+  - Use `ctxSendTyping(selectedConversationId, isTyping)` for typing; `joinedRooms.has(id)` for `isJoined`
+  - Removed duplicate cache update (provider already updates messages cache)
 
-#### 5.1 Refactor Messages Page
+#### 5.2 Chat Page
 
-**Current behavior:**
-- Calls `useChatWebSocket()` directly with active conversation ID
-- Creates its own WebSocket connection
+- **`frontend/src/pages/Chat.tsx`**
+  - Replaced `useChatWebSocket()` with `useChatContext()`
+  - Join rooms: selected conversation (when joined) + `openRoomTabs`; leave on cleanup
+  - Register callbacks: `setOnMessage`, `setOnTyping`, `setOnPresence`, `setOnConnectedUsers`, `setOnParticipantsUpdate`, `setOnChatroomPresence`; cleanup on unmount
+  - Single `setOnMessage` handler dispatches to DM sound vs room message (unread/sound) logic
+  - `wsIsJoined` derived from `joinedRooms.has(selectedChatId)`
 
-**Target behavior:**
-- Use `useChatContext()` from ChatProvider
-- Register callbacks for typing, presence, participants
-- Call `joinRoom` / `leaveRoom` based on active conversation
+#### 5.3 ChatDock callback re-registration
 
-**Files to modify:**
+- **`frontend/src/components/chat/ChatDock.tsx`**
+  - Added `location.pathname` to the `setOnMessage` effect deps so when the user navigates away from `/messages` or `/chat`, the dock re-registers its message handler (full-page views take over the callback while mounted).
 
-1. **`frontend/src/pages/Messages.tsx`**
-   - Replace `useChatWebSocket()` with `useChatContext()`
-   - Remove WS connection logic
-   - Use context methods: `joinRoom`, `leaveRoom`, `sendTyping`
-   - Register callbacks: `setOnTyping`, `setOnPresence`, `setOnParticipantsUpdate`
-   - Cleanup callbacks on unmount
+#### 5.4 useChatWebSocket
 
-#### 5.2 Refactor Chat Page
-
-**Current behavior:**
-- Similar to Messages page, creates own WebSocket connection
-
-**Target behavior:**
-- Same as Messages page refactor
-
-**Files to modify:**
-
-1. **`frontend/src/pages/Chat.tsx`**
-   - Apply same refactor pattern as Messages.tsx
-   - Ensure chatroom presence updates work correctly
-
-#### 5.3 Update or Deprecate useChatWebSocket Hook
-
-**Option A: Deprecate**
-- Mark `useChatWebSocket` as deprecated with JSDoc comment
-- Add warning in implementation to use `useChatContext` instead
-- Eventually remove in future cleanup
-
-**Option B: Refactor**
-- Make `useChatWebSocket` a thin wrapper around `useChatContext`
-- Maintains backward compatibility while using shared connection
-
-**Files to modify:**
-
-1. **`frontend/src/hooks/useChatWebSocket.ts`**
-   - Add deprecation notice or refactor to use context
-   - Update documentation
+- **`frontend/src/hooks/useChatWebSocket.ts`**
+  - JSDoc `@deprecated` added; prefer `useChatContext()` for a single persistent WebSocket. Hook retained for backward compatibility.
 
 ---
 
@@ -326,25 +221,27 @@ Eliminate duplicate WebSocket connections by migrating `/chat` and `/messages` p
   - Mobile viewport displays correctly
   - Dock disappears on logout
 
-### Phase 3 (Notifications)
+### Phase 3 (Notifications) — Completed
 
-- Toast appears when message arrives and dock is closed/minimized
-- Toast click opens dock and switches to conversation
-- Unread counts persist across refresh
-- Bold text for unread conversations
+- ✅ Toast appears when message arrives and dock is closed/minimized or another conversation is active
+- ✅ Toast "Open" action opens dock and switches to that conversation
+- ✅ Unread counts persist across refresh (localStorage)
+- ✅ Bold text and subtle background for unread conversations in the list
+- ✅ Viewing a conversation on full-page Messages/Chat resets that conversation’s unread in the dock
 
-### Phase 4 (Persistence)
+### Phase 4 (Persistence) — Completed
 
-- Dock state persists after browser refresh
-- Draft messages preserved across sessions
-- Active conversation ID restored on reload
+- ✅ `activeConversationId`, `drafts`, and `unreadCounts` persist after refresh (localStorage)
+- ✅ Mobile: dock opens as full-screen bottom sheet (Dialog, slide-up, 90dvh)
+- ✅ Desktop: unchanged floating panel
+- ✅ Cmd/Ctrl+K toggles dock; Escape closes when open (ignored when typing in inputs)
 
-### Phase 5 (Page Refactor)
+### Phase 5 (Page Refactor) — Completed
 
-- No duplicate WebSocket connections
-- `/messages` and `/chat` pages work identically to before
-- Real-time updates (typing, presence) still function
-- No console errors or warnings
+- No duplicate WebSocket connections when using `/messages` or `/chat`
+- `/messages` and `/chat` pages use `useChatContext()` and behave as before
+- Real-time updates (typing, presence, room presence) still function
+- ChatDock re-registers its message handler when navigating away from full-page chat
 
 ---
 
@@ -352,16 +249,11 @@ Eliminate duplicate WebSocket connections by migrating `/chat` and `/messages` p
 
 ### Current WebSocket Architecture
 
-**Phase 1 & 2:**
-- `ChatProvider` (root level) -- owns single persistent WebSocket
-- `ChatDock` -- consumes context, never unmounts
-- `/messages` and `/chat` pages -- still use `useChatWebSocket` (creates duplicate connections)
-
-**After Phase 5:**
-- `ChatProvider` (root level) -- single source of truth for WebSocket
-- `ChatDock` -- consumes context
-- `/messages` and `/chat` pages -- consume context (no duplicate connections)
-- `useChatWebSocket` -- deprecated or refactored as thin wrapper
+**Current (Phase 5):**
+- `ChatProvider` (root level) — single source of truth for WebSocket
+- `ChatDock` — consumes context; re-registers message callback when leaving `/messages` or `/chat`
+- `/messages` and `/chat` pages — consume context (no duplicate connections)
+- `useChatWebSocket` — deprecated (JSDoc); prefer `useChatContext()`
 
 ### State Management
 
@@ -428,11 +320,12 @@ App.tsx
 
 ## Known Issues & Trade-offs
 
-### Current (Phase 2)
+### Current (Phase 5)
 
-- ✅ **Resolved:** Duplicate WebSocket connections eliminated for ChatDock
-- ⚠️ **Remaining:** `/messages` and `/chat` pages still create their own connections (will be resolved in Phase 5)
-- ⚠️ **No persistence:** Dock state resets on refresh (will be resolved in Phase 4)
+- ✅ **Resolved:** Single WebSocket via ChatProvider; no duplicate connections from dock or full-page chat
+- ✅ **Resolved:** Unread counts, active conversation, drafts persist across refresh (Phases 3–4)
+- ✅ **Resolved:** `/messages` and `/chat` use `useChatContext()` (Phase 5)
+- **Note:** `isOpen` and `minimized` are intentionally not persisted so the dock does not auto-open on load.
 
 ### Architectural Decisions
 
