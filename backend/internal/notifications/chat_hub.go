@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"sync"
+
+	"github.com/gofiber/websocket/v2"
 )
 
 // ChatHub manages WebSocket connections for chat conversations.
@@ -100,6 +102,11 @@ func (h *ChatHub) RegisterUser(client *Client) {
 	h.userConns[client.UserID][client] = true
 	h.mu.Unlock()
 	h.BroadcastGlobalStatus(client.UserID, "online")
+}
+
+// UnregisterUser is a legacy wrapper for UnregisterClient.
+func (h *ChatHub) UnregisterUser(client *Client) {
+	h.UnregisterClient(client)
 }
 
 // UnregisterClient removes a user's websocket connection and cleans up all their conversation subscriptions

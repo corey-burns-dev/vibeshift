@@ -46,6 +46,13 @@ func NewVideoChatHub() *VideoChatHub {
 	}
 }
 
+// Join is a legacy wrapper for Register.
+func (h *VideoChatHub) Join(roomID string, userID uint, _ string, conn *websocket.Conn) {
+	if _, err := h.Register(roomID, userID, conn); err != nil {
+		log.Printf("VideoChatHub: Failed to join room %s for user %d: %v", roomID, userID, err)
+	}
+}
+
 // Register adds a user to a video chat room. Returns Client or error if limits exceeded.
 func (h *VideoChatHub) Register(roomID string, userID uint, conn *websocket.Conn) (*Client, error) {
 	h.mu.Lock()
@@ -76,7 +83,7 @@ func (h *VideoChatHub) UnregisterClient(client *Client) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	// We need to find which room this client is in. 
+	// We need to find which room this client is in.
 	// For efficiency we could track it in Client, but for now we iterate since VideoChat rooms are few.
 	for roomID, peers := range h.rooms {
 		if c, ok := peers[client.UserID]; ok && c == client {
@@ -85,7 +92,7 @@ func (h *VideoChatHub) UnregisterClient(client *Client) {
 				delete(h.rooms, roomID)
 			}
 			log.Printf("VideoChatHub: User %d left room %s", client.UserID, roomID)
-			
+
 			// Notify remaining peers (doing this inside lock for simplicity here, but broadcastToRoom usually does its own locking)
 			// Actually Leave does notification, so we'll call a helper or handle it in the handler.
 			return

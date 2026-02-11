@@ -70,12 +70,6 @@ func (s *Server) WebsocketHandler() fiber.Handler {
 		defer s.hub.UnregisterClient(client)
 
 		// Presence logic
-		wasOnline := s.hub.IsOnline(uid)
-		// We already registered, so IsOnline will be true. 
-		// If totalConns for this user was 1, it was the first one.
-		// For simplicity, we can check how many clients the user has.
-		// But let's keep the existing logic flavor.
-		
 		s.notifyFriendsPresence(uid, "online")
 		s.sendFriendsOnlineSnapshot(conn, uid)
 

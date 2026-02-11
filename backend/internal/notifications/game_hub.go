@@ -2,7 +2,6 @@ package notifications
 
 import (
 	"context"
-	"errors"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -12,10 +11,6 @@ import (
 
 	"github.com/gofiber/websocket/v2"
 	"gorm.io/gorm"
-)
-
-const (
-	maxPeersPerGameRoom = 2
 )
 
 // GameAction represents a message sent via WebSocket for games
@@ -30,10 +25,10 @@ type GameAction struct {
 type GameHub struct {
 	mu sync.RWMutex
 
-	// Map: roomID -> userID -> client
-	rooms map[uint]map[uint]*Client
+	// Map: roomID -> userID -> connection
+	rooms map[uint]map[uint]*websocket.Conn
 
-	// Map: userID -> set of rooms they are in (usually just one)
+	// Map: userID -> set of rooms they are in
 	userRooms map[uint]map[uint]struct{}
 
 	db       *gorm.DB
@@ -46,31 +41,22 @@ func (h *GameHub) Name() string { return "game hub" }
 // NewGameHub creates a new GameHub instance
 func NewGameHub(db *gorm.DB, notifier *Notifier) *GameHub {
 	return &GameHub{
-		rooms:     make(map[uint]map[uint]*Client),
+		rooms:     make(map[uint]map[uint]*websocket.Conn),
 		userRooms: make(map[uint]map[uint]struct{}),
 		db:        db,
 		notifier:  notifier,
 	}
 }
 
-// Register registers a user's connection in a room. Returns Client or error if limits exceeded.
-func (h *GameHub) Register(userID, roomID uint, conn *websocket.Conn) (*Client, error) {
+// Register registers a user's connection in a room
+func (h *GameHub) Register(userID, roomID uint, conn *websocket.Conn) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
 	if h.rooms[roomID] == nil {
-		h.rooms[roomID] = make(map[uint]*Client)
+		h.rooms[roomID] = make(map[uint]*websocket.Conn)
 	}
-
-	if len(h.rooms[roomID]) >= maxPeersPerGameRoom {
-		// Only check if user is not already in the room
-		if _, ok := h.rooms[roomID][userID]; !ok {
-			return nil, errors.New("game room is full")
-		}
-	}
-
-	client := NewClient(h, conn, userID)
-	h.rooms[roomID][userID] = client
+	h.rooms[roomID][userID] = conn
 
 	if h.userRooms[userID] == nil {
 		h.userRooms[userID] = make(map[uint]struct{})
@@ -78,48 +64,38 @@ func (h *GameHub) Register(userID, roomID uint, conn *websocket.Conn) (*Client, 
 	h.userRooms[userID][roomID] = struct{}{}
 
 	log.Printf("GameHub: User %d registered in room %d", userID, roomID)
-	return client, nil
 }
 
-// UnregisterClient removes a user's connection
-func (h *GameHub) UnregisterClient(client *Client) {
+// Unregister removes a user's connection
+func (h *GameHub) Unregister(userID, roomID uint, conn *websocket.Conn) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	userID := client.UserID
-	
-	// Find which rooms this client is in
-	rooms, ok := h.userRooms[userID]
-	if !ok {
-		return
-	}
-
-	for roomID := range rooms {
-		if room, ok := h.rooms[roomID]; ok {
-			if c, ok := room[userID]; ok && c == client {
-				delete(room, userID)
-				if len(room) == 0 {
-					delete(h.rooms, roomID)
-				}
-				
-				// Database cleanup: If the creator leaves a pending room, cancel it
-				var gRoom models.GameRoom
-				if err := h.db.First(&gRoom, roomID).Error; err == nil {
-					if gRoom.Status == models.GamePending && gRoom.CreatorID == userID {
-						gRoom.Status = models.GameCancelled
-						h.db.Save(&gRoom)
-						log.Printf("GameHub: Pending room %d cancelled because creator (User %d) disconnected", roomID, userID)
-					}
-				}
+	if room, ok := h.rooms[roomID]; ok {
+		if c, ok := room[userID]; ok && c == conn {
+			delete(room, userID)
+			if len(room) == 0 {
+				delete(h.rooms, roomID)
 			}
 		}
 	}
-	delete(h.userRooms, userID)
-}
 
-// Unregister is a legacy wrapper. Deprecated: use UnregisterClient.
-func (h *GameHub) Unregister(userID, roomID uint, conn *websocket.Conn) {
-	// Logic moved to UnregisterClient
+	if rooms, ok := h.userRooms[userID]; ok {
+		delete(rooms, roomID)
+		if len(rooms) == 0 {
+			delete(h.userRooms, userID)
+		}
+	}
+
+	// Database cleanup: If the creator leaves a pending room, cancel it
+	var room models.GameRoom
+	if err := h.db.First(&room, roomID).Error; err == nil {
+		if room.Status == models.GamePending && room.CreatorID == userID {
+			room.Status = models.GameCancelled
+			h.db.Save(&room)
+			log.Printf("GameHub: Pending room %d cancelled because creator (User %d) disconnected", roomID, userID)
+		}
+	}
 }
 
 // BroadcastToRoom sends a message to all users in a game room
@@ -138,12 +114,223 @@ func (h *GameHub) BroadcastToRoom(roomID uint, action GameAction) {
 		return
 	}
 
-	for _, client := range users {
-		client.TrySend(actionJSON)
+	for _, conn := range users {
+		if err := conn.WriteMessage(websocket.TextMessage, actionJSON); err != nil {
+			log.Printf("GameHub: WebSocket write error in room %d: %v", roomID, err)
+		}
 	}
 }
 
-// ... (HandleAction unchanged)
+// HandleAction processes an incoming game action
+func (h *GameHub) HandleAction(userID uint, action GameAction) {
+	switch action.Type {
+	case "join_room":
+		h.handleJoin(userID, action)
+	case "make_move":
+		h.handleMove(userID, action)
+	case "chat":
+		h.handleChat(userID, action)
+	default:
+		log.Printf("GameHub: Unknown action type %s from user %d", action.Type, userID)
+	}
+}
+
+func (h *GameHub) handleJoin(userID uint, action GameAction) {
+	var room models.GameRoom
+	if err := h.db.First(&room, action.RoomID).Error; err != nil {
+		h.sendError(userID, action.RoomID, "Game room not found")
+		return
+	}
+
+	if room.Status != models.GamePending {
+		h.sendError(userID, action.RoomID, "Game already started or finished")
+		return
+	}
+
+	if room.CreatorID == userID {
+		h.sendError(userID, action.RoomID, "You are the creator")
+		return
+	}
+
+	// Join as opponent
+	room.OpponentID = &userID
+	room.Status = models.GameActive
+	room.NextTurnID = room.CreatorID // Creator goes first
+
+	if err := h.db.Save(&room).Error; err != nil {
+		h.sendError(userID, action.RoomID, "Failed to start game")
+		return
+	}
+
+	started := GameAction{
+		Type:   "game_started",
+		RoomID: action.RoomID,
+		Payload: map[string]interface{}{
+			"status":        "active",
+			"next_turn":     room.NextTurnID,
+			"opponent_id":   userID,
+			"creator_id":    room.CreatorID,
+			"room_id":       room.ID,
+			"updated_at":    room.UpdatedAt,
+			"current_state": room.CurrentState,
+		},
+	}
+
+	// Always broadcast directly to currently connected sockets in this process.
+	h.BroadcastToRoom(action.RoomID, started)
+
+	// Also publish through Redis for cross-process fanout when available.
+	if h.notifier != nil {
+		_ = h.notifier.PublishGameAction(
+			context.Background(),
+			action.RoomID,
+			`{"type": "game_started", "payload": {"status": "active", "next_turn": `+fmt.Sprint(room.NextTurnID)+`}}`,
+		)
+	}
+}
+
+func (h *GameHub) handleMove(userID uint, action GameAction) {
+	var room models.GameRoom
+	if err := h.db.First(&room, action.RoomID).Error; err != nil {
+		h.sendError(userID, action.RoomID, "Game room not found")
+		return
+	}
+
+	if room.Status != models.GameActive || room.NextTurnID != userID {
+		h.sendError(userID, action.RoomID, "Not your turn")
+		return
+	}
+
+	moveBytes, _ := json.Marshal(action.Payload)
+
+	var board interface{}
+	var symbol string
+	if room.OpponentID != nil && userID == *room.OpponentID {
+		symbol = "O"
+	} else {
+		symbol = "X"
+	}
+
+	if room.Type == models.TicTacToe {
+		var moveData models.TicTacToeMove
+		if err := json.Unmarshal(moveBytes, &moveData); err != nil {
+			h.sendError(userID, action.RoomID, "Invalid move format")
+			return
+		}
+
+		tttBoard := room.GetTicTacToeState()
+		if moveData.X < 0 || moveData.X > 2 || moveData.Y < 0 || moveData.Y > 2 || tttBoard[moveData.X][moveData.Y] != "" {
+			h.sendError(userID, action.RoomID, "Invalid move location")
+			return
+		}
+		tttBoard[moveData.X][moveData.Y] = symbol
+		board = tttBoard
+		room.SetState(tttBoard)
+	} else if room.Type == models.ConnectFour {
+		var moveData models.ConnectFourMove
+		if err := json.Unmarshal(moveBytes, &moveData); err != nil {
+			h.sendError(userID, action.RoomID, "Invalid move format")
+			return
+		}
+
+		c4Board := room.GetConnectFourState()
+		if moveData.Column < 0 || moveData.Column > 6 || c4Board[0][moveData.Column] != "" {
+			h.sendError(userID, action.RoomID, "Invalid move location or column full")
+			return
+		}
+
+		// Gravity: find lowest empty row
+		found := false
+		for r := 5; r >= 0; r-- {
+			if c4Board[r][moveData.Column] == "" {
+				c4Board[r][moveData.Column] = symbol
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			h.sendError(userID, action.RoomID, "Column is full")
+			return
+		}
+
+		board = c4Board
+		room.SetState(c4Board)
+	}
+
+	// Persist move
+	moveRecord := models.GameMove{
+		GameRoomID: room.ID,
+		UserID:     userID,
+		MoveData:   string(moveBytes),
+	}
+	h.db.Create(&moveRecord)
+
+	// Check for win/draw
+	winnerSym, finished := room.CheckWin()
+	if finished {
+		room.Status = models.GameFinished
+		if winnerSym != "" {
+			winID := room.CreatorID
+			if winnerSym == "O" && room.OpponentID != nil {
+				winID = *room.OpponentID
+			}
+			room.WinnerID = &winID
+			// Award points
+			points := 10
+			if room.Type == models.ConnectFour {
+				points = 15
+			}
+			h.db.Model(&models.GameStats{}).Where("user_id = ? AND game_type = ?", winID, room.Type).
+				Update("points", gorm.Expr("points + ?", points)).
+				Update("wins", gorm.Expr("wins + ?", 1)).
+				Update("total_games", gorm.Expr("total_games + ?", 1))
+
+			lossID := room.CreatorID
+			if winID == room.CreatorID && room.OpponentID != nil {
+				lossID = *room.OpponentID
+			}
+			h.db.Model(&models.GameStats{}).Where("user_id = ? AND game_type = ?", lossID, room.Type).
+				Update("losses", gorm.Expr("losses + ?", 1)).
+				Update("total_games", gorm.Expr("total_games + ?", 1))
+		} else {
+			room.IsDraw = true
+			opponentID := uint(0)
+			if room.OpponentID != nil {
+				opponentID = *room.OpponentID
+			}
+			h.db.Model(&models.GameStats{}).Where("user_id IN (?, ?) AND game_type = ?", room.CreatorID, opponentID, room.Type).
+				Update("draws", gorm.Expr("draws + ?", 1)).
+				Update("total_games", gorm.Expr("total_games + ?", 1))
+		}
+	} else {
+		// Switch turn
+		if userID == room.CreatorID && room.OpponentID != nil {
+			room.NextTurnID = *room.OpponentID
+		} else {
+			room.NextTurnID = room.CreatorID
+		}
+	}
+
+	h.db.Save(&room)
+
+	// Broadcast update
+	action.Type = "game_state"
+	action.Payload = map[string]interface{}{
+		"board":     board,
+		"status":    room.Status,
+		"winner_id": room.WinnerID,
+		"next_turn": room.NextTurnID,
+		"is_draw":   room.IsDraw,
+	}
+	actionJSON, _ := json.Marshal(action)
+	_ = h.notifier.PublishGameAction(context.Background(), action.RoomID, string(actionJSON))
+}
+
+func (h *GameHub) handleChat(_ uint, action GameAction) {
+	// Simple chat broadcast
+	h.BroadcastToRoom(action.RoomID, action)
+}
 
 func (h *GameHub) sendError(userID, roomID uint, message string) {
 	h.mu.RLock()
@@ -154,7 +341,7 @@ func (h *GameHub) sendError(userID, roomID uint, message string) {
 		return
 	}
 
-	client, ok := room[userID]
+	conn, ok := room[userID]
 	if !ok {
 		return
 	}
@@ -167,7 +354,7 @@ func (h *GameHub) sendError(userID, roomID uint, message string) {
 		},
 	}
 	respJSON, _ := json.Marshal(resp)
-	client.TrySend(respJSON)
+	_ = conn.WriteMessage(websocket.TextMessage, respJSON)
 }
 
 // StartWiring connects GameHub to Redis

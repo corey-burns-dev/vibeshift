@@ -8,7 +8,6 @@ import (
 	"log"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/gofiber/websocket/v2"
 )
@@ -18,16 +17,6 @@ const (
 	maxConnsPerUser = 5
 	// Max total connections
 	maxTotalConns = 10000
-	// Write wait time
-	writeWait = 10 * time.Second
-	// Pong wait time
-	pongWait = 60 * time.Second
-	// Ping period
-	pingPeriod = (pongWait * 9) / 10
-	// Max message size
-	maxMessageSize = 512
-	// Send buffer size
-	sendBufferSize = 256
 )
 
 // Hub is a websocket hub that maps userID -> list of Clients.
@@ -101,7 +90,7 @@ func (h *Hub) Broadcast(userID uint, message string) {
 		data := []byte(message)
 		for c := range clients {
 			select {
-			case c.send <- data:
+			case c.Send <- data:
 			default:
 				// Backpressure: Drop message if buffer full to avoid blocking the hub
 				log.Printf("Backpressure: dropping message for user %d (buffer full)", userID)
@@ -126,7 +115,7 @@ func (h *Hub) BroadcastAll(message string) {
 	for _, clients := range h.conns {
 		for c := range clients {
 			select {
-			case c.send <- data:
+			case c.Send <- data:
 			default:
 				// Backpressure
 			}
@@ -165,20 +154,20 @@ func (h *Hub) Shutdown(_ context.Context) error {
 	// Close all connections gracefully
 	h.mu.Lock()
 	for userID, userConns := range h.conns {
-		for conn := range userConns {
+		for client := range userConns {
 			// Send close message to client
-			if err := conn.WriteMessage(websocket.CloseMessage,
+			if err := client.Conn.WriteMessage(websocket.CloseMessage,
 				websocket.FormatCloseMessage(websocket.CloseGoingAway, "Server shutting down")); err != nil {
 				log.Printf("failed to write close message for user %d: %v", userID, err)
 			}
 			// Close the connection
-			if err := conn.Close(); err != nil {
+			if err := client.Conn.Close(); err != nil {
 				log.Printf("failed to close websocket for user %d: %v", userID, err)
 			}
 		}
 	}
 	// Clear all connections
-	h.conns = make(map[uint]map[*websocket.Conn]struct{})
+	h.conns = make(map[uint]map[*Client]struct{})
 	h.mu.Unlock()
 
 	// Signal completion
