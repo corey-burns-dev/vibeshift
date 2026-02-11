@@ -48,22 +48,34 @@ jobs:
           TITLE="$(git log -1 --pretty=%s)"
           BODY="Automated PR created from push to \\\`$BRANCH_NAME\\\` targeting \\\`$BASE_BRANCH\\\`."
 
+          # Attempt to create PR and capture output; if gh reports it already exists, treat as success.
           set +e
-          gh pr create \
+          OUTPUT="$(gh pr create \
             --repo "$REPO" \
             --base "$BASE_BRANCH" \
             --head "$BRANCH_NAME" \
             --title "$TITLE" \
-            --body "$BODY"
+            --body "$BODY" 2>&1)"
           rc=$?
           set -e
+
           if [ $rc -ne 0 ]; then
-            # If PR already exists, treat as success; otherwise fail.
-            if gh pr list --repo "$REPO" --state open --head "${GITHUB_REPOSITORY_OWNER}:${BRANCH_NAME}" --json number --jq '.[0].number // empty' | grep -q .; then
-              echo "Open PR already exists; skipping create."
+            # If gh CLI indicates the PR already exists, return success and print message.
+            if echo "$OUTPUT" | grep -qi "already exists"; then
+              echo "PR already exists; skipping create. Message:"
+              echo "$OUTPUT"
               exit 0
-            else
-              echo "gh pr create failed with exit code $rc"
-              exit $rc
             fi
+
+            # As a fallback, try to find an open PR for the head.
+            EXISTING_URL="$(gh pr list --repo "$REPO" --state open --head "${GITHUB_REPOSITORY_OWNER}:${BRANCH_NAME}" --json url --jq '.[0].url' 2>/dev/null || true)"
+            if [ -n "$EXISTING_URL" ]; then
+              echo "Found existing PR: $EXISTING_URL"
+              exit 0
+            fi
+
+            # Otherwise fail and surface the gh output.
+            echo "gh pr create failed with exit code $rc" >&2
+            echo "$OUTPUT" >&2
+            exit $rc
           fi
