@@ -39,6 +39,10 @@ jobs:
 
           HEAD_REF="${GITHUB_REPOSITORY_OWNER}:${BRANCH_NAME}"
           OPEN_PR_NUMBER="$(gh pr list --repo "$REPO" --state open --head "$HEAD_REF" --json number --jq '.[0].number // empty')"
+      
+                - name: Setup GitHub CLI
+                  uses: actions/setup-gh-cli@v2
+
 
           if [ -n "$OPEN_PR_NUMBER" ]; then
             echo "Open PR already exists: #$OPEN_PR_NUMBER"
@@ -53,4 +57,12 @@ jobs:
             --base "$BASE_BRANCH" \
             --head "$BRANCH_NAME" \
             --title "$TITLE" \
+
+                    # Authenticate gh with the token provided by Actions
+                    if command -v gh >/dev/null 2>&1; then
+                      echo "$GH_TOKEN" | gh auth login --with-token || true
+                    else
+                      echo "gh CLI not found; ensure actions/setup-gh-cli@v2 installed"
+                      exit 1
+                    fi
             --body "$BODY"

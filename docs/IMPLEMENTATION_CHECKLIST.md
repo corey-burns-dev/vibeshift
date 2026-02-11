@@ -19,7 +19,7 @@ Historical and point-in-time analyses are in `docs/reports/` and should be treat
 
 ### CI/CD & Repo Hygiene
 
-- [x] **Fix and Harden CI Pipeline**
+- [ ] **Fix and Harden CI Pipeline**
   - Pin GitHub Actions to stable versions (checkout, setup-go, buildx)
   - Ensure `go test ./...` runs on every PR
   - Add nightly `go test -race ./...` job

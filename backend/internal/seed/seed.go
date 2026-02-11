@@ -6,6 +6,7 @@ import (
 	"sanctum/internal/models"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -48,6 +49,19 @@ func (s *Seeder) SeedSocialMesh(userCount int) ([]*models.User, error) {
 		if err == nil {
 			users = append(users, u)
 		}
+	}
+
+	// Ensure a default dev admin exists (dev only). Username: admin, password: admin
+	// This helps local development and E2E tests that rely on a known admin account.
+	hashedPw, _ := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
+	adminUser, err := s.factory.CreateUser(func(u *models.User) {
+		u.Username = "admin"
+		u.Email = "admin@admin.com"
+		u.Password = string(hashedPw)
+		u.IsAdmin = true
+	})
+	if err == nil {
+		users = append(users, adminUser)
 	}
 
 	// Random users
