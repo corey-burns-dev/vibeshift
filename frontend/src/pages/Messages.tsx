@@ -1,8 +1,7 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { MessageCircle, Send, Trash2, Users } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import type { Conversation, Message, User } from '@/api/types'
+import type { Conversation, User } from '@/api/types'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,9 +12,10 @@ import {
   useMessages,
   useSendMessage,
 } from '@/hooks/useChat'
-import { useChatWebSocket } from '@/hooks/useChatWebSocket'
 import { usePresenceStore } from '@/hooks/usePresence'
 import { getCurrentUser } from '@/hooks/useUsers'
+import { useChatContext } from '@/providers/ChatProvider'
+import { useChatDockStore } from '@/stores/useChatDockStore'
 
 export default function Messages() {
   const { id: urlConvId } = useParams<{ id: string }>()
@@ -93,6 +93,13 @@ export default function Messages() {
     [onlineUserIds, selectedConversationOtherUserId]
   )
 
+  // Sync dock unread: reset only when conversation is loaded and in list (not URL-only)
+  useEffect(() => {
+    if (selectedConversation) {
+      useChatDockStore.getState().resetUnread(selectedConversation.id)
+    }
+  }, [selectedConversation])
+
   // Auto-select first conversation if None is in URL
   useEffect(() => {
     if (conversations && conversations.length > 0 && !selectedConversationId) {
@@ -128,7 +135,6 @@ export default function Messages() {
   )
   const sendMessage = useSendMessage(selectedConversationId || 0)
   const leaveConversation = useLeaveConversation()
-  const queryClient = useQueryClient()
 
   // Participants state
   const [participants, setParticipants] = useState<
@@ -226,32 +232,34 @@ export default function Messages() {
     }
   }, [selectedConversation]) // Stable dependency
 
-  // WebSocket for real-time updates
-  const chatWs = useChatWebSocket({
-    conversationId: canAccessSelectedConversation
-      ? (selectedConversationId ?? 0)
-      : 0,
-    enabled: true,
-    autoJoinConversation: canAccessSelectedConversation,
-    onMessage: msg => {
-      if (
-        selectedConversationId &&
-        msg.conversation_id === selectedConversationId
-      ) {
-        queryClient.setQueryData<Message[]>(
-          ['chat', 'messages', selectedConversationId],
-          old => {
-            if (!old) return [msg]
-            if (Array.isArray(old)) {
-              if (old.some(m => m.id === msg.id)) return old
-              return [...old, msg]
-            }
-            return old
-          }
-        )
-      }
-    },
-    onTyping: (userId, username, isTyping) => {
+  // Use shared ChatProvider WebSocket (no duplicate connection)
+  const {
+    joinRoom,
+    leaveRoom,
+    sendTyping: ctxSendTyping,
+    setOnTyping,
+    setOnPresence,
+    setOnConnectedUsers,
+  } = useChatContext()
+
+  // Join/leave active conversation room
+  useEffect(() => {
+    if (!canAccessSelectedConversation || !selectedConversationId) return
+    joinRoom(selectedConversationId)
+    return () => {
+      leaveRoom(selectedConversationId)
+    }
+  }, [
+    canAccessSelectedConversation,
+    selectedConversationId,
+    joinRoom,
+    leaveRoom,
+  ])
+
+  // Register typing, presence, and connected-users callbacks; cleanup on unmount
+  useEffect(() => {
+    setOnTyping((convId, userId, username, isTyping) => {
+      if (convId !== selectedConversationId) return
       setParticipants(prev => ({
         ...(prev || {}),
         [userId]: {
@@ -260,21 +268,33 @@ export default function Messages() {
           online: true,
         },
       }))
-    },
-    onPresence: (userId, username, status) => {
+    })
+    setOnPresence((userId, username, status) => {
       const online = status === 'online' || status === 'connected'
       setParticipants(prev => ({
         ...(prev || {}),
         [userId]: { ...(prev?.[userId] || { id: userId, username }), online },
       }))
-
       if (status === 'online') setOnline(userId)
       else setOffline(userId)
-    },
-    onConnectedUsers: userIds => {
+    })
+    setOnConnectedUsers(userIds => {
       setInitialOnlineUsers(userIds)
-    },
-  })
+    })
+    return () => {
+      setOnTyping(undefined)
+      setOnPresence(undefined)
+      setOnConnectedUsers(undefined)
+    }
+  }, [
+    selectedConversationId,
+    setOnTyping,
+    setOnPresence,
+    setOnConnectedUsers,
+    setOnline,
+    setOffline,
+    setInitialOnlineUsers,
+  ])
 
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedConversationId) return
@@ -284,9 +304,7 @@ export default function Messages() {
       {
         onSuccess: () => {
           setNewMessage('')
-          try {
-            chatWs?.sendTyping(false)
-          } catch {}
+          ctxSendTyping(selectedConversationId, false)
         },
       }
     )
@@ -301,16 +319,12 @@ export default function Messages() {
 
   const handleInputChange = (val: string) => {
     setNewMessage(val)
-    try {
-      chatWs?.sendTyping(true)
-    } catch {}
+    if (selectedConversationId) ctxSendTyping(selectedConversationId, true)
     if (typingTimeoutRef.current) {
       window.clearTimeout(typingTimeoutRef.current)
     }
     typingTimeoutRef.current = window.setTimeout(() => {
-      try {
-        chatWs?.sendTyping(false)
-      } catch {}
+      if (selectedConversationId) ctxSendTyping(selectedConversationId, false)
     }, 1500) as unknown as number
   }
 

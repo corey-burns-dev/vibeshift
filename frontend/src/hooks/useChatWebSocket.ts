@@ -1,4 +1,10 @@
-// WebSocket hook for real-time chat
+/**
+ * WebSocket hook for real-time chat.
+ *
+ * @deprecated Prefer `useChatContext()` from `@/providers/ChatProvider` so the app
+ * uses a single persistent WebSocket. This hook creates its own connection and is
+ * only kept for backward compatibility or non-Provider usage.
+ */
 
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'

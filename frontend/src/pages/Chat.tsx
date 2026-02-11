@@ -30,7 +30,6 @@ import {
   useMessages,
   useSendMessage,
 } from '@/hooks/useChat'
-import { useChatWebSocket } from '@/hooks/useChatWebSocket'
 import { usePresenceStore } from '@/hooks/usePresence'
 import { getCurrentUser } from '@/hooks/useUsers'
 import {
@@ -40,6 +39,8 @@ import {
   getInitials,
 } from '@/lib/chat-utils'
 import { cn } from '@/lib/utils'
+import { useChatContext } from '@/providers/ChatProvider'
+import { useChatDockStore } from '@/stores/useChatDockStore'
 
 export default function Chat() {
   const { id: urlChatId } = useParams<{ id: string }>()
@@ -128,6 +129,13 @@ export default function Chat() {
   const { data: selectedConversation } = useConversation(selectedChatId || 0, {
     enabled: canAccessSelectedConversation,
   })
+
+  // Sync dock unread: reset only when conversation is loaded and user has access (not URL-only)
+  useEffect(() => {
+    if (canAccessSelectedConversation && selectedConversation) {
+      useChatDockStore.getState().resetUnread(selectedConversation.id)
+    }
+  }, [canAccessSelectedConversation, selectedConversation])
 
   useEffect(() => {
     if (selectedChatId) return
@@ -505,19 +513,114 @@ export default function Chat() {
     ]
   )
 
-  const { isJoined: wsIsJoined } = useChatWebSocket({
-    conversationId: canAccessSelectedConversation ? (selectedChatId ?? 0) : 0,
-    enabled: true,
-    autoJoinConversation:
-      canAccessSelectedConversation && !!selectedChatId && userIsJoined,
-    joinedRoomIds: openRoomTabs,
+  // Use shared ChatProvider WebSocket (no duplicate connection)
+  const {
+    joinRoom,
+    leaveRoom,
+    joinedRooms,
+    setOnMessage,
+    setOnTyping,
+    setOnPresence,
+    setOnConnectedUsers,
+    setOnParticipantsUpdate,
+    setOnChatroomPresence,
+  } = useChatContext()
+
+  const wsIsJoined =
+    !!selectedChatId &&
+    canAccessSelectedConversation &&
+    userIsJoined &&
+    joinedRooms.has(selectedChatId)
+
+  // Rooms to stay in: selected conversation (if joined) + open tabs
+  const roomsToJoin = useMemo(() => {
+    const set = new Set<number>(openRoomTabs)
+    if (canAccessSelectedConversation && selectedChatId && userIsJoined) {
+      set.add(selectedChatId)
+    }
+    return Array.from(set)
+  }, [
+    openRoomTabs,
+    canAccessSelectedConversation,
+    selectedChatId,
+    userIsJoined,
+  ])
+
+  useEffect(() => {
+    for (const id of roomsToJoin) {
+      joinRoom(id)
+    }
+    return () => {
+      for (const id of roomsToJoin) {
+        leaveRoom(id)
+      }
+    }
+  }, [roomsToJoin, joinRoom, leaveRoom])
+
+  // Register WS callbacks; cleanup on unmount
+  useEffect(() => {
+    setOnMessage((message, conversationId) => {
+      const isRoom =
+        activeRooms.some(r => r.id === conversationId) ||
+        (allChatrooms as Conversation[]).some(
+          (r: Conversation) => r.id === conversationId
+        )
+      if (isRoom) {
+        onRoomMessage(message, conversationId)
+      } else {
+        if (
+          conversationId === selectedChatId &&
+          message.sender_id !== currentUser?.id
+        ) {
+          onMessage(message)
+        }
+      }
+    })
+    setOnTyping((convId, userId, username, isTyping) => {
+      if (convId !== selectedChatId) return
+      setParticipants(prev => ({
+        ...prev,
+        [userId]: {
+          ...(prev?.[userId] || { id: userId, username }),
+          typing: isTyping,
+          online: true,
+        },
+      }))
+    })
+    setOnPresence(onPresence)
+    setOnConnectedUsers(onConnectedUsers)
+    setOnParticipantsUpdate((convId, participantsList) => {
+      if (convId === selectedChatId) {
+        onParticipantsUpdate(participantsList)
+      }
+    })
+    setOnChatroomPresence(onChatroomPresence)
+    return () => {
+      setOnMessage(undefined)
+      setOnTyping(undefined)
+      setOnPresence(undefined)
+      setOnConnectedUsers(undefined)
+      setOnParticipantsUpdate(undefined)
+      setOnChatroomPresence(undefined)
+    }
+  }, [
+    selectedChatId,
+    currentUser?.id,
+    activeRooms,
+    allChatrooms,
     onMessage,
     onRoomMessage,
     onPresence,
     onConnectedUsers,
     onParticipantsUpdate,
     onChatroomPresence,
-  })
+    setOnMessage,
+    setOnTyping,
+    setOnPresence,
+    setOnConnectedUsers,
+    setOnParticipantsUpdate,
+    setOnChatroomPresence,
+  ])
 
   useEffect(() => {
     if (!selectedChatId) return

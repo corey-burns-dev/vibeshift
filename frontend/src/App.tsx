@@ -10,6 +10,7 @@ import {
   useLocation,
 } from 'react-router-dom'
 import { BottomBar } from '@/components/BottomBar'
+import { ChatDock } from '@/components/chat/ChatDock'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { MobileHeader } from '@/components/MobileHeader'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -19,6 +20,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { useIsAuthenticated } from '@/hooks'
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications'
 import { cn } from '@/lib/utils'
+import { ChatProvider } from '@/providers/ChatProvider'
 import { routePrefetchMap } from '@/utils/prefetch'
 
 const Login = lazy(() => import('@/pages/Login'))
@@ -456,6 +458,7 @@ function MainLayout({ children }: { children: ReactNode }) {
       </div>
 
       {isAuthenticated && <BottomBar />}
+      {isAuthenticated && <ChatDock />}
     </div>
   )
 }
@@ -463,12 +466,14 @@ function MainLayout({ children }: { children: ReactNode }) {
 export default function App() {
   return (
     <Router>
-      <MainLayout>
-        <ErrorBoundary>
-          <RoutesWithPrefetch />
-        </ErrorBoundary>
-      </MainLayout>
-      <Toaster />
+      <ChatProvider>
+        <MainLayout>
+          <ErrorBoundary>
+            <RoutesWithPrefetch />
+          </ErrorBoundary>
+        </MainLayout>
+        <Toaster />
+      </ChatProvider>
     </Router>
   )
 }
