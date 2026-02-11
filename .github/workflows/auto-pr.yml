@@ -48,9 +48,22 @@ jobs:
           TITLE="$(git log -1 --pretty=%s)"
           BODY="Automated PR created from push to \\\`$BRANCH_NAME\\\` targeting \\\`$BASE_BRANCH\\\`."
 
+          set +e
           gh pr create \
             --repo "$REPO" \
             --base "$BASE_BRANCH" \
             --head "$BRANCH_NAME" \
             --title "$TITLE" \
             --body "$BODY"
+          rc=$?
+          set -e
+          if [ $rc -ne 0 ]; then
+            # If PR already exists, treat as success; otherwise fail.
+            if gh pr list --repo "$REPO" --state open --head "${GITHUB_REPOSITORY_OWNER}:${BRANCH_NAME}" --json number --jq '.[0].number // empty' | grep -q .; then
+              echo "Open PR already exists; skipping create."
+              exit 0
+            else
+              echo "gh pr create failed with exit code $rc"
+              exit $rc
+            fi
+          fi
