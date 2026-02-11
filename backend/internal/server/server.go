@@ -211,15 +211,18 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 
 	// Auth routes
 	auth := api.Group("/auth")
-	auth.Post("/signup", middleware.RateLimit(s.redis, 3, 10*time.Minute, "signup"), s.Signup)
-	auth.Post("/login", middleware.RateLimit(s.redis, 10, 5*time.Minute, "login"), s.Login)
+	auth.Post("/signup", middleware.RateLimit(
+		s.redis, 3, 10*time.Minute, "signup"), s.Signup)
+	auth.Post("/login", middleware.RateLimit(
+		s.redis, 10, 5*time.Minute, "login"), s.Login)
 	auth.Post("/refresh", s.Refresh)
 	auth.Post("/logout", s.Logout)
 
 	// Public post routes (browse/search)
 	publicPosts := api.Group("/posts")
 	publicPosts.Get("/", s.GetPosts)
-	publicPosts.Get("/search", middleware.RateLimit(s.redis, 10, time.Minute, "search"), s.SearchPosts)
+	publicPosts.Get("/search", middleware.RateLimit(
+		s.redis, 10, time.Minute, "search"), s.SearchPosts)
 	publicPosts.Get("/:id/comments", s.GetComments)
 	publicPosts.Get("/:id", s.GetPost)
 
@@ -259,7 +262,8 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	friends := protected.Group("/friends")
 	friends.Get("/", s.GetFriends)
 	// Specific /requests routes before generic /:userId
-	friends.Post("/requests/:userId", middleware.RateLimit(s.redis, 5, 5*time.Minute, "friend_request"), s.SendFriendRequest)
+	friends.Post("/requests/:userId", middleware.RateLimit(
+		s.redis, 5, 5*time.Minute, "friend_request"), s.SendFriendRequest)
 	friends.Get("/requests", s.GetPendingRequests)
 	friends.Get("/requests/sent", s.GetSentRequests)
 	friends.Post("/requests/:requestId/accept", s.AcceptFriendRequest)
@@ -271,11 +275,13 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 
 	// Protected post routes
 	posts := protected.Group("/posts")
-	posts.Post("/", middleware.RateLimit(s.redis, 1, 5*time.Minute, "create_post"), s.CreatePost)
+	posts.Post("/", middleware.RateLimit(
+		s.redis, 1, 5*time.Minute, "create_post"), s.CreatePost)
 	// Define specific /:id/:resource routes BEFORE generic /:id route
 	posts.Post("/:id/like", s.LikePost)
 	posts.Delete("/:id/like", s.UnlikePost)
-	posts.Post("/:id/comments", middleware.RateLimit(s.redis, 1, time.Minute, "create_comment"), s.CreateComment)
+	posts.Post("/:id/comments", middleware.RateLimit(
+		s.redis, 1, time.Minute, "create_comment"), s.CreateComment)
 	posts.Put("/:id/comments/:commentId", s.UpdateComment)
 	posts.Delete("/:id/comments/:commentId", s.DeleteComment)
 	// Generic /:id routes (for item detail, update, delete)
@@ -288,7 +294,8 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	conversations.Get("/", s.GetConversations)
 	// Define specific /:id/:resource routes BEFORE generic /:id route
 	conversations.Get("/:id/messages", s.GetMessages)
-	conversations.Post("/:id/messages", middleware.RateLimit(s.redis, 15, time.Minute, "send_chat"), s.SendMessage)
+	conversations.Post("/:id/messages", middleware.RateLimit(
+		s.redis, 15, time.Minute, "send_chat"), s.SendMessage)
 	conversations.Post("/:id/participants", s.AddParticipant)
 	conversations.Delete("/:id", s.LeaveConversation)
 	// Generic /:id route must be last

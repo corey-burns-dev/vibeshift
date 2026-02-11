@@ -144,7 +144,7 @@ func (s *Server) GetSanctumBySlug(c *fiber.Ctx) error {
 	var roomID *uint
 	if err := s.db.WithContext(ctx).Select("id").Where("sanctum_id = ?", sanctum.ID).First(&room).Error; err == nil {
 		roomID = &room.ID
-	} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
@@ -221,12 +221,12 @@ func (s *Server) CreateSanctumRequest(c *fiber.Ctx) error {
 	}
 
 	s.publishAdminEvent(EventSanctumRequestCreated, map[string]interface{}{
-		"id":                 create.ID,
-		"requested_name":     create.RequestedName,
-		"requested_slug":     create.RequestedSlug,
-		"requested_by_user":  create.RequestedByUserID,
-		"status":             create.Status,
-		"created_at":         create.CreatedAt.Format(time.RFC3339Nano),
+		"id":                create.ID,
+		"requested_name":    create.RequestedName,
+		"requested_slug":    create.RequestedSlug,
+		"requested_by_user": create.RequestedByUserID,
+		"status":            create.Status,
+		"created_at":        create.CreatedAt.Format(time.RFC3339Nano),
 	})
 
 	return c.Status(fiber.StatusCreated).JSON(create)
