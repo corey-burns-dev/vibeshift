@@ -45,13 +45,6 @@ func main() {
 		if err := s.ClearAll(); err != nil {
 			log.Fatalf("❌ Cleanup failed: %v", err)
 		}
-
-		// Debug: drop constraint to see if it works
-		if err := database.DB.Exec("ALTER TABLE conversations DROP CONSTRAINT IF EXISTS fk_conversations_sanctum").Error; err != nil {
-			log.Printf("⚠️ Debug: Error dropping constraint: %v", err)
-		} else {
-			log.Printf("📊 Debug: Dropped constraint fk_conversations_sanctum")
-		}
 	}
 
 	if err := seed.Sanctums(database.DB); err != nil {

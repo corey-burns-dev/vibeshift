@@ -41,26 +41,25 @@ type wireableHub interface {
 
 // Server holds all dependencies and provides handlers
 type Server struct {
-	config         *config.Config
-	db             *gorm.DB
-	redis          *redis.Client
-	app            *fiber.App
-	limiterStorage fiber.Storage
-	shutdownCtx    context.Context
-	shutdownFn     context.CancelFunc
-	userRepo       repository.UserRepository
-	postRepo       repository.PostRepository
-	commentRepo    repository.CommentRepository
-	chatRepo       repository.ChatRepository
-	friendRepo     repository.FriendRepository
-	gameRepo       repository.GameRepository
-	streamRepo     repository.StreamRepository
-	notifier       *notifications.Notifier
-	hub            *notifications.Hub
-	chatHub        *notifications.ChatHub
-	gameHub        *notifications.GameHub
-	videoChatHub   *notifications.VideoChatHub
-	hubs           []wireableHub // all hubs for wiring/shutdown iteration
+	config       *config.Config
+	db           *gorm.DB
+	redis        *redis.Client
+	app          *fiber.App
+	shutdownCtx  context.Context
+	shutdownFn   context.CancelFunc
+	userRepo     repository.UserRepository
+	postRepo     repository.PostRepository
+	commentRepo  repository.CommentRepository
+	chatRepo     repository.ChatRepository
+	friendRepo   repository.FriendRepository
+	gameRepo     repository.GameRepository
+	streamRepo   repository.StreamRepository
+	notifier     *notifications.Notifier
+	hub          *notifications.Hub
+	chatHub      *notifications.ChatHub
+	gameHub      *notifications.GameHub
+	videoChatHub *notifications.VideoChatHub
+	hubs         []wireableHub // all hubs for wiring/shutdown iteration
 }
 
 // NewServer creates a new server instance with all dependencies
@@ -143,7 +142,6 @@ func (s *Server) SetupMiddleware(app *fiber.App) {
 	app.Use(limiter.New(limiter.Config{
 		Max:        100,
 		Expiration: 1 * time.Minute,
-		Storage:    s.limiterStorage,
 		// Never rate-limit preflight requests; they should be handled by CORS.
 		Next: func(c *fiber.Ctx) bool {
 			return c.Method() == fiber.MethodOptions

@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/storage/memory/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,7 +16,6 @@ func TestSetupMiddleware_RateLimitedResponseIncludesCORSHeaders(t *testing.T) {
 		config: &config.Config{
 			AllowedOrigins: "http://localhost:5173",
 		},
-		limiterStorage: memory.New(),
 	}
 
 	app := fiber.New()
@@ -51,7 +49,6 @@ func TestSetupMiddleware_PreflightBypassesLimiter(t *testing.T) {
 		config: &config.Config{
 			AllowedOrigins: "http://localhost:5173",
 		},
-		limiterStorage: memory.New(),
 	}
 
 	app := fiber.New()

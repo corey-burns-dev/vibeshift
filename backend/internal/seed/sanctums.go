@@ -3,7 +3,6 @@ package seed
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sanctum/internal/models"
 
 	"gorm.io/gorm"
@@ -59,16 +58,6 @@ func Sanctums(db *gorm.DB) error {
 				if err := tx.Where("slug = ?", item.Slug).First(&sanctum).Error; err != nil {
 					return err
 				}
-			}
-
-			// Debug logging
-			log.Printf("🛠️  Debug: Seeding sanctum '%s', ID: %d", sanctum.Slug, sanctum.ID)
-
-			var check models.Sanctum
-			if err := tx.First(&check, sanctum.ID).Error; err != nil {
-				log.Printf("⚠️ Debug: Sanctum ID %d NOT FOUND after create: %v", sanctum.ID, err)
-			} else {
-				log.Printf("✅ Debug: Sanctum ID %d found in tx", sanctum.ID)
 			}
 
 			var existing models.Conversation
