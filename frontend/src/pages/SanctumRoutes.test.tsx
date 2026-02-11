@@ -45,7 +45,7 @@ describe('Sanctum routes', () => {
     render(
       <MemoryRouter initialEntries={['/sanctums']}>
         <Routes>
-          <Route path="/sanctums" element={<Sanctums />} />
+          <Route path='/sanctums' element={<Sanctums />} />
         </Routes>
       </MemoryRouter>
     )
@@ -86,7 +86,7 @@ describe('Sanctum routes', () => {
     render(
       <MemoryRouter initialEntries={['/s/atrium']}>
         <Routes>
-          <Route path="/s/:slug" element={<SanctumDetail />} />
+          <Route path='/s/:slug' element={<SanctumDetail />} />
         </Routes>
       </MemoryRouter>
     )

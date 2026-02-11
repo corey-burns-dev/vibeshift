@@ -364,28 +364,28 @@ export default function Messages() {
   )
 
   return (
-    <div className="h-full min-h-0 flex-1 bg-background flex flex-col overflow-hidden">
+    <div className='h-full min-h-0 flex-1 bg-background flex flex-col overflow-hidden'>
       {convError && (
-        <div className="bg-destructive/15 border-b border-destructive p-4">
-          <p className="text-sm text-destructive">
+        <div className='bg-destructive/15 border-b border-destructive p-4'>
+          <p className='text-sm text-destructive'>
             Error loading messages: {String(convError)}
           </p>
         </div>
       )}
 
-      <div className="h-full min-h-0 flex-1 flex overflow-hidden">
+      <div className='h-full min-h-0 flex-1 flex overflow-hidden'>
         {/* Left Sidebar - Conversations (250px fixed) */}
-        <div className="w-62.5 border-r bg-card flex flex-col overflow-hidden">
-          <div className="p-4 border-b shrink-0 h-15 flex items-center">
-            <h2 className="font-semibold text-sm flex items-center gap-2">
-              <MessageCircle className="w-4 h-4" />
+        <div className='w-62.5 border-r bg-card flex flex-col overflow-hidden'>
+          <div className='p-4 border-b shrink-0 h-15 flex items-center'>
+            <h2 className='font-semibold text-sm flex items-center gap-2'>
+              <MessageCircle className='w-4 h-4' />
               Direct Messages
             </h2>
           </div>
 
-          <div className="flex border-b shrink-0">
+          <div className='flex border-b shrink-0'>
             <button
-              type="button"
+              type='button'
               onClick={() => setMessageTab('all')}
               className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
                 messageTab === 'all'
@@ -396,7 +396,7 @@ export default function Messages() {
               ALL
             </button>
             <button
-              type="button"
+              type='button'
               onClick={() => setMessageTab('unread')}
               className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
                 messageTab === 'unread'
@@ -408,10 +408,10 @@ export default function Messages() {
             </button>
           </div>
 
-          <ScrollArea className="flex-1">
-            <div className="space-y-1 p-2">
+          <ScrollArea className='flex-1'>
+            <div className='space-y-1 p-2'>
               {convLoading ? (
-                <div className="text-xs text-muted-foreground text-center py-8">
+                <div className='text-xs text-muted-foreground text-center py-8'>
                   Loading...
                 </div>
               ) : conversations.length > 0 ? (
@@ -429,7 +429,7 @@ export default function Messages() {
                   return (
                     <button
                       key={conv.id}
-                      type="button"
+                      type='button'
                       className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
                         conv.id === selectedConversationId
                           ? 'bg-secondary text-foreground font-semibold'
@@ -437,11 +437,11 @@ export default function Messages() {
                       }`}
                       onClick={() => navigate(`/messages/${conv.id}`)}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="relative shrink-0">
-                          <Avatar className="w-10 h-10 border">
+                      <div className='flex items-center gap-3'>
+                        <div className='relative shrink-0'>
+                          <Avatar className='w-10 h-10 border'>
                             <AvatarImage src={avatar} />
-                            <AvatarFallback className="text-xs">
+                            <AvatarFallback className='text-xs'>
                               {name.substring(0, 2).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
@@ -451,21 +451,21 @@ export default function Messages() {
                             }`}
                           />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <p className="font-medium truncate text-sm">
+                        <div className='flex-1 min-w-0'>
+                          <div className='flex items-center justify-between'>
+                            <p className='font-medium truncate text-sm'>
                               {name}
                             </p>
-                            <div className="flex items-center gap-2">
+                            <div className='flex items-center gap-2'>
                               {unread > 0 && (
-                                <span className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full">
+                                <span className='bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full'>
                                   {unread}
                                 </span>
                               )}
                               <button
-                                type="button"
-                                className="text-muted-foreground hover:text-destructive"
-                                title="Remove conversation"
+                                type='button'
+                                className='text-muted-foreground hover:text-destructive'
+                                title='Remove conversation'
                                 onClick={event => {
                                   event.preventDefault()
                                   event.stopPropagation()
@@ -480,12 +480,12 @@ export default function Messages() {
                                   })
                                 }}
                               >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                <Trash2 className='h-3.5 w-3.5' />
                               </button>
                             </div>
                           </div>
                           {conv.last_message && (
-                            <p className="text-xs opacity-75 truncate">
+                            <p className='text-xs opacity-75 truncate'>
                               {conv.last_message.content}
                             </p>
                           )}
@@ -495,7 +495,7 @@ export default function Messages() {
                   )
                 })
               ) : (
-                <div className="text-xs text-muted-foreground text-center py-8">
+                <div className='text-xs text-muted-foreground text-center py-8'>
                   {messageTab === 'unread'
                     ? 'No unread messages'
                     : 'No conversations yet'}
@@ -506,30 +506,30 @@ export default function Messages() {
         </div>
 
         {/* Center - Chat Window */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-background">
-          <div className="border-b px-6 h-15 flex items-center justify-between shrink-0 bg-card/30 backdrop-blur-sm">
-            <div className="flex items-center gap-3">
+        <div className='flex-1 flex flex-col overflow-hidden bg-background'>
+          <div className='border-b px-6 h-15 flex items-center justify-between shrink-0 bg-card/30 backdrop-blur-sm'>
+            <div className='flex items-center gap-3'>
               {selectedConversation && (
                 <>
-                  <Avatar className="w-8 h-8 border">
+                  <Avatar className='w-8 h-8 border'>
                     <AvatarImage
                       src={getConversationAvatar(selectedConversation)}
                     />
-                    <AvatarFallback className="text-xs">
+                    <AvatarFallback className='text-xs'>
                       {getConversationName(selectedConversation)
                         .substring(0, 2)
                         .toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="font-semibold text-sm">
+                    <h3 className='font-semibold text-sm'>
                       {getConversationName(selectedConversation)}
                     </h3>
-                    <div className="flex items-center gap-1.5">
+                    <div className='flex items-center gap-1.5'>
                       <div
                         className={`w-2 h-2 rounded-full ${isSelectedConversationOtherUserOnline ? 'bg-green-500' : 'bg-gray-400'}`}
                       />
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                      <p className='text-[10px] text-muted-foreground uppercase tracking-wider font-medium'>
                         {isSelectedConversationOtherUserOnline
                           ? 'Online'
                           : 'Offline'}
@@ -541,18 +541,18 @@ export default function Messages() {
             </div>
           </div>
 
-          <ScrollArea className="flex-1">
-            <div className="max-w-3xl mx-auto w-full space-y-4 p-6">
+          <ScrollArea className='flex-1'>
+            <div className='max-w-3xl mx-auto w-full space-y-4 p-6'>
               {isLoading ? (
-                <div className="text-center py-8 text-muted-foreground text-sm">
+                <div className='text-center py-8 text-muted-foreground text-sm'>
                   Loading messages...
                 </div>
               ) : messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center mb-4">
-                    <MessageCircle className="w-8 h-8 text-muted-foreground" />
+                <div className='flex flex-col items-center justify-center py-20 text-center'>
+                  <div className='w-16 h-16 rounded-full bg-accent flex items-center justify-center mb-4'>
+                    <MessageCircle className='w-8 h-8 text-muted-foreground' />
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className='text-sm text-muted-foreground'>
                     No messages yet. Start the conversation!
                   </p>
                 </div>
@@ -561,24 +561,24 @@ export default function Messages() {
                   const isOwnMessage = msg.sender_id === currentUser?.id
                   const sender = msg.sender
                   return (
-                    <div key={msg.id} className="flex items-start gap-3">
-                      <Avatar className="w-8 h-8 shrink-0 border">
+                    <div key={msg.id} className='flex items-start gap-3'>
+                      <Avatar className='w-8 h-8 shrink-0 border'>
                         <AvatarImage
                           src={
                             sender?.avatar ||
                             `https://i.pravatar.cc/150?u=${sender?.username}`
                           }
                         />
-                        <AvatarFallback className="text-xs">
+                        <AvatarFallback className='text-xs'>
                           {sender?.username?.[0]?.toUpperCase() || 'U'}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex max-w-[70%] flex-col items-start">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-semibold text-xs">
+                      <div className='flex max-w-[70%] flex-col items-start'>
+                        <div className='flex items-center gap-2 mb-1'>
+                          <span className='font-semibold text-xs'>
                             {isOwnMessage ? 'You' : sender?.username || 'User'}
                           </span>
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className='text-[10px] text-muted-foreground'>
                             {formatTimestamp(msg.created_at)}
                           </span>
                         </div>
@@ -598,11 +598,11 @@ export default function Messages() {
               )}
 
               {Object.values(participants).some(p => p.typing) && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse">
-                  <div className="flex gap-1">
-                    <span className="w-1 h-1 rounded-full bg-muted-foreground animate-bounce" />
-                    <span className="w-1 h-1 rounded-full bg-muted-foreground animate-bounce [animation-delay:0.2s]" />
-                    <span className="w-1 h-1 rounded-full bg-muted-foreground animate-bounce [animation-delay:0.4s]" />
+                <div className='flex items-center gap-2 text-xs text-muted-foreground animate-pulse'>
+                  <div className='flex gap-1'>
+                    <span className='w-1 h-1 rounded-full bg-muted-foreground animate-bounce' />
+                    <span className='w-1 h-1 rounded-full bg-muted-foreground animate-bounce [animation-delay:0.2s]' />
+                    <span className='w-1 h-1 rounded-full bg-muted-foreground animate-bounce [animation-delay:0.4s]' />
                   </div>
                   <span>
                     {Object.values(participants)
@@ -618,37 +618,37 @@ export default function Messages() {
             </div>
           </ScrollArea>
 
-          <div className="border-t p-4 shrink-0">
-            <div className="max-w-3xl mx-auto flex gap-2">
+          <div className='border-t p-4 shrink-0'>
+            <div className='max-w-3xl mx-auto flex gap-2'>
               <Input
-                placeholder="Type a message..."
+                placeholder='Type a message...'
                 value={newMessage}
                 onChange={e => handleInputChange(e.target.value)}
                 onKeyPress={handleKeyPress}
-                className="flex-1 rounded-full bg-secondary border-none px-4"
+                className='flex-1 rounded-full bg-secondary border-none px-4'
               />
               <Button
                 onClick={handleSendMessage}
                 disabled={!newMessage.trim()}
-                variant="default"
-                className="rounded-full w-10 h-10 p-0"
+                variant='default'
+                className='rounded-full w-10 h-10 p-0'
               >
-                <Send className="w-4 h-4 text-primary-foreground" />
+                <Send className='w-4 h-4 text-primary-foreground' />
               </Button>
             </div>
           </div>
         </div>
 
         {/* Right Sidebar - Contact Info (200px fixed) */}
-        <div className="w-50 border-l bg-card hidden lg:flex flex-col overflow-hidden">
-          <div className="p-4 border-b shrink-0 h-15 flex items-center">
-            <h2 className="font-semibold text-sm flex items-center gap-2">
-              <Users className="w-4 h-4" />
+        <div className='w-50 border-l bg-card hidden lg:flex flex-col overflow-hidden'>
+          <div className='p-4 border-b shrink-0 h-15 flex items-center'>
+            <h2 className='font-semibold text-sm flex items-center gap-2'>
+              <Users className='w-4 h-4' />
               Details
             </h2>
           </div>
-          <ScrollArea className="flex-1">
-            <div className="p-6">
+          <ScrollArea className='flex-1'>
+            <div className='p-6'>
               {selectedConversation &&
                 (() => {
                   const otherUser = selectedConversation.participants?.find(
@@ -659,8 +659,8 @@ export default function Messages() {
                     : false
 
                   return (
-                    <div className="text-center">
-                      <Avatar className="w-20 h-20 mx-auto mb-4 border-2 p-0.5">
+                    <div className='text-center'>
+                      <Avatar className='w-20 h-20 mx-auto mb-4 border-2 p-0.5'>
                         <AvatarImage
                           src={getConversationAvatar(selectedConversation)}
                         />
@@ -670,24 +670,24 @@ export default function Messages() {
                             .toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <h3 className="font-bold text-lg mb-1">
+                      <h3 className='font-bold text-lg mb-1'>
                         {getConversationName(selectedConversation)}
                       </h3>
-                      <div className="flex items-center justify-center gap-1.5 border py-1 px-3 rounded-full w-fit mx-auto">
+                      <div className='flex items-center justify-center gap-1.5 border py-1 px-3 rounded-full w-fit mx-auto'>
                         <div
                           className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`}
                         />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        <span className='text-[10px] font-bold uppercase tracking-wider text-muted-foreground'>
                           {isOnline ? 'Active Now' : 'Offline'}
                         </span>
                       </div>
 
-                      <div className="mt-8 text-left space-y-4">
+                      <div className='mt-8 text-left space-y-4'>
                         <div>
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">
+                          <p className='text-[10px] font-bold text-muted-foreground uppercase mb-1'>
                             About
                           </p>
-                          <p className="text-xs">
+                          <p className='text-xs'>
                             {otherUser?.bio || 'No status set'}
                           </p>
                         </div>

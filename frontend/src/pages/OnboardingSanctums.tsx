@@ -60,16 +60,16 @@ export default function OnboardingSanctums() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-3xl p-6">
-        <p className="text-sm text-muted-foreground">Loading sanctums...</p>
+      <div className='mx-auto max-w-3xl p-6'>
+        <p className='text-sm text-muted-foreground'>Loading sanctums...</p>
       </div>
     )
   }
 
   if (isError) {
     return (
-      <div className="mx-auto max-w-3xl p-6">
-        <p className="text-sm text-destructive">
+      <div className='mx-auto max-w-3xl p-6'>
+        <p className='text-sm text-destructive'>
           Failed to load sanctums. Refresh and try again.
         </p>
       </div>
@@ -77,33 +77,33 @@ export default function OnboardingSanctums() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-6 space-y-5">
+    <div className='mx-auto max-w-3xl p-6 space-y-5'>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className='text-2xl font-semibold tracking-tight'>
           Choose your Sanctums
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className='text-sm text-muted-foreground'>
           Pick at least 3 to personalize your feed. Atrium is required.
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className='grid gap-3 sm:grid-cols-2'>
         {sortedSanctums.map(sanctum => {
           const checked = selected.has(sanctum.slug)
           const isRequired = sanctum.slug === REQUIRED_SLUG
           return (
             <Card key={sanctum.id}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">{sanctum.name}</CardTitle>
+              <CardHeader className='pb-3'>
+                <CardTitle className='text-base'>{sanctum.name}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground">
+              <CardContent className='space-y-3'>
+                <p className='text-sm text-muted-foreground'>
                   {sanctum.description || 'No description'}
                 </p>
-                <div className="flex items-center gap-2">
+                <div className='flex items-center gap-2'>
                   <input
-                    className="h-4 w-4 rounded border-input"
-                    type="checkbox"
+                    className='h-4 w-4 rounded border-input'
+                    type='checkbox'
                     id={`sanctum-${sanctum.slug}`}
                     checked={checked}
                     disabled={isRequired}
@@ -119,8 +119,8 @@ export default function OnboardingSanctums() {
         })}
       </div>
 
-      <div className="flex items-center justify-between border-t pt-4">
-        <p className="text-sm text-muted-foreground">
+      <div className='flex items-center justify-between border-t pt-4'>
+        <p className='text-sm text-muted-foreground'>
           Selected: {selectedCount} / 3 minimum
         </p>
         <Button onClick={onSubmit} disabled={!canSubmit || upsert.isPending}>

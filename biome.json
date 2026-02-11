@@ -1,0 +1,8 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
+	"files": {
+		"ignoreUnknown": false,
+		"includes": ["**", "!!**/dist", "!!**/.astro", "!!**/.next", "!!**/build"],
+		"excludes": ["coverage/**"]
+	}
+}

@@ -59,10 +59,10 @@ const OnboardingSanctums = lazy(() => import('@/pages/OnboardingSanctums'))
 
 function PageLoader() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
-        <p className="text-muted-foreground">Loading...</p>
+    <div className='min-h-screen flex items-center justify-center bg-background'>
+      <div className='text-center'>
+        <div className='mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-primary'></div>
+        <p className='text-muted-foreground'>Loading...</p>
       </div>
     </div>
   )
@@ -97,64 +97,64 @@ function HomePage() {
   ]
 
   return (
-    <div className="min-h-screen px-4 py-6 md:px-8 md:py-8">
-      <div className="mx-auto grid max-w-6xl gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <section className="rounded-3xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl md:p-8">
-          <p className="mb-2 inline-flex rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+    <div className='min-h-screen px-4 py-6 md:px-8 md:py-8'>
+      <div className='mx-auto grid max-w-6xl gap-4 lg:grid-cols-[1.2fr_0.8fr]'>
+        <section className='rounded-3xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl md:p-8'>
+          <p className='mb-2 inline-flex rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary'>
             Social Gaming Hub
           </p>
-          <h1 className="mb-3 text-3xl font-extrabold tracking-tight text-foreground md:text-5xl">
+          <h1 className='mb-3 text-3xl font-extrabold tracking-tight text-foreground md:text-5xl'>
             Sanctum keeps your people, play, and live moments in one place.
           </h1>
-          <p className="max-w-2xl text-sm text-muted-foreground md:text-base">
+          <p className='max-w-2xl text-sm text-muted-foreground md:text-base'>
             Scroll, chat, and queue games from a single workspace. No tab maze,
             no context switching.
           </p>
-          <div className="mt-5 flex flex-wrap items-center gap-2.5">
-            <Button size="lg" className="rounded-xl px-6" asChild>
-              <Link to="/signup">Get Started</Link>
+          <div className='mt-5 flex flex-wrap items-center gap-2.5'>
+            <Button size='lg' className='rounded-xl px-6' asChild>
+              <Link to='/signup'>Get Started</Link>
             </Button>
             <Button
-              size="lg"
-              variant="outline"
-              className="rounded-xl px-6"
+              size='lg'
+              variant='outline'
+              className='rounded-xl px-6'
               asChild
             >
-              <Link to="/login">Login</Link>
+              <Link to='/login'>Login</Link>
             </Button>
           </div>
         </section>
 
-        <section className="rounded-3xl border border-border/70 bg-background/70 p-5 shadow-xl backdrop-blur-xl md:p-6">
-          <h2 className="mb-2 text-lg font-bold text-foreground">
+        <section className='rounded-3xl border border-border/70 bg-background/70 p-5 shadow-xl backdrop-blur-xl md:p-6'>
+          <h2 className='mb-2 text-lg font-bold text-foreground'>
             Quick Start
           </h2>
-          <p className="mb-3 text-sm text-muted-foreground">
+          <p className='mb-3 text-sm text-muted-foreground'>
             A cleaner flow for new users to get value fast.
           </p>
-          <ol className="space-y-2 text-sm">
-            <li className="rounded-xl border border-border/60 bg-card/60 p-2.5">
+          <ol className='space-y-2 text-sm'>
+            <li className='rounded-xl border border-border/60 bg-card/60 p-2.5'>
               Create your profile and set your status.
             </li>
-            <li className="rounded-xl border border-border/60 bg-card/60 p-2.5">
+            <li className='rounded-xl border border-border/60 bg-card/60 p-2.5'>
               Join a stream or hop into chatrooms.
             </li>
-            <li className="rounded-xl border border-border/60 bg-card/60 p-2.5">
+            <li className='rounded-xl border border-border/60 bg-card/60 p-2.5'>
               Challenge friends in quick games.
             </li>
           </ol>
         </section>
       </div>
 
-      <section className="mx-auto mt-4 grid max-w-6xl gap-3 md:grid-cols-3">
+      <section className='mx-auto mt-4 grid max-w-6xl gap-3 md:grid-cols-3'>
         {highlights.map(item => (
           <article
             key={item.title}
-            className="rounded-2xl border border-border/70 bg-card/70 p-4 shadow-lg backdrop-blur-xl"
+            className='rounded-2xl border border-border/70 bg-card/70 p-4 shadow-lg backdrop-blur-xl'
           >
-            <item.icon className="mb-2 h-5 w-5 text-primary" />
-            <h3 className="mb-1 text-base font-bold">{item.title}</h3>
-            <p className="text-sm text-muted-foreground">{item.description}</p>
+            <item.icon className='mb-2 h-5 w-5 text-primary' />
+            <h3 className='mb-1 text-base font-bold'>{item.title}</h3>
+            <p className='text-sm text-muted-foreground'>{item.description}</p>
           </article>
         ))}
       </section>
@@ -176,13 +176,13 @@ function RoutesWithPrefetch() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/posts" element={<Posts />} />
-        <Route path="/posts/:id" element={<PostDetail />} />
+        <Route path='/' element={<HomePage />} />
+        <Route path='/login' element={<Login />} />
+        <Route path='/signup' element={<Signup />} />
+        <Route path='/posts' element={<Posts />} />
+        <Route path='/posts/:id' element={<PostDetail />} />
         <Route
-          path="/chat"
+          path='/chat'
           element={
             <ProtectedRoute>
               <Chat />
@@ -190,7 +190,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/chat/:id"
+          path='/chat/:id'
           element={
             <ProtectedRoute>
               <Chat />
@@ -198,7 +198,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/messages/:id?"
+          path='/messages/:id?'
           element={
             <ProtectedRoute>
               <Messages />
@@ -206,7 +206,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/profile"
+          path='/profile'
           element={
             <ProtectedRoute>
               <Profile />
@@ -214,7 +214,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/friends"
+          path='/friends'
           element={
             <ProtectedRoute>
               <Friends />
@@ -222,7 +222,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/users"
+          path='/users'
           element={
             <ProtectedRoute>
               <UsersPage />
@@ -230,7 +230,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/users/:id"
+          path='/users/:id'
           element={
             <ProtectedRoute>
               <UserProfilePage />
@@ -238,7 +238,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/games"
+          path='/games'
           element={
             <ProtectedRoute>
               <Games />
@@ -246,7 +246,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/games/connect4/:id"
+          path='/games/connect4/:id'
           element={
             <ProtectedRoute>
               <ConnectFour />
@@ -254,7 +254,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/games/chess"
+          path='/games/chess'
           element={
             <ProtectedRoute>
               <Chess />
@@ -262,7 +262,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/games/checkers"
+          path='/games/checkers'
           element={
             <ProtectedRoute>
               <Checkers />
@@ -270,7 +270,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/games/trivia"
+          path='/games/trivia'
           element={
             <ProtectedRoute>
               <Trivia />
@@ -278,7 +278,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/games/blackjack"
+          path='/games/blackjack'
           element={
             <ProtectedRoute>
               <Blackjack />
@@ -286,7 +286,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/games/poker"
+          path='/games/poker'
           element={
             <ProtectedRoute>
               <Poker />
@@ -294,7 +294,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/games/crazy-eights"
+          path='/games/crazy-eights'
           element={
             <ProtectedRoute>
               <CrazyEights />
@@ -302,7 +302,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/games/hearts"
+          path='/games/hearts'
           element={
             <ProtectedRoute>
               <Hearts />
@@ -310,7 +310,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/games/president"
+          path='/games/president'
           element={
             <ProtectedRoute>
               <President />
@@ -318,7 +318,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/games/draw-guess"
+          path='/games/draw-guess'
           element={
             <ProtectedRoute>
               <DrawAndGuess />
@@ -326,7 +326,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/games/snake"
+          path='/games/snake'
           element={
             <ProtectedRoute>
               <Snake />
@@ -334,7 +334,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/games/battleship"
+          path='/games/battleship'
           element={
             <ProtectedRoute>
               <Battleship />
@@ -342,7 +342,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/games/othello"
+          path='/games/othello'
           element={
             <ProtectedRoute>
               <Othello />
@@ -350,7 +350,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/streams"
+          path='/streams'
           element={
             <ProtectedRoute>
               <Streams />
@@ -358,7 +358,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/streams/:id"
+          path='/streams/:id'
           element={
             <ProtectedRoute>
               <Stream />
@@ -366,17 +366,17 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/videochat"
+          path='/videochat'
           element={
             <ProtectedRoute>
               <VideoChat />
             </ProtectedRoute>
           }
         />
-        <Route path="/sanctums" element={<Sanctums />} />
-        <Route path="/s/:slug" element={<SanctumDetail />} />
+        <Route path='/sanctums' element={<Sanctums />} />
+        <Route path='/s/:slug' element={<SanctumDetail />} />
         <Route
-          path="/sanctums/request"
+          path='/sanctums/request'
           element={
             <ProtectedRoute>
               <SanctumRequestForm />
@@ -384,7 +384,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/sanctums/requests"
+          path='/sanctums/requests'
           element={
             <ProtectedRoute>
               <MySanctumRequests />
@@ -392,7 +392,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/onboarding/sanctums"
+          path='/onboarding/sanctums'
           element={
             <ProtectedRoute>
               <OnboardingSanctums />
@@ -400,7 +400,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path="/admin/sanctum-requests"
+          path='/admin/sanctum-requests'
           element={
             <ProtectedRoute>
               <AdminSanctumRequests />

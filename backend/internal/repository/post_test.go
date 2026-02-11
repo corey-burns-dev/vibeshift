@@ -2,94 +2,73 @@ package repository
 
 import (
 	"context"
-	"regexp"
+	"fmt"
 	"testing"
+	"time"
 
 	"sanctum/internal/models"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestPostRepository_Create(t *testing.T) {
-	db, mock := setupMockDB(t)
-	repo := NewPostRepository(db)
+func TestPostRepository_Integration(t *testing.T) {
+	repo := NewPostRepository(testDB)
 	ctx := context.Background()
 
-	post := &models.Post{Title: "Test Post", Content: "Content"}
+	// Setup a user for posts
+	ts := time.Now().UnixNano()
+	user := &models.User{Username: fmt.Sprintf("puser_%d", ts), Email: fmt.Sprintf("puser_%d@e.com", ts)}
+	testDB.Create(user)
 
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "posts"`)).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectCommit()
+	t.Run("Create and GetByID", func(t *testing.T) {
+		post := &models.Post{
+			Title:   "Integration Post",
+			Content: "This is content",
+			UserID:  user.ID,
+		}
 
-	err := repo.Create(ctx, post)
-	assert.NoError(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
+		err := repo.Create(ctx, post)
+		require.NoError(t, err)
+		assert.NotZero(t, post.ID)
 
-func TestPostRepository_GetByID(t *testing.T) {
-	db, mock := setupMockDB(t)
-	repo := NewPostRepository(db)
-	ctx := context.Background()
+		fetched, err := repo.GetByID(ctx, post.ID, user.ID)
+		assert.NoError(t, err)
+		assert.Equal(t, post.Title, fetched.Title)
+		assert.Equal(t, user.ID, fetched.UserID)
+	})
 
-	tests := []struct {
-		name          string
-		postID        uint
-		currentUserID uint
-		mockBehavior  func()
-		expectedTitle string
-		expectedError bool
-	}{
-		{
-			name:          "Success with Details",
-			postID:        1,
-			currentUserID: 2,
-			mockBehavior: func() {
-				// main query
-				mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "posts" WHERE "posts"."id" = $1 AND "posts"."deleted_at" IS NULL ORDER BY "posts"."id" LIMIT $2`)).
-					WithArgs(1, 1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "title", "user_id"}).AddRow(1, "Post 1", 10))
+	t.Run("Like and Unlike", func(t *testing.T) {
+		post := &models.Post{Title: "Like Test", Content: "x", UserID: user.ID}
+		repo.Create(ctx, post)
 
-				// preload user - GORM preloads after main query
-				mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "users" WHERE "users"."id" = $1 AND "users"."deleted_at" IS NULL`)).
-					WithArgs(10).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(10, "user10"))
+		err := repo.Like(ctx, user.ID, post.ID)
+		assert.NoError(t, err)
 
-				// populatePostDetails - Comments count
-				mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "comments" WHERE post_id = $1 AND "comments"."deleted_at" IS NULL`)).
-					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(5))
+		isLiked, _ := repo.IsLiked(ctx, user.ID, post.ID)
+		assert.True(t, isLiked)
 
-				// populatePostDetails - Likes count
-				mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "likes" WHERE post_id = $1`)).
-					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(10))
+		fetched, _ := repo.GetByID(ctx, post.ID, user.ID)
+		assert.Equal(t, 1, fetched.LikesCount)
+		assert.True(t, fetched.Liked)
 
-				// populatePostDetails - Is liked by user
-				mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "likes" WHERE post_id = $1 AND user_id = $2 ORDER BY "likes"."id" LIMIT $3`)).
-					WithArgs(1, 2, 1).
-					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-			},
-			expectedTitle: "Post 1",
-		},
-	}
+		err = repo.Unlike(ctx, user.ID, post.ID)
+		assert.NoError(t, err)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.mockBehavior()
-			post, err := repo.GetByID(ctx, tt.postID, tt.currentUserID)
+		isLiked, _ = repo.IsLiked(ctx, user.ID, post.ID)
+		assert.False(t, isLiked)
+	})
 
-			if tt.expectedError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedTitle, post.Title)
-				assert.Equal(t, 5, post.CommentsCount)
-				assert.Equal(t, 10, post.LikesCount)
-				assert.True(t, post.Liked)
-			}
-			assert.NoError(t, mock.ExpectationsWereMet())
-		})
-	}
+	t.Run("Search and List", func(t *testing.T) {
+		repo.Create(ctx, &models.Post{Title: "Go Programming", Content: "Rocks", UserID: user.ID})
+		repo.Create(ctx, &models.Post{Title: "Rust Programming", Content: "Fast", UserID: user.ID})
+
+		posts, err := repo.Search(ctx, "Programming", 10, 0, user.ID)
+		assert.NoError(t, err)
+		assert.GreaterOrEqual(t, len(posts), 2)
+
+		all, err := repo.List(ctx, 10, 0, user.ID)
+		assert.NoError(t, err)
+		assert.GreaterOrEqual(t, len(all), 2)
+	})
 }

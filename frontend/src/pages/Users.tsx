@@ -97,16 +97,16 @@ export default function Users() {
     isLoadingUsers || isLoadingFriends || isLoadingIncoming || isLoadingOutgoing
 
   return (
-    <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)] bg-[#F0F2F5] overflow-hidden">
+    <div className='flex flex-col md:flex-row h-[calc(100vh-4rem)] bg-[#F0F2F5] overflow-hidden'>
       <FriendSidebar
         activeView={activeView}
         onViewChange={setActiveView}
         requestCount={incomingRequests.length}
       />
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2 capitalize">
+      <div className='flex-1 overflow-y-auto p-4 md:p-8'>
+        <div className='mb-6'>
+          <h1 className='text-2xl font-bold mb-2 capitalize'>
             {activeView === 'requests'
               ? 'Friend Requests'
               : activeView === 'friends'
@@ -114,7 +114,7 @@ export default function Users() {
                 : 'People You May Know'}
           </h1>
           {activeView === 'requests' && requestsList.length > 0 && (
-            <p className="text-red-500 font-medium text-sm">
+            <p className='text-red-500 font-medium text-sm'>
               {requestsList.length} Friend Request
               {requestsList.length !== 1 ? 's' : ''}
             </p>
@@ -122,17 +122,17 @@ export default function Users() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          <div className='flex justify-center py-12'>
+            <Loader2 className='w-8 h-8 animate-spin text-muted-foreground' />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4'>
             {activeView === 'suggestions' &&
               suggestions.map(user => (
                 <FriendCard
                   key={user.id}
                   user={user}
-                  actionType="add"
+                  actionType='add'
                   onAction={handleAction}
                 />
               ))}
@@ -143,16 +143,16 @@ export default function Users() {
                   <FriendCard
                     key={req.id}
                     user={req.sender}
-                    actionType="accept_reject"
+                    actionType='accept_reject'
                     onAction={handleAction}
                   />
                 ) : null
               )}
 
             {activeView === 'requests' && requestsList.length === 0 && (
-              <div className="col-span-full text-center py-12">
-                <UsersIcon className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
-                <p className="text-muted-foreground font-medium">
+              <div className='col-span-full text-center py-12'>
+                <UsersIcon className='w-16 h-16 mx-auto text-muted-foreground/30 mb-4' />
+                <p className='text-muted-foreground font-medium'>
                   No new friend requests
                 </p>
               </div>
@@ -163,22 +163,22 @@ export default function Users() {
                 <FriendCard
                   key={user.id}
                   user={user}
-                  actionType="remove"
+                  actionType='remove'
                   onAction={handleAction}
                 />
               ))}
 
             {activeView === 'friends' && friends.length === 0 && (
-              <div className="col-span-full text-center py-12">
-                <UserPlus className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
-                <p className="text-muted-foreground font-medium">
+              <div className='col-span-full text-center py-12'>
+                <UserPlus className='w-16 h-16 mx-auto text-muted-foreground/30 mb-4' />
+                <p className='text-muted-foreground font-medium'>
                   No friends yet. Go to Suggestions to add some!
                 </p>
               </div>
             )}
 
             {activeView === 'suggestions' && suggestions.length === 0 && (
-              <div className="col-span-full text-center py-12 text-muted-foreground">
+              <div className='col-span-full text-center py-12 text-muted-foreground'>
                 No suggestions available.
               </div>
             )}

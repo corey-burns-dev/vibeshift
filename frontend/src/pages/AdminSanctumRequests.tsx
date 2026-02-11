@@ -29,19 +29,19 @@ export default function AdminSanctumRequests() {
   const rejectMutation = useRejectSanctumRequest()
 
   if (!currentUser?.is_admin) {
-    return <Navigate to="/sanctums" replace />
+    return <Navigate to='/sanctums' replace />
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold">Admin Sanctum Requests</h1>
-        <p className="text-sm text-muted-foreground">
+    <div className='mx-auto max-w-5xl px-4 py-8'>
+      <div className='mb-5'>
+        <h1 className='text-2xl font-bold'>Admin Sanctum Requests</h1>
+        <p className='text-sm text-muted-foreground'>
           Review and moderate queue.
         </p>
       </div>
 
-      <div className="mb-4 flex gap-2">
+      <div className='mb-4 flex gap-2'>
         {filters.map(status => (
           <Button
             key={status}
@@ -54,33 +54,33 @@ export default function AdminSanctumRequests() {
       </div>
 
       {isLoading ? (
-        <p className="text-muted-foreground">Loading queue...</p>
+        <p className='text-muted-foreground'>Loading queue...</p>
       ) : null}
 
       {isError ? (
         <div>
-          <p className="text-destructive">Failed to load queue.</p>
-          <p className="mt-1 text-xs text-muted-foreground">{String(error)}</p>
-          <Button className="mt-3" variant="outline" onClick={() => refetch()}>
+          <p className='text-destructive'>Failed to load queue.</p>
+          <p className='mt-1 text-xs text-muted-foreground'>{String(error)}</p>
+          <Button className='mt-3' variant='outline' onClick={() => refetch()}>
             Retry
           </Button>
         </div>
       ) : null}
 
       {!isLoading && !isError ? (
-        <div className="space-y-3">
+        <div className='space-y-3'>
           {data.map(request => {
             const notes = reviewNotes[request.id] ?? ''
 
             return (
               <article
                 key={request.id}
-                className="rounded-xl border border-border/70 bg-card/60 p-4"
+                className='rounded-xl border border-border/70 bg-card/60 p-4'
               >
-                <div className="flex items-center justify-between gap-2">
+                <div className='flex items-center justify-between gap-2'>
                   <div>
-                    <p className="font-semibold">{request.requested_name}</p>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <p className='font-semibold'>{request.requested_name}</p>
+                    <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
                       <span>/{request.requested_slug}</span>
                       <span>•</span>
                       <span>
@@ -90,18 +90,18 @@ export default function AdminSanctumRequests() {
                       </span>
                     </div>
                   </div>
-                  <Badge variant="outline" className="uppercase">
+                  <Badge variant='outline' className='uppercase'>
                     {request.status}
                   </Badge>
                 </div>
 
-                <p className="mt-2 text-sm text-muted-foreground">
+                <p className='mt-2 text-sm text-muted-foreground'>
                   {request.reason}
                 </p>
 
                 <Input
-                  className="mt-3"
-                  placeholder="Review notes (optional)"
+                  className='mt-3'
+                  placeholder='Review notes (optional)'
                   value={notes}
                   onChange={event =>
                     setReviewNotes(prev => ({
@@ -112,7 +112,7 @@ export default function AdminSanctumRequests() {
                 />
 
                 {filter === 'pending' ? (
-                  <div className="mt-3 flex gap-2">
+                  <div className='mt-3 flex gap-2'>
                     <Button
                       disabled={
                         approveMutation.isPending || rejectMutation.isPending
@@ -127,7 +127,7 @@ export default function AdminSanctumRequests() {
                       Approve
                     </Button>
                     <Button
-                      variant="destructive"
+                      variant='destructive'
                       disabled={
                         approveMutation.isPending || rejectMutation.isPending
                       }
@@ -147,7 +147,7 @@ export default function AdminSanctumRequests() {
           })}
 
           {data.length === 0 ? (
-            <div className="rounded-xl border border-border/70 bg-card/60 p-4 text-sm text-muted-foreground">
+            <div className='rounded-xl border border-border/70 bg-card/60 p-4 text-sm text-muted-foreground'>
               No requests for this status.
             </div>
           ) : null}

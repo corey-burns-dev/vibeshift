@@ -14,14 +14,14 @@ export function PostCaption({
   const shouldTruncate = content.length > maxLength
 
   return (
-    <div className="space-y-1 text-sm">
+    <div className='space-y-1 text-sm'>
       {username && (
-        <span className="font-bold mr-2 hover:underline cursor-pointer">
+        <span className='font-bold mr-2 hover:underline cursor-pointer'>
           {username}
         </span>
       )}
 
-      {title && <span className="font-bold mr-2">{title}</span>}
+      {title && <span className='font-bold mr-2'>{title}</span>}
 
       <span>
         {shouldTruncate && !isExpanded
@@ -31,12 +31,12 @@ export function PostCaption({
 
       {shouldTruncate && (
         <button
-          type="button"
+          type='button'
           onClick={event => {
             event.stopPropagation()
             setIsExpanded(!isExpanded)
           }}
-          className="text-muted-foreground ml-1 hover:text-foreground font-medium"
+          className='text-muted-foreground ml-1 hover:text-foreground font-medium'
         >
           {isExpanded ? 'less' : 'more'}
         </button>

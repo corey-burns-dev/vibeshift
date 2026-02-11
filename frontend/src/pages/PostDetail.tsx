@@ -21,9 +21,9 @@ export default function PostDetail() {
 
   if (!postId) {
     return (
-      <div className="flex-1 overflow-y-auto py-10">
-        <div className="max-w-3xl mx-auto px-4">
-          <p className="text-muted-foreground">Post not found.</p>
+      <div className='flex-1 overflow-y-auto py-10'>
+        <div className='max-w-3xl mx-auto px-4'>
+          <p className='text-muted-foreground'>Post not found.</p>
         </div>
       </div>
     )
@@ -31,17 +31,17 @@ export default function PostDetail() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-10">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      <div className='flex justify-center py-10'>
+        <Loader2 className='w-8 h-8 animate-spin text-muted-foreground' />
       </div>
     )
   }
 
   if (isError || !post) {
     return (
-      <div className="flex-1 overflow-y-auto py-10">
-        <div className="max-w-3xl mx-auto px-4">
-          <p className="text-muted-foreground">Unable to load this post.</p>
+      <div className='flex-1 overflow-y-auto py-10'>
+        <div className='max-w-3xl mx-auto px-4'>
+          <p className='text-muted-foreground'>Unable to load this post.</p>
         </div>
       </div>
     )
@@ -57,22 +57,22 @@ export default function PostDetail() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto py-8">
-      <div className="max-w-3xl mx-auto px-4">
-        <Button variant="ghost" asChild className="mb-4 gap-2">
-          <Link to="/posts">
-            <ArrowLeft className="h-4 w-4" />
+    <div className='flex-1 overflow-y-auto py-8'>
+      <div className='max-w-3xl mx-auto px-4'>
+        <Button variant='ghost' asChild className='mb-4 gap-2'>
+          <Link to='/posts'>
+            <ArrowLeft className='h-4 w-4' />
             Back to posts
           </Link>
         </Button>
 
-        <Card className="border bg-card/95 shadow-sm rounded-2xl overflow-hidden">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between px-5 py-4">
+        <Card className='border bg-card/95 shadow-sm rounded-2xl overflow-hidden'>
+          <CardContent className='p-0'>
+            <div className='flex items-center justify-between px-5 py-4'>
               {post.user && (
                 <UserMenu user={post.user}>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-9 h-9 ring-1 ring-border">
+                  <div className='flex items-center gap-3'>
+                    <Avatar className='w-9 h-9 ring-1 ring-border'>
                       <AvatarImage
                         src={
                           post.user.avatar || getAvatarUrl(post.user.username)
@@ -83,10 +83,10 @@ export default function PostDetail() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-semibold text-sm">
+                      <p className='font-semibold text-sm'>
                         {post.user.username}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className='text-xs text-muted-foreground'>
                         {formatDistanceToNow(new Date(post.created_at), {
                           addSuffix: true,
                         })}
@@ -98,24 +98,24 @@ export default function PostDetail() {
             </div>
 
             {post.image_url ? (
-              <div className="relative w-full bg-muted overflow-hidden">
+              <div className='relative w-full bg-muted overflow-hidden'>
                 <img
                   src={post.image_url}
                   alt={`Post by ${post.user?.username}`}
-                  className="w-full max-h-130 object-cover"
-                  loading="lazy"
+                  className='w-full max-h-130 object-cover'
+                  loading='lazy'
                 />
               </div>
             ) : null}
 
-            <div className="px-5 py-4 space-y-4">
+            <div className='px-5 py-4 space-y-4'>
               <PostCaption title={post.title} content={post.content} />
 
-              <div className="flex items-center gap-4">
+              <div className='flex items-center gap-4'>
                 <button
-                  type="button"
+                  type='button'
                   onClick={handleLikeToggle}
-                  className="hover:opacity-70 transition-opacity"
+                  className='hover:opacity-70 transition-opacity'
                   disabled={!isAuthenticated}
                 >
                   <Heart
@@ -127,7 +127,7 @@ export default function PostDetail() {
                     )}
                   />
                 </button>
-                <span className="text-sm text-muted-foreground">
+                <span className='text-sm text-muted-foreground'>
                   {post.likes_count} likes
                 </span>
               </div>

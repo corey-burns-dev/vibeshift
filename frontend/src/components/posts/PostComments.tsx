@@ -77,44 +77,44 @@ export const PostComments = memo(function PostComments({
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-4">
-        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+      <div className='flex justify-center py-4'>
+        <Loader2 className='w-5 h-5 animate-spin text-muted-foreground' />
       </div>
     )
   }
 
   return (
-    <div className="mt-6 pt-5 border-t">
-      <div className="space-y-3 mb-4">
+    <div className='mt-6 pt-5 border-t'>
+      <div className='space-y-3 mb-4'>
         {comments.map(comment => (
-          <div key={comment.id} className="flex gap-3">
+          <div key={comment.id} className='flex gap-3'>
             {comment.user && (
               <UserMenu user={comment.user}>
-                <Avatar className="w-8 h-8 shrink-0 cursor-pointer hover:opacity-80">
+                <Avatar className='w-8 h-8 shrink-0 cursor-pointer hover:opacity-80'>
                   <AvatarImage
                     src={
                       comment.user.avatar || getAvatarUrl(comment.user.username)
                     }
                   />
-                  <AvatarFallback className="text-xs">
+                  <AvatarFallback className='text-xs'>
                     {comment.user.username?.[0]?.toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
               </UserMenu>
             )}
-            <div className="flex-1">
-              <div className="bg-muted/60 rounded-xl px-3 py-2">
-                <div className="flex items-center gap-2 mb-1">
+            <div className='flex-1'>
+              <div className='bg-muted/60 rounded-xl px-3 py-2'>
+                <div className='flex items-center gap-2 mb-1'>
                   {comment.user ? (
                     <UserMenu user={comment.user}>
-                      <span className="font-semibold text-sm cursor-pointer hover:underline">
+                      <span className='font-semibold text-sm cursor-pointer hover:underline'>
                         {comment.user.username}
                       </span>
                     </UserMenu>
                   ) : (
-                    <span className="font-semibold text-sm">Unknown</span>
+                    <span className='font-semibold text-sm'>Unknown</span>
                   )}
-                  <span className="text-xs text-muted-foreground">
+                  <span className='text-xs text-muted-foreground'>
                     {formatDistanceToNow(new Date(comment.created_at), {
                       addSuffix: true,
                     })}
@@ -126,18 +126,18 @@ export const PostComments = memo(function PostComments({
                       value={editingCommentText}
                       onChange={e => setEditingCommentText(e.target.value)}
                       rows={2}
-                      className="mb-2"
+                      className='mb-2'
                     />
-                    <div className="flex gap-2 justify-end">
+                    <div className='flex gap-2 justify-end'>
                       <Button
-                        size="sm"
-                        variant="outline"
+                        size='sm'
+                        variant='outline'
                         onClick={cancelEditComment}
                       >
                         Cancel
                       </Button>
                       <Button
-                        size="sm"
+                        size='sm'
                         onClick={() => saveEditComment(comment.id)}
                       >
                         Save
@@ -145,14 +145,14 @@ export const PostComments = memo(function PostComments({
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm">{comment.content}</p>
+                  <p className='text-sm'>{comment.content}</p>
                 )}
 
                 {currentUser && currentUser.id === comment.user_id && (
-                  <div className="flex gap-2 mt-2 text-sm">
+                  <div className='flex gap-2 mt-2 text-sm'>
                     <button
-                      type="button"
-                      className="text-blue-500"
+                      type='button'
+                      className='text-blue-500'
                       onClick={() =>
                         startEditComment(comment.id, comment.content)
                       }
@@ -160,8 +160,8 @@ export const PostComments = memo(function PostComments({
                       Edit
                     </button>
                     <button
-                      type="button"
-                      className="text-red-500"
+                      type='button'
+                      className='text-red-500'
                       onClick={() => removeComment(comment.id)}
                     >
                       Delete
@@ -175,34 +175,34 @@ export const PostComments = memo(function PostComments({
       </div>
 
       {currentUser && (
-        <div className="flex gap-3">
-          <Avatar className="w-8 h-8 shrink-0">
+        <div className='flex gap-3'>
+          <Avatar className='w-8 h-8 shrink-0'>
             <AvatarImage
               src={currentUser.avatar || getAvatarUrl(currentUser.username)}
             />
-            <AvatarFallback className="text-xs">
+            <AvatarFallback className='text-xs'>
               {currentUser.username?.[0]?.toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div className="flex-1 flex gap-2">
+          <div className='flex-1 flex gap-2'>
             <Textarea
-              placeholder="Write a comment..."
+              placeholder='Write a comment...'
               value={newComment}
               onChange={e => setNewComment(e.target.value)}
-              className="resize-none text-sm"
+              className='resize-none text-sm'
               rows={2}
               disabled={createCommentMutation.isPending}
             />
             <Button
-              size="sm"
+              size='sm'
               onClick={handleCreateComment}
               disabled={!newComment.trim() || createCommentMutation.isPending}
-              className="self-end"
+              className='self-end'
             >
               {createCommentMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className='w-4 h-4 animate-spin' />
               ) : (
-                <Send className="w-4 h-4" />
+                <Send className='w-4 h-4' />
               )}
             </Button>
           </div>

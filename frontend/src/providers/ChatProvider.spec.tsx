@@ -164,7 +164,7 @@ describe('ChatProvider websocket behavior', () => {
 
     expect(calls.length).toBe(1)
     expect(calls[0][1]).toBe(1)
-    expect(calls[0][0].id).toBe(123)
+    expect((calls[0][0] as { id: number }).id).toBe(123)
   })
 
   it('retries connecting after initial failure', async () => {

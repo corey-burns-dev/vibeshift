@@ -3,7 +3,7 @@ import { act, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiClient } from '@/api/client'
-import { useSignup } from '@/hooks/useAuth'
+import { getAuthToken, useLogin, useLogout, useSignup } from '@/hooks/useAuth'
 
 const navigateMock = vi.fn()
 
@@ -89,5 +89,72 @@ describe('useSignup onboarding behavior', () => {
 
     expect(localStorage.getItem('token')).toBe('token-123')
     expect(navigateMock).toHaveBeenCalledWith('/onboarding/sanctums')
+  })
+})
+
+describe('useLogin', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage?.removeItem?.('token')
+    localStorage?.removeItem?.('user')
+  })
+
+  it('stores token and user then navigates to /posts on success', async () => {
+    vi.mocked(apiClient.login).mockResolvedValue({
+      token: 'login-token',
+      user: {
+        id: 2,
+        username: 'logintest',
+        email: 'login@example.com',
+        is_admin: false,
+      },
+    })
+
+    const { result } = renderHook(() => useLogin(), {
+      wrapper: createWrapper(),
+    })
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        email: 'login@example.com',
+        password: 'Password123!',
+      })
+    })
+
+    expect(localStorage.getItem('token')).toBe('login-token')
+    expect(navigateMock).toHaveBeenCalledWith('/posts')
+  })
+})
+
+describe('useLogout', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage?.setItem?.('token', 'some-token')
+    localStorage?.setItem?.('user', JSON.stringify({ id: 1, username: 'u' }))
+  })
+
+  it('clears token and user and navigates to /login', () => {
+    const { result } = renderHook(() => useLogout(), {
+      wrapper: createWrapper(),
+    })
+
+    result.current()
+
+    expect(localStorage.getItem('token')).toBeNull()
+    expect(localStorage.getItem('user')).toBeNull()
+    expect(navigateMock).toHaveBeenCalledWith('/login')
+  })
+})
+
+describe('getAuthToken', () => {
+  it('returns token from localStorage', () => {
+    localStorage?.setItem?.('token', 'stored-token')
+    expect(getAuthToken()).toBe('stored-token')
+    localStorage?.removeItem?.('token')
+  })
+
+  it('returns null when no token', () => {
+    localStorage?.removeItem?.('token')
+    expect(getAuthToken()).toBeNull()
   })
 })

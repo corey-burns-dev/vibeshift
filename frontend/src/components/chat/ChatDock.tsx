@@ -41,27 +41,27 @@ function ChatDockPanelContent({
   sendTyping,
 }: ChatDockPanelContentProps) {
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex items-center justify-between border-b border-border/50 px-4 py-2.5">
-        <h2 className="truncate text-sm font-semibold">
+    <div className='flex flex-1 flex-col overflow-hidden'>
+      <div className='flex items-center justify-between border-b border-border/50 px-4 py-2.5'>
+        <h2 className='truncate text-sm font-semibold'>
           {view === 'conversation' ? conversationName : 'Messages'}
         </h2>
-        <div className="flex items-center gap-1">
+        <div className='flex items-center gap-1'>
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
+            variant='ghost'
+            size='icon'
+            className='h-7 w-7'
             onClick={onMinimize}
           >
-            <Minus className="h-4 w-4" />
+            <Minus className='h-4 w-4' />
           </Button>
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
+            variant='ghost'
+            size='icon'
+            className='h-7 w-7'
             onClick={onClose}
           >
-            <X className="h-4 w-4" />
+            <X className='h-4 w-4' />
           </Button>
         </div>
       </div>
@@ -256,13 +256,13 @@ export function ChatDock() {
     <>
       {/* Floating button */}
       <button
-        type="button"
+        type='button'
         onClick={toggle}
-        className="fixed bottom-6 right-6 z-[60] flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 md:bottom-6 max-md:bottom-20"
+        className='fixed bottom-6 right-6 z-[60] flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 md:bottom-6 max-md:bottom-20'
       >
-        <MessageCircle className="h-5 w-5" />
+        <MessageCircle className='h-5 w-5' />
         {totalUnread > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+          <span className='absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground'>
             {totalUnread > 99 ? '99+' : totalUnread}
           </span>
         )}
@@ -286,7 +286,7 @@ export function ChatDock() {
               )}
               aria-describedby={undefined}
             >
-              <DialogTitle className="sr-only">Messages</DialogTitle>
+              <DialogTitle className='sr-only'>Messages</DialogTitle>
               <ChatDockPanelContent
                 view={view}
                 conversationName={conversationName}

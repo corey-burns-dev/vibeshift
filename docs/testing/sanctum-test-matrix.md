@@ -23,14 +23,49 @@
 
 ## Frontend (Vitest + RTL)
 
+### Lib
 - Left-nav ordering/exclusion logic
   - `frontend/src/lib/sanctums.test.ts`
-- Request form required fields + submit payload + success/error states
-  - `frontend/src/pages/SanctumRequestForm.test.tsx`
-- My Requests statuses + empty state rendering
-  - `frontend/src/pages/MySanctumRequests.test.tsx`
-- Minimal route loading (`/sanctums`, `/s/:slug`)
-  - `frontend/src/pages/SanctumRoutes.test.tsx`
+- Utils
+  - `frontend/src/lib/utils.test.ts`
+
+### Hooks
+- Auth: signup, login, logout, getAuthToken
+  - `frontend/src/hooks/useAuth.test.tsx`
+- Chat: conversations, messages, chatrooms, mutations
+  - `frontend/src/hooks/useChat.test.tsx`
+- Sanctums: list, detail, requests, admin, mutations
+  - `frontend/src/hooks/useSanctums.test.tsx`
+- Friends: list, requests, status, mutations
+  - `frontend/src/hooks/useFriends.test.tsx`
+- Presence store
+  - `frontend/src/hooks/usePresence.test.ts`
+- Media query / isMobile
+  - `frontend/src/hooks/useMediaQuery.test.ts`
+- Posts, Users, Streams, Comments
+  - `frontend/src/hooks/usePosts.test.tsx`, `useUsers.test.tsx`, `useStreams.test.tsx`, `useComments.test.tsx`
+
+### Providers
+- ChatProvider WebSocket dedupe and reconnect
+  - `frontend/src/providers/ChatProvider.spec.tsx`
+- ChatProvider integration (subscription/message flow)
+  - `frontend/src/providers/ChatProvider.integration.test.tsx`
+
+### Components
+- MessageList, MessageItem, ChatDockConversationList, ParticipantsList
+  - `frontend/src/components/chat/*.test.tsx`
+- FriendList, FriendCard, FriendRequests
+  - `frontend/src/components/friends/*.test.tsx`
+- ProtectedRoute, ErrorBoundary
+  - `frontend/src/components/ProtectedRoute.test.tsx`, `ErrorBoundary.test.tsx`
+
+### Pages
+- Request form, My Requests, Routes, Onboarding
+  - `frontend/src/pages/SanctumRequestForm.test.tsx`, `MySanctumRequests.test.tsx`, `SanctumRoutes.test.tsx`, `OnboardingSanctums.test.tsx`
+- Login, Signup
+  - `frontend/src/pages/Login.test.tsx`, `Signup.test.tsx`
+- Sanctums list, AdminSanctumRequests
+  - `frontend/src/pages/Sanctums.test.tsx`, `AdminSanctumRequests.test.tsx`
 
 ## E2E (Playwright)
 
@@ -42,3 +77,9 @@
   - `frontend/tests/e2e/sanctum-open-chat.spec.ts`
 - Non-admin access control for admin page/approve endpoint
   - `frontend/tests/e2e/sanctum-access-control.spec.ts`
+- Auth flows (signup, login)
+  - `frontend/tests/e2e/auth-flows.spec.ts`
+- Friends page
+  - `frontend/tests/e2e/friends-workflow.spec.ts`
+- Navigation (sanctums, posts)
+  - `frontend/tests/e2e/navigation.spec.ts`

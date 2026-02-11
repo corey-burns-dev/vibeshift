@@ -122,39 +122,39 @@ export function ChatDockConversationView({
   }, [conversation, conversationId, close, navigate])
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className='flex flex-1 flex-col overflow-hidden'>
       {/* Header */}
-      <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2">
+      <div className='flex items-center gap-2 border-b border-border/50 px-3 py-2'>
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 shrink-0"
+          variant='ghost'
+          size='icon'
+          className='h-7 w-7 shrink-0'
           onClick={() => setActiveConversation(null)}
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className='h-4 w-4' />
         </Button>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <span className="truncate text-sm font-medium">{name}</span>
+        <div className='min-w-0 flex-1'>
+          <div className='flex items-center gap-1.5'>
+            <span className='truncate text-sm font-medium'>{name}</span>
             {isDM && isOnline && (
-              <span className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
+              <span className='h-2 w-2 shrink-0 rounded-full bg-green-500' />
             )}
           </div>
         </div>
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 shrink-0"
+          variant='ghost'
+          size='icon'
+          className='h-7 w-7 shrink-0'
           onClick={handleExpand}
-          title="Open full view"
+          title='Open full view'
         >
-          <Expand className="h-3.5 w-3.5" />
+          <Expand className='h-3.5 w-3.5' />
         </Button>
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1">
-        <div ref={scrollRef} className="space-y-2 p-3">
+      <ScrollArea className='flex-1'>
+        <div ref={scrollRef} className='space-y-2 p-3'>
           {messages.map(msg => (
             <MessageItem
               key={msg.id}
@@ -163,7 +163,7 @@ export function ChatDockConversationView({
             />
           ))}
           {messages.length === 0 && (
-            <p className="py-8 text-center text-xs text-muted-foreground">
+            <p className='py-8 text-center text-xs text-muted-foreground'>
               No messages yet. Say hello!
             </p>
           )}
@@ -171,7 +171,7 @@ export function ChatDockConversationView({
       </ScrollArea>
 
       {/* Input */}
-      <div className="flex items-center gap-2 border-t border-border/50 px-3 py-2">
+      <div className='flex items-center gap-2 border-t border-border/50 px-3 py-2'>
         <Input
           value={inputValue}
           onChange={e => handleInputChange(e.target.value)}
@@ -181,17 +181,17 @@ export function ChatDockConversationView({
               handleSend()
             }
           }}
-          placeholder="Type a message..."
-          className="h-8 text-sm"
+          placeholder='Type a message...'
+          className='h-8 text-sm'
         />
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 shrink-0"
+          variant='ghost'
+          size='icon'
+          className='h-8 w-8 shrink-0'
           onClick={handleSend}
           disabled={!inputValue.trim()}
         >
-          <Send className="h-4 w-4" />
+          <Send className='h-4 w-4' />
         </Button>
       </div>
     </div>

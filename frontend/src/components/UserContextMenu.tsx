@@ -45,12 +45,12 @@ export function UserContextMenu({ user, children }: UserContextMenuProps) {
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent className="w-56">
-        <ContextMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.username}</p>
+      <ContextMenuContent className='w-56'>
+        <ContextMenuLabel className='font-normal'>
+          <div className='flex flex-col space-y-1'>
+            <p className='text-sm font-medium leading-none'>{user.username}</p>
             {user.bio && (
-              <p className="text-xs text-muted-foreground truncate">
+              <p className='text-xs text-muted-foreground truncate'>
                 {user.bio}
               </p>
             )}
@@ -64,7 +64,7 @@ export function UserContextMenu({ user, children }: UserContextMenuProps) {
             handleViewProfile()
           }}
         >
-          <UserIcon className="mr-2 h-4 w-4" />
+          <UserIcon className='mr-2 h-4 w-4' />
           <span>View Profile</span>
         </ContextMenuItem>
 
@@ -74,7 +74,7 @@ export function UserContextMenu({ user, children }: UserContextMenuProps) {
             handleMessage()
           }}
         >
-          <MessageCircle className="mr-2 h-4 w-4" />
+          <MessageCircle className='mr-2 h-4 w-4' />
           <span>Message</span>
         </ContextMenuItem>
 
@@ -84,7 +84,7 @@ export function UserContextMenu({ user, children }: UserContextMenuProps) {
             handleVideoChat()
           }}
         >
-          <Video className="mr-2 h-4 w-4" />
+          <Video className='mr-2 h-4 w-4' />
           <span>Video Chat</span>
         </ContextMenuItem>
 
@@ -94,7 +94,7 @@ export function UserContextMenu({ user, children }: UserContextMenuProps) {
             void handleJoinConnect4()
           }}
         >
-          <Gamepad2 className="mr-2 h-4 w-4" />
+          <Gamepad2 className='mr-2 h-4 w-4' />
           <span>Join Connect 4</span>
         </ContextMenuItem>
 
@@ -108,7 +108,7 @@ export function UserContextMenu({ user, children }: UserContextMenuProps) {
             }}
             disabled={addFriendDisabled}
           >
-            <UserPlus className="mr-2 h-4 w-4" />
+            <UserPlus className='mr-2 h-4 w-4' />
             <span>{addFriendLabel}</span>
           </ContextMenuItem>
         )}
@@ -119,10 +119,10 @@ export function UserContextMenu({ user, children }: UserContextMenuProps) {
               event.stopPropagation()
               handleRemoveFriend()
             }}
-            className="text-destructive focus:text-destructive"
+            className='text-destructive focus:text-destructive'
             disabled={removeFriendPending}
           >
-            <UserMinus className="mr-2 h-4 w-4" />
+            <UserMinus className='mr-2 h-4 w-4' />
             <span>Remove Friend</span>
           </ContextMenuItem>
         )}

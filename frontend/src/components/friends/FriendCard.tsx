@@ -22,20 +22,20 @@ export function FriendCard({
   isLoading = false,
 }: FriendCardProps) {
   return (
-    <Card className="overflow-hidden border border-border/40 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full group">
-      <Link to={`/users/${user.id}`} className="block relative">
-        <div className="aspect-square w-full bg-muted overflow-hidden">
+    <Card className='overflow-hidden border border-border/40 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full group'>
+      <Link to={`/users/${user.id}`} className='block relative'>
+        <div className='aspect-square w-full bg-muted overflow-hidden'>
           {user.avatar ? (
             <img
               src={user.avatar}
               alt={user.username}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-105'
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-muted/50">
-              <Avatar className="w-32 h-32 text-4xl">
+            <div className='w-full h-full flex items-center justify-center bg-muted/50'>
+              <Avatar className='w-32 h-32 text-4xl'>
                 <AvatarImage src={getAvatarUrl(user.username, 300)} />
-                <AvatarFallback className="bg-primary/10 text-primary text-4xl font-bold">
+                <AvatarFallback className='bg-primary/10 text-primary text-4xl font-bold'>
                   {getInitials(user.username)}
                 </AvatarFallback>
               </Avatar>
@@ -44,33 +44,33 @@ export function FriendCard({
         </div>
       </Link>
 
-      <div className="p-3 flex flex-col flex-1 gap-3">
-        <div className="flex-1 space-y-1">
+      <div className='p-3 flex flex-col flex-1 gap-3'>
+        <div className='flex-1 space-y-1'>
           <Link
             to={`/users/${user.id}`}
-            className="hover:underline decoration-foreground/50"
+            className='hover:underline decoration-foreground/50'
           >
-            <h3 className="font-semibold text-[17px] leading-tight text-foreground truncate">
+            <h3 className='font-semibold text-[17px] leading-tight text-foreground truncate'>
               {user.username}
             </h3>
           </Link>
           {/* Placeholder for mutual friends to match FB look */}
-          <p className="text-[13px] text-muted-foreground truncate">
+          <p className='text-[13px] text-muted-foreground truncate'>
             {user.bio || 'Suggested for you'}
           </p>
         </div>
 
-        <div className="space-y-2 mt-auto">
+        <div className='space-y-2 mt-auto'>
           {actionType === 'add' && (
             <Button
-              className="w-full bg-[#E7F3FF] hover:bg-[#D9EAFE] text-[#1877F2] font-semibold h-9 shadow-none border-none"
-              size="sm"
+              className='w-full bg-[#E7F3FF] hover:bg-[#D9EAFE] text-[#1877F2] font-semibold h-9 shadow-none border-none'
+              size='sm'
               disabled={isLoading}
               onClick={() => onAction('add', user)}
-              type="button"
+              type='button'
             >
               {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className='w-4 h-4 animate-spin' />
               ) : (
                 'Add Friend'
               )}
@@ -79,15 +79,15 @@ export function FriendCard({
 
           {actionType === 'cancel' && (
             <Button
-              variant="secondary"
-              className="w-full bg-muted/80 hover:bg-muted text-foreground font-semibold h-9 shadow-none"
-              size="sm"
+              variant='secondary'
+              className='w-full bg-muted/80 hover:bg-muted text-foreground font-semibold h-9 shadow-none'
+              size='sm'
               disabled={isLoading}
               onClick={() => onAction('cancel', user)}
-              type="button"
+              type='button'
             >
               {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className='w-4 h-4 animate-spin' />
               ) : (
                 'Cancel Request'
               )}
@@ -95,27 +95,27 @@ export function FriendCard({
           )}
 
           {actionType === 'accept_reject' && (
-            <div className="space-y-2">
+            <div className='space-y-2'>
               <Button
-                className="w-full bg-[#1877F2] hover:bg-[#166FE5] text-white font-semibold h-9 shadow-none"
-                size="sm"
+                className='w-full bg-[#1877F2] hover:bg-[#166FE5] text-white font-semibold h-9 shadow-none'
+                size='sm'
                 disabled={isLoading}
                 onClick={() => onAction('accept', user)}
-                type="button"
+                type='button'
               >
                 {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className='w-4 h-4 animate-spin' />
                 ) : (
                   'Confirm'
                 )}
               </Button>
               <Button
-                variant="secondary"
-                className="w-full bg-muted hover:bg-muted/80 text-foreground font-semibold h-9 shadow-none"
-                size="sm"
+                variant='secondary'
+                className='w-full bg-muted hover:bg-muted/80 text-foreground font-semibold h-9 shadow-none'
+                size='sm'
                 disabled={isLoading}
                 onClick={() => onAction('reject', user)}
-                type="button"
+                type='button'
               >
                 Delete
               </Button>
@@ -124,15 +124,15 @@ export function FriendCard({
 
           {actionType === 'remove' && (
             <Button
-              variant="secondary"
-              className="w-full bg-muted hover:bg-muted/80 text-foreground font-semibold h-9 shadow-none"
-              size="sm"
+              variant='secondary'
+              className='w-full bg-muted hover:bg-muted/80 text-foreground font-semibold h-9 shadow-none'
+              size='sm'
               disabled={isLoading}
               onClick={() => onAction('remove', user)}
-              type="button"
+              type='button'
             >
               {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className='w-4 h-4 animate-spin' />
               ) : (
                 'Remove Friend'
               )}

@@ -15,7 +15,7 @@ function ScrollArea({
 }: React.ComponentProps<'div'>) {
   return (
     <div
-      data-slot="scroll-area"
+      data-slot='scroll-area'
       className={cn('relative overflow-y-auto scroll-area-styled', className)}
       {...props}
     >
@@ -33,7 +33,7 @@ function ScrollBar({
   orientation: _orientation = 'vertical',
   ...props
 }: ScrollBarProps) {
-  return <div data-slot="scroll-area-scrollbar" hidden {...props} />
+  return <div data-slot='scroll-area-scrollbar' hidden {...props} />
 }
 
 export { ScrollArea, ScrollBar }

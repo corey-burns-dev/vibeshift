@@ -2,71 +2,60 @@ package repository
 
 import (
 	"context"
-	"regexp"
+	"fmt"
 	"testing"
+	"time"
 
 	"sanctum/internal/models"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestFriendRepository_GetPendingRequests(t *testing.T) {
-	db, mock := setupMockDB(t)
-	repo := NewFriendRepository(db)
+func TestFriendRepository_Integration(t *testing.T) {
+	repo := NewFriendRepository(testDB)
 	ctx := context.Background()
 
-	tests := []struct {
-		name         string
-		userID       uint
-		mockBehavior func()
-		expectedLen  int
-	}{
-		{
-			name:   "Found Pending Requests",
-			userID: 1,
-			mockBehavior: func() {
-				mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "friendships" WHERE addressee_id = $1 AND status = $2`)).
-					WithArgs(1, models.FriendshipStatusPending).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "requester_id", "addressee_id"}).AddRow(1, 2, 1))
+	// Setup users
+	ts := time.Now().UnixNano()
+	u1 := &models.User{Username: fmt.Sprintf("f1_%d", ts), Email: fmt.Sprintf("f1_%d@e.com", ts)}
+	u2 := &models.User{Username: fmt.Sprintf("f2_%d", ts), Email: fmt.Sprintf("f2_%d@e.com", ts)}
+	testDB.Create(u1)
+	testDB.Create(u2)
 
-				// Preload Addressee (GORM preloads alphabetically)
-				mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "users" WHERE "users"."id" = $1 AND "users"."deleted_at" IS NULL`)).
-					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(1, "user1"))
+	t.Run("Create and GetPendingRequests", func(t *testing.T) {
+		friendship := &models.Friendship{
+			RequesterID: u1.ID,
+			AddresseeID: u2.ID,
+			Status:      models.FriendshipStatusPending,
+		}
 
-				// Preload Requester
-				mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "users" WHERE "users"."id" = $1 AND "users"."deleted_at" IS NULL`)).
-					WithArgs(2).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(2, "user2"))
-			},
-			expectedLen: 1,
-		},
-	}
+		err := repo.Create(ctx, friendship)
+		require.NoError(t, err)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.mockBehavior()
-			reqs, err := repo.GetPendingRequests(ctx, tt.userID)
-			assert.NoError(t, err)
-			assert.Len(t, reqs, tt.expectedLen)
-			assert.NoError(t, mock.ExpectationsWereMet())
-		})
-	}
-}
+		reqs, err := repo.GetPendingRequests(ctx, u2.ID)
+		assert.NoError(t, err)
+		assert.Len(t, reqs, 1)
+		assert.Equal(t, u1.ID, reqs[0].RequesterID)
+	})
 
-func TestFriendRepository_UpdateStatus(t *testing.T) {
-	db, mock := setupMockDB(t)
-	repo := NewFriendRepository(db)
-	ctx := context.Background()
+	t.Run("UpdateStatus and GetFriends", func(t *testing.T) {
+		f, _ := repo.GetFriendshipBetweenUsers(ctx, u1.ID, u2.ID)
+		err := repo.UpdateStatus(ctx, f.ID, models.FriendshipStatusAccepted)
+		assert.NoError(t, err)
 
-	mock.ExpectBegin()
-	mock.ExpectExec(regexp.QuoteMeta(`UPDATE "friendships" SET "status"=$1,"updated_at"=$2 WHERE id = $3`)).
-		WithArgs(models.FriendshipStatusAccepted, sqlmock.AnyArg(), 1).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectCommit()
+		friends, err := repo.GetFriends(ctx, u1.ID)
+		assert.NoError(t, err)
+		assert.Len(t, friends, 1)
+		assert.Equal(t, u2.Username, friends[0].Username)
+	})
 
-	err := repo.UpdateStatus(ctx, 1, models.FriendshipStatusAccepted)
-	assert.NoError(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet())
+	t.Run("Delete", func(t *testing.T) {
+		f, _ := repo.GetFriendshipBetweenUsers(ctx, u1.ID, u2.ID)
+		err := repo.Delete(ctx, f.ID)
+		assert.NoError(t, err)
+
+		friends, _ := repo.GetFriends(ctx, u1.ID)
+		assert.Empty(t, friends)
+	})
 }

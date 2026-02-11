@@ -416,7 +416,7 @@ export default function ConnectFour() {
   }
 
   if (!room || !gameState)
-    return <div className="p-8 text-center">Loading game...</div>
+    return <div className='p-8 text-center'>Loading game...</div>
 
   const isCreator = currentUser?.id === room.creator_id
   const isOpponent = currentUser?.id === room.opponent_id
@@ -437,17 +437,17 @@ export default function ConnectFour() {
   const didIWin = !gameState.is_draw && gameState.winner_id === currentUser?.id
 
   return (
-    <div className="h-full overflow-hidden bg-background text-foreground">
+    <div className='h-full overflow-hidden bg-background text-foreground'>
       {showVictoryBlast && (
-        <div className="pointer-events-none fixed inset-0 z-40 overflow-hidden">
+        <div className='pointer-events-none fixed inset-0 z-40 overflow-hidden'>
           <style>
             {`@keyframes confetti-drop { 0% { transform: translateY(-20vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(120vh) rotate(720deg); opacity: 0.2; } }`}
           </style>
-          <div className="absolute inset-0 bg-linear-to-b from-fuchsia-500/20 via-yellow-400/10 to-transparent animate-pulse" />
+          <div className='absolute inset-0 bg-linear-to-b from-fuchsia-500/20 via-yellow-400/10 to-transparent animate-pulse' />
           {CONFETTI_PIECES.map(piece => (
             <span
               key={piece.id}
-              className="absolute top-[-20%] h-5 w-2 rounded-full"
+              className='absolute top-[-20%] h-5 w-2 rounded-full'
               style={{
                 left: `${piece.left}%`,
                 backgroundColor: piece.color,
@@ -456,12 +456,12 @@ export default function ConnectFour() {
               }}
             />
           ))}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative flex h-72 w-72 items-center justify-center rounded-full bg-white/15 backdrop-blur-md">
-              <div className="absolute h-72 w-72 animate-ping rounded-full bg-yellow-300/20" />
-              <div className="flex flex-col items-center gap-3">
-                <PartyPopper className="h-28 w-28 text-yellow-300 drop-shadow-[0_0_30px_rgba(250,204,21,0.8)]" />
-                <p className="text-4xl font-black uppercase tracking-tight text-white">
+          <div className='absolute inset-0 flex items-center justify-center'>
+            <div className='relative flex h-72 w-72 items-center justify-center rounded-full bg-white/15 backdrop-blur-md'>
+              <div className='absolute h-72 w-72 animate-ping rounded-full bg-yellow-300/20' />
+              <div className='flex flex-col items-center gap-3'>
+                <PartyPopper className='h-28 w-28 text-yellow-300 drop-shadow-[0_0_30px_rgba(250,204,21,0.8)]' />
+                <p className='text-4xl font-black uppercase tracking-tight text-white'>
                   You Won
                 </p>
               </div>
@@ -470,15 +470,15 @@ export default function ConnectFour() {
         </div>
       )}
       {showDefeatBlast && (
-        <div className="pointer-events-none fixed inset-0 z-40 overflow-hidden">
+        <div className='pointer-events-none fixed inset-0 z-40 overflow-hidden'>
           <style>
             {`@keyframes defeat-drop { 0% { transform: translateY(-20vh) rotate(0deg); opacity: 0.85; } 100% { transform: translateY(120vh) rotate(360deg); opacity: 0.08; } }`}
           </style>
-          <div className="absolute inset-0 bg-linear-to-b from-slate-950/80 via-slate-900/60 to-black/70" />
+          <div className='absolute inset-0 bg-linear-to-b from-slate-950/80 via-slate-900/60 to-black/70' />
           {DEFEAT_PIECES.map(piece => (
             <span
               key={piece.id}
-              className="absolute top-[-20%] h-5 w-2 rounded-full"
+              className='absolute top-[-20%] h-5 w-2 rounded-full'
               style={{
                 left: `${piece.left}%`,
                 backgroundColor: piece.color,
@@ -487,12 +487,12 @@ export default function ConnectFour() {
               }}
             />
           ))}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative flex h-72 w-72 items-center justify-center rounded-full border border-slate-500/40 bg-black/55 backdrop-blur-md">
-              <div className="absolute h-72 w-72 animate-ping rounded-full bg-slate-600/20" />
-              <div className="flex flex-col items-center gap-3">
-                <PartyPopper className="h-28 w-28 rotate-180 text-slate-400 drop-shadow-[0_0_18px_rgba(100,116,139,0.6)]" />
-                <p className="text-4xl font-black uppercase tracking-tight text-slate-100">
+          <div className='absolute inset-0 flex items-center justify-center'>
+            <div className='relative flex h-72 w-72 items-center justify-center rounded-full border border-slate-500/40 bg-black/55 backdrop-blur-md'>
+              <div className='absolute h-72 w-72 animate-ping rounded-full bg-slate-600/20' />
+              <div className='flex flex-col items-center gap-3'>
+                <PartyPopper className='h-28 w-28 rotate-180 text-slate-400 drop-shadow-[0_0_18px_rgba(100,116,139,0.6)]' />
+                <p className='text-4xl font-black uppercase tracking-tight text-slate-100'>
                   You Lost
                 </p>
               </div>
@@ -501,54 +501,54 @@ export default function ConnectFour() {
         </div>
       )}
 
-      <div className="mx-auto grid h-full w-full max-w-400 gap-3 px-3 py-2 lg:grid-cols-12 lg:gap-4">
+      <div className='mx-auto grid h-full w-full max-w-400 gap-3 px-3 py-2 lg:grid-cols-12 lg:gap-4'>
         {/* Game Area */}
-        <div className="min-h-0 overflow-hidden lg:col-span-9">
-          <Card className="flex h-full flex-col border-2 border-blue-500/20 bg-blue-900/10 shadow-xl">
-            <CardHeader className="border-b border-blue-500/10 bg-blue-500/5 px-3 py-1.5">
-              <div className="grid w-full grid-cols-1 items-center gap-2 md:grid-cols-[1fr_auto_1fr]">
-                <div className="flex items-center gap-2 md:justify-self-start">
-                  <CardTitle className="flex shrink-0 items-center gap-2 text-lg font-black text-blue-500 italic uppercase">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-sm text-white">
+        <div className='min-h-0 overflow-hidden lg:col-span-9'>
+          <Card className='flex h-full flex-col border-2 border-blue-500/20 bg-blue-900/10 shadow-xl'>
+            <CardHeader className='border-b border-blue-500/10 bg-blue-500/5 px-3 py-1.5'>
+              <div className='grid w-full grid-cols-1 items-center gap-2 md:grid-cols-[1fr_auto_1fr]'>
+                <div className='flex items-center gap-2 md:justify-self-start'>
+                  <CardTitle className='flex shrink-0 items-center gap-2 text-lg font-black text-blue-500 italic uppercase'>
+                    <div className='flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-sm text-white'>
                       4
                     </div>
                     Connect Four
                   </CardTitle>
-                  <span className="inline-flex shrink-0 items-center rounded-md border border-blue-400/30 bg-blue-500/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-blue-500">
+                  <span className='inline-flex shrink-0 items-center rounded-md border border-blue-400/30 bg-blue-500/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-blue-500'>
                     Match #{id}
                   </span>
                 </div>
-                <div className="flex min-w-0 items-center justify-center gap-2 overflow-x-auto whitespace-nowrap md:justify-self-center">
-                  <div className="flex shrink-0 items-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-2 py-1">
-                    <Avatar className="h-7 w-7 border border-red-500/30">
+                <div className='flex min-w-0 items-center justify-center gap-2 overflow-x-auto whitespace-nowrap md:justify-self-center'>
+                  <div className='flex shrink-0 items-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-2 py-1'>
+                    <Avatar className='h-7 w-7 border border-red-500/30'>
                       <AvatarImage src={playerOneAvatar} />
-                      <AvatarFallback className="text-[10px] font-black">
+                      <AvatarFallback className='text-[10px] font-black'>
                         {playerOneName.slice(0, 1).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500">
+                      <p className='text-[9px] font-black uppercase tracking-[0.2em] text-red-500'>
                         Player 1
                       </p>
-                      <p className="text-xs font-black">{playerOneName}</p>
+                      <p className='text-xs font-black'>{playerOneName}</p>
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-2 py-1">
-                    <Avatar className="h-7 w-7 border border-yellow-500/30">
+                  <div className='flex shrink-0 items-center gap-2 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-2 py-1'>
+                    <Avatar className='h-7 w-7 border border-yellow-500/30'>
                       <AvatarImage src={playerTwoAvatar} />
-                      <AvatarFallback className="text-[10px] font-black">
+                      <AvatarFallback className='text-[10px] font-black'>
                         {playerTwoName.slice(0, 1).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-yellow-500">
+                      <p className='text-[9px] font-black uppercase tracking-[0.2em] text-yellow-500'>
                         Player 2
                       </p>
-                      <p className="text-xs font-black">{playerTwoName}</p>
+                      <p className='text-xs font-black'>{playerTwoName}</p>
                     </div>
                   </div>
                 </div>
-                <div className="flex md:justify-end md:justify-self-end">
+                <div className='flex md:justify-end md:justify-self-end'>
                   <div
                     className={`shrink-0 rounded-lg px-3 py-1 text-[10px] font-black uppercase tracking-tight ${
                       isMyTurn
@@ -561,7 +561,7 @@ export default function ConnectFour() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden px-3 py-2">
+            <CardContent className='flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden px-3 py-2'>
               {gameState.status === 'active' && (
                 <div
                   className={`mb-2 flex w-full max-w-150 items-center justify-center rounded-xl border px-3 py-2 text-center text-xl font-black uppercase tracking-wide ${
@@ -577,15 +577,15 @@ export default function ConnectFour() {
               )}
 
               {/* Column Selection indicators */}
-              <div className="mb-2 grid w-full max-w-150 grid-cols-7 gap-2 px-2">
+              <div className='mb-2 grid w-full max-w-150 grid-cols-7 gap-2 px-2'>
                 {[...Array(7)].map((_, i) => {
                   const colId = `indicator-${i}`
                   return (
-                    <div key={colId} className="flex h-7 justify-center">
+                    <div key={colId} className='flex h-7 justify-center'>
                       {hoverColumn === i &&
                         isMyTurn &&
                         gameState.status === 'active' && (
-                          <ChevronDown className="text-blue-500 animate-bounce" />
+                          <ChevronDown className='text-blue-500 animate-bounce' />
                         )}
                     </div>
                   )
@@ -593,14 +593,14 @@ export default function ConnectFour() {
               </div>
 
               {/* The Board */}
-              <div className="relative rounded-2xl border-6 border-blue-700 bg-blue-600 p-2.5 shadow-[0_20px_50px_rgba(37,99,235,0.3)]">
-                <div className="grid grid-cols-7 gap-2 rounded-xl bg-blue-800 p-2 shadow-inner md:gap-2.5">
+              <div className='relative rounded-2xl border-6 border-blue-700 bg-blue-600 p-2.5 shadow-[0_20px_50px_rgba(37,99,235,0.3)]'>
+                <div className='grid grid-cols-7 gap-2 rounded-xl bg-blue-800 p-2 shadow-inner md:gap-2.5'>
                   {gameState.board.map((row, r) =>
                     row.map((cell, c) => {
                       const cellId = `c4-cell-${r}-${c}`
                       return (
                         <button
-                          type="button"
+                          type='button'
                           key={cellId}
                           onMouseEnter={() => setHoverColumn(c)}
                           onMouseLeave={() => setHoverColumn(null)}
@@ -616,14 +616,14 @@ export default function ConnectFour() {
                                                     `}
                         >
                           {cell === 'X' && (
-                            <div className="h-4/5 w-4/5 animate-in slide-in-from-top-12 fade-in zoom-in rounded-full border-2 border-red-700 bg-linear-to-br from-red-400 to-red-600 shadow-lg duration-300" />
+                            <div className='h-4/5 w-4/5 animate-in slide-in-from-top-12 fade-in zoom-in rounded-full border-2 border-red-700 bg-linear-to-br from-red-400 to-red-600 shadow-lg duration-300' />
                           )}
                           {cell === 'O' && (
-                            <div className="h-4/5 w-4/5 animate-in slide-in-from-top-12 fade-in zoom-in rounded-full border-2 border-yellow-600 bg-linear-to-br from-yellow-300 to-yellow-500 shadow-lg duration-300" />
+                            <div className='h-4/5 w-4/5 animate-in slide-in-from-top-12 fade-in zoom-in rounded-full border-2 border-yellow-600 bg-linear-to-br from-yellow-300 to-yellow-500 shadow-lg duration-300' />
                           )}
 
                           {/* Hole lighting effect */}
-                          <div className="absolute inset-0 pointer-events-none rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] opacity-50" />
+                          <div className='absolute inset-0 pointer-events-none rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] opacity-50' />
                         </button>
                       )
                     })
@@ -632,13 +632,13 @@ export default function ConnectFour() {
               </div>
 
               {canJoin && (
-                <div className="mt-6 flex flex-col items-center gap-3">
-                  <p className="text-muted-foreground font-medium">
+                <div className='mt-6 flex flex-col items-center gap-3'>
+                  <p className='text-muted-foreground font-medium'>
                     Room waiting for a challenger...
                   </p>
                   <Button
-                    size="lg"
-                    className="rounded-xl bg-blue-600 px-12 py-4 text-lg shadow-lg shadow-blue-500/20 hover:bg-blue-700"
+                    size='lg'
+                    className='rounded-xl bg-blue-600 px-12 py-4 text-lg shadow-lg shadow-blue-500/20 hover:bg-blue-700'
                     onClick={joinGame}
                     disabled={!isSocketReady}
                   >
@@ -648,18 +648,18 @@ export default function ConnectFour() {
               )}
 
               {gameState.status === 'finished' && (
-                <div className="mt-6 flex flex-col items-center">
-                  <div className="mb-4 text-center">
-                    <h3 className="mb-1 text-2xl font-black italic uppercase text-blue-500">
+                <div className='mt-6 flex flex-col items-center'>
+                  <div className='mb-4 text-center'>
+                    <h3 className='mb-1 text-2xl font-black italic uppercase text-blue-500'>
                       Game Over
                     </h3>
-                    <p className="text-muted-foreground font-bold">
+                    <p className='text-muted-foreground font-bold'>
                       Hope you had a great vibe!
                     </p>
                   </div>
                   <Button
-                    variant="outline"
-                    className="px-10 border-blue-500/20 hover:bg-blue-500/5"
+                    variant='outline'
+                    className='px-10 border-blue-500/20 hover:bg-blue-500/5'
                     onClick={() => navigate('/games')}
                   >
                     Return to Lobby
@@ -671,20 +671,20 @@ export default function ConnectFour() {
         </div>
 
         {/* Right Sidebar: Chat & Stats */}
-        <div className="flex min-h-0 flex-col lg:col-span-3">
-          <Card className="flex h-full min-h-0 flex-col overflow-hidden border-2 bg-card/50 backdrop-blur-sm">
-            <div className="p-4 bg-blue-500/5 border-b font-black text-xs uppercase tracking-widest flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+        <div className='flex min-h-0 flex-col lg:col-span-3'>
+          <Card className='flex h-full min-h-0 flex-col overflow-hidden border-2 bg-card/50 backdrop-blur-sm'>
+            <div className='p-4 bg-blue-500/5 border-b font-black text-xs uppercase tracking-widest flex items-center gap-3'>
+              <div className='w-2 h-2 rounded-full bg-blue-500 animate-pulse' />
               Game Feed
             </div>
             <CardContent
               ref={chatScrollRef}
-              className="flex-1 overflow-y-auto p-4 space-y-4"
+              className='flex-1 overflow-y-auto p-4 space-y-4'
             >
               {messages.length === 0 && (
-                <div className="h-full flex flex-col items-center justify-center opacity-20 filter grayscale">
-                  <Send className="w-12 h-12 mb-2" />
-                  <p className="text-xs font-bold uppercase tracking-tighter">
+                <div className='h-full flex flex-col items-center justify-center opacity-20 filter grayscale'>
+                  <Send className='w-12 h-12 mb-2' />
+                  <p className='text-xs font-bold uppercase tracking-tighter'>
                     No messages yet
                   </p>
                 </div>
@@ -694,7 +694,7 @@ export default function ConnectFour() {
                   key={`${m.user_id}-${i}-${m.text.slice(0, 20)}`}
                   className={`flex flex-col ${m.user_id === currentUser?.id ? 'items-end' : 'items-start'}`}
                 >
-                  <span className="text-[9px] uppercase font-black text-muted-foreground/60 mb-1 tracking-tighter">
+                  <span className='text-[9px] uppercase font-black text-muted-foreground/60 mb-1 tracking-tighter'>
                     {m.username}
                   </span>
                   <div
@@ -709,21 +709,21 @@ export default function ConnectFour() {
                 </div>
               ))}
             </CardContent>
-            <div className="p-4 border-t bg-background/80 backdrop-blur-md">
-              <div className="flex gap-2">
+            <div className='p-4 border-t bg-background/80 backdrop-blur-md'>
+              <div className='flex gap-2'>
                 <Input
-                  className="bg-card/50 border-blue-500/10 focus-visible:ring-blue-500/30"
-                  placeholder="Talk some trash..."
+                  className='bg-card/50 border-blue-500/10 focus-visible:ring-blue-500/30'
+                  placeholder='Talk some trash...'
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && sendChat()}
                 />
                 <Button
-                  className="bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/10"
-                  size="icon"
+                  className='bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/10'
+                  size='icon'
                   onClick={sendChat}
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className='w-4 h-4' />
                 </Button>
               </div>
             </div>
@@ -732,13 +732,13 @@ export default function ConnectFour() {
       </div>
 
       <Dialog open={showRematchDialog} onOpenChange={setShowRematchDialog}>
-        <DialogContent className="border-2 border-blue-400/30 bg-linear-to-br from-background to-blue-950/20 sm:max-w-xl">
+        <DialogContent className='border-2 border-blue-400/30 bg-linear-to-br from-background to-blue-950/20 sm:max-w-xl'>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-2xl font-black uppercase text-blue-500">
-              <PartyPopper className="h-6 w-6" />
+            <DialogTitle className='flex items-center gap-2 text-2xl font-black uppercase text-blue-500'>
+              <PartyPopper className='h-6 w-6' />
               {didIWin ? 'Victory!' : 'Round Complete'}
             </DialogTitle>
-            <DialogDescription className="text-sm font-medium">
+            <DialogDescription className='text-sm font-medium'>
               {gameState.is_draw
                 ? 'Draw game. Run it back?'
                 : didIWin
@@ -749,7 +749,7 @@ export default function ConnectFour() {
 
           <DialogFooter>
             <Button
-              variant="outline"
+              variant='outline'
               onClick={() => {
                 setShowRematchDialog(false)
                 navigate('/games')

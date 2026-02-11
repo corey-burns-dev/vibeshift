@@ -17,7 +17,7 @@ import { gameKeys, getCurrentUser } from '@/hooks'
 const GAME_CATEGORIES = [
   {
     name: 'Classic Board Games',
-    icon: <Layers className="w-5 h-5 text-blue-500" />,
+    icon: <Layers className='w-5 h-5 text-blue-500' />,
     games: [
       {
         id: 'connect4',
@@ -58,7 +58,7 @@ const GAME_CATEGORIES = [
   },
   {
     name: 'Card Games',
-    icon: <Spade className="w-5 h-5 text-red-500" />,
+    icon: <Spade className='w-5 h-5 text-red-500' />,
     games: [
       {
         id: 'blackjack',
@@ -99,7 +99,7 @@ const GAME_CATEGORIES = [
   },
   {
     name: 'Social & Arcades',
-    icon: <Gamepad2 className="w-5 h-5 text-purple-500" />,
+    icon: <Gamepad2 className='w-5 h-5 text-purple-500' />,
     games: [
       {
         id: 'trivia',
@@ -228,74 +228,74 @@ export default function Games() {
     ) ?? []
 
   return (
-    <div className="flex-1 overflow-y-auto bg-background">
-      <main className="max-w-7xl mx-auto px-4 py-12">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+    <div className='flex-1 overflow-y-auto bg-background'>
+      <main className='max-w-7xl mx-auto px-4 py-12'>
+        <div className='flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6'>
           <div>
-            <h1 className="text-4xl font-black italic uppercase tracking-tighter text-foreground mb-2 flex items-center gap-3">
-              <Gamepad2 className="w-10 h-10 text-primary" />
+            <h1 className='text-4xl font-black italic uppercase tracking-tighter text-foreground mb-2 flex items-center gap-3'>
+              <Gamepad2 className='w-10 h-10 text-primary' />
               Arcade
             </h1>
-            <p className="text-muted-foreground font-medium">
+            <p className='text-muted-foreground font-medium'>
               Global Multiplayer & Competitive Leaderboards
             </p>
           </div>
-          <div className="flex gap-4">
+          <div className='flex gap-4'>
             <Button
-              size="lg"
-              variant="outline"
-              className="gap-2 border-primary text-primary font-bold"
+              size='lg'
+              variant='outline'
+              className='gap-2 border-primary text-primary font-bold'
             >
-              <Trophy className="w-4 h-4" /> Leaderboards
+              <Trophy className='w-4 h-4' /> Leaderboards
             </Button>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-3 space-y-12">
+        <div className='grid lg:grid-cols-4 gap-8'>
+          <div className='lg:col-span-3 space-y-12'>
             {GAME_CATEGORIES.map(category => (
-              <div key={category.name} className="space-y-6">
-                <div className="flex items-center gap-2 border-b pb-2">
+              <div key={category.name} className='space-y-6'>
+                <div className='flex items-center gap-2 border-b pb-2'>
                   {category.icon}
-                  <h2 className="text-xl font-bold uppercase tracking-tight">
+                  <h2 className='text-xl font-bold uppercase tracking-tight'>
                     {category.name}
                   </h2>
                 </div>
-                <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className='grid md:grid-cols-2 xl:grid-cols-3 gap-6'>
                   {category.games.map(game => (
                     <Card
                       key={game.id}
                       className={`group overflow-hidden border-2 transition-all hover:scale-[1.02] hover:shadow-xl ${game.status === 'coming-soon' ? 'opacity-70 grayscale-[0.5]' : 'border-primary/20 hover:border-primary'}`}
                     >
-                      <CardContent className="p-0">
+                      <CardContent className='p-0'>
                         <div
                           className={`h-32 flex items-center justify-center relative bg-muted/30 overflow-hidden`}
                         >
-                          <span className="text-3xl font-black italic tracking-tighter opacity-10 group-hover:opacity-20 transition-opacity uppercase select-none">
+                          <span className='text-3xl font-black italic tracking-tighter opacity-10 group-hover:opacity-20 transition-opacity uppercase select-none'>
                             {game.name}
                           </span>
                           {game.status === 'coming-soon' ? (
-                            <div className="absolute top-2 right-2 px-2 py-0.5 bg-muted text-[10px] font-black uppercase rounded border">
+                            <div className='absolute top-2 right-2 px-2 py-0.5 bg-muted text-[10px] font-black uppercase rounded border'>
                               Planned
                             </div>
                           ) : (
-                            <div className="absolute top-2 right-2 px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-black uppercase rounded">
+                            <div className='absolute top-2 right-2 px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-black uppercase rounded'>
                               Live
                             </div>
                           )}
                         </div>
-                        <div className="p-5">
-                          <div className="flex justify-between items-start mb-2">
-                            <h3 className="font-bold text-lg">{game.name}</h3>
-                            <span className="text-[10px] font-black text-primary px-2 py-0.5 bg-primary/10 rounded-full">
+                        <div className='p-5'>
+                          <div className='flex justify-between items-start mb-2'>
+                            <h3 className='font-bold text-lg'>{game.name}</h3>
+                            <span className='text-[10px] font-black text-primary px-2 py-0.5 bg-primary/10 rounded-full'>
                               {game.reward}
                             </span>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-5 h-10 line-clamp-2">
+                          <p className='text-sm text-muted-foreground mb-5 h-10 line-clamp-2'>
                             {game.description}
                           </p>
                           <Button
-                            className="w-full font-bold uppercase italic tracking-wider text-xs"
+                            className='w-full font-bold uppercase italic tracking-wider text-xs'
                             variant={
                               game.status === 'coming-soon'
                                 ? 'secondary'
@@ -316,45 +316,45 @@ export default function Games() {
             ))}
           </div>
 
-          <div className="space-y-8">
-            <section className="bg-card border-2 rounded-2xl p-6 shadow-sm">
-              <h3 className="text-xl font-black uppercase italic tracking-tighter mb-6 flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" /> Active Hubs
+          <div className='space-y-8'>
+            <section className='bg-card border-2 rounded-2xl p-6 shadow-sm'>
+              <h3 className='text-xl font-black uppercase italic tracking-tighter mb-6 flex items-center gap-2'>
+                <Users className='w-5 h-5 text-primary' /> Active Hubs
               </h3>
               {isLoading ? (
-                <div className="space-y-4">
+                <div className='space-y-4'>
                   {[1, 2, 3].map(i => (
                     <div
                       key={i}
-                      className="h-12 bg-muted animate-pulse rounded-xl"
+                      className='h-12 bg-muted animate-pulse rounded-xl'
                     />
                   ))}
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className='space-y-4'>
                   {myPendingRooms.length > 0 && (
-                    <div className="space-y-3">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                    <div className='space-y-3'>
+                      <p className='text-[10px] font-black uppercase tracking-wider text-muted-foreground'>
                         Your Open Rooms
                       </p>
                       {myPendingRooms.map((room: GameRoom) => (
                         <div
                           key={room.id}
-                          className="flex items-center justify-between p-3 bg-primary/5 border border-primary/30 rounded-xl"
+                          className='flex items-center justify-between p-3 bg-primary/5 border border-primary/30 rounded-xl'
                         >
-                          <div className="flex flex-col">
-                            <span className="text-xs font-black uppercase tracking-tighter text-primary">
+                          <div className='flex flex-col'>
+                            <span className='text-xs font-black uppercase tracking-tighter text-primary'>
                               {room.type}
                             </span>
-                            <span className="text-sm font-bold truncate max-w-30">
+                            <span className='text-sm font-bold truncate max-w-30'>
                               Waiting for opponent
                             </span>
                           </div>
-                          <div className="flex gap-2">
+                          <div className='flex gap-2'>
                             <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 text-[10px] font-black uppercase"
+                              size='sm'
+                              variant='ghost'
+                              className='h-8 text-[10px] font-black uppercase'
                               onClick={() =>
                                 navigate(`/games/${room.type}/${room.id}`)
                               }
@@ -362,9 +362,9 @@ export default function Games() {
                               Open
                             </Button>
                             <Button
-                              size="sm"
-                              variant="destructive"
-                              className="h-8 text-[10px] font-black uppercase"
+                              size='sm'
+                              variant='destructive'
+                              className='h-8 text-[10px] font-black uppercase'
                               onClick={() => void closeRoom(room.id)}
                             >
                               Close
@@ -376,27 +376,27 @@ export default function Games() {
                   )}
 
                   {joinableRooms.length > 0 && (
-                    <div className="space-y-3">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                    <div className='space-y-3'>
+                      <p className='text-[10px] font-black uppercase tracking-wider text-muted-foreground'>
                         Joinable Rooms
                       </p>
                       {joinableRooms.map((room: GameRoom) => (
                         <div
                           key={room.id}
-                          className="flex items-center justify-between p-3 bg-muted/20 border rounded-xl hover:bg-muted/30 transition-colors"
+                          className='flex items-center justify-between p-3 bg-muted/20 border rounded-xl hover:bg-muted/30 transition-colors'
                         >
-                          <div className="flex flex-col">
-                            <span className="text-xs font-black uppercase tracking-tighter text-primary">
+                          <div className='flex flex-col'>
+                            <span className='text-xs font-black uppercase tracking-tighter text-primary'>
                               {room.type}
                             </span>
-                            <span className="text-sm font-bold truncate max-w-30">
+                            <span className='text-sm font-bold truncate max-w-30'>
                               {room.creator.username}'s Room
                             </span>
                           </div>
                           <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 text-[10px] font-black uppercase"
+                            size='sm'
+                            variant='ghost'
+                            className='h-8 text-[10px] font-black uppercase'
                             onClick={() =>
                               navigate(`/games/${room.type}/${room.id}`)
                             }
@@ -411,40 +411,40 @@ export default function Games() {
                   {myPendingRooms.length === 0 &&
                     joinableRooms.length === 0 && (
                       <div
-                        key="no-active-rooms"
-                        className="bg-card/50 p-2 rounded-lg border flex flex-col items-center"
+                        key='no-active-rooms'
+                        className='bg-card/50 p-2 rounded-lg border flex flex-col items-center'
                       >
-                        <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        <p className='text-[10px] font-bold uppercase text-muted-foreground'>
                           No Active Rooms
                         </p>
-                        <p className="text-xs font-bold">Start a new game!</p>
+                        <p className='text-xs font-bold'>Start a new game!</p>
                       </div>
                     )}
                 </div>
               )}
             </section>
 
-            <section className="bg-primary text-primary-foreground rounded-2xl p-6 shadow-lg shadow-primary/20 relative overflow-hidden">
-              <div className="relative z-10">
-                <h3 className="text-lg font-black uppercase italic tracking-tighter mb-4 flex items-center gap-2">
-                  <UserCircle className="w-5 h-5" /> Your Identity
+            <section className='bg-primary text-primary-foreground rounded-2xl p-6 shadow-lg shadow-primary/20 relative overflow-hidden'>
+              <div className='relative z-10'>
+                <h3 className='text-lg font-black uppercase italic tracking-tighter mb-4 flex items-center gap-2'>
+                  <UserCircle className='w-5 h-5' /> Your Identity
                 </h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center bg-white/10 p-3 rounded-xl">
-                    <span className="text-xs font-bold uppercase opacity-80">
+                <div className='space-y-4'>
+                  <div className='flex justify-between items-center bg-white/10 p-3 rounded-xl'>
+                    <span className='text-xs font-bold uppercase opacity-80'>
                       Rank
                     </span>
-                    <span className="font-black italic text-xl">#42</span>
+                    <span className='font-black italic text-xl'>#42</span>
                   </div>
-                  <div className="flex justify-between items-center bg-white/10 p-3 rounded-xl">
-                    <span className="text-xs font-bold uppercase opacity-80">
+                  <div className='flex justify-between items-center bg-white/10 p-3 rounded-xl'>
+                    <span className='text-xs font-bold uppercase opacity-80'>
                       Points
                     </span>
-                    <span className="font-black italic text-xl">1,250</span>
+                    <span className='font-black italic text-xl'>1,250</span>
                   </div>
                 </div>
               </div>
-              <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/5 rounded-full" />
+              <div className='absolute -bottom-6 -right-6 w-24 h-24 bg-white/5 rounded-full' />
             </section>
           </div>
         </div>

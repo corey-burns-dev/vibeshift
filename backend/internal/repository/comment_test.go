@@ -2,53 +2,60 @@ package repository
 
 import (
 	"context"
-	"regexp"
+	"fmt"
 	"testing"
+	"time"
 
 	"sanctum/internal/models"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestCommentRepository_Create(t *testing.T) {
-	db, mock := setupMockDB(t)
-	repo := NewCommentRepository(db)
+func TestCommentRepository_Integration(t *testing.T) {
+	repo := NewCommentRepository(testDB)
 	ctx := context.Background()
 
-	comment := &models.Comment{Content: "Nice post!", PostID: 1, UserID: 1}
+	// Setup user and post
+	ts := time.Now().UnixNano()
+	user := &models.User{Username: fmt.Sprintf("cuser_%d", ts), Email: fmt.Sprintf("cuser_%d@e.com", ts)}
+	testDB.Create(user)
+	post := &models.Post{Title: "Comment Test", Content: "x", UserID: user.ID}
+	testDB.Create(post)
 
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "comments"`)).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectCommit()
+	t.Run("Create and ListByPost", func(t *testing.T) {
+		comment := &models.Comment{
+			Content: "Nice post!",
+			PostID:  post.ID,
+			UserID:  user.ID,
+		}
 
-	err := repo.Create(ctx, comment)
-	assert.NoError(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
+		err := repo.Create(ctx, comment)
+		require.NoError(t, err)
+		assert.NotZero(t, comment.ID)
 
-func TestCommentRepository_ListByPost(t *testing.T) {
-	db, mock := setupMockDB(t)
-	repo := NewCommentRepository(db)
-	ctx := context.Background()
+		comments, err := repo.ListByPost(ctx, post.ID)
+		assert.NoError(t, err)
+		assert.Len(t, comments, 1)
+		assert.Equal(t, "Nice post!", comments[0].Content)
+		assert.Equal(t, user.Username, comments[0].User.Username)
+	})
 
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "comments" WHERE post_id = $1 AND "comments"."deleted_at" IS NULL ORDER BY created_at desc`)).
-		WithArgs(1).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "content", "user_id"}).
-			AddRow(1, "Comment 1", 101).
-			AddRow(2, "Comment 2", 102))
+	t.Run("Update and Delete", func(t *testing.T) {
+		comment := &models.Comment{Content: "Old", PostID: post.ID, UserID: user.ID}
+		repo.Create(ctx, comment)
 
-	// Preload User for each comment
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "users" WHERE "users"."id" IN ($1,$2) AND "users"."deleted_at" IS NULL`)).
-		WithArgs(101, 102).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).
-			AddRow(101, "user101").
-			AddRow(102, "user102"))
+		comment.Content = "New"
+		err := repo.Update(ctx, comment)
+		assert.NoError(t, err)
 
-	comments, err := repo.ListByPost(ctx, 1)
-	assert.NoError(t, err)
-	assert.Len(t, comments, 2)
-	assert.Equal(t, "Comment 1", comments[0].Content)
-	assert.NoError(t, mock.ExpectationsWereMet())
+		fetched, _ := repo.GetByID(ctx, comment.ID)
+		assert.Equal(t, "New", fetched.Content)
+
+		err = repo.Delete(ctx, comment.ID)
+		assert.NoError(t, err)
+
+		_, err = repo.GetByID(ctx, comment.ID)
+		assert.Error(t, err)
+	})
 }

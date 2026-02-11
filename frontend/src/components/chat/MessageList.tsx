@@ -15,7 +15,7 @@ export const MessageList = memo(function MessageList({
 }: MessageListProps) {
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+      <div className='flex-1 flex items-center justify-center text-muted-foreground text-sm'>
         Loading messages...
       </div>
     )
@@ -23,14 +23,14 @@ export const MessageList = memo(function MessageList({
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+      <div className='flex-1 flex items-center justify-center text-muted-foreground text-sm'>
         No messages yet. Start the conversation!
       </div>
     )
   }
 
   return (
-    <div className="space-y-3">
+    <div className='space-y-3'>
       {messages.map(msg => (
         <MessageItem
           key={msg.id}

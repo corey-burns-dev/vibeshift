@@ -2,44 +2,25 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"testing"
+	"time"
 
 	"sanctum/internal/models"
 
 	"github.com/stretchr/testify/assert"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
-func setupTestDB(t *testing.T) *gorm.DB {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("Failed to connect to database: %v", err)
-	}
-
-	err = db.AutoMigrate(
-		&models.User{},
-		&models.Conversation{},
-		&models.Message{},
-		&models.ConversationParticipant{},
-	)
-	if err != nil {
-		t.Fatalf("Failed to migrate database: %v", err)
-	}
-
-	return db
-}
-
-func TestChatRepository(t *testing.T) {
-	db := setupTestDB(t)
-	repo := NewChatRepository(db)
+func TestChatRepository_Integration(t *testing.T) {
+	repo := NewChatRepository(testDB)
 	ctx := context.Background()
 
-	// Create users
-	user1 := &models.User{Username: "user1", Email: "u1@e.com"}
-	user2 := &models.User{Username: "user2", Email: "u2@e.com"}
-	db.Create(user1)
-	db.Create(user2)
+	// Create users with unique usernames/emails
+	ts := time.Now().UnixNano()
+	user1 := &models.User{Username: fmt.Sprintf("u1_%d", ts), Email: fmt.Sprintf("u1_%d@e.com", ts)}
+	user2 := &models.User{Username: fmt.Sprintf("u2_%d", ts), Email: fmt.Sprintf("u2_%d@e.com", ts)}
+	testDB.Create(user1)
+	testDB.Create(user2)
 
 	t.Run("CreateConversation", func(t *testing.T) {
 		conv := &models.Conversation{
@@ -54,7 +35,7 @@ func TestChatRepository(t *testing.T) {
 
 	t.Run("AddParticipant", func(t *testing.T) {
 		conv := &models.Conversation{CreatedBy: user1.ID}
-		db.Create(conv)
+		testDB.Create(conv)
 
 		err := repo.AddParticipant(ctx, conv.ID, user1.ID)
 		assert.NoError(t, err)
@@ -69,7 +50,7 @@ func TestChatRepository(t *testing.T) {
 
 	t.Run("CreateMessage", func(t *testing.T) {
 		conv := &models.Conversation{CreatedBy: user1.ID}
-		db.Create(conv)
+		testDB.Create(conv)
 		_ = repo.AddParticipant(ctx, conv.ID, user1.ID)
 
 		msg := &models.Message{
@@ -84,14 +65,14 @@ func TestChatRepository(t *testing.T) {
 
 	t.Run("GetMessages", func(t *testing.T) {
 		conv := &models.Conversation{CreatedBy: user1.ID}
-		db.Create(conv)
+		testDB.Create(conv)
 
 		msg := &models.Message{
 			ConversationID: conv.ID,
 			SenderID:       user1.ID,
 			Content:        "Msg 1",
 		}
-		db.Create(msg)
+		testDB.Create(msg)
 
 		msgs, err := repo.GetMessages(ctx, conv.ID, 10, 0)
 		assert.NoError(t, err)

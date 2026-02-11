@@ -349,6 +349,13 @@ test-up:
 test-down:
 	$(DOCKER_COMPOSE) $(COMPOSE_FILES) down
 
+coverage: test-up
+	@echo "$(BLUE)Running backend tests with coverage...$(NC)"
+	@sleep 5
+	cd backend && APP_ENV=test $(GO) test -race -coverprofile=coverage.out -covermode=atomic ./...
+	cd backend && $(GO) tool cover -html=coverage.out -o coverage.html
+	@echo "$(GREEN)✓ Coverage report generated at backend/coverage.html$(NC)"
+
 # E2E Testing (Playwright)
 test-e2e-smoke:
 	@echo "$(BLUE)Running Playwright smoke E2E tests...$(NC)"

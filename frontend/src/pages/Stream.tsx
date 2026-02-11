@@ -168,10 +168,10 @@ const HlsPlayer = ({ streamUrl }: { streamUrl: string }) => {
   const overlayVisible = status !== 'playing'
 
   return (
-    <div className="relative w-full h-full bg-black">
+    <div className='relative w-full h-full bg-black'>
       <video
         ref={videoRef}
-        className="w-full h-full"
+        className='w-full h-full'
         controls
         autoPlay
         muted
@@ -179,26 +179,26 @@ const HlsPlayer = ({ streamUrl }: { streamUrl: string }) => {
       />
 
       {overlayVisible && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/70 pointer-events-none">
+        <div className='absolute inset-0 flex items-center justify-center bg-black/70 pointer-events-none'>
           {status === 'loading' && (
-            <div className="text-center text-white">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white mx-auto mb-3" />
-              <p className="text-sm">
+            <div className='text-center text-white'>
+              <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-white mx-auto mb-3' />
+              <p className='text-sm'>
                 {errorMessage || 'Connecting to stream…'}
               </p>
             </div>
           )}
           {status === 'buffering' && (
-            <div className="text-center text-white">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white mx-auto mb-3" />
-              <p className="text-sm">Buffering…</p>
+            <div className='text-center text-white'>
+              <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-white mx-auto mb-3' />
+              <p className='text-sm'>Buffering…</p>
             </div>
           )}
           {status === 'error' && (
-            <div className="text-center text-white pointer-events-auto">
-              <Radio className="w-12 h-12 mx-auto mb-3 text-red-400" />
-              <p className="text-sm mb-3">{errorMessage}</p>
-              <Button variant="secondary" size="sm" onClick={handleRetry}>
+            <div className='text-center text-white pointer-events-auto'>
+              <Radio className='w-12 h-12 mx-auto mb-3 text-red-400' />
+              <p className='text-sm mb-3'>{errorMessage}</p>
+              <Button variant='secondary' size='sm' onClick={handleRetry}>
                 Retry
               </Button>
             </div>
@@ -232,11 +232,11 @@ function VideoPlayer({
       const videoId = extractYouTubeId(stream.stream_url)
       return (
         <iframe
-          className="w-full h-full"
+          className='w-full h-full'
           src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
           title={stream.title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          referrerPolicy="strict-origin-when-cross-origin"
+          allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+          referrerPolicy='strict-origin-when-cross-origin'
           allowFullScreen
         />
       )
@@ -245,10 +245,10 @@ function VideoPlayer({
       const parent = window.location.hostname
       return (
         <iframe
-          className="w-full h-full"
+          className='w-full h-full'
           src={`https://player.twitch.tv/?channel=${stream.stream_url}&parent=${parent}`}
           title={stream.title}
-          allow="autoplay; fullscreen"
+          allow='autoplay; fullscreen'
           allowFullScreen
         />
       )
@@ -256,10 +256,10 @@ function VideoPlayer({
     case 'iframe':
       return (
         <iframe
-          className="w-full h-full"
+          className='w-full h-full'
           src={stream.stream_url}
           title={stream.title}
-          allow="autoplay; fullscreen"
+          allow='autoplay; fullscreen'
           allowFullScreen
         />
       )
@@ -267,11 +267,11 @@ function VideoPlayer({
       return <HlsPlayer streamUrl={stream.stream_url} />
     default:
       return (
-        <div className="w-full h-full flex items-center justify-center bg-black text-white">
-          <div className="text-center">
-            <Radio className="w-16 h-16 mx-auto mb-4 animate-pulse" />
+        <div className='w-full h-full flex items-center justify-center bg-black text-white'>
+          <div className='text-center'>
+            <Radio className='w-16 h-16 mx-auto mb-4 animate-pulse' />
             <p>Stream URL: {stream.stream_url}</p>
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className='text-sm text-muted-foreground mt-2'>
               Unsupported stream type: {stream.stream_type}
             </p>
           </div>
@@ -282,18 +282,18 @@ function VideoPlayer({
 
 function ChatMessage({ message }: { message: StreamMessage }) {
   return (
-    <div className="flex gap-2 px-3 py-1.5 hover:bg-muted/50 transition-colors">
-      <Avatar className="w-6 h-6 shrink-0">
+    <div className='flex gap-2 px-3 py-1.5 hover:bg-muted/50 transition-colors'>
+      <Avatar className='w-6 h-6 shrink-0'>
         <AvatarImage src={message.user?.avatar} />
-        <AvatarFallback className="text-xs">
+        <AvatarFallback className='text-xs'>
           {message.user?.username?.[0]?.toUpperCase()}
         </AvatarFallback>
       </Avatar>
-      <div className="flex-1 min-w-0">
-        <span className="font-semibold text-sm text-primary mr-2">
+      <div className='flex-1 min-w-0'>
+        <span className='font-semibold text-sm text-primary mr-2'>
           {message.user?.username}
         </span>
-        <span className="text-sm text-foreground wrap-break-word">
+        <span className='text-sm text-foreground wrap-break-word'>
           {message.content}
         </span>
       </div>
@@ -332,26 +332,26 @@ function StreamChat({ streamId }: { streamId: number }) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-card border-l">
+    <div className='flex flex-col h-full bg-card border-l'>
       {/* Chat Header */}
-      <div className="p-3 border-b flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="w-4 h-4" />
-          <span className="font-semibold">Stream Chat</span>
+      <div className='p-3 border-b flex items-center justify-between'>
+        <div className='flex items-center gap-2'>
+          <MessageSquare className='w-4 h-4' />
+          <span className='font-semibold'>Stream Chat</span>
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <Settings className="w-4 h-4" />
+        <Button variant='ghost' size='icon' className='h-8 w-8'>
+          <Settings className='w-4 h-4' />
         </Button>
       </div>
 
       {/* Messages */}
-      <ScrollArea ref={scrollRef} className="flex-1">
-        <div className="py-2">
+      <ScrollArea ref={scrollRef} className='flex-1'>
+        <div className='py-2'>
           {messages.map(msg => (
             <ChatMessage key={msg.id} message={msg} />
           ))}
           {messages.length === 0 && (
-            <div className="text-center text-muted-foreground text-sm py-8">
+            <div className='text-center text-muted-foreground text-sm py-8'>
               No messages yet. Say hi! 👋
             </div>
           )}
@@ -359,20 +359,20 @@ function StreamChat({ streamId }: { streamId: number }) {
       </ScrollArea>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="p-3 border-t">
-        <div className="flex gap-2">
+      <form onSubmit={handleSubmit} className='p-3 border-t'>
+        <div className='flex gap-2'>
           <Input
-            placeholder="Send a message..."
+            placeholder='Send a message...'
             value={message}
             onChange={e => setMessage(e.target.value)}
-            className="flex-1"
+            className='flex-1'
           />
           <Button
-            type="submit"
-            size="icon"
+            type='submit'
+            size='icon'
             disabled={!message.trim() || sendMessage.isPending}
           >
-            <Send className="w-4 h-4" />
+            <Send className='w-4 h-4' />
           </Button>
         </div>
       </form>
@@ -392,14 +392,14 @@ export default function Stream() {
 
   if (error) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Stream not found</h2>
-          <p className="text-muted-foreground mb-4">
+      <div className='h-full flex items-center justify-center'>
+        <div className='text-center'>
+          <h2 className='text-xl font-semibold mb-2'>Stream not found</h2>
+          <p className='text-muted-foreground mb-4'>
             This stream doesn't exist or has been removed.
           </p>
           <Button asChild>
-            <Link to="/streams">Browse Streams</Link>
+            <Link to='/streams'>Browse Streams</Link>
           </Button>
         </div>
       </div>
@@ -408,26 +408,26 @@ export default function Stream() {
 
   if (isLoading || !stream) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className='h-full flex items-center justify-center'>
+        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary' />
       </div>
     )
   }
 
   return (
-    <div className="h-full flex flex-col lg:flex-row overflow-hidden">
+    <div className='h-full flex flex-col lg:flex-row overflow-hidden'>
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className='flex-1 flex flex-col min-w-0'>
         {/* Video Player */}
-        <div className="relative aspect-video bg-black w-full">
+        <div className='relative aspect-video bg-black w-full'>
           {stream.is_live ? (
             <VideoPlayer stream={stream} />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center text-white">
-                <Radio className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <h3 className="text-xl font-semibold mb-2">Stream Offline</h3>
-                <p className="text-sm text-white/70">
+            <div className='absolute inset-0 flex items-center justify-center'>
+              <div className='text-center text-white'>
+                <Radio className='w-16 h-16 mx-auto mb-4 opacity-50' />
+                <h3 className='text-xl font-semibold mb-2'>Stream Offline</h3>
+                <p className='text-sm text-white/70'>
                   {isOwner
                     ? 'Click "Go Live" to start streaming'
                     : 'Check back later!'}
@@ -438,48 +438,48 @@ export default function Stream() {
         </div>
 
         {/* Stream Info */}
-        <div className="p-4 bg-card border-b">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex gap-4 min-w-0">
-              <Avatar className="w-12 h-12 shrink-0">
+        <div className='p-4 bg-card border-b'>
+          <div className='flex items-start justify-between gap-4'>
+            <div className='flex gap-4 min-w-0'>
+              <Avatar className='w-12 h-12 shrink-0'>
                 <AvatarImage src={stream.user?.avatar} />
                 <AvatarFallback>
                   {stream.user?.username?.[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="min-w-0">
-                <h1 className="text-lg font-bold truncate">{stream.title}</h1>
-                <p className="text-sm text-muted-foreground">
+              <div className='min-w-0'>
+                <h1 className='text-lg font-bold truncate'>{stream.title}</h1>
+                <p className='text-sm text-muted-foreground'>
                   {stream.user?.username}
                 </p>
-                <div className="flex items-center gap-3 mt-2">
+                <div className='flex items-center gap-3 mt-2'>
                   {stream.is_live && (
-                    <Badge className="bg-red-500 text-white border-0">
-                      <span className="w-2 h-2 bg-white rounded-full mr-1.5 animate-pulse" />
+                    <Badge className='bg-red-500 text-white border-0'>
+                      <span className='w-2 h-2 bg-white rounded-full mr-1.5 animate-pulse' />
                       LIVE
                     </Badge>
                   )}
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Eye className="w-4 h-4" />
+                  <div className='flex items-center gap-1 text-sm text-muted-foreground'>
+                    <Eye className='w-4 h-4' />
                     {stream.viewer_count.toLocaleString()} viewers
                   </div>
                   {stream.category && (
-                    <Badge variant="secondary">{stream.category}</Badge>
+                    <Badge variant='secondary'>{stream.category}</Badge>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <Button variant="ghost" size="icon" asChild>
-                <Link to="/streams">
-                  <ChevronLeft className="w-5 h-5" />
+            <div className='flex items-center gap-2 shrink-0'>
+              <Button variant='ghost' size='icon' asChild>
+                <Link to='/streams'>
+                  <ChevronLeft className='w-5 h-5' />
                 </Link>
               </Button>
               {isOwner &&
                 (stream.is_live ? (
                   <Button
-                    variant="destructive"
+                    variant='destructive'
                     onClick={() => endStream.mutate(stream.id)}
                     disabled={endStream.isPending}
                   >
@@ -490,7 +490,7 @@ export default function Stream() {
                     onClick={() => goLive.mutate(stream.id)}
                     disabled={goLive.isPending}
                   >
-                    <Radio className="w-4 h-4 mr-2" />
+                    <Radio className='w-4 h-4 mr-2' />
                     Go Live
                   </Button>
                 ))}
@@ -498,7 +498,7 @@ export default function Stream() {
           </div>
 
           {stream.description && (
-            <p className="mt-4 text-sm text-muted-foreground">
+            <p className='mt-4 text-sm text-muted-foreground'>
               {stream.description}
             </p>
           )}

@@ -46,17 +46,17 @@ export function UserMenu({ user, children }: UserMenuProps) {
   return (
     <UserContextMenu user={user}>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild className="cursor-pointer">
+        <DropdownMenuTrigger asChild className='cursor-pointer'>
           {children}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">
+        <DropdownMenuContent align='start' className='w-56'>
+          <DropdownMenuLabel className='font-normal'>
+            <div className='flex flex-col space-y-1'>
+              <p className='text-sm font-medium leading-none'>
                 {user.username}
               </p>
               {user.bio && (
-                <p className="text-xs text-muted-foreground truncate">
+                <p className='text-xs text-muted-foreground truncate'>
                   {user.bio}
                 </p>
               )}
@@ -70,7 +70,7 @@ export function UserMenu({ user, children }: UserMenuProps) {
               handleViewProfile()
             }}
           >
-            <UserIcon className="mr-2 h-4 w-4" />
+            <UserIcon className='mr-2 h-4 w-4' />
             <span>View Profile</span>
           </DropdownMenuItem>
 
@@ -80,7 +80,7 @@ export function UserMenu({ user, children }: UserMenuProps) {
               handleMessage()
             }}
           >
-            <MessageCircle className="mr-2 h-4 w-4" />
+            <MessageCircle className='mr-2 h-4 w-4' />
             <span>Message</span>
           </DropdownMenuItem>
 
@@ -90,7 +90,7 @@ export function UserMenu({ user, children }: UserMenuProps) {
               handleVideoChat()
             }}
           >
-            <Video className="mr-2 h-4 w-4" />
+            <Video className='mr-2 h-4 w-4' />
             <span>Video Chat</span>
           </DropdownMenuItem>
 
@@ -100,7 +100,7 @@ export function UserMenu({ user, children }: UserMenuProps) {
               void handleJoinConnect4()
             }}
           >
-            <Gamepad2 className="mr-2 h-4 w-4" />
+            <Gamepad2 className='mr-2 h-4 w-4' />
             <span>Join Connect 4</span>
           </DropdownMenuItem>
 
@@ -114,7 +114,7 @@ export function UserMenu({ user, children }: UserMenuProps) {
               }}
               disabled={addFriendDisabled}
             >
-              <UserPlus className="mr-2 h-4 w-4" />
+              <UserPlus className='mr-2 h-4 w-4' />
               <span>{addFriendLabel}</span>
             </DropdownMenuItem>
           )}
@@ -125,10 +125,10 @@ export function UserMenu({ user, children }: UserMenuProps) {
                 event.stopPropagation()
                 handleRemoveFriend()
               }}
-              className="text-destructive focus:text-destructive"
+              className='text-destructive focus:text-destructive'
               disabled={removeFriendPending}
             >
-              <UserMinus className="mr-2 h-4 w-4" />
+              <UserMinus className='mr-2 h-4 w-4' />
               <span>Remove Friend</span>
             </DropdownMenuItem>
           )}

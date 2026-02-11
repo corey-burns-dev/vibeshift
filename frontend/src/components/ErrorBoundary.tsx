@@ -73,37 +73,37 @@ function DefaultErrorFallback({
   requestId?: string
 }) {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="max-w-md w-full text-center">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-destructive mb-2">
+    <div className='min-h-screen bg-background flex items-center justify-center p-4'>
+      <div className='max-w-md w-full text-center'>
+        <div className='mb-6'>
+          <h1 className='text-2xl font-bold text-destructive mb-2'>
             Something went wrong
           </h1>
-          <p className="text-muted-foreground">
+          <p className='text-muted-foreground'>
             We encountered an unexpected error. Please try again.
           </p>
         </div>
 
         {(error || requestId) && (
-          <details className="mb-6 text-left">
-            <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+          <details className='mb-6 text-left'>
+            <summary className='cursor-pointer text-sm text-muted-foreground hover:text-foreground'>
               Error details
             </summary>
-            <div className="mt-2 p-3 bg-muted rounded text-xs overflow-auto">
+            <div className='mt-2 p-3 bg-muted rounded text-xs overflow-auto'>
               {requestId && (
-                <div className="mb-2 font-mono text-primary">
+                <div className='mb-2 font-mono text-primary'>
                   Request ID: {requestId}
                 </div>
               )}
               {error && (
-                <pre className="whitespace-pre-wrap">{error.message}</pre>
+                <pre className='whitespace-pre-wrap'>{error.message}</pre>
               )}
             </div>
           </details>
         )}
 
-        <div className="flex gap-3 justify-center">
-          <Button onClick={resetError} variant="outline">
+        <div className='flex gap-3 justify-center'>
+          <Button onClick={resetError} variant='outline'>
             Try again
           </Button>
           <Button

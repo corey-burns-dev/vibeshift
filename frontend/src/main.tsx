@@ -33,8 +33,8 @@ createRoot(rootElement).render(
   <React.StrictMode>
     <ErrorBoundary>
       <ThemeProvider
-        attribute="class"
-        defaultTheme="dark"
+        attribute='class'
+        defaultTheme='dark'
         enableSystem
         disableTransitionOnChange
       >

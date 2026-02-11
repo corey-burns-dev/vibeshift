@@ -116,6 +116,36 @@ func TestSignup(t *testing.T) {
 			},
 			expectedStatus: http.StatusConflict,
 		},
+		{
+			name: "Invalid Username",
+			body: map[string]string{
+				"username": "a",
+				"email":    "valid@example.com",
+				"password": "Password123!",
+			},
+			mockSetup:      func() {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Invalid Email",
+			body: map[string]string{
+				"username": "validuser",
+				"email":    "invalid-email",
+				"password": "Password123!",
+			},
+			mockSetup:      func() {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Weak Password",
+			body: map[string]string{
+				"username": "validuser",
+				"email":    "valid@example.com",
+				"password": "123",
+			},
+			mockSetup:      func() {},
+			expectedStatus: http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {
@@ -270,12 +300,39 @@ func TestRefresh(t *testing.T) {
 
 			if tt.expectedStatus == http.StatusOK {
 				var result map[string]interface{}
-				json.NewDecoder(resp.Body).Decode(&result)
+				_ = json.NewDecoder(resp.Body).Decode(&result)
 				assert.Contains(t, result, "token")
 				assert.Contains(t, result, "refresh_token")
 			}
 		})
 	}
+}
+
+func TestLogout(t *testing.T) {
+	app := fiber.New()
+	s := &Server{
+		config: &config.Config{JWTSecret: "test_secret"},
+	}
+
+	app.Post("/logout", s.Logout)
+
+	t.Run("Success", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]string{"refresh_token": "some-token"})
+		req := httptest.NewRequest(http.MethodPost, "/logout", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, _ := app.Test(req)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+	})
+
+	t.Run("Empty Token", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]string{"refresh_token": ""})
+		req := httptest.NewRequest(http.MethodPost, "/logout", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, _ := app.Test(req)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+	})
 }
 
 

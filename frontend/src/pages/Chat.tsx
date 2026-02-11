@@ -830,45 +830,45 @@ export default function Chat() {
   )
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
+    <div className='flex h-full min-h-0 flex-col overflow-hidden bg-background'>
       {allError && (
-        <div className="border-b border-destructive bg-destructive/15 p-3">
-          <p className="text-sm text-destructive">
+        <div className='border-b border-destructive bg-destructive/15 p-3'>
+          <p className='text-sm text-destructive'>
             Error loading chatrooms: {String(allError)}
           </p>
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      <div className='flex min-h-0 flex-1 overflow-hidden'>
         <aside
           className={cn(
             'hidden shrink-0 overflow-hidden bg-card/40 transition-all duration-200 md:flex md:flex-col',
             showChatrooms ? 'w-72 border-r border-border/70' : 'w-0 border-r-0'
           )}
         >
-          <div className="flex h-12 items-center border-b border-border/70 px-2">
+          <div className='flex h-12 items-center border-b border-border/70 px-2'>
             <button
-              type="button"
+              type='button'
               onClick={() => setShowChatrooms(false)}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
-              aria-label="Collapse sidebar"
+              className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
+              aria-label='Collapse sidebar'
             >
-              <PanelLeftClose className="h-4 w-4" />
+              <PanelLeftClose className='h-4 w-4' />
             </button>
-            <h2 className="ml-2 flex items-center gap-2 text-sm font-semibold">
+            <h2 className='ml-2 flex items-center gap-2 text-sm font-semibold'>
               {leftSidebarMode === 'rooms' ? (
-                <Hash className="h-4 w-4 text-primary" />
+                <Hash className='h-4 w-4 text-primary' />
               ) : (
-                <MessageCircle className="h-4 w-4 text-primary" />
+                <MessageCircle className='h-4 w-4 text-primary' />
               )}
               {leftSidebarMode === 'rooms' ? 'Chatrooms' : 'Direct Messages'}
             </h2>
           </div>
 
-          <div className="border-b border-border/70 p-2">
-            <div className="grid grid-cols-2 gap-1">
+          <div className='border-b border-border/70 p-2'>
+            <div className='grid grid-cols-2 gap-1'>
               <button
-                type="button"
+                type='button'
                 onClick={() => setLeftSidebarMode('rooms')}
                 className={cn(
                   'rounded-md px-2 py-1.5 text-xs font-semibold transition-colors',
@@ -880,7 +880,7 @@ export default function Chat() {
                 Rooms
               </button>
               <button
-                type="button"
+                type='button'
                 onClick={() => setLeftSidebarMode('dms')}
                 className={cn(
                   'rounded-md px-2 py-1.5 text-xs font-semibold transition-colors',
@@ -896,20 +896,20 @@ export default function Chat() {
 
           {leftSidebarMode === 'rooms' ? (
             <>
-              <div className="border-b border-border/70 px-3 py-2">
-                <p className="text-[11px] text-muted-foreground">
+              <div className='border-b border-border/70 px-3 py-2'>
+                <p className='text-[11px] text-muted-foreground'>
                   {conversations.length} rooms
                 </p>
               </div>
 
-              <ScrollArea className="min-h-0 flex-1">
-                <div className="grid grid-cols-2 gap-1.5 p-2">
+              <ScrollArea className='min-h-0 flex-1'>
+                <div className='grid grid-cols-2 gap-1.5 p-2'>
                   {allLoading ? (
-                    <div className="col-span-2 p-4 text-center text-xs text-muted-foreground">
+                    <div className='col-span-2 p-4 text-center text-xs text-muted-foreground'>
                       Loading chatrooms...
                     </div>
                   ) : conversations.length === 0 ? (
-                    <div className="col-span-2 p-4 text-center text-xs text-muted-foreground">
+                    <div className='col-span-2 p-4 text-center text-xs text-muted-foreground'>
                       No chatrooms available.
                     </div>
                   ) : (
@@ -920,7 +920,7 @@ export default function Chat() {
                       return (
                         <button
                           key={room.id}
-                          type="button"
+                          type='button'
                           onClick={() => handleSelectConversation(room.id)}
                           className={cn(
                             'w-full rounded-lg border px-2.5 py-2 text-left transition-colors',
@@ -929,20 +929,20 @@ export default function Chat() {
                               : 'border-transparent hover:border-border/60 hover:bg-muted/60'
                           )}
                         >
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="truncate text-[13px] font-semibold text-foreground">
+                          <div className='flex items-center justify-between gap-2'>
+                            <p className='truncate text-[13px] font-semibold text-foreground'>
                               {room.name || `Room ${room.id}`}
                             </p>
                             {!joined && (
-                              <span className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                              <span className='rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary'>
                                 Join
                               </span>
                             )}
                           </div>
-                          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                          <p className='mt-0.5 truncate text-[11px] text-muted-foreground'>
                             {room.participants?.length || 0} members
                             {getRoomOnlineCount(room) > 0 && (
-                              <span className="text-emerald-500">
+                              <span className='text-emerald-500'>
                                 {' '}
                                 · {getRoomOnlineCount(room)} online
                               </span>
@@ -957,19 +957,19 @@ export default function Chat() {
             </>
           ) : (
             <>
-              <div className="border-b border-border/70 px-3 py-2">
-                <p className="text-[11px] text-muted-foreground">
+              <div className='border-b border-border/70 px-3 py-2'>
+                <p className='text-[11px] text-muted-foreground'>
                   {dmConversations.length} conversations
                 </p>
               </div>
-              <ScrollArea className="min-h-0 flex-1">
-                <div className="space-y-1.5 p-2">
+              <ScrollArea className='min-h-0 flex-1'>
+                <div className='space-y-1.5 p-2'>
                   {conversationsLoading ? (
-                    <div className="p-4 text-center text-xs text-muted-foreground">
+                    <div className='p-4 text-center text-xs text-muted-foreground'>
                       Loading conversations...
                     </div>
                   ) : dmConversations.length === 0 ? (
-                    <div className="p-4 text-center text-xs text-muted-foreground">
+                    <div className='p-4 text-center text-xs text-muted-foreground'>
                       No direct conversations yet.
                     </div>
                   ) : (
@@ -984,7 +984,7 @@ export default function Chat() {
                       return (
                         <button
                           key={`dm-${conversation.id}`}
-                          type="button"
+                          type='button'
                           onClick={() =>
                             handleSelectDirectMessage(conversation.id)
                           }
@@ -995,15 +995,15 @@ export default function Chat() {
                               : 'border-transparent hover:border-border/60 hover:bg-muted/60'
                           )}
                         >
-                          <Avatar className="h-8 w-8 border">
+                          <Avatar className='h-8 w-8 border'>
                             <AvatarImage src={getDmAvatar(conversation)} />
-                            <AvatarFallback className="text-[10px]">
+                            <AvatarFallback className='text-[10px]'>
                               {getInitials(getDmName(conversation))}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="truncate text-[12px] font-semibold">
+                          <div className='min-w-0 flex-1'>
+                            <div className='flex items-center gap-2'>
+                              <p className='truncate text-[12px] font-semibold'>
                                 {getDmName(conversation)}
                               </p>
                               <span
@@ -1014,7 +1014,7 @@ export default function Chat() {
                               />
                             </div>
                             {conversation.last_message && (
-                              <p className="truncate text-[11px] text-muted-foreground">
+                              <p className='truncate text-[11px] text-muted-foreground'>
                                 {conversation.last_message.content}
                               </p>
                             )}
@@ -1029,28 +1029,28 @@ export default function Chat() {
           )}
         </aside>
 
-        <section className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="flex h-12 items-center justify-between border-b border-border/70 bg-card/35 px-3">
-            <div className="flex min-w-0 items-center gap-2">
+        <section className='flex min-h-0 flex-1 flex-col overflow-hidden'>
+          <div className='flex h-12 items-center justify-between border-b border-border/70 bg-card/35 px-3'>
+            <div className='flex min-w-0 items-center gap-2'>
               {!showChatrooms && (
                 <button
-                  type="button"
+                  type='button'
                   onClick={() => setShowChatrooms(true)}
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
-                  aria-label="Expand sidebar"
+                  className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
+                  aria-label='Expand sidebar'
                 >
-                  <PanelLeftOpen className="h-4 w-4" />
+                  <PanelLeftOpen className='h-4 w-4' />
                 </button>
               )}
               {currentConversation ? (
-                <div className="min-w-0">
-                  <h3 className="truncate text-sm font-semibold text-foreground">
+                <div className='min-w-0'>
+                  <h3 className='truncate text-sm font-semibold text-foreground'>
                     {isCurrentConversationGroup
                       ? currentConversation.name ||
                         `Room ${currentConversation.id}`
                       : getDmName(currentConversation)}
                   </h3>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className='text-[11px] text-muted-foreground'>
                     {isCurrentConversationGroup
                       ? `${selectedRoomOnlineCount} online`
                       : isSelectedDirectOtherUserOnline
@@ -1059,7 +1059,7 @@ export default function Chat() {
                   </p>
                 </div>
               ) : (
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className='text-sm font-medium text-muted-foreground'>
                   {leftSidebarMode === 'rooms'
                     ? 'Select a chatroom'
                     : 'Select a direct message'}
@@ -1067,10 +1067,10 @@ export default function Chat() {
               )}
             </div>
 
-            <div className="flex items-center gap-1.5" />
+            <div className='flex items-center gap-1.5' />
           </div>
           {openRoomTabs.length > 0 && (
-            <div className="flex items-center gap-2 overflow-x-auto border-b border-border/60 bg-card/20 px-3 py-2">
+            <div className='flex items-center gap-2 overflow-x-auto border-b border-border/60 bg-card/20 px-3 py-2'>
               {openRoomTabs.map(roomId => {
                 const room =
                   conversations.find(c => c.id === roomId) ||
@@ -1092,31 +1092,31 @@ export default function Chat() {
                     )}
                   >
                     <button
-                      type="button"
+                      type='button'
                       onClick={() => handleSelectConversation(roomId)}
-                      className="inline-flex items-center gap-2 px-3 py-1.5"
+                      className='inline-flex items-center gap-2 px-3 py-1.5'
                     >
-                      <Hash className="h-3 w-3" />
-                      <span className="max-w-28 truncate">
+                      <Hash className='h-3 w-3' />
+                      <span className='max-w-28 truncate'>
                         {room.name || `Room ${room.id}`}
                       </span>
                       {unread > 0 && (
-                        <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
+                        <span className='rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground'>
                           {unread}
                         </span>
                       )}
                     </button>
                     <button
-                      type="button"
+                      type='button'
                       aria-label={`Close room tab ${room.name || room.id}`}
-                      className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      className='inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
                       onClick={event => {
                         event.preventDefault()
                         event.stopPropagation()
                         handleCloseRoomTab(roomId)
                       }}
                     >
-                      <X className="h-3 w-3" />
+                      <X className='h-3 w-3' />
                     </button>
                   </div>
                 )
@@ -1124,27 +1124,27 @@ export default function Chat() {
             </div>
           )}
 
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="mx-auto w-full max-w-3xl p-4">
+          <ScrollArea className='min-h-0 flex-1'>
+            <div className='mx-auto w-full max-w-3xl p-4'>
               <MessageList
                 messages={messages}
                 isLoading={isLoading}
                 currentUserId={currentUser?.id}
               />
-              <div ref={messagesEndRef} className="h-2" />
+              <div ref={messagesEndRef} className='h-2' />
             </div>
           </ScrollArea>
 
-          <div className="border-t border-border/70 bg-card/25 p-3">
-            <div className="mx-auto w-full max-w-3xl">
+          <div className='border-t border-border/70 bg-card/25 p-3'>
+            <div className='mx-auto w-full max-w-3xl'>
               {messageError && (
-                <p className="mb-2 px-1 text-xs font-medium text-destructive">
+                <p className='mb-2 px-1 text-xs font-medium text-destructive'>
                   {messageError}
                 </p>
               )}
 
               {userIsJoined ? (
-                <div className="flex items-center gap-2">
+                <div className='flex items-center gap-2'>
                   <Input
                     placeholder={
                       wsIsJoined ? 'Type a message...' : 'Connecting...'
@@ -1153,19 +1153,19 @@ export default function Chat() {
                     onChange={e => setNewMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
                     disabled={!wsIsJoined}
-                    className="h-10 flex-1 rounded-full border-border/60 bg-card"
+                    className='h-10 flex-1 rounded-full border-border/60 bg-card'
                   />
                   <Button
                     onClick={handleSendMessage}
                     disabled={!newMessage.trim() || !wsIsJoined}
-                    className="h-10 w-10 rounded-full p-0"
+                    className='h-10 w-10 rounded-full p-0'
                   >
-                    <Send className="h-4 w-4" />
+                    <Send className='h-4 w-4' />
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-muted/30 px-3 py-2">
-                  <p className="text-xs text-muted-foreground">
+                <div className='flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-muted/30 px-3 py-2'>
+                  <p className='text-xs text-muted-foreground'>
                     Join this room to send messages.
                   </p>
                   <Button
@@ -1173,8 +1173,8 @@ export default function Chat() {
                       selectedChatId && handleJoinConversation(selectedChatId)
                     }
                     disabled={joinChatroom.isPending}
-                    size="sm"
-                    className="rounded-lg"
+                    size='sm'
+                    className='rounded-lg'
                   >
                     {joinChatroom.isPending ? 'Joining...' : 'Join'}
                   </Button>
@@ -1190,15 +1190,15 @@ export default function Chat() {
             showParticipants ? 'w-60' : 'w-12'
           )}
         >
-          <div className="flex h-12 items-center border-b border-border/70 px-2">
+          <div className='flex h-12 items-center border-b border-border/70 px-2'>
             {showParticipants && (
-              <h2 className="ml-1 flex items-center gap-2 text-sm font-semibold">
-                <Users className="h-4 w-4" />
+              <h2 className='ml-1 flex items-center gap-2 text-sm font-semibold'>
+                <Users className='h-4 w-4' />
                 Members
               </h2>
             )}
             <button
-              type="button"
+              type='button'
               onClick={() => setShowParticipants(prev => !prev)}
               className={cn(
                 'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground',
@@ -1211,15 +1211,15 @@ export default function Chat() {
               }
             >
               {showParticipants ? (
-                <PanelRightClose className="h-4 w-4" />
+                <PanelRightClose className='h-4 w-4' />
               ) : (
-                <PanelRightOpen className="h-4 w-4" />
+                <PanelRightOpen className='h-4 w-4' />
               )}
             </button>
           </div>
           {showParticipants && (
-            <ScrollArea className="min-h-0 flex-1">
-              <div className="p-2">
+            <ScrollArea className='min-h-0 flex-1'>
+              <div className='p-2'>
                 <ParticipantsList
                   participants={participants}
                   onlineUserIds={onlineUserIds}
@@ -1228,7 +1228,7 @@ export default function Chat() {
             </ScrollArea>
           )}
           {showParticipants && (
-            <div className="border-t border-border/70 px-3 py-2 text-[11px] text-muted-foreground">
+            <div className='border-t border-border/70 px-3 py-2 text-[11px] text-muted-foreground'>
               {
                 Object.values(participants).filter(
                   participant =>
