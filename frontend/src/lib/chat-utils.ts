@@ -85,7 +85,7 @@ export function deduplicateDMConversations(
 export function getWsBaseUrl(): string {
   // If VITE_API_URL is an absolute URL, derive WS from it
   const apiUrl = import.meta.env.VITE_API_URL
-  if (apiUrl && apiUrl.startsWith('http')) {
+  if (apiUrl?.startsWith('http')) {
     const url = new URL(apiUrl)
     const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
     return `${protocol}//${url.host}`

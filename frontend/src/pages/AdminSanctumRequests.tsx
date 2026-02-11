@@ -83,7 +83,11 @@ export default function AdminSanctumRequests() {
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <span>/{request.requested_slug}</span>
                       <span>•</span>
-                      <span>requested by {request.requested_by_user?.username || `User #${request.requested_by_user_id}`}</span>
+                      <span>
+                        requested by{' '}
+                        {request.requested_by_user?.username ||
+                          `User #${request.requested_by_user_id}`}
+                      </span>
                     </div>
                   </div>
                   <Badge variant="outline" className="uppercase">

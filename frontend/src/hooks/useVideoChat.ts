@@ -2,11 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError } from '@/api/client'
-import { getWsBaseUrl } from '@/lib/chat-utils'
 import { createTicketedWS, getNextBackoff } from '@/lib/ws-utils'
 
 interface PeerInfo {
-// ...
+  // ...
   userId: number
   username: string
 }
@@ -50,7 +49,7 @@ function buildIceConfig(): RTCConfiguration {
 }
 
 const MAX_RECONNECT_ATTEMPTS = 5
-const RECONNECT_BASE_DELAY_MS = 1000
+const _RECONNECT_BASE_DELAY_MS = 1000
 
 interface UseVideoChatOptions {
   roomId: string
@@ -343,7 +342,7 @@ export function useVideoChat({ roomId, enabled = true }: UseVideoChatOptions) {
         onError: () => {
           setError('WebSocket connection failed')
           setIsConnected(false)
-        }
+        },
       })
       wsRef.current = ws
     } catch (err) {

@@ -9,11 +9,10 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Message, User } from '@/api/types'
-import { getWsBaseUrl } from '@/lib/chat-utils'
 import { createTicketedWS, getNextBackoff } from '@/lib/ws-utils'
 
 interface ChatWebSocketMessage {
-// ...
+  // ...
   type:
     | 'message'
     | 'room_message'
@@ -357,10 +356,10 @@ export function useChatWebSocket({
         onError: error => {
           if (ws !== wsRef.current) return
           console.error('WebSocket error:', error)
-        }
+        },
       })
       wsRef.current = ws
-    } catch (err) {
+    } catch (_err) {
       if (enabled) {
         reconnectTimeoutRef.current = window.setTimeout(connect, 3000)
       }
