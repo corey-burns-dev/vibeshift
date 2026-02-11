@@ -20,7 +20,7 @@ GREEN := \033[1;32m
 YELLOW := \033[1;33m
 NC := \033[0m # No Color
 
-.PHONY: help dev dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions clean test test-backend test-frontend test-api test-e2e test-e2e-smoke test-load test-up test-down seed admin-list admin-promote admin-demote admin-bootstrap-me deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down report report-open swagger openapi-check
+.PHONY: help dev dev-backend dev-frontend dev-both dev-fresh build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions clean test test-backend test-frontend test-api test-e2e test-e2e-smoke test-load test-up test-down seed admin-list admin-promote admin-demote admin-bootstrap-me deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down report report-open swagger openapi-check
 
 # Default target
 help:
@@ -33,6 +33,7 @@ help:
 	@echo "  make dev-backend        - 🔧 Backend only (Go + Redis + Postgres)"
 	@echo "  make dev-frontend       - 🎨 Frontend only (Vite dev server, local)"
 	@echo "  make dev-both           - 🔀 Backend in Docker + Frontend local (best DX)"
+	@echo "  make dev-fresh          - 🧹 Start fresh dev (clean DB, migrations, seed)"
 	@echo ""
 	@echo "$(GREEN)Build & Compose:$(NC)"
 	@echo "  make build              - 🔨 Build all Docker images (prod)"
@@ -115,6 +116,14 @@ dev-both: env install
 	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) $(COMPOSE_FILES) up --build app redis postgres -d
 	@echo "$(YELLOW)Frontend starting in foreground...$(NC)"
 	@cd frontend && $(BUN) --bun vite --host
+
+# Start a fresh development environment: remove volumes, start services, run migrations + seed
+dev-fresh: env
+	@echo "$(BLUE)Starting fresh dev environment (clean DB, migrations, seed)...$(NC)"
+	@$(MAKE) clean
+	@$(MAKE) up
+	@sleep 3
+	@./scripts/reset_and_seed.sh
 
 # Build targets
 build: build-backend build-frontend
