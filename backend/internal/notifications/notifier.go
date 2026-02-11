@@ -22,7 +22,8 @@ func NewNotifier(rdb *redis.Client) *Notifier {
 
 // PublishUser sends a notification payload to a user's channel.
 func (n *Notifier) PublishUser(
-	ctx context.Context, userID uint, payload string) error {
+	ctx context.Context, userID uint, payload string,
+) error {
 	if n.rdb == nil {
 		return nil
 	}
@@ -41,7 +42,8 @@ func (n *Notifier) PublishBroadcast(ctx context.Context, payload string) error {
 // StartPatternSubscriber subscribes to pattern `notifications:user:*` and calls onMessage
 // for each incoming message. onMessage receives channel and payload.
 func (n *Notifier) StartPatternSubscriber(
-	ctx context.Context, onMessage func(channel string, payload string)) error {
+	ctx context.Context, onMessage func(channel string, payload string),
+) error {
 	if n.rdb == nil {
 		return nil
 	}
@@ -60,7 +62,8 @@ func (n *Notifier) StartPatternSubscriber(
 
 // PublishChatMessage publishes a chat message to a conversation channel
 func (n *Notifier) PublishChatMessage(
-	ctx context.Context, conversationID uint, payload string) error {
+	ctx context.Context, conversationID uint, payload string,
+) error {
 	if n.rdb == nil {
 		return nil
 	}
@@ -70,7 +73,8 @@ func (n *Notifier) PublishChatMessage(
 
 // PublishTypingIndicator publishes a typing indicator to a conversation
 func (n *Notifier) PublishTypingIndicator(
-	ctx context.Context, conversationID, userID uint, username string, isTyping bool) error {
+	ctx context.Context, conversationID, userID uint, username string, isTyping bool,
+) error {
 	if n.rdb == nil {
 		return nil
 	}
@@ -86,7 +90,8 @@ func (n *Notifier) PublishTypingIndicator(
 
 // PublishPresence publishes a user's presence status to a conversation
 func (n *Notifier) PublishPresence(
-	ctx context.Context, conversationID, userID uint, username, status string) error {
+	ctx context.Context, conversationID, userID uint, username, status string,
+) error {
 	if n.rdb == nil {
 		return nil
 	}
@@ -103,7 +108,8 @@ func (n *Notifier) PublishPresence(
 // StartChatSubscriber subscribes to chat-related patterns and calls onMessage
 // for each incoming message. Subscribes to: chat:conv:*, typing:conv:*, presence:conv:*
 func (n *Notifier) StartChatSubscriber(
-	ctx context.Context, onMessage func(channel string, payload string)) error {
+	ctx context.Context, onMessage func(channel string, payload string),
+) error {
 	if n.rdb == nil {
 		return nil
 	}
@@ -121,7 +127,8 @@ func (n *Notifier) StartChatSubscriber(
 
 // PublishGameAction publishes a game action (move, join, etc) to a room channel
 func (n *Notifier) PublishGameAction(
-	ctx context.Context, roomID uint, payload string) error {
+	ctx context.Context, roomID uint, payload string,
+) error {
 	if n.rdb == nil {
 		return nil
 	}
@@ -131,7 +138,8 @@ func (n *Notifier) PublishGameAction(
 
 // StartGameSubscriber subscribes to game room patterns
 func (n *Notifier) StartGameSubscriber(
-	ctx context.Context, onMessage func(channel string, payload string)) error {
+	ctx context.Context, onMessage func(channel string, payload string),
+) error {
 	if n.rdb == nil {
 		return nil
 	}
@@ -149,7 +157,8 @@ func (n *Notifier) StartGameSubscriber(
 
 // PublishVideoChatSignal publishes a WebRTC signaling message to a video chat room channel
 func (n *Notifier) PublishVideoChatSignal(
-	ctx context.Context, roomID string, payload string) error {
+	ctx context.Context, roomID string, payload string,
+) error {
 	if n.rdb == nil {
 		return nil
 	}
@@ -159,7 +168,8 @@ func (n *Notifier) PublishVideoChatSignal(
 
 // StartVideoChatSubscriber subscribes to video chat room patterns
 func (n *Notifier) StartVideoChatSubscriber(
-	ctx context.Context, onMessage func(channel string, payload string)) error {
+	ctx context.Context, onMessage func(channel string, payload string),
+) error {
 	if n.rdb == nil {
 		return nil
 	}

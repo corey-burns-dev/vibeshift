@@ -2,9 +2,10 @@
 package middleware
 
 import (
-	"sanctum/internal/config"
 	"strconv"
 	"strings"
+
+	"sanctum/internal/config"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"

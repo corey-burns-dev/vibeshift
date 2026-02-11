@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"regexp"
-	"sanctum/internal/models"
 	"testing"
+
+	"sanctum/internal/models"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"

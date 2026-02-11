@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"sanctum/internal/models"
 	"time"
+
+	"sanctum/internal/models"
 
 	"gorm.io/gorm"
 )

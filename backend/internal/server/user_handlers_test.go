@@ -3,8 +3,9 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
-	"sanctum/internal/models"
 	"testing"
+
+	"sanctum/internal/models"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"

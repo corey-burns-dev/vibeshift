@@ -2,8 +2,9 @@
 package server
 
 import (
-	"sanctum/internal/models"
 	"time"
+
+	"sanctum/internal/models"
 
 	"github.com/gofiber/fiber/v2"
 )

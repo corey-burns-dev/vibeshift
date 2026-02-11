@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"sanctum/internal/models"
 	"sync"
+
+	"sanctum/internal/models"
 
 	"github.com/gofiber/websocket/v2"
 	"gorm.io/gorm"

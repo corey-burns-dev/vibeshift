@@ -6,10 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
+
 	"sanctum/internal/config"
 	"sanctum/internal/middleware"
 	"sanctum/internal/models"
-	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -117,7 +118,6 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 	dbInstance, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: gormLogger,
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}

@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"sanctum/internal/config"
 	"strconv"
 	"testing"
 	"time"
+
+	"sanctum/internal/config"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"

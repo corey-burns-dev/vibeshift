@@ -75,7 +75,7 @@ Follow idiomatic Go practices and community standards when writing Go code. Thes
 
 ### Formatting
 
-- Always use `gofmt` to format code
+- Prefer `gofumpt` (stricter `gofmt`) to format code
 - Use `goimports` to manage imports automatically
 - Keep line length reasonable (no hard limit, but consider readability)
 - Add blank lines to separate logical groups of code

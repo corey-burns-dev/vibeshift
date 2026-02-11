@@ -3,6 +3,7 @@ package repository
 
 import (
 	"context"
+
 	"sanctum/internal/models"
 
 	"gorm.io/gorm"
@@ -38,7 +39,10 @@ func (r *commentRepository) GetByID(ctx context.Context, id uint) (*models.Comme
 	return &comment, nil
 }
 
-func (r *commentRepository) ListByPost(ctx context.Context, postID uint) ([]*models.Comment, error) {
+func (r *commentRepository) ListByPost(
+	ctx context.Context,
+	postID uint,
+) ([]*models.Comment, error) {
 	var comments []*models.Comment
 	err := r.db.WithContext(ctx).Preload("User").Where("post_id = ?", postID).Order("created_at desc").Find(&comments).Error
 	return comments, err

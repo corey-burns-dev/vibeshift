@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"sanctum/internal/models"
 
 	"gorm.io/gorm"
@@ -126,7 +127,6 @@ func (r *streamRepository) GetStreamMessages(ctx context.Context, streamID uint,
 		Limit(limit).
 		Offset(offset).
 		Find(&messages).Error
-
 	if err != nil {
 		return nil, err
 	}

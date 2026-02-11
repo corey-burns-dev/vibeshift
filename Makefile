@@ -204,8 +204,20 @@ config-check:
 # Code quality
 fmt:
 	@echo "$(BLUE)Formatting Go code...$(NC)"
-	cd backend && $(GO) fmt ./...
-	@echo "$(GREEN)✓ Code formatted$(NC)"
+	@echo "$(BLUE)Formatting Go code with goimports + gofumpt...$(NC)"
+	@if ! command -v goimports >/dev/null 2>&1; then \
+		echo "$(YELLOW)goimports not found. Run 'make install-formatters' to install formatters.$(NC)"; \
+		exit 1; \
+	fi
+	@if ! command -v gofumpt >/dev/null 2>&1; then \
+		echo "$(YELLOW)gofumpt not found. Run 'make install-formatters' to install formatters.$(NC)"; \
+		exit 1; \
+	fi
+	# format imports and files
+	cd backend && goimports -w .
+	# apply stricter formatting
+	cd backend && gofumpt -w .
+	@echo "$(GREEN)✓ Code formatted (goimports + gofumpt)$(NC)"
 
 lint:
 	@echo "$(BLUE)Linting Go code with golangci-lint...$(NC)"
@@ -221,6 +233,13 @@ install-linter:
 	@echo "$(BLUE)Installing golangci-lint...$(NC)"
 	@GO111MODULE=on go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	@echo "$(GREEN)✓ golangci-lint installed (ensure $HOME/go/bin is in your PATH)$(NC)"
+
+.PHONY: install-formatters
+install-formatters:
+	@echo "$(BLUE)Installing Go formatters (goimports, gofumpt)...$(NC)"
+	@GO111MODULE=on go install golang.org/x/tools/cmd/goimports@latest
+	@GO111MODULE=on go install mvdan.cc/gofumpt@latest
+	@echo "$(GREEN)✓ goimports and gofumpt installed (ensure $HOME/go/bin is in your PATH)$(NC)"
 
 fmt-frontend:
 	@echo "$(BLUE)Formatting frontend code with Biome...$(NC)"

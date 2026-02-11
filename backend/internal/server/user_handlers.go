@@ -4,8 +4,9 @@ package server
 import (
 	"context"
 	"errors"
-	"sanctum/internal/models"
 	"time"
+
+	"sanctum/internal/models"
 
 	"github.com/gofiber/fiber/v2"
 )

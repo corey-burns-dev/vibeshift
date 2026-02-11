@@ -3,6 +3,7 @@ package seed
 import (
 	"errors"
 	"fmt"
+
 	"sanctum/internal/models"
 
 	"gorm.io/gorm"

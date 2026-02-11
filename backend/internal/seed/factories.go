@@ -5,6 +5,7 @@ package seed
 
 import (
 	"fmt"
+
 	"sanctum/internal/models"
 
 	"github.com/brianvoe/gofakeit/v6"

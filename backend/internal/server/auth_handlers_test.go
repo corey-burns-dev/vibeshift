@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"testing"
+
 	"sanctum/internal/config"
 	"sanctum/internal/models"
-	"testing"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"

@@ -19,7 +19,8 @@ type TestUser struct {
 
 func createTestUser(t *testing.T, app interface {
 	Test(req *http.Request, msTimeout ...int) (*http.Response, error)
-}, username, email string) TestUser {
+}, username, email string,
+) TestUser {
 	signupBody := map[string]string{
 		"username": username,
 		"email":    email,

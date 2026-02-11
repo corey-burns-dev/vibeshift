@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+
 	"sanctum/internal/config"
 	"sanctum/internal/database"
 	"sanctum/internal/models"

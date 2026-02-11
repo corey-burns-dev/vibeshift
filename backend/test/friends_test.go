@@ -120,7 +120,8 @@ func TestFriendEndpoints(t *testing.T) {
 // Helper to register user and return token + ID
 func registerUser(t *testing.T, app interface {
 	Test(req *http.Request, msTimeout ...int) (*http.Response, error)
-}, username, email string) (string, uint) {
+}, username, email string,
+) (string, uint) {
 	signupBody := map[string]string{
 		"username": username,
 		"email":    email,

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"sanctum/internal/models"
 
 	"gorm.io/gorm"
@@ -92,7 +93,6 @@ func (r *chatRepository) GetMessages(ctx context.Context, convID uint, limit, of
 		Limit(limit).
 		Offset(offset).
 		Find(&messages).Error
-
 	if err != nil {
 		return nil, err
 	}

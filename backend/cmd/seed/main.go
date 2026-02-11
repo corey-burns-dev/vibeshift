@@ -4,6 +4,7 @@ package main
 import (
 	"flag"
 	"log"
+
 	"sanctum/internal/config"
 	"sanctum/internal/database"
 	"sanctum/internal/seed"

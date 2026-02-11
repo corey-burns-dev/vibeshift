@@ -3,10 +3,11 @@ package server
 
 import (
 	"fmt"
-	"sanctum/internal/models"
-	"sanctum/internal/validation"
 	"strconv"
 	"time"
+
+	"sanctum/internal/models"
+	"sanctum/internal/validation"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"

@@ -6,10 +6,11 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"sanctum/internal/config"
-	"sanctum/internal/server"
 	"syscall"
 	"time"
+
+	"sanctum/internal/config"
+	"sanctum/internal/server"
 
 	"github.com/gofiber/fiber/v2"
 )

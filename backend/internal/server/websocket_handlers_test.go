@@ -2,9 +2,10 @@ package server
 
 import (
 	"context"
+	"testing"
+
 	"sanctum/internal/config"
 	"sanctum/internal/models"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

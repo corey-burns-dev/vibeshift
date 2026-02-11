@@ -2,8 +2,9 @@ package repository
 
 import (
 	"context"
-	"sanctum/internal/models"
 	"testing"
+
+	"sanctum/internal/models"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/sqlite"
