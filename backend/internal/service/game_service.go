@@ -1,0 +1,152 @@
+package service
+
+import (
+	"context"
+	"errors"
+	"log"
+	"time"
+
+	"sanctum/internal/models"
+	"sanctum/internal/repository"
+
+	"gorm.io/gorm"
+)
+
+const pendingRoomMaxIdle = 10 * time.Minute
+
+func isPendingRoomStale(room models.GameRoom, now time.Time) bool {
+	if room.Status != models.GamePending {
+		return false
+	}
+	return now.Sub(room.UpdatedAt) > pendingRoomMaxIdle
+}
+
+type GameService struct {
+	gameRepo repository.GameRepository
+}
+
+func NewGameService(gameRepo repository.GameRepository) *GameService {
+	return &GameService{gameRepo: gameRepo}
+}
+
+func (s *GameService) CreateGameRoom(_ context.Context, userID uint, gameType models.GameType) (*models.GameRoom, bool, error) {
+	existingRooms, err := s.gameRepo.GetActiveRooms(gameType)
+	if err != nil {
+		return nil, false, models.NewInternalError(err)
+	}
+
+	now := time.Now()
+	for _, room := range existingRooms {
+		if room.CreatorID == userID {
+			if isPendingRoomStale(room, now) {
+				room.Status = models.GameCancelled
+				room.OpponentID = nil
+				room.WinnerID = nil
+				room.NextTurnID = 0
+				if updateErr := s.gameRepo.UpdateRoom(&room); updateErr != nil {
+					log.Printf("failed to auto-cancel stale room %d: %v", room.ID, updateErr)
+				}
+				continue
+			}
+
+			return &room, false, nil
+		}
+	}
+
+	room := &models.GameRoom{
+		Type:          gameType,
+		Status:        models.GamePending,
+		CreatorID:     userID,
+		CurrentState:  "{}",
+		Configuration: "{}",
+	}
+	if err := s.gameRepo.CreateRoom(room); err != nil {
+		return nil, false, models.NewInternalError(err)
+	}
+
+	return room, true, nil
+}
+
+func (s *GameService) GetActiveGameRooms(_ context.Context, gameType *models.GameType) ([]models.GameRoom, error) {
+	var (
+		rooms []models.GameRoom
+		err   error
+	)
+
+	if gameType == nil {
+		rooms, err = s.gameRepo.GetAllActiveRooms()
+	} else {
+		rooms, err = s.gameRepo.GetActiveRooms(*gameType)
+	}
+	if err != nil {
+		return nil, models.NewInternalError(err)
+	}
+
+	now := time.Now()
+	filtered := make([]models.GameRoom, 0, len(rooms))
+	for _, room := range rooms {
+		if isPendingRoomStale(room, now) {
+			room.Status = models.GameCancelled
+			room.OpponentID = nil
+			room.WinnerID = nil
+			room.NextTurnID = 0
+			if updateErr := s.gameRepo.UpdateRoom(&room); updateErr != nil {
+				log.Printf("failed to auto-cancel stale room %d: %v", room.ID, updateErr)
+			}
+			continue
+		}
+		filtered = append(filtered, room)
+	}
+
+	return filtered, nil
+}
+
+func (s *GameService) GetGameStats(_ context.Context, userID uint, gameType models.GameType) (*models.GameStats, error) {
+	stats, err := s.gameRepo.GetStats(userID, gameType)
+	if err != nil {
+		return nil, models.NewInternalError(err)
+	}
+	return stats, nil
+}
+
+func (s *GameService) GetGameRoom(_ context.Context, roomID uint) (*models.GameRoom, error) {
+	room, err := s.gameRepo.GetRoom(roomID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, models.NewNotFoundError("GameRoom", roomID)
+		}
+		return nil, models.NewInternalError(err)
+	}
+	return room, nil
+}
+
+func (s *GameService) LeaveGameRoom(_ context.Context, userID, roomID uint) (*models.GameRoom, bool, error) {
+	room, err := s.gameRepo.GetRoom(roomID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, false, models.NewNotFoundError("GameRoom", roomID)
+		}
+		return nil, false, models.NewInternalError(err)
+	}
+
+	isCreator := room.CreatorID == userID
+	isOpponent := room.OpponentID != nil && *room.OpponentID == userID
+	if !isCreator && !isOpponent {
+		return nil, false, models.NewForbiddenError("Not a participant in this room")
+	}
+
+	if room.Status == models.GameFinished || room.Status == models.GameCancelled {
+		return room, true, nil
+	}
+
+	room.Status = models.GameCancelled
+	room.OpponentID = nil
+	room.WinnerID = nil
+	room.NextTurnID = 0
+
+	if err := s.gameRepo.UpdateRoom(room); err != nil {
+		return nil, false, models.NewInternalError(err)
+	}
+
+	return room, false, nil
+}

@@ -206,7 +206,7 @@ func (s *Server) RemoveFriend(c *fiber.Ctx) error {
 		return nil
 	}
 
-	friendship, err := s.friendSvc().RemoveFriend(ctx, userID, targetUserID)
+	_, err = s.friendSvc().RemoveFriend(ctx, userID, targetUserID)
 	if err != nil {
 		status := fiber.StatusInternalServerError
 		if appErr, ok := err.(*models.AppError); ok && appErr.Code == "NOT_FOUND" {

@@ -58,6 +58,8 @@
   - Continued rollout completed for comments via `backend/internal/service/comment_service.go`
   - Continued rollout completed for core chat flows via `backend/internal/service/chat_service.go`
   - Continued rollout completed for user/profile flows via `backend/internal/service/user_service.go`
+  - Continued rollout completed for friendship flows via `backend/internal/service/friend_service.go`
+  - Continued rollout completed for game room orchestration via `backend/internal/service/game_service.go`
 
 - [ ] **Refactor to Use API Contracts as Source of Truth**
   - Generate server stubs from OpenAPI spec
