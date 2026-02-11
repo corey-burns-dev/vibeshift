@@ -1,45 +1,66 @@
-name: OpenAPI Drift Check
+name: OpenAPI Contract Checks
 
 on:
-    pull_request:
-        types: [opened, synchronize, reopened]
-    push:
-        branches: [main, develop]
-    workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
 
 jobs:
-    openapi-drift:
-        name: OpenAPI drift check
-        runs-on: ubuntu-latest
+  openapi-drift-and-sync:
+    name: OpenAPI drift + frontend sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.25"
 
-            - name: Set up Go
-              uses: actions/setup-go@v6
-              with:
-                  go-version: "1.25"
+      - name: Regenerate swagger
+        run: make swagger
 
-                        - name: Install swag
-                            run: |
-                                    go install github.com/swaggo/swag/cmd/swag@v1.8.12
-                                    echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+      - name: Diff generated swagger
+        run: git --no-pager diff --exit-code -- backend/docs/swagger.yaml
 
-            - name: Regenerate swagger
-              run: |
-                  cd backend
-                  $(go env GOPATH)/bin/swag init -g cmd/server/main.go --output ./docs
+      - name: Verify frontend endpoint paths are in OpenAPI
+        run: scripts/check_openapi_frontend_sync.sh
 
-            - name: Diff generated swagger
-              run: |
-                  git --no-pager diff --exit-code -- backend/docs/swagger.yaml
+      - name: Fail with helpful message
+        if: failure()
+        run: |
+          echo "OpenAPI contract checks failed."
+          echo "Run 'make swagger' and 'scripts/check_openapi_frontend_sync.sh' locally, then commit updates."
+          exit 1
 
-            - name: Fail with helpful message
-              if: failure()
-              run: |
-                  echo "OpenAPI/Swagger has drifted from committed backend/docs/swagger.yaml."
-                  echo "Regenerate using 'make swagger' (or run swag init) and commit backend/docs/swagger.yaml."
-                  exit 1
+  openapi-backward-compat:
+    name: OpenAPI backward compatibility
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.25"
+
+      - name: Regenerate swagger
+        run: make swagger
+
+      - name: Fetch base branch
+        run: git fetch --no-tags --depth=1 origin "${{ github.base_ref }}:${{ github.base_ref }}"
+
+      - name: Capture base OpenAPI spec
+        run: git show "${{ github.base_ref }}:backend/docs/swagger.yaml" > /tmp/base-swagger.yaml
+
+      - name: Check backward compatibility
+        run: go run ./backend/cmd/openapi-compat -base /tmp/base-swagger.yaml -revision backend/docs/swagger.yaml

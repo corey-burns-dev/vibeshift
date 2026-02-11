@@ -64,21 +64,25 @@ Historical and point-in-time analyses are in `docs/reports/` and should be treat
 
 ### API Contracts
 
-- [ ] **OpenAPI as source of truth**
-  - Keep backend/frontend contract synchronized
-  - Add backward-compatibility checks
+- [x] **OpenAPI as source of truth**
+  - [x] Add OpenAPI drift guard in CI (`.github/workflows/openapi-drift.yml`)
+  - [x] Keep backend/frontend contract synchronized (automated path coverage check via `scripts/check_openapi_frontend_sync.sh`)
+  - [x] Add backward-compatibility checks against base branch OpenAPI in CI (`backend/cmd/openapi-compat`, wired in `.github/workflows/openapi-drift.yml`)
+  - [x] Document contract-change workflow in contributor docs (`docs/CI_RUNBOOK.md`)
 
 ### Data and Caching
 
-- [ ] **Index and query audit for hot paths**
-- [ ] **Codify caching inventory (key, TTL, invalidation, fallback)**
+- [x] **Index and query audit for hot paths**
+- [x] **Codify caching inventory (key, TTL, invalidation, fallback)**
+  - Canonical guidance: `backend/docs/REDIS_BEST_PRACTICES.md`
+  - Current inventory constants/helpers: `backend/internal/cache/inventory.go`
 
 ### Realtime Reliability
 
-- [ ] **WebSocket scaling guardrails**
-  - Connection limits
-  - Backpressure strategy
-  - Heartbeats and cleanup guarantees
+- [x] **WebSocket scaling guardrails**
+  - Connection limits (`maxConnsPerUser`, `maxTotalConns`) in `backend/internal/notifications/hub.go`
+  - Backpressure strategy (non-blocking sends with drop-on-full behavior) in `backend/internal/notifications/hub.go` and `backend/internal/notifications/client.go`
+  - Heartbeats and cleanup guarantees (ping/pong deadlines, unregister on disconnect) in `backend/internal/notifications/client.go`
 
 ## 🧪 Tier 3: Reliability and Safety Nets
 

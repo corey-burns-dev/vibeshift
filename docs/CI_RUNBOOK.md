@@ -40,6 +40,22 @@ git add backend/docs/swagger.yaml
 
 If swagger changes, include the updated `backend/docs/swagger.yaml` in your PR — CI will run an OpenAPI drift check.
 
+- Validate frontend API paths are still covered by OpenAPI:
+
+```bash
+scripts/check_openapi_frontend_sync.sh
+# or
+make openapi-check
+```
+
+- (PRs) Run backward-compatibility check against base branch OpenAPI:
+
+```bash
+git fetch origin <base-branch>
+git show origin/<base-branch>:backend/docs/swagger.yaml > /tmp/base-swagger.yaml
+go run ./backend/cmd/openapi-compat -base /tmp/base-swagger.yaml -revision backend/docs/swagger.yaml
+```
+
 Notes:
 - CI now includes a fast `go test -short` job that runs early to fail fast on obvious test regressions.
 - Nightly job: `Nightly Go Race Detector` runs `go test -race ./...` against a test Postgres and Redis.
