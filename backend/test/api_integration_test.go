@@ -22,12 +22,9 @@ func setupApp() *fiber.App {
 	if err := os.Setenv("APP_ENV", "test"); err != nil {
 		panic(fmt.Errorf("failed to set env: %w", err))
 	}
-	if err := os.Setenv("DB_HOST", "postgres_test"); err != nil {
-		panic(fmt.Errorf("failed to set DB_HOST env: %w", err))
-	}
-	if err := os.Setenv("DB_PORT", "5432"); err != nil {
-		panic(fmt.Errorf("failed to set DB_PORT env: %w", err))
-	}
+
+	// Leave DB_HOST/DB_PORT to be read from config or environment so
+	// `config.test.yml` can specify localhost/mapped ports for local testing.
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		panic(fmt.Errorf("failed to load config: %w", err))
