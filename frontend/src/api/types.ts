@@ -237,13 +237,15 @@ export type SanctumRequestStatus = 'pending' | 'approved' | 'rejected'
 
 export interface SanctumRequest {
   id: number
-  user_id: number
+  requested_by_user_id: number
+  requested_by_user?: User
   requested_name: string
   requested_slug: string
   reason: string
   status: SanctumRequestStatus
   review_notes?: string
-  reviewed_by?: number
+  reviewed_by_user_id?: number
+  reviewed_by_user?: User
   created_at: string
   updated_at: string
 }

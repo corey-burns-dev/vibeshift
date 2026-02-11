@@ -79,6 +79,9 @@ func splitCamel(s string) []string {
 func (s *Server) isAdmin(c *fiber.Ctx, userID uint) (bool, error) {
 	var user models.User
 	if err := s.db.WithContext(c.Context()).Select("is_admin").First(&user, userID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
 		return false, err
 	}
 	return user.IsAdmin, nil

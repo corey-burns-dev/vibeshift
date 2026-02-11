@@ -24,6 +24,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/gofiber/swagger"
 	"github.com/golang-jwt/jwt/v5"
@@ -115,6 +116,9 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 // SetupMiddleware configures middleware for the Fiber app
 func (s *Server) SetupMiddleware(app *fiber.App) {
+	// Panic recovery
+	app.Use(recover.New())
+
 	// Request ID for tracing
 	app.Use(requestid.New())
 

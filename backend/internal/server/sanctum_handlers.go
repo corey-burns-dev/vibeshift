@@ -236,6 +236,7 @@ func (s *Server) GetMySanctumRequests(c *fiber.Ctx) error {
 
 	var requests []models.SanctumRequest
 	if err := s.db.WithContext(ctx).
+		Preload("ReviewedByUser").
 		Where("requested_by_user_id = ?", userID).
 		Order("created_at DESC").
 		Find(&requests).Error; err != nil {
@@ -457,6 +458,8 @@ func (s *Server) GetAdminSanctumRequests(c *fiber.Ctx) error {
 
 	var requests []models.SanctumRequest
 	if err := s.db.WithContext(ctx).
+		Preload("RequestedByUser").
+		Preload("ReviewedByUser").
 		Where("status = ?", statusEnum).
 		Order("created_at ASC").
 		Find(&requests).Error; err != nil {
