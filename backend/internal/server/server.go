@@ -13,6 +13,7 @@ import (
 	"sanctum/internal/cache"
 	"sanctum/internal/config"
 	"sanctum/internal/database"
+	"sanctum/internal/featureflags"
 	"sanctum/internal/middleware"
 	"sanctum/internal/models"
 	"sanctum/internal/notifications"
@@ -63,6 +64,7 @@ type Server struct {
 	gameHub        *notifications.GameHub
 	videoChatHub   *notifications.VideoChatHub
 	hubs           []wireableHub // all hubs for wiring/shutdown iteration
+	featureFlags   *featureflags.Manager
 }
 
 // NewServer creates a new server instance with all dependencies
@@ -101,6 +103,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		friendRepo:     friendRepo,
 		gameRepo:       gameRepo,
 		streamRepo:     streamRepo,
+		featureFlags:   featureflags.NewManager(cfg.FeatureFlags),
 	}
 
 	if err := seed.Sanctums(db); err != nil {
@@ -323,6 +326,7 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 
 	// Admin routes
 	admin := protected.Group("/admin", s.AdminRequired())
+	admin.Get("/feature-flags", s.GetFeatureFlags)
 	adminSanctumRequests := admin.Group("/sanctum-requests")
 	adminSanctumRequests.Get("/", s.GetAdminSanctumRequests)
 	adminSanctumRequests.Post("/:id/approve", s.ApproveSanctumRequest)

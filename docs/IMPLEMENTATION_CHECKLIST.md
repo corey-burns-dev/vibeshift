@@ -99,5 +99,8 @@ Historical and point-in-time analyses are in `docs/reports/` and should be treat
 
 ### Delivery Safety
 
-- [ ] **Feature flag strategy for controlled rollouts**
+- [x] **Feature flag strategy for controlled rollouts**
+  - Added backend flag manager with boolean and percentage rollout support in `backend/internal/featureflags/manager.go`
+  - Added admin visibility endpoint `GET /api/admin/feature-flags`
+  - Added rollout guidance in `docs/FEATURE_FLAGS.md`
 - [ ] **Rollback-ready deployment process**

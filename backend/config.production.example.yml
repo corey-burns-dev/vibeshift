@@ -13,3 +13,4 @@ DB_NAME: "sanctum_prod"
 # Security
 # ALLOWED_ORIGINS: "https://your-domain.com"
 # JWT_SECRET: "A-VERY-LONG-AND-SECURE-RANDOM-STRING"
+# FEATURE_FLAGS: "new_feed=10%,beta_chat=off"

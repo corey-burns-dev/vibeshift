@@ -16,3 +16,9 @@ REDIS_URL: "localhost:6379"
 
 # JWT Secret for signing tokens
 JWT_SECRET: "your-super-secret-key-that-should-be-long-and-random"
+
+# Feature flags (comma-separated key=value list)
+# Supported values per flag:
+# - on/off
+# - N% rollout by user ID (e.g. new_feed=25%)
+FEATURE_FLAGS: ""

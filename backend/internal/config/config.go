@@ -21,6 +21,7 @@ type Config struct {
 	DBSSLMode      string `mapstructure:"DB_SSLMODE"`
 	RedisURL       string `mapstructure:"REDIS_URL"`
 	AllowedOrigins string `mapstructure:"ALLOWED_ORIGINS"`
+	FeatureFlags   string `mapstructure:"FEATURE_FLAGS"`
 	Env            string `mapstructure:"APP_ENV"`
 	TURNURL        string `mapstructure:"TURN_URL"`
 	TURNUsername   string `mapstructure:"TURN_USERNAME"`
@@ -63,6 +64,7 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("REDIS_URL", "localhost:6379")
 	viper.SetDefault("JWT_SECRET", "your-secret-key-change-in-production")
 	viper.SetDefault("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173")
+	viper.SetDefault("FEATURE_FLAGS", "")
 	viper.SetDefault("APP_ENV", "development")
 	viper.SetDefault("DB_SSLMODE", "disable")
 
