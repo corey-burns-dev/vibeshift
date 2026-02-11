@@ -2,6 +2,7 @@
 GO ?= go
 DOCKER_COMPOSE ?= docker compose
 BUN ?= bun
+SWAG_VERSION ?= v1.8.12
 
 # Environment Orchestration
 ENVIRONMENT ?= dev
@@ -240,9 +241,14 @@ install:
 	@echo "$(GREEN)✓ Dependencies installed$(NC)"
 
 # Swagger documentation
+SWAG_BIN := $(shell $(GO) env GOPATH)/bin/swag
+
+.PHONY: swagger
 swagger:
+	@echo "$(BLUE)Ensuring swag $(SWAG_VERSION) is installed...$(NC)"
+	@GO111MODULE=on $(GO) install github.com/swaggo/swag/cmd/swag@$(SWAG_VERSION)
 	@echo "$(BLUE)Generating Swagger documentation...$(NC)"
-	cd backend && ~/go/bin/swag init -g cmd/server/main.go --output ./docs
+	cd backend && $(SWAG_BIN) init -g cmd/server/main.go --output ./docs
 	@echo "$(GREEN)✓ Swagger docs generated$(NC)"
 
 # Environment setup

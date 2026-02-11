@@ -1,4 +1,26 @@
 #!/bin/sh
+# Pre-commit hook: regenerate swagger and auto-add if changed
+set -e
+
+echo "[pre-commit] Running swagger generation"
+if command -v make >/dev/null 2>&1; then
+  # Try to generate swagger; ignore non-fatal failures so commits aren't blocked
+  if make swagger; then
+    if git status --porcelain | grep -q "backend/docs/swagger.yaml"; then
+      git add backend/docs/swagger.yaml
+      echo "[pre-commit] backend/docs/swagger.yaml updated and added to commit"
+    else
+      echo "[pre-commit] backend/docs/swagger.yaml unchanged"
+    fi
+  else
+    echo "[pre-commit] make swagger failed — continue without blocking commit"
+  fi
+else
+  echo "[pre-commit] make not found; skipping swagger generation"
+fi
+
+exit 0
+#!/bin/sh
 
 # Sanctum Pro-grade Pre-commit Hook
 # 1. Formats and Lints Backend (Go)

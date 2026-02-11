@@ -31,6 +31,10 @@ definitions:
       likes_count:
         description: LikesCount is not persisted; computed at query time
         type: integer
+      sanctum:
+        $ref: '#/definitions/models.Sanctum'
+      sanctum_id:
+        type: integer
       title:
         type: string
       updated_at:
@@ -39,6 +43,27 @@ definitions:
         $ref: '#/definitions/models.User'
       user_id:
         type: integer
+    type: object
+  models.Sanctum:
+    properties:
+      created_at:
+        type: string
+      created_by_user:
+        $ref: '#/definitions/models.User'
+      created_by_user_id:
+        type: integer
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+      status:
+        $ref: '#/definitions/models.SanctumStatus'
+      updated_at:
+        type: string
     type: object
   models.SanctumMembershipRole:
     enum:
