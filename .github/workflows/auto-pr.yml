@@ -67,6 +67,13 @@ jobs:
               exit 0
             fi
 
+            # If GitHub Actions lacks permission to create PRs, exit gracefully with a warning.
+            if echo "$OUTPUT" | grep -qi "is not permitted to create or approve pull requests"; then
+              echo "::warning::GitHub Actions is not permitted to create pull requests in this repo."
+              echo "Please enable 'Allow GitHub Actions to create and approve pull requests' in Settings > Actions > General."
+              exit 0
+            fi
+
             # As a fallback, try to find an open PR for the head.
             EXISTING_URL="$(gh pr list --repo "$REPO" --state open --head "${GITHUB_REPOSITORY_OWNER}:${BRANCH_NAME}" --json url --jq '.[0].url' 2>/dev/null || true)"
             if [ -n "$EXISTING_URL" ]; then
