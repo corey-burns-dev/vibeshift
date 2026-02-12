@@ -19,6 +19,10 @@ type Config struct {
 	DBPassword     string `mapstructure:"DB_PASSWORD"`
 	DBName         string `mapstructure:"DB_NAME"`
 	DBSSLMode      string `mapstructure:"DB_SSLMODE"`
+	DBReadHost     string `mapstructure:"DB_READ_HOST"`
+	DBReadPort     string `mapstructure:"DB_READ_PORT"`
+	DBReadUser     string `mapstructure:"DB_READ_USER"`
+	DBReadPassword string `mapstructure:"DB_READ_PASSWORD"`
 	RedisURL       string `mapstructure:"REDIS_URL"`
 	AllowedOrigins string `mapstructure:"ALLOWED_ORIGINS"`
 	FeatureFlags   string `mapstructure:"FEATURE_FLAGS"`
@@ -61,6 +65,10 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("DB_USER", "user")
 	viper.SetDefault("DB_PASSWORD", "password")
 	viper.SetDefault("DB_NAME", "social_media")
+	viper.SetDefault("DB_READ_HOST", "")
+	viper.SetDefault("DB_READ_PORT", "5432")
+	viper.SetDefault("DB_READ_USER", "user")
+	viper.SetDefault("DB_READ_PASSWORD", "password")
 	viper.SetDefault("REDIS_URL", "localhost:6379")
 	viper.SetDefault("JWT_SECRET", "your-secret-key-change-in-production")
 	viper.SetDefault("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173")

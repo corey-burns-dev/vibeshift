@@ -113,7 +113,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	server.commentService = service.NewCommentService(server.commentRepo, server.postRepo, server.isAdminByUserID)
 	server.chatService = service.NewChatService(server.chatRepo, server.userRepo, server.db, server.isAdminByUserID)
 	server.userService = service.NewUserService(server.userRepo)
-
 	// NOTE: built-in sanctum seeding is intentionally NOT performed here.
 	// Seeding should be explicit during runtime bootstrap (cmd) or test setup.
 

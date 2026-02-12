@@ -7,7 +7,6 @@ import (
 	"sanctum/internal/models"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 // BuiltInSanctum is a permanent system sanctum.
@@ -19,7 +18,8 @@ type BuiltInSanctum struct {
 
 // BuiltInSanctums defines the permanent system sanctums.
 var BuiltInSanctums = []BuiltInSanctum{
-	{Name: "General", Slug: "atrium", Description: "Core discussion for Sanctum."},
+	{Name: "Atrium", Slug: "atrium", Description: "General community discussions."},
+	{Name: "General", Slug: "general", Description: "Core discussion for Sanctum."},
 	{Name: "Herald Announcements", Slug: "herald", Description: "Announcements and platform updates."},
 	{Name: "Support", Slug: "support", Description: "Help and troubleshooting."},
 	{Name: "Movies", Slug: "movies", Description: "Film discussion and recommendations."},
@@ -39,64 +39,67 @@ var BuiltInSanctums = []BuiltInSanctum{
 
 // Sanctums seeds permanent built-in sanctums and their default chat rooms.
 func Sanctums(db *gorm.DB) error {
-	for _, item := range BuiltInSanctums {
-		// Upsert the sanctum first (committed/persisted outside the conversation transaction)
-		sanctum := models.Sanctum{
-			Name:        item.Name,
-			Slug:        item.Slug,
-			Description: item.Description,
-			Status:      models.SanctumStatusActive,
-		}
+	return db.Transaction(func(tx *gorm.DB) error {
+		for _, item := range BuiltInSanctums {
+			var sanctum models.Sanctum
 
-		if err := db.Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "slug"}},
-			DoUpdates: clause.AssignmentColumns([]string{"name", "description", "status", "updated_at"}),
-		}).Create(&sanctum).Error; err != nil {
-			return fmt.Errorf("seed built-in sanctum %s: %w", item.Slug, err)
-		}
+			// Try to find existing sanctum first
+			err := tx.Where("slug = ?", item.Slug).First(&sanctum).Error
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					// Create new
+					sanctum = models.Sanctum{
+						Name:        item.Name,
+						Slug:        item.Slug,
+						Description: item.Description,
+						Status:      models.SanctumStatusActive,
+					}
+					if err := tx.Create(&sanctum).Error; err != nil {
+						return fmt.Errorf("failed to create sanctum %s: %w", item.Slug, err)
+					}
+				} else {
+					return err
+				}
+			} else {
+				// Update existing
+				sanctum.Name = item.Name
+				sanctum.Description = item.Description
+				sanctum.Status = models.SanctumStatusActive
+				if err := tx.Save(&sanctum).Error; err != nil {
+					return fmt.Errorf("failed to update sanctum %s: %w", item.Slug, err)
+				}
+			}
 
-		// Reload to get the persisted ID
-		if err := db.Where("slug = ?", item.Slug).First(&sanctum).Error; err != nil {
-			return fmt.Errorf("seed built-in sanctum %s: %w", item.Slug, err)
-		}
-
-		// Create or update the conversation in its own transaction so the FK references a committed sanctum
-		err := db.Transaction(func(tx *gorm.DB) error {
+			// Check for existing conversation
 			var existing models.Conversation
 			queryErr := tx.Where("sanctum_id = ?", sanctum.ID).First(&existing).Error
-			switch {
-			case queryErr == nil:
+
+			if queryErr == nil {
+				// Update existing conversation name if needed
 				if existing.Name != sanctum.Name {
-					updateErr := tx.Model(&models.Conversation{}).Where("id = ?", existing.ID).Update("name", sanctum.Name).Error
-					if updateErr != nil {
-						return updateErr
+					if err := tx.Model(&existing).Update("name", sanctum.Name).Error; err != nil {
+						return err
 					}
 				}
-				return nil
-			case !errors.Is(queryErr, gorm.ErrRecordNotFound):
+				continue
+			}
+
+			if !errors.Is(queryErr, gorm.ErrRecordNotFound) {
 				return queryErr
 			}
 
-			// Create conversation without sanctum_id first to avoid FK timing issues,
-			// then set sanctum_id in a separate update.
+			// Create new conversation
+			sid := sanctum.ID
 			conv := models.Conversation{
 				Name:      sanctum.Name,
 				IsGroup:   true,
 				CreatedBy: 0,
-				SanctumID: nil,
+				SanctumID: &sid,
 			}
 			if err := tx.Create(&conv).Error; err != nil {
-				return err
+				return fmt.Errorf("failed to create conversation for sanctum %s (ID: %d): %w", item.Slug, sid, err)
 			}
-			if err := tx.Model(&conv).Where("id = ?", conv.ID).Update("sanctum_id", sanctum.ID).Error; err != nil {
-				return err
-			}
-			return nil
-		})
-		if err != nil {
-			return fmt.Errorf("seed built-in sanctum %s: %w", item.Slug, err)
 		}
-	}
-
-	return nil
+		return nil
+	})
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"sanctum/internal/cache"
+	"sanctum/internal/database"
 	"sanctum/internal/models"
 	"sanctum/internal/observability"
 
@@ -48,6 +50,7 @@ func (r *chatRepository) CreateConversation(ctx context.Context, conv *models.Co
 		r.logger.LogError(ctx, err, "create_conversation")
 		return err
 	}
+	cache.InvalidateRoom(ctx, conv.ID)
 	r.logger.LogCreate(ctx, map[string]interface{}{"conversation_id": conv.ID})
 	return nil
 }
@@ -55,13 +58,22 @@ func (r *chatRepository) CreateConversation(ctx context.Context, conv *models.Co
 func (r *chatRepository) GetConversation(ctx context.Context, id uint) (*models.Conversation, error) {
 	start := time.Now()
 	var conv models.Conversation
-	err := r.db.WithContext(ctx).
-		Preload("Participants").
-		Preload("Messages", func(db *gorm.DB) *gorm.DB {
-			return db.Order("created_at ASC").Limit(50)
-		}).
-		Preload("Messages.Sender").
-		First(&conv, id).Error
+	key := cache.RoomKey(id)
+
+	err := cache.Aside(ctx, key, &conv, cache.MessageHistoryTTL, func() error {
+		readDB := database.GetReadDB()
+		if readDB == nil {
+			readDB = r.db
+		}
+		err := readDB.WithContext(ctx).
+			Preload("Participants").
+			Preload("Messages", func(db *gorm.DB) *gorm.DB {
+				return db.Order("created_at ASC").Limit(50)
+			}).
+			Preload("Messages.Sender").
+			First(&conv, id).Error
+		return err
+	})
 	defer func() {
 		observability.DatabaseQueryLatency.WithLabelValues("read", "conversations").Observe(time.Since(start).Seconds())
 	}()
@@ -76,7 +88,11 @@ func (r *chatRepository) GetConversation(ctx context.Context, id uint) (*models.
 func (r *chatRepository) GetUserConversations(ctx context.Context, userID uint) ([]*models.Conversation, error) {
 	start := time.Now()
 	var conversations []*models.Conversation
-	err := r.db.WithContext(ctx).
+	readDB := database.GetReadDB()
+	if readDB == nil {
+		readDB = r.db
+	}
+	err := readDB.WithContext(ctx).
 		Joins("JOIN conversation_participants cp ON conversations.id = cp.conversation_id").
 		Where("cp.user_id = ?", userID).
 		Select("conversations.*, COALESCE(cp.unread_count, 0) as unread_count").
@@ -112,6 +128,7 @@ func (r *chatRepository) AddParticipant(ctx context.Context, convID, userID uint
 		r.logger.LogError(ctx, err, "add_participant")
 		return err
 	}
+	cache.InvalidateRoom(ctx, convID)
 	r.logger.LogCreate(ctx, map[string]interface{}{"conversation_id": convID, "user_id": userID})
 	return nil
 }
@@ -126,6 +143,7 @@ func (r *chatRepository) RemoveParticipant(ctx context.Context, convID, userID u
 		r.logger.LogError(ctx, err, "remove_participant")
 		return err
 	}
+	cache.InvalidateRoom(ctx, convID)
 	r.logger.LogDelete(ctx, map[string]interface{}{"conversation_id": convID, "user_id": userID})
 	return nil
 }
@@ -140,6 +158,7 @@ func (r *chatRepository) CreateMessage(ctx context.Context, msg *models.Message)
 		r.logger.LogError(ctx, err, "create_message")
 		return err
 	}
+	cache.InvalidateRoom(ctx, msg.ConversationID)
 	r.logger.LogCreate(ctx, map[string]interface{}{"message_id": msg.ID, "conversation_id": msg.ConversationID})
 	return nil
 }
@@ -147,13 +166,30 @@ func (r *chatRepository) CreateMessage(ctx context.Context, msg *models.Message)
 func (r *chatRepository) GetMessages(ctx context.Context, convID uint, limit, offset int) ([]*models.Message, error) {
 	start := time.Now()
 	var messages []*models.Message
-	err := r.db.WithContext(ctx).
-		Where("conversation_id = ?", convID).
-		Preload("Sender").
-		Order("created_at DESC").
-		Limit(limit).
-		Offset(offset).
-		Find(&messages).Error
+	histKey := cache.MessageHistoryKey(convID)
+
+	type messagesResult struct {
+		Messages []*models.Message `json:"messages"`
+	}
+
+	result := &messagesResult{}
+	err := cache.Aside(ctx, histKey, result, cache.MessageHistoryTTL, func() error {
+		readDB := database.GetReadDB()
+		if readDB == nil {
+			readDB = r.db
+		}
+		err := readDB.WithContext(ctx).
+			Where("conversation_id = ?", convID).
+			Preload("Sender").
+			Order("created_at DESC").
+			Limit(limit).
+			Offset(offset).
+			Find(&messages).Error
+		if err == nil {
+			result.Messages = messages
+		}
+		return err
+	})
 	defer func() {
 		observability.DatabaseQueryLatency.WithLabelValues("read", "messages").Observe(time.Since(start).Seconds())
 	}()
@@ -162,6 +198,7 @@ func (r *chatRepository) GetMessages(ctx context.Context, convID uint, limit, of
 		return nil, err
 	}
 
+	messages = result.Messages
 	for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
 		messages[i], messages[j] = messages[j], messages[i]
 	}

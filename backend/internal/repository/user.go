@@ -1,4 +1,3 @@
-// Package repository provides data access layer implementations for the application.
 package repository
 
 import (
@@ -6,12 +5,12 @@ import (
 	"errors"
 
 	"sanctum/internal/cache"
+	"sanctum/internal/database"
 	"sanctum/internal/models"
 
 	"gorm.io/gorm"
 )
 
-// UserRepository defines the interface for user data operations
 type UserRepository interface {
 	GetByID(ctx context.Context, id uint) (*models.User, error)
 	GetByIDWithPosts(ctx context.Context, id uint, limit int) (*models.User, error)
@@ -23,12 +22,10 @@ type UserRepository interface {
 	List(ctx context.Context, limit, offset int) ([]models.User, error)
 }
 
-// userRepository implements UserRepository
 type userRepository struct {
 	db *gorm.DB
 }
 
-// NewUserRepository creates a new user repository
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
 }
@@ -38,7 +35,11 @@ func (r *userRepository) GetByID(ctx context.Context, id uint) (*models.User, er
 	key := cache.UserKey(id)
 
 	err := cache.Aside(ctx, key, &user, cache.UserTTL, func() error {
-		if err := r.db.WithContext(ctx).First(&user, id).Error; err != nil {
+		readDB := database.GetReadDB()
+		if readDB == nil {
+			readDB = r.db
+		}
+		if err := readDB.WithContext(ctx).First(&user, id).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return models.NewNotFoundError("User", id)
 			}
@@ -53,18 +54,20 @@ func (r *userRepository) GetByID(ctx context.Context, id uint) (*models.User, er
 	return &user, nil
 }
 
-// GetByIDWithPosts retrieves a user with a limited number of their posts
-// Use this when you need to display user posts to avoid N+1 queries
 func (r *userRepository) GetByIDWithPosts(ctx context.Context, id uint, limit int) (*models.User, error) {
 	var user models.User
 	if limit <= 0 {
-		limit = 10 // Default to 10 posts if not specified
+		limit = 10
 	}
 	if limit > 100 {
-		limit = 100 // Maximum 100 posts to prevent abuse
+		limit = 100
 	}
 
-	if err := r.db.WithContext(ctx).
+	readDB := database.GetReadDB()
+	if readDB == nil {
+		readDB = r.db
+	}
+	if err := readDB.WithContext(ctx).
 		Preload("Posts", func(db *gorm.DB) *gorm.DB {
 			return db.Order("created_at DESC").Limit(limit)
 		}).
@@ -79,9 +82,13 @@ func (r *userRepository) GetByIDWithPosts(ctx context.Context, id uint, limit in
 
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
-	if err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
+	readDB := database.GetReadDB()
+	if readDB == nil {
+		readDB = r.db
+	}
+	if err := readDB.WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil // Return nil for not found, not an error
+			return nil, nil
 		}
 		return nil, models.NewInternalError(err)
 	}
@@ -90,7 +97,11 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*models.
 
 func (r *userRepository) GetByUsername(ctx context.Context, username string) (*models.User, error) {
 	var user models.User
-	if err := r.db.WithContext(ctx).Where("username = ?", username).First(&user).Error; err != nil {
+	readDB := database.GetReadDB()
+	if readDB == nil {
+		readDB = r.db
+	}
+	if err := readDB.WithContext(ctx).Where("username = ?", username).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
@@ -110,7 +121,7 @@ func (r *userRepository) Update(ctx context.Context, user *models.User) error {
 	if err := r.db.WithContext(ctx).Save(user).Error; err != nil {
 		return models.NewInternalError(err)
 	}
-	cache.Invalidate(ctx, cache.UserKey(user.ID))
+	cache.InvalidateUser(ctx, user.ID)
 	return nil
 }
 
@@ -118,13 +129,17 @@ func (r *userRepository) Delete(ctx context.Context, id uint) error {
 	if err := r.db.WithContext(ctx).Delete(&models.User{}, id).Error; err != nil {
 		return models.NewInternalError(err)
 	}
-	cache.Invalidate(ctx, cache.UserKey(id))
+	cache.InvalidateUser(ctx, id)
 	return nil
 }
 
 func (r *userRepository) List(ctx context.Context, limit, offset int) ([]models.User, error) {
 	var users []models.User
-	if err := r.db.WithContext(ctx).Limit(limit).Offset(offset).Find(&users).Error; err != nil {
+	readDB := database.GetReadDB()
+	if readDB == nil {
+		readDB = r.db
+	}
+	if err := readDB.WithContext(ctx).Limit(limit).Offset(offset).Find(&users).Error; err != nil {
 		return nil, models.NewInternalError(err)
 	}
 	return users, nil

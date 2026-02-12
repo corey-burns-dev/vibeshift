@@ -5,13 +5,18 @@ package test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sanctum/internal/models"
 	"sanctum/internal/seed"
 	"testing"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -69,6 +74,31 @@ func createEphemeralDB(t *testing.T) (pgEnv, string) {
 	})
 
 	return cfg, dbName
+}
+
+func runMigrations(t *testing.T, cfg pgEnv, dbName string) {
+	t.Helper()
+	bootstrapDB := openEphemeralGorm(t, cfg, dbName)
+	if err := bootstrapDB.AutoMigrate(&models.User{}, &models.Conversation{}); err != nil {
+		t.Fatalf("bootstrap core tables: %v", err)
+	}
+
+	migrationsPath, err := filepath.Abs("../internal/database/migrations")
+	if err != nil {
+		t.Fatalf("resolve migrations path: %v", err)
+	}
+
+	m, err := migrate.New("file://"+migrationsPath, maintenanceDSN(cfg, dbName))
+	if err != nil {
+		t.Fatalf("create migrate client: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = m.Close()
+	})
+
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		t.Fatalf("run migrations up: %v", err)
+	}
 }
 
 func openEphemeralGorm(t *testing.T, cfg pgEnv, dbName string) *gorm.DB {

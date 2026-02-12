@@ -12,7 +12,7 @@ import (
 )
 
 func TestSanctumMembershipsBulkAndMe(t *testing.T) {
-	app := newSanctumTestApp(t)
+	app := newSanctumTestAppWithSeeding(t)
 	user := signupSanctumUser(t, app, "membership_user")
 	other := signupSanctumUser(t, app, "membership_other")
 

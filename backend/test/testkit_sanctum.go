@@ -12,6 +12,8 @@ import (
 
 	"sanctum/internal/bootstrap"
 	"sanctum/internal/config"
+	"sanctum/internal/database"
+	"sanctum/internal/seed"
 	"sanctum/internal/server"
 
 	"github.com/gofiber/fiber/v2"
@@ -85,6 +87,19 @@ func newSanctumTestAppWithDB(t *testing.T) (*fiber.App, *gorm.DB) {
 	srv.SetupMiddleware(app)
 	srv.SetupRoutes(app)
 	return app, db
+}
+
+// newSanctumTestAppWithSeeding creates a test app and seeds built-in sanctums.
+func newSanctumTestAppWithSeeding(t *testing.T) *fiber.App {
+	t.Helper()
+	app := newSanctumTestApp(t)
+
+	// Seed built-in sanctums using the package-level DB from bootstrap
+	if err := seed.Sanctums(database.DB); err != nil {
+		t.Fatalf("seed sanctums: %v", err)
+	}
+
+	return app
 }
 
 func signupSanctumUser(t *testing.T, app *fiber.App, prefix string) authUser {

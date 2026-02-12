@@ -1,0 +1,227 @@
+\033[1;34mRunning backend tests...\033[0m 
+make test-up
+make[1]: Entering directory '/home/cburns/apps/sanctum'
+docker compose -f compose.yml -f compose.override.yml up -d postgres_test redis
+ Container sanctum-redis-1 Running 
+ Container sanctum-postgres_test-1 Running 
+make[1]: Leaving directory '/home/cburns/apps/sanctum'
+\033[1;34mWaiting for test database...\033[0m 
+cd backend && APP_ENV=test go test ./...
+?   	sanctum/cmd/admin	[no test files]
+?   	sanctum/cmd/chattest	[no test files]
+?   	sanctum/cmd/debug_fk	[no test files]
+?   	sanctum/cmd/debug_schema	[no test files]
+?   	sanctum/cmd/debug_specific_fk	[no test files]
+?   	sanctum/cmd/e2e	[no test files]
+?   	sanctum/cmd/e2eclient	[no test files]
+?   	sanctum/cmd/find_constraint	[no test files]
+?   	sanctum/cmd/list_all_constraints	[no test files]
+?   	sanctum/cmd/migrate	[no test files]
+?   	sanctum/cmd/nuke_db	[no test files]
+?   	sanctum/cmd/openapi-compat	[no test files]
+# github.com/mattn/go-sqlite3
+sqlite3-binding.c: In function ‘sqlite3ShadowTableName’:
+sqlite3-binding.c:125566:9: warning: assignment discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+125566 |   zTail = strrchr(zName, '_');
+       |         ^
+sqlite3-binding.c: In function ‘unistrFunc’:
+sqlite3-binding.c:131584:15: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+131584 |     char *z = strchr(&zIn[i],'\\');
+       |               ^~~~~~
+?   	sanctum/cmd/seed	[no test files]
+?   	sanctum/cmd/server	[no test files]
+?   	sanctum/docs	[no test files]
+?   	sanctum/internal/cache	[no test files]
+?   	sanctum/internal/config	[no test files]
+?   	sanctum/internal/database	[no test files]
+ok  	sanctum/internal/featureflags	(cached)
+ok  	sanctum/internal/middleware	(cached)
+?   	sanctum/internal/models	[no test files]
+ok  	sanctum/internal/notifications	(cached)
+?   	sanctum/internal/observability	[no test files]
+ok  	sanctum/internal/repository	0.564s
+ok  	sanctum/internal/seed	0.014s
+ok  	sanctum/internal/server	0.226s
+ok  	sanctum/internal/service	0.013s
+ok  	sanctum/internal/validation	(cached)
+time=2026-02-11T19:59:48.495-05:00 level=INFO msg="Observability metrics initialized"
+2026/02/11 19:59:48 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:48.501-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:48.543-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:48 Redis connected successfully
+time=2026-02-11T19:59:48.590-05:00 level=INFO msg="request processed" status=200 method=GET path=/health/live ip=0.0.0.0 latency=25.12µs user_agent="" request_id=5ece0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:48.590-05:00 level=INFO msg="request processed" status=200 method=GET path=/health/ready ip=0.0.0.0 latency=303.41µs user_agent="" request_id=5fce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:48.591-05:00 level=INFO msg="request processed" status=200 method=GET path=/health ip=0.0.0.0 latency=145.08µs user_agent="" request_id=60ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+2026/02/11 19:59:48 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:48.595-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:48.635-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:48 Redis connected successfully
+time=2026-02-11T19:59:48.696-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=60.042241ms user_agent="" request_id=61ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:48.749-05:00 level=INFO msg="request processed" status=200 method=POST path=/api/auth/login ip=0.0.0.0 latency=52.691854ms user_agent="" request_id=62ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+2026/02/11 19:59:48 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:48.753-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:48.795-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:48 Redis connected successfully
+time=2026-02-11T19:59:48.850-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=52.822414ms user_agent="" request_id=63ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:48.899-05:00 level=INFO msg="request processed" status=200 method=POST path=/api/auth/login ip=0.0.0.0 latency=48.885225ms user_agent="" request_id=64ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:48.907-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/posts/ ip=0.0.0.0 latency=8.092308ms user_agent="" request_id=65ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=86
+time=2026-02-11T19:59:48.913-05:00 level=INFO msg="request processed" status=200 method=POST path=/api/posts/15/like ip=0.0.0.0 latency=5.952438ms user_agent="" request_id=66ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=86
+time=2026-02-11T19:59:48.919-05:00 level=INFO msg="request processed" status=200 method=DELETE path=/api/posts/15/like ip=0.0.0.0 latency=5.542998ms user_agent="" request_id=67ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=86
+time=2026-02-11T19:59:48.925-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/posts/15/comments ip=0.0.0.0 latency=6.288708ms user_agent="" request_id=68ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=86
+time=2026-02-11T19:59:48.927-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/posts/15/comments ip=0.0.0.0 latency=1.21736ms user_agent="" request_id=69ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:48.927-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/posts/ ip=0.0.0.0 latency=671.829µs user_agent="" request_id=6ace0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:48.928-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/users/86 ip=0.0.0.0 latency=810.03µs user_agent="" request_id=6bce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=86
+2026/02/11 19:59:48 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:48.932-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:48.973-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:48 Redis connected successfully
+time=2026-02-11T19:59:49.033-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=58.286922ms user_agent="" request_id=6cce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:49.034-05:00 level=INFO msg="request processed" status=200 method=POST path=/api/auth/refresh ip=0.0.0.0 latency=1.01994ms user_agent="" request_id=6dce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:49.034-05:00 level=INFO msg="request processed" status=401 method=POST path=/api/auth/refresh ip=0.0.0.0 latency=118.07µs user_agent="" request_id=6ece0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:49.034-05:00 level=INFO msg="request processed" status=200 method=POST path=/api/auth/logout ip=0.0.0.0 latency=169.64µs user_agent="" request_id=6fce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:49.035-05:00 level=INFO msg="request processed" status=401 method=GET path=/api/users/me ip=0.0.0.0 latency=98.18µs user_agent="" request_id=70ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:49.035-05:00 level=INFO msg="request processed" status=401 method=POST path=/api/auth/refresh ip=0.0.0.0 latency=88.24µs user_agent="" request_id=71ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+2026/02/11 19:59:49 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:49.038-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:49.080-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:49 Redis connected successfully
+time=2026-02-11T19:59:49.139-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=57.910043ms user_agent="" request_id=72ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:49.192-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=52.121355ms user_agent="" request_id=73ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:49.245-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=52.852274ms user_agent="" request_id=74ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+{"time":"2026-02-11T19:59:49.25388937-05:00","level":"INFO","msg":"repository create","table":"conversations","operation":"create","correlation_id":"","conversation_id":28}
+{"time":"2026-02-11T19:59:49.258791728-05:00","level":"INFO","msg":"repository create","table":"conversations","operation":"create","correlation_id":"","conversation_id":28,"user_id":88}
+{"time":"2026-02-11T19:59:49.263154597-05:00","level":"INFO","msg":"repository create","table":"conversations","operation":"create","correlation_id":"","conversation_id":28,"user_id":89}
+{"time":"2026-02-11T19:59:49.265309676-05:00","level":"INFO","msg":"repository read","table":"conversations","operation":"read","correlation_id":"","conversation_id":28}
+time=2026-02-11T19:59:49.265-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/conversations ip=0.0.0.0 latency=19.365184ms user_agent="" request_id=75ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=88
+{"time":"2026-02-11T19:59:49.265706926-05:00","level":"INFO","msg":"repository read","table":"conversations","operation":"read","correlation_id":"","conversation_id":28}
+{"time":"2026-02-11T19:59:49.270669285-05:00","level":"INFO","msg":"repository create","table":"conversations","operation":"create","correlation_id":"","message_id":6,"conversation_id":28}
+2026/02/11 19:59:49 ChatHub: No active users in conversation 28
+time=2026-02-11T19:59:49.271-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/conversations/28/messages ip=0.0.0.0 latency=5.709868ms user_agent="" request_id=76ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=88
+{"time":"2026-02-11T19:59:49.272583314-05:00","level":"INFO","msg":"repository read","table":"conversations","operation":"read","correlation_id":"","conversation_id":28}
+{"time":"2026-02-11T19:59:49.273136264-05:00","level":"INFO","msg":"repository read","table":"conversations","operation":"read","correlation_id":"","conversation_id":28,"count":1}
+time=2026-02-11T19:59:49.273-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/conversations/28/messages ip=0.0.0.0 latency=1.84048ms user_agent="" request_id=77ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=89
+{"time":"2026-02-11T19:59:49.277716412-05:00","level":"INFO","msg":"repository create","table":"conversations","operation":"create","correlation_id":"","conversation_id":29}
+{"time":"2026-02-11T19:59:49.282105881-05:00","level":"INFO","msg":"repository create","table":"conversations","operation":"create","correlation_id":"","user_id":90,"conversation_id":29}
+{"time":"2026-02-11T19:59:49.28642796-05:00","level":"INFO","msg":"repository create","table":"conversations","operation":"create","correlation_id":"","conversation_id":29,"user_id":88}
+{"time":"2026-02-11T19:59:49.290821378-05:00","level":"INFO","msg":"repository create","table":"conversations","operation":"create","correlation_id":"","conversation_id":29,"user_id":89}
+{"time":"2026-02-11T19:59:49.291857418-05:00","level":"INFO","msg":"repository read","table":"conversations","operation":"read","correlation_id":"","conversation_id":29}
+time=2026-02-11T19:59:49.291-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/conversations ip=0.0.0.0 latency=18.616944ms user_agent="" request_id=78ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=90
+2026/02/11 19:59:49 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:49.296-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:49.333-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:49 Redis connected successfully
+time=2026-02-11T19:59:49.388-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=53.278133ms user_agent="" request_id=79ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:49.389-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/users/me ip=0.0.0.0 latency=659.66µs user_agent="" request_id=7ace0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=91
+time=2026-02-11T19:59:49.394-05:00 level=INFO msg="request processed" status=200 method=PUT path=/api/users/me ip=0.0.0.0 latency=4.858689ms user_agent="" request_id=7bce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=91
+2026/02/11 19:59:49 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:49.398-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:49.439-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:49 Redis connected successfully
+time=2026-02-11T19:59:49.493-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=53.361834ms user_agent="" request_id=7cce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:49.501-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/posts/ ip=0.0.0.0 latency=7.400818ms user_agent="" request_id=7dce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=92
+time=2026-02-11T19:59:49.501-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/posts/16 ip=0.0.0.0 latency=414.78µs user_agent="" request_id=7ece0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:49.507-05:00 level=INFO msg="request processed" status=200 method=PUT path=/api/posts/16 ip=0.0.0.0 latency=5.274578ms user_agent="" request_id=7fce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=92
+time=2026-02-11T19:59:49.512-05:00 level=INFO msg="request processed" status=204 method=DELETE path=/api/posts/16 ip=0.0.0.0 latency=5.266988ms user_agent="" request_id=80ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=92
+time=2026-02-11T19:59:49.513-05:00 level=INFO msg="request processed" status=404 method=GET path=/api/posts/16 ip=0.0.0.0 latency=312.49µs user_agent="" request_id=81ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+2026/02/11 19:59:49 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:49.517-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:49.560-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:49 Redis connected successfully
+time=2026-02-11T19:59:49.617-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=55.645033ms user_agent="" request_id=82ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:49.669-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=52.148964ms user_agent="" request_id=83ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:49.721-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=52.159674ms user_agent="" request_id=84ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:49.729-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/friends/requests/94 ip=0.0.0.0 latency=7.417118ms user_agent="" request_id=85ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=93
+time=2026-02-11T19:59:49.730-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/friends/requests/sent ip=0.0.0.0 latency=728.24µs user_agent="" request_id=86ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=93
+time=2026-02-11T19:59:49.731-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/friends/requests ip=0.0.0.0 latency=645.33µs user_agent="" request_id=87ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=94
+time=2026-02-11T19:59:49.736-05:00 level=INFO msg="request processed" status=200 method=POST path=/api/friends/requests/8/accept ip=0.0.0.0 latency=5.495008ms user_agent="" request_id=88ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=94
+time=2026-02-11T19:59:49.737-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/friends ip=0.0.0.0 latency=656.5µs user_agent="" request_id=89ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=93
+time=2026-02-11T19:59:49.744-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/friends/requests/95 ip=0.0.0.0 latency=6.785118ms user_agent="" request_id=8ace0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=93
+time=2026-02-11T19:59:49.749-05:00 level=INFO msg="request processed" status=204 method=POST path=/api/friends/requests/9/reject ip=0.0.0.0 latency=5.533529ms user_agent="" request_id=8bce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=95
+2026/02/11 19:59:49 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:49.753-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:49.798-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:49 Redis connected successfully
+time=2026-02-11T19:59:49.854-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=55.071283ms user_agent="" request_id=8cce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:49.908-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=52.807484ms user_agent="" request_id=8dce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:49.920-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/sanctums/requests ip=0.0.0.0 latency=7.531308ms user_agent="" request_id=8ece0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=96
+time=2026-02-11T19:59:49.922-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/admin/sanctum-requests ip=0.0.0.0 latency=1.321499ms user_agent="" request_id=8fce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=97
+2026/02/11 19:59:49 DEBUG: Created sanctum ID: 24, exists in tx: true
+time=2026-02-11T19:59:49.930-05:00 level=INFO msg="request processed" status=200 method=POST path=/api/admin/sanctum-requests/23/approve ip=0.0.0.0 latency=8.387817ms user_agent="" request_id=90ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=97
+time=2026-02-11T19:59:49.932-05:00 level=ERROR msg="GORM query error" sql="INSERT INTO \"posts\" (\"title\",\"content\",\"image_url\",\"user_id\",\"sanctum_id\",\"created_at\",\"updated_at\",\"deleted_at\") VALUES ('First Post in New Sanctum','Hello world from my new sanctum!','',96,24,'2026-02-11 19:59:49.93','2026-02-11 19:59:49.93',NULL) RETURNING \"id\"" rows=0 elapsed=1.45892ms error="ERROR: insert or update on table \"posts\" violates foreign key constraint \"fk_posts_sanctum\" (SQLSTATE 23503)" request_id=91ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=96
+time=2026-02-11T19:59:49.932-05:00 level=INFO msg="request processed" status=500 method=POST path=/api/posts ip=0.0.0.0 latency=1.65701ms user_agent="" request_id=91ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=96
+--- FAIL: TestSanctumRequestApprovalAndPostingFlow (0.18s)
+    sanctum_flow_e2e_test.go:114: expected 201 Created for post, got 500
+2026/02/11 19:59:50 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:50.870-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:50.912-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:50 Redis connected successfully
+2026/02/11 19:59:50 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:50.949-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:50.990-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:50 Redis connected successfully
+time=2026-02-11T19:59:51.059-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=53.285344ms user_agent="" request_id=92ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:51.112-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=52.840804ms user_agent="" request_id=93ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:51.112-05:00 level=INFO msg="request processed" status=401 method=GET path=/api/sanctums/memberships/me ip=0.0.0.0 latency=10.66µs user_agent="" request_id=94ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:51.112-05:00 level=INFO msg="request processed" status=401 method=POST path=/api/sanctums/memberships/bulk ip=0.0.0.0 latency=4.46µs user_agent="" request_id=95ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:51.119-05:00 level=INFO msg="request processed" status=200 method=POST path=/api/sanctums/memberships/bulk ip=0.0.0.0 latency=7.333638ms user_agent="" request_id=96ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=99
+time=2026-02-11T19:59:51.125-05:00 level=INFO msg="request processed" status=200 method=POST path=/api/sanctums/memberships/bulk ip=0.0.0.0 latency=5.804109ms user_agent="" request_id=97ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=98
+time=2026-02-11T19:59:51.126-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/sanctums/memberships/me ip=0.0.0.0 latency=925.349µs user_agent="" request_id=98ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=98
+time=2026-02-11T19:59:51.132-05:00 level=INFO msg="request processed" status=200 method=POST path=/api/sanctums/memberships/bulk ip=0.0.0.0 latency=5.240639ms user_agent="" request_id=99ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=98
+time=2026-02-11T19:59:51.132-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/sanctums/memberships/me ip=0.0.0.0 latency=668.29µs user_agent="" request_id=9ace0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=98
+2026/02/11 19:59:51 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:51.137-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:51.176-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:51 Redis connected successfully
+time=2026-02-11T19:59:51.192-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/sanctums ip=0.0.0.0 latency=989.839µs user_agent="" request_id=9bce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:51.203-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/sanctums ip=0.0.0.0 latency=585.89µs user_agent="" request_id=9cce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+2026/02/11 19:59:51 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:51.207-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:51.252-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:51 Redis connected successfully
+time=2026-02-11T19:59:51.307-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=53.648574ms user_agent="" request_id=9dce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:51.307-05:00 level=INFO msg="request processed" status=401 method=POST path=/api/sanctums/requests ip=0.0.0.0 latency=8.75µs user_agent="" request_id=9ece0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:51.314-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/sanctums/requests ip=0.0.0.0 latency=6.590998ms user_agent="" request_id=9fce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=100
+time=2026-02-11T19:59:51.314-05:00 level=INFO msg="request processed" status=409 method=POST path=/api/sanctums/requests ip=0.0.0.0 latency=531.26µs user_agent="" request_id=a0ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=100
+2026/02/11 19:59:51 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:51.318-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:51.360-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:51 Redis connected successfully
+time=2026-02-11T19:59:51.417-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=55.394713ms user_agent="" request_id=a1ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:51.474-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=56.818063ms user_agent="" request_id=a2ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:51.481-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/sanctums/requests ip=0.0.0.0 latency=7.036268ms user_agent="" request_id=a3ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=101
+time=2026-02-11T19:59:51.486-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/sanctums/requests ip=0.0.0.0 latency=4.935868ms user_agent="" request_id=a4ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=102
+time=2026-02-11T19:59:51.486-05:00 level=INFO msg="request processed" status=401 method=GET path=/api/sanctums/requests/me ip=0.0.0.0 latency=8.83µs user_agent="" request_id=a5ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:51.487-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/sanctums/requests/me ip=0.0.0.0 latency=943.68µs user_agent="" request_id=a6ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=101
+2026/02/11 19:59:51 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:51.492-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:51.534-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:51 Redis connected successfully
+time=2026-02-11T19:59:51.590-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=55.471963ms user_agent="" request_id=a7ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:51.646-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=54.997734ms user_agent="" request_id=a8ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:51.657-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/sanctums/requests ip=0.0.0.0 latency=6.969708ms user_agent="" request_id=a9ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=103
+time=2026-02-11T19:59:51.658-05:00 level=INFO msg="request processed" status=401 method=GET path=/api/admin/sanctum-requests ip=0.0.0.0 latency=9.65µs user_agent="" request_id=aace0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:51.658-05:00 level=INFO msg="request processed" status=403 method=GET path=/api/admin/sanctum-requests ip=0.0.0.0 latency=469.19µs user_agent="" request_id=abce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=103
+time=2026-02-11T19:59:51.660-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/admin/sanctum-requests ip=0.0.0.0 latency=1.526689ms user_agent="" request_id=acce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=104
+time=2026-02-11T19:59:51.660-05:00 level=INFO msg="request processed" status=403 method=POST path=/api/admin/sanctum-requests/27/approve ip=0.0.0.0 latency=368.15µs user_agent="" request_id=adce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=103
+time=2026-02-11T19:59:51.665-05:00 level=INFO msg="request processed" status=200 method=POST path=/api/admin/sanctum-requests/27/reject ip=0.0.0.0 latency=5.104228ms user_agent="" request_id=aece0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=104
+2026/02/11 19:59:51 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:51.670-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:51.713-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:51 Redis connected successfully
+time=2026-02-11T19:59:51.777-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=61.545531ms user_agent="" request_id=afce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:51.830-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=53.172014ms user_agent="" request_id=b0ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:51.847-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/sanctums/requests ip=0.0.0.0 latency=12.173907ms user_agent="" request_id=b1ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=105
+2026/02/11 19:59:51 DEBUG: Created sanctum ID: 42, exists in tx: true
+time=2026-02-11T19:59:51.855-05:00 level=INFO msg="request processed" status=200 method=POST path=/api/admin/sanctum-requests/28/approve ip=0.0.0.0 latency=7.819827ms user_agent="" request_id=b2ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=106
+2026/02/11 19:59:51 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T19:59:51.860-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T19:59:51.901-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 19:59:51 Redis connected successfully
+time=2026-02-11T19:59:51.955-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=52.407834ms user_agent="" request_id=b3ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:52.007-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=51.827674ms user_agent="" request_id=b4ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4
+time=2026-02-11T19:59:52.020-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/sanctums/requests ip=0.0.0.0 latency=8.593167ms user_agent="" request_id=b5ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=107
+time=2026-02-11T19:59:52.026-05:00 level=INFO msg="request processed" status=200 method=POST path=/api/admin/sanctum-requests/29/reject ip=0.0.0.0 latency=5.491248ms user_agent="" request_id=b6ce0fe4-9a68-4416-8e6f-3fcb1fb0d9f4 user_id=108
+FAIL
+FAIL	sanctum/test	3.541s
+FAIL
+make: *** [Makefile:336: test-backend] Error 1

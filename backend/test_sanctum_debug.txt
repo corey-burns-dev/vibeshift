@@ -1,0 +1,19 @@
+time=2026-02-11T20:03:32.909-05:00 level=INFO msg="Observability metrics initialized"
+=== RUN   TestSanctumRequestApprovalAndPostingFlow
+2026/02/11 20:03:32 Loaded profile-specific configuration: config.test.yml
+time=2026-02-11T20:03:32.914-05:00 level=INFO msg="Primary database connected successfully"
+time=2026-02-11T20:03:32.954-05:00 level=INFO msg="Database migrations completed"
+2026/02/11 20:03:32 Redis connected successfully
+time=2026-02-11T20:03:33.055-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=54.915055ms user_agent="" request_id=0f5fa75c-55ee-4397-bc63-d7bb30c2c286
+time=2026-02-11T20:03:33.108-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/auth/signup ip=0.0.0.0 latency=52.701706ms user_agent="" request_id=105fa75c-55ee-4397-bc63-d7bb30c2c286
+time=2026-02-11T20:03:33.120-05:00 level=INFO msg="request processed" status=201 method=POST path=/api/sanctums/requests ip=0.0.0.0 latency=7.028528ms user_agent="" request_id=115fa75c-55ee-4397-bc63-d7bb30c2c286 user_id=109
+time=2026-02-11T20:03:33.121-05:00 level=INFO msg="request processed" status=200 method=GET path=/api/admin/sanctum-requests ip=0.0.0.0 latency=1.534289ms user_agent="" request_id=125fa75c-55ee-4397-bc63-d7bb30c2c286 user_id=110
+2026/02/11 20:03:33 INFO: Verified sanctum ID 43 exists
+time=2026-02-11T20:03:33.129-05:00 level=INFO msg="request processed" status=200 method=POST path=/api/admin/sanctum-requests/30/approve ip=0.0.0.0 latency=7.823618ms user_agent="" request_id=135fa75c-55ee-4397-bc63-d7bb30c2c286 user_id=110
+time=2026-02-11T20:03:33.131-05:00 level=ERROR msg="GORM query error" sql="INSERT INTO \"posts\" (\"title\",\"content\",\"image_url\",\"user_id\",\"sanctum_id\",\"created_at\",\"updated_at\",\"deleted_at\") VALUES ('First Post in New Sanctum','Hello world from my new sanctum!','',109,43,'2026-02-11 20:03:33.13','2026-02-11 20:03:33.13',NULL) RETURNING \"id\"" rows=0 elapsed=1.16052ms error="ERROR: insert or update on table \"posts\" violates foreign key constraint \"fk_posts_sanctum\" (SQLSTATE 23503)" request_id=145fa75c-55ee-4397-bc63-d7bb30c2c286 user_id=109
+time=2026-02-11T20:03:33.131-05:00 level=INFO msg="request processed" status=500 method=POST path=/api/posts ip=0.0.0.0 latency=1.34075ms user_agent="" request_id=145fa75c-55ee-4397-bc63-d7bb30c2c286 user_id=109
+    sanctum_flow_e2e_test.go:114: expected 201 Created for post, got 500
+--- FAIL: TestSanctumRequestApprovalAndPostingFlow (0.22s)
+FAIL
+FAIL	sanctum/test	0.230s
+FAIL

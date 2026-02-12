@@ -23,19 +23,19 @@
 
 ### Database & Caching
 
-- [ ] **Implement Read/Write Database Separation**
+- [x] **Implement Read/Write Database Separation**
   - Configure GORM with separate read replica connections
   - Route all SELECT queries to read replicas
   - Ensure write operations use primary database
   - Add fallback logic if read replica is unavailable
 
-- [ ] **Migrate from Auto-Migration to Controlled Migrations**
+- [x] **Migrate from Auto-Migration to Controlled Migrations**
   - Remove GORM AutoMigrate from production code
   - Implement migration tool (e.g., golang-migrate, goose)
   - Create rollback procedures for all migrations
   - Add migration version tracking
 
-- [ ] **Define Caching Strategy with TTLs**
+- [x] **Define Caching Strategy with TTLs**
   - Cache user profiles with 5-minute TTL
   - Cache room metadata with 10-minute TTL
   - Cache message history (last 50 messages) with 2-minute TTL

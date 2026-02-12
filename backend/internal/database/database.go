@@ -10,15 +10,14 @@ import (
 
 	"sanctum/internal/config"
 	"sanctum/internal/middleware"
-	"sanctum/internal/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
-// DB is the global database connection instance.
 var DB *gorm.DB
+var ReadDB *gorm.DB
 
 // CustomGormLogger integrates GORM with slog
 type CustomGormLogger struct {
@@ -86,26 +85,42 @@ func (l *CustomGormLogger) Trace(ctx context.Context, begin time.Time, fc func()
 	}
 }
 
-// Connect opens a database connection using the provided configuration and returns the gorm DB instance.
-func Connect(cfg *config.Config) (*gorm.DB, error) {
-	var err error
-
-	// Build PostgreSQL connection string
+func buildDSN(cfg *config.Config, read bool) string {
 	sslMode := cfg.DBSSLMode
 	if sslMode == "" {
 		sslMode = "disable"
 	}
-	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.DBHost,
-		cfg.DBPort,
-		cfg.DBUser,
-		cfg.DBPassword,
-		cfg.DBName,
-		sslMode,
-	)
 
-	// Custom GORM logger that uses slog and ignores ErrRecordNotFound
+	if read {
+		host := cfg.DBReadHost
+		if host == "" {
+			host = cfg.DBHost
+		}
+		port := cfg.DBReadPort
+		if port == "" {
+			port = cfg.DBPort
+		}
+		user := cfg.DBReadUser
+		if user == "" {
+			user = cfg.DBUser
+		}
+		password := cfg.DBReadPassword
+		if password == "" {
+			password = cfg.DBPassword
+		}
+		return fmt.Sprintf(
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+			host, port, user, password, cfg.DBName, sslMode,
+		)
+	}
+
+	return fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName, sslMode,
+	)
+}
+
+func newDBInstance(dsn string, cfg *config.Config) (*gorm.DB, error) {
 	gormLogger := &CustomGormLogger{
 		logger: middleware.Logger,
 		Config: logger.Config{
@@ -116,56 +131,77 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 		},
 	}
 
-	dbInstance, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+	return gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: gormLogger,
 	})
+}
+
+func configurePool(db *gorm.DB) error {
+	sqlDB, err := db.DB()
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+		return err
 	}
+	sqlDB.SetMaxOpenConns(25)
+	sqlDB.SetMaxIdleConns(5)
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)
+	return nil
+}
 
-	middleware.Logger.Info("Database connected successfully")
+// GetReadDB returns the read replica database instance, falling back to primary if read replica is not configured.
+func GetReadDB() *gorm.DB {
+	if ReadDB != nil {
+		return ReadDB
+	}
+	if DB != nil {
+		return DB
+	}
+	return nil
+}
 
-	isProduction := cfg.Env == "production" || cfg.Env == "prod"
-	if !isProduction {
-		// Keep AutoMigrate in non-production for developer/test ergonomics.
-		err = dbInstance.AutoMigrate(
-			&models.User{},
-			&models.Post{},
-			&models.Comment{},
-			&models.Like{},
-			&models.Conversation{},
-			&models.Message{},
-			&models.ConversationParticipant{},
-			&models.Friendship{},
-			&models.GameRoom{},
-			&models.GameMove{},
-			&models.GameStats{},
-			&models.Stream{},
-			&models.StreamMessage{},
-			&models.Sanctum{},
-			&models.SanctumRequest{},
-			&models.SanctumMembership{},
-		)
+// TruncateAllTables clears all data from application tables.
+func TruncateAllTables(db *gorm.DB) error {
+	sql := `TRUNCATE TABLE comments, likes, posts, conversation_participants, messages, conversations, sanctum_memberships, sanctum_requests, sanctums, stream_messages, streams, users, friendships, game_rooms, game_moves RESTART IDENTITY CASCADE;`
+	return db.Exec(sql).Error
+}
+
+// Connect opens database connections for read/write and optionally read replica.
+func Connect(cfg *config.Config) (*gorm.DB, error) {
+	var err error
+	ctx := context.Background()
+
+	writeDSN := buildDSN(cfg, false)
+	DB, err = newDBInstance(writeDSN, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to primary database: %w", err)
+	}
+	middleware.Logger.Info("Primary database connected successfully")
+
+	if cfg.DBReadHost != "" {
+		readDSN := buildDSN(cfg, true)
+		ReadDB, err = newDBInstance(readDSN, cfg)
 		if err != nil {
-			return nil, fmt.Errorf("failed to migrate database: %w", err)
+			middleware.Logger.Warn("Failed to connect to read replica, falling back to primary", slog.String("error", err.Error()))
+			ReadDB = nil
+		} else {
+			middleware.Logger.Info("Read replica connected successfully")
+			if err := configurePool(ReadDB); err != nil {
+				middleware.Logger.Warn("Failed to configure read replica pool", slog.String("error", err.Error()))
+			}
 		}
-
-		// Manual migration: Ensure opponent_id is nullable (GORM sometimes misses dropping NOT NULL)
-		if migrateErr := dbInstance.Exec("ALTER TABLE game_rooms ALTER COLUMN opponent_id DROP NOT NULL").Error; migrateErr != nil {
-			middleware.Logger.Warn("Failed to drop NOT NULL constraint on game_rooms.opponent_id (ignoring as it likely already is dropped)", slog.String("error", migrateErr.Error()))
-		}
-
-		middleware.Logger.Info("Database migration completed")
 	}
 
-	// Set connection pooling parameters
-	sqlDB, err := dbInstance.DB()
-	if err == nil {
-		sqlDB.SetMaxOpenConns(25)
-		sqlDB.SetMaxIdleConns(5)
-		sqlDB.SetConnMaxLifetime(5 * time.Minute)
+	if err := configurePool(DB); err != nil {
+		return nil, fmt.Errorf("failed to configure database pool: %w", err)
 	}
 
-	DB = dbInstance
+	if err := RunMigrations(ctx, DB); err != nil {
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	if migrateErr := DB.Exec("ALTER TABLE game_rooms ALTER COLUMN opponent_id DROP NOT NULL").Error; migrateErr != nil {
+		middleware.Logger.Warn("Failed to drop NOT NULL constraint on game_rooms.opponent_id", slog.String("error", migrateErr.Error()))
+	}
+
+	middleware.Logger.Info("Database migrations completed")
 	return DB, nil
 }
