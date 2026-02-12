@@ -1,16 +1,16 @@
 // Shared hook for user interaction actions — used by UserMenu and UserContextMenu
 
-import { useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
 import { apiClient } from '@/api/client'
 import type { User } from '@/api/types'
 import { useCreateConversation } from '@/hooks/useChat'
 import {
-  useFriendshipStatus,
-  useRemoveFriend,
-  useSendFriendRequest,
+    useFriendshipStatus,
+    useRemoveFriend,
+    useSendFriendRequest,
 } from '@/hooks/useFriends'
 import { getCurrentUser } from '@/hooks/useUsers'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 
 export function useUserActions(user: User) {
   const navigate = useNavigate()
@@ -36,12 +36,6 @@ export function useUserActions(user: User) {
         },
       }
     )
-  }
-
-  const handleVideoChat = () => {
-    const ids = [currentUser?.id ?? 0, user.id].sort((a, b) => a - b)
-    const roomId = `vc-${ids[0]}-${ids[1]}`
-    navigate(`/videochat?room=${encodeURIComponent(roomId)}`)
   }
 
   const handleJoinConnect4 = async () => {
@@ -101,7 +95,6 @@ export function useUserActions(user: User) {
     status,
     handleViewProfile,
     handleMessage,
-    handleVideoChat,
     handleJoinConnect4,
     handleAddFriend,
     handleRemoveFriend,

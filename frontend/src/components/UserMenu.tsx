@@ -1,22 +1,21 @@
-import {
-  Gamepad2,
-  MessageCircle,
-  User as UserIcon,
-  UserMinus,
-  UserPlus,
-  Video,
-} from 'lucide-react'
 import type { User } from '@/api/types'
 import { UserContextMenu } from '@/components/UserContextMenu'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useUserActions } from '@/hooks/useUserActions'
+import {
+    Gamepad2,
+    MessageCircle,
+    User as UserIcon,
+    UserMinus,
+    UserPlus,
+} from 'lucide-react'
 
 interface UserMenuProps {
   user: User
@@ -28,7 +27,6 @@ export function UserMenu({ user, children }: UserMenuProps) {
     isSelf,
     handleViewProfile,
     handleMessage,
-    handleVideoChat,
     handleJoinConnect4,
     handleAddFriend,
     handleRemoveFriend,
@@ -84,15 +82,7 @@ export function UserMenu({ user, children }: UserMenuProps) {
             <span>Message</span>
           </DropdownMenuItem>
 
-          <DropdownMenuItem
-            onClick={event => {
-              event.stopPropagation()
-              handleVideoChat()
-            }}
-          >
-            <Video className='mr-2 h-4 w-4' />
-            <span>Video Chat</span>
-          </DropdownMenuItem>
+
 
           <DropdownMenuItem
             onClick={event => {

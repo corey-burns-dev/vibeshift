@@ -1,15 +1,14 @@
-import { LogOut, ShieldCheck, Sparkles, User } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
 import { ModeToggle } from '@/components/mode-toggle'
 import { isRouteActive, sideNavSections } from '@/components/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
-  getCurrentUser,
-  useIsAuthenticated,
-  useLogout,
-  useStreams,
+    getCurrentUser,
+    useIsAuthenticated,
+    useLogout,
 } from '@/hooks'
 import { cn } from '@/lib/utils'
+import { LogOut, ShieldCheck, Sparkles, User } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
 
 export function Sidebar() {
   const location = useLocation()
@@ -17,9 +16,7 @@ export function Sidebar() {
   const currentUser = getCurrentUser()
   const logout = useLogout()
 
-  const { data: streamsData } = useStreams()
-  const liveStreams =
-    streamsData?.streams.filter(stream => stream.is_live).slice(0, 3) || []
+  
 
   if (!isAuthenticated) return null
 
@@ -51,7 +48,7 @@ export function Sidebar() {
           <p className='text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground'>
             Sanctum
           </p>
-          <p className='text-sm font-semibold'>Play. Connect. Stream.</p>
+          <p className='text-sm font-semibold'>Play. Connect.</p>
         </div>
       </Link>
 
@@ -103,53 +100,7 @@ export function Sidebar() {
           </section>
         ))}
 
-        <section className='space-y-2 rounded-2xl border border-border/60 bg-background/65 p-3'>
-          <div className='flex items-center justify-between'>
-            <p className='text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground'>
-              Live Now
-            </p>
-            <Link
-              to='/streams'
-              className='text-xs font-semibold text-primary hover:underline'
-            >
-              View all
-            </Link>
-          </div>
-
-          {liveStreams.length > 0 ? (
-            <div className='space-y-1'>
-              {liveStreams.map(stream => (
-                <Link
-                  key={stream.id}
-                  to={`/streams/${stream.id}`}
-                  className='flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/70'
-                >
-                  <div className='relative shrink-0'>
-                    <Avatar className='h-8 w-8 border border-border/60'>
-                      <AvatarImage src={stream.user?.avatar} />
-                      <AvatarFallback>
-                        {stream.user?.username?.[0]?.toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className='absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-red-500' />
-                  </div>
-                  <div className='min-w-0'>
-                    <p className='truncate text-xs font-semibold'>
-                      {stream.title}
-                    </p>
-                    <p className='truncate text-[11px] text-muted-foreground'>
-                      {stream.viewer_count} watching
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className='text-xs text-muted-foreground'>
-              No live streams right now.
-            </p>
-          )}
-        </section>
+        {/* Streams and live features are disabled in production branch */}
       </div>
 
       <div className='mt-3 space-y-2 border-t border-border/60 pt-3'>

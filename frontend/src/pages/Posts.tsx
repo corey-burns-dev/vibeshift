@@ -1,19 +1,18 @@
 // API
 
+import { apiClient } from '@/api/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import {
-  Heart,
-  Image,
-  Loader2,
-  MessageCircle,
-  Send,
-  Smile,
-  Video,
+    Heart,
+    Image,
+    Loader2,
+    MessageCircle,
+    Send,
+    Smile,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { apiClient } from '@/api/client'
 // Types
 import type { Post } from '@/api/types'
 import { PostCaption } from '@/components/posts/PostCaption'
@@ -253,15 +252,7 @@ export default function Posts() {
 
               {!isExpandingPost && (
                 <div className='flex border-t pt-3 justify-around'>
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    className='gap-2 text-muted-foreground flex-1 hover:bg-muted'
-                    onClick={() => setIsExpandingPost(true)}
-                  >
-                    <Video className='w-4 h-4 text-red-500' />
-                    <span className='text-xs font-semibold'>Live</span>
-                  </Button>
+                  {/* Live/video posting removed in production branch */}
                   <Button
                     variant='ghost'
                     size='sm'

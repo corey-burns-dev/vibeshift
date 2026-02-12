@@ -1,13 +1,11 @@
 import type { LucideIcon } from 'lucide-react'
 import {
-  Gamepad2,
-  Home,
-  Landmark,
-  MessageCircle,
-  MessageSquare,
-  Radio,
-  Users,
-  Video,
+    Gamepad2,
+    Home,
+    Landmark,
+    MessageCircle,
+    MessageSquare,
+    Users,
 } from 'lucide-react'
 
 export interface NavItem {
@@ -32,8 +30,6 @@ export const topServiceNav: NavItem[] = [
   { icon: Landmark, label: 'Sanctums', path: '/sanctums' },
   { icon: Users, label: 'Friends', path: '/friends' },
   { icon: Gamepad2, label: 'Games', path: '/games' },
-  { icon: Radio, label: 'Streams', path: '/streams' },
-  { icon: Video, label: 'Video', path: '/videochat' },
 ]
 
 export const sideNavSections: NavSection[] = [
@@ -49,7 +45,7 @@ export const mobileNav: NavItem[] = [
 ]
 
 const routeTitles: Array<{ path: string; title: string }> = [
-  { path: '/videochat', title: 'Video Chat' },
+  
   { path: '/messages', title: 'Messages' },
   { path: '/chat', title: 'Chatrooms' },
   { path: '/admin/sanctum-requests', title: 'Sanctum Requests (Admin)' },
@@ -58,7 +54,7 @@ const routeTitles: Array<{ path: string; title: string }> = [
   { path: '/sanctums', title: 'Sanctums' },
   { path: '/s', title: 'Sanctum' },
   { path: '/friends', title: 'Friends' },
-  { path: '/streams', title: 'Streams' },
+  
   { path: '/games', title: 'Games' },
   { path: '/users', title: 'People' },
   { path: '/profile', title: 'Profile' },

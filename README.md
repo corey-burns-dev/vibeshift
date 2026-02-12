@@ -14,7 +14,7 @@ Sanctum is a Reddit-style social platform focused on creativity, hobbies, and sh
 - **Observability:** Prometheus metrics and health monitoring integration
 
 > [!NOTE]
-> **Video Streaming & Video Chat:** These features have been moved to the specialized branch `with-streaming-video`. Use that branch if you need to test or develop streaming functionality.
+> **Video Streaming & Video Chat:** These features are NOT enabled in the `master` (production) branch. If you'd like to try or develop streaming/video locally, switch to the `with-streaming-video` branch — it contains the additional services and code paths for video chat and live streaming. Keep in mind that `with-streaming-video` is intended for local/dev experimentation only; production deployments on `master` intentionally exclude these capabilities.
 
 ## Prerequisites
 
