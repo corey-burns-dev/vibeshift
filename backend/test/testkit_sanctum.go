@@ -10,17 +10,19 @@ import (
 	"testing"
 	"time"
 
+	"sanctum/internal/bootstrap"
 	"sanctum/internal/config"
-	"sanctum/internal/database"
 	"sanctum/internal/server"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type authUser struct {
 	ID    uint
 	Token string
+	Email string
 }
 
 func newSanctumTestApp(t *testing.T) *fiber.App {
@@ -35,15 +37,54 @@ func newSanctumTestApp(t *testing.T) *fiber.App {
 		t.Fatalf("load config: %v", err)
 	}
 
-	srv, err := server.NewServer(cfg)
+	// Initialize runtime (DB + Redis). Tests explicitly enable built-in seeding
+	// so existing integration-style tests continue to observe built-ins.
+	db, redisClient, err := bootstrap.InitRuntime(cfg, bootstrap.Options{SeedBuiltIns: true})
 	if err != nil {
-		t.Fatalf("new server: %v", err)
+		t.Fatalf("bootstrap init runtime: %v", err)
+	}
+
+	// Create server from existing deps (no implicit seeding)
+	srv, err := server.NewServerWithDeps(cfg, db, redisClient)
+	if err != nil {
+		t.Fatalf("new server with deps: %v", err)
 	}
 
 	app := fiber.New()
 	srv.SetupMiddleware(app)
 	srv.SetupRoutes(app)
 	return app
+}
+
+// newSanctumTestAppWithDB returns a test Fiber app and the initialized *gorm.DB
+// instance returned by the bootstrap initializer. Use this when a test needs
+// explicit access to the DB for seeding or direct queries.
+func newSanctumTestAppWithDB(t *testing.T) (*fiber.App, *gorm.DB) {
+	t.Helper()
+
+	if err := os.Setenv("APP_ENV", "test"); err != nil {
+		t.Fatalf("set APP_ENV: %v", err)
+	}
+
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+
+	db, redisClient, err := bootstrap.InitRuntime(cfg, bootstrap.Options{SeedBuiltIns: true})
+	if err != nil {
+		t.Fatalf("bootstrap init runtime: %v", err)
+	}
+
+	srv, err := server.NewServerWithDeps(cfg, db, redisClient)
+	if err != nil {
+		t.Fatalf("new server with deps: %v", err)
+	}
+
+	app := fiber.New()
+	srv.SetupMiddleware(app)
+	srv.SetupRoutes(app)
+	return app, db
 }
 
 func signupSanctumUser(t *testing.T, app *fiber.App, prefix string) authUser {
@@ -73,7 +114,8 @@ func signupSanctumUser(t *testing.T, app *fiber.App, prefix string) authUser {
 	var body struct {
 		Token string `json:"token"`
 		User  struct {
-			ID uint `json:"id"`
+			ID    uint   `json:"id"`
+			Email string `json:"email"`
 		} `json:"user"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
@@ -84,12 +126,13 @@ func signupSanctumUser(t *testing.T, app *fiber.App, prefix string) authUser {
 		t.Fatalf("invalid signup response: %+v", body)
 	}
 
-	return authUser{ID: body.User.ID, Token: body.Token}
+	return authUser{ID: body.User.ID, Token: body.Token, Email: body.User.Email}
 }
 
-func makeSanctumAdmin(t *testing.T, userID uint) {
+// makeSanctumAdminWithDB promotes a user to admin using the provided DB instance.
+func makeSanctumAdminWithDB(t *testing.T, db *gorm.DB, userID uint) {
 	t.Helper()
-	if err := database.DB.Exec(`UPDATE users SET is_admin = TRUE WHERE id = ?`, userID).Error; err != nil {
+	if err := db.Exec(`UPDATE users SET is_admin = TRUE WHERE id = ?`, userID).Error; err != nil {
 		t.Fatalf("promote user to admin: %v", err)
 	}
 }
@@ -119,4 +162,9 @@ func authReq(t *testing.T, method, path, token string, payload any) *http.Reques
 
 func uniqueSanctumSlug(prefix string) string {
 	return fmt.Sprintf("%s-%s", prefix, uuid.NewString()[:8])
+}
+
+// itoa converts uint to string for URL path segments.
+func itoa(i uint) string {
+	return fmt.Sprintf("%d", i)
 }

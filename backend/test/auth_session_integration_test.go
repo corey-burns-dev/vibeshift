@@ -1,3 +1,5 @@
+//go:build integration
+
 package test
 
 import (
@@ -11,7 +13,7 @@ import (
 )
 
 func TestAuthSessionLifecycleIntegration(t *testing.T) {
-	app := setupApp()
+	app := newSanctumTestApp(t)
 
 	timestamp := time.Now().UnixNano()
 	email := fmt.Sprintf("session_%d@example.com", timestamp)

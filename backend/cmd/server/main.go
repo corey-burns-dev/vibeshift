@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"sanctum/internal/bootstrap"
 	"sanctum/internal/config"
 	"sanctum/internal/server"
 
@@ -42,8 +43,14 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	// Create server with dependency injection
-	srv, err := server.NewServer(cfg)
+	// Initialize runtime (DB, Redis) and seed built-ins for runtime startup
+	db, redisClient, err := bootstrap.InitRuntime(cfg, bootstrap.Options{SeedBuiltIns: true})
+	if err != nil {
+		log.Fatalf("Runtime initialization failed: %v", err)
+	}
+
+	// Create server using already-initialized dependencies (no implicit seeding)
+	srv, err := server.NewServerWithDeps(cfg, db, redisClient)
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
 	}

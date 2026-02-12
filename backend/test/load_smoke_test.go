@@ -80,14 +80,12 @@ func TestLoadScenarios(t *testing.T) {
 		t.Skip("skipping load tests in short mode")
 	}
 
-	app := setupApp()
-	ts := time.Now().UnixNano()
-
-	mainUser := createTestUser(t, app, fmt.Sprintf("load_main_%d", ts), fmt.Sprintf("load_main_%d@example.com", ts))
+	app := newSanctumTestApp(t)
+	mainUser := signupSanctumUser(t, app, "load_main")
 
 	t.Run("Login", func(t *testing.T) {
 		loginPayload := map[string]string{
-			"email":    fmt.Sprintf("load_main_%d@example.com", ts),
+			"email":    mainUser.Email,
 			"password": "TestPass123!@#",
 		}
 		loginBody, _ := json.Marshal(loginPayload)
@@ -133,18 +131,11 @@ func TestLoadScenarios(t *testing.T) {
 
 	t.Run("ChatSend", func(t *testing.T) {
 		const senders = 20
-		participants := make([]TestUser, 0, senders)
+		participants := make([]authUser, 0, senders)
 		participantIDs := make([]uint, 0, senders)
 
 		for i := 0; i < senders; i++ {
-			username := fmt.Sprintf("lc_%d_%d", ts%1000000, i)
-			email := fmt.Sprintf("lc_%d_%d@example.com", ts%1000000, i)
-			u := createTestUser(
-				t,
-				app,
-				username,
-				email,
-			)
+			u := signupSanctumUser(t, app, fmt.Sprintf("load_chat_%d", i))
 			participants = append(participants, u)
 			participantIDs = append(participantIDs, u.ID)
 		}

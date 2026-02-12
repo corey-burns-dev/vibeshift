@@ -1,3 +1,5 @@
+//go:build integration
+
 package test
 
 import (
@@ -7,56 +9,16 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-type TestUser struct {
-	ID    uint
-	Token string
-}
-
-func createTestUser(t *testing.T, app interface {
-	Test(req *http.Request, msTimeout ...int) (*http.Response, error)
-}, username, email string,
-) TestUser {
-	signupBody := map[string]string{
-		"username": username,
-		"email":    email,
-		"password": "TestPass123!@#",
-	}
-	b, _ := json.Marshal(signupBody)
-	req := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewReader(b))
-	req.Header.Set("Content-Type", "application/json")
-	res, err := app.Test(req, -1)
-	if err != nil {
-		t.Fatalf("signup error: %v", err)
-	}
-	defer func() { _ = res.Body.Close() }()
-	if res.StatusCode != 201 {
-		buf := new(bytes.Buffer)
-		_, _ = buf.ReadFrom(res.Body)
-		t.Fatalf("expected 201, got %d. Body: %s", res.StatusCode, buf.String())
-	}
-
-	var resp struct {
-		Token string `json:"token"`
-		User  struct {
-			ID uint `json:"id"`
-		} `json:"user"`
-	}
-	_ = json.NewDecoder(res.Body).Decode(&resp)
-	return TestUser{ID: resp.User.ID, Token: resp.Token}
-}
-
 func TestChatAPI(t *testing.T) {
-	app := setupApp()
+	app := newSanctumTestApp(t)
 
-	timestamp := time.Now().UnixNano()
-	user1 := createTestUser(t, app, fmt.Sprintf("u1_%d", timestamp), fmt.Sprintf("u1_%d@e.com", timestamp))
-	user2 := createTestUser(t, app, fmt.Sprintf("u2_%d", timestamp), fmt.Sprintf("u2_%d@e.com", timestamp))
-	user3 := createTestUser(t, app, fmt.Sprintf("u3_%d", timestamp), fmt.Sprintf("u3_%d@e.com", timestamp))
+	user1 := signupSanctumUser(t, app, "chat_u1")
+	user2 := signupSanctumUser(t, app, "chat_u2")
+	user3 := signupSanctumUser(t, app, "chat_u3")
 
 	var convID uint
 

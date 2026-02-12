@@ -1,21 +1,22 @@
+//go:build integration
+
 package test
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"testing"
-
 	"sanctum/internal/models"
+	"testing"
 )
 
 func TestSanctumRequestApprovalAndPostingFlow(t *testing.T) {
-	app := newSanctumTestApp(t)
+	app, db := newSanctumTestAppWithDB(t)
 
 	// 1. Create users: one requester and one admin
 	requester := signupSanctumUser(t, app, "requester")
 	admin := signupSanctumUser(t, app, "admin_user")
-	makeSanctumAdmin(t, admin.ID)
+	makeSanctumAdminWithDB(t, db, admin.ID)
 
 	// 2. Requester submits a sanctum request
 	reqSlug := uniqueSanctumSlug("flow-test")

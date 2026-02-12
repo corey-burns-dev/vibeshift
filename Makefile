@@ -24,7 +24,7 @@ NC := \033[0m # No Color
 # Default target
 help:
 	@echo "$(BLUE)╔════════════════════════════════════════════════════════════════╗$(NC)"
-	@echo "$(BLUE)║           Vibeshift - Full Stack Development CLI               ║$(NC)"
+	@echo "$(BLUE)║           Sanctum - Full Stack Development CLI               ║$(NC)"
 	@echo "$(BLUE)╚════════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
 	@echo "$(GREEN)Development:$(NC)"
@@ -66,6 +66,7 @@ help:
 	@echo "$(GREEN)Testing:$(NC)"
 	@echo "  make test               - 🧪 Run backend tests"
 	@echo "  make test-api           - 🧪 Test all API endpoints"
+	@echo "  make test-backend-integration - 🧪 Run integration tests (requires DB/Redis)"
 	@echo ""
 	@echo "$(GREEN)Database:$(NC)"
 	@echo "  make seed               - 🌱 Seed database with test data"
@@ -274,6 +275,11 @@ test-up:
 
 test-down:
 	$(DOCKER_COMPOSE) $(COMPOSE_FILES) down
+
+test-backend-integration: test-up
+	@echo "$(BLUE)Running backend integration tests (tag=integration)...$(NC)"
+	cd backend && $(GO) test -tags=integration ./test/...
+	@echo "$(GREEN)✓ Integration tests finished$(NC)"
 
 # Database seeding
 seed:

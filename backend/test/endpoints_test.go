@@ -1,3 +1,5 @@
+//go:build integration
+
 package test
 
 import (
@@ -13,7 +15,7 @@ import (
 )
 
 func TestUserEndpoints(t *testing.T) {
-	app := setupApp()
+	app := newSanctumTestApp(t)
 	timestamp := time.Now().UnixNano()
 	username := fmt.Sprintf("user_%d", timestamp)
 	email := fmt.Sprintf("user_%d@example.com", timestamp)
@@ -76,7 +78,7 @@ func TestUserEndpoints(t *testing.T) {
 }
 
 func TestPostCRUDEndpoints(t *testing.T) {
-	app := setupApp()
+	app := newSanctumTestApp(t)
 	timestamp := time.Now().UnixNano()
 	username := fmt.Sprintf("poster_%d", timestamp)
 	email := fmt.Sprintf("poster_%d@example.com", timestamp)

@@ -1,14 +1,14 @@
+//go:build integration
+
 package test
 
 import (
 	"encoding/json"
 	"net/http"
-	"sort"
-	"testing"
-
-	"sanctum/internal/database"
 	"sanctum/internal/models"
 	"sanctum/internal/seed"
+	"sort"
+	"testing"
 )
 
 func TestSanctumMembershipsBulkAndMe(t *testing.T) {
@@ -152,7 +152,7 @@ func TestSanctumMembershipsBulkAndMe(t *testing.T) {
 }
 
 func TestGetSanctumsStableAfterReseed(t *testing.T) {
-	app := newSanctumTestApp(t)
+	app, db := newSanctumTestAppWithDB(t)
 
 	firstReq := jsonReq(t, http.MethodGet, "/api/sanctums", nil)
 	firstResp, firstErr := app.Test(firstReq, -1)
@@ -174,7 +174,7 @@ func TestGetSanctumsStableAfterReseed(t *testing.T) {
 		t.Fatal("expected seeded sanctums, got empty list")
 	}
 
-	if err := seed.Sanctums(database.DB); err != nil {
+	if err := seed.Sanctums(db); err != nil {
 		t.Fatalf("re-seed sanctums: %v", err)
 	}
 
@@ -353,10 +353,10 @@ func TestGetMySanctumRequests(t *testing.T) {
 }
 
 func TestAdminEndpointsRequireAdmin(t *testing.T) {
-	app := newSanctumTestApp(t)
+	app, db := newSanctumTestAppWithDB(t)
 	user := signupSanctumUser(t, app, "nonadmin")
 	admin := signupSanctumUser(t, app, "admin")
-	makeSanctumAdmin(t, admin.ID)
+	makeSanctumAdminWithDB(t, db, admin.ID)
 
 	pendingSlug := uniqueSanctumSlug("queue")
 	createReq := authReq(t, http.MethodPost, "/api/sanctums/requests", user.Token, map[string]string{
@@ -442,10 +442,10 @@ func TestAdminEndpointsRequireAdmin(t *testing.T) {
 }
 
 func TestApproveCreatesSanctumMembershipChatroom(t *testing.T) {
-	app := newSanctumTestApp(t)
+	app, db := newSanctumTestAppWithDB(t)
 	requester := signupSanctumUser(t, app, "approve_owner")
 	admin := signupSanctumUser(t, app, "approve_admin")
-	makeSanctumAdmin(t, admin.ID)
+	makeSanctumAdminWithDB(t, db, admin.ID)
 
 	slug := uniqueSanctumSlug("approved")
 	createReq := authReq(t, http.MethodPost, "/api/sanctums/requests", requester.Token, map[string]string{
@@ -501,7 +501,7 @@ func TestApproveCreatesSanctumMembershipChatroom(t *testing.T) {
 	}
 
 	var membership models.SanctumMembership
-	if err := database.DB.Where("sanctum_id = ? AND user_id = ?", approveBody.Sanctum.ID, requester.ID).First(&membership).Error; err != nil {
+	if err := db.Where("sanctum_id = ? AND user_id = ?", approveBody.Sanctum.ID, requester.ID).First(&membership).Error; err != nil {
 		t.Fatalf("owner membership missing: %v", err)
 	}
 	if membership.Role != models.SanctumMembershipRoleOwner {
@@ -509,7 +509,7 @@ func TestApproveCreatesSanctumMembershipChatroom(t *testing.T) {
 	}
 
 	var room models.Conversation
-	if err := database.DB.Where("sanctum_id = ?", approveBody.Sanctum.ID).First(&room).Error; err != nil {
+	if err := db.Where("sanctum_id = ?", approveBody.Sanctum.ID).First(&room).Error; err != nil {
 		t.Fatalf("default chat room missing: %v", err)
 	}
 	if room.ID == 0 {
@@ -518,10 +518,10 @@ func TestApproveCreatesSanctumMembershipChatroom(t *testing.T) {
 }
 
 func TestRejectPersistsReviewNotes(t *testing.T) {
-	app := newSanctumTestApp(t)
+	app, db := newSanctumTestAppWithDB(t)
 	requester := signupSanctumUser(t, app, "reject_owner")
 	admin := signupSanctumUser(t, app, "reject_admin")
-	makeSanctumAdmin(t, admin.ID)
+	makeSanctumAdminWithDB(t, db, admin.ID)
 
 	slug := uniqueSanctumSlug("rejected")
 	createReq := authReq(t, http.MethodPost, "/api/sanctums/requests", requester.Token, map[string]string{
@@ -568,7 +568,7 @@ func TestRejectPersistsReviewNotes(t *testing.T) {
 	}
 
 	var stored models.SanctumRequest
-	if err := database.DB.First(&stored, pending.ID).Error; err != nil {
+	if err := db.First(&stored, pending.ID).Error; err != nil {
 		t.Fatalf("load request from db: %v", err)
 	}
 	if stored.Status != models.SanctumRequestStatusRejected {

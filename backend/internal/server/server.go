@@ -18,7 +18,6 @@ import (
 	"sanctum/internal/models"
 	"sanctum/internal/notifications"
 	"sanctum/internal/repository"
-	"sanctum/internal/seed"
 	"sanctum/internal/service"
 
 	"github.com/ansrivas/fiberprometheus/v2"
@@ -115,9 +114,57 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	server.chatService = service.NewChatService(server.chatRepo, server.userRepo, server.db, server.isAdminByUserID)
 	server.userService = service.NewUserService(server.userRepo)
 
-	if err := seed.Sanctums(db); err != nil {
-		return nil, fmt.Errorf("failed to seed built-in sanctums: %w", err)
+	// NOTE: built-in sanctum seeding is intentionally NOT performed here.
+	// Seeding should be explicit during runtime bootstrap (cmd) or test setup.
+
+	// Initialize notifier and hub if Redis is available
+	if redisClient != nil {
+		server.notifier = notifications.NewNotifier(redisClient)
+		server.hub = notifications.NewHub()
+		server.chatHub = notifications.NewChatHub()
+		server.gameHub = notifications.NewGameHub(db, server.notifier)
+		server.videoChatHub = notifications.NewVideoChatHub()
+		server.hubs = []wireableHub{server.hub, server.chatHub, server.gameHub, server.videoChatHub}
 	}
+
+	return server, nil
+}
+
+// NewServerWithDeps creates a Server using already-initialized dependencies.
+// Use this in tests or when a bootstrap layer establishes DB/Redis and optionally
+// performs explicit seeding.
+func NewServerWithDeps(cfg *config.Config, db *gorm.DB, redisClient *redis.Client) (*Server, error) {
+	// Initialize repositories
+	userRepo := repository.NewUserRepository(db)
+	postRepo := repository.NewPostRepository(db)
+	commentRepo := repository.NewCommentRepository(db)
+	chatRepo := repository.NewChatRepository(db)
+	friendRepo := repository.NewFriendRepository(db)
+	gameRepo := repository.NewGameRepository(db)
+	streamRepo := repository.NewStreamRepository(db)
+
+	// Initialize Prometheus metrics
+	prom := middleware.InitMetrics("sanctum-api")
+
+	server := &Server{
+		config:         cfg,
+		db:             db,
+		redis:          redisClient,
+		promMiddleware: prom,
+		userRepo:       userRepo,
+		postRepo:       postRepo,
+		commentRepo:    commentRepo,
+		chatRepo:       chatRepo,
+		friendRepo:     friendRepo,
+		gameRepo:       gameRepo,
+		streamRepo:     streamRepo,
+		featureFlags:   featureflags.NewManager(cfg.FeatureFlags),
+	}
+
+	server.postService = service.NewPostService(server.postRepo, server.isAdminByUserID)
+	server.commentService = service.NewCommentService(server.commentRepo, server.postRepo, server.isAdminByUserID)
+	server.chatService = service.NewChatService(server.chatRepo, server.userRepo, server.db, server.isAdminByUserID)
+	server.userService = service.NewUserService(server.userRepo)
 
 	// Initialize notifier and hub if Redis is available
 	if redisClient != nil {

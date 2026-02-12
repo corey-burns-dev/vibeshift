@@ -1,35 +1,24 @@
+//go:build integration
+
 package test
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFriendEndpoints(t *testing.T) {
-	app := setupApp()
-	timestamp := time.Now().UnixNano()
+	app := newSanctumTestApp(t)
 
-	// Create User 1
-	username1 := fmt.Sprintf("friend1_%d", timestamp)
-	email1 := fmt.Sprintf("friend1_%d@example.com", timestamp)
-	token1, _ := registerUser(t, app, username1, email1)
-
-	// Create User 2
-	username2 := fmt.Sprintf("friend2_%d", timestamp)
-	email2 := fmt.Sprintf("friend2_%d@example.com", timestamp)
-	token2, id2 := registerUser(t, app, username2, email2)
-
-	// Create User 3
-	username3 := fmt.Sprintf("friend3_%d", timestamp)
-	email3 := fmt.Sprintf("friend3_%d@example.com", timestamp)
-	token3, id3 := registerUser(t, app, username3, email3)
+	u1 := signupSanctumUser(t, app, "friend1")
+	u2 := signupSanctumUser(t, app, "friend2")
+	u3 := signupSanctumUser(t, app, "friend3")
+	token1, token2, token3 := u1.Token, u2.Token, u3.Token
+	id2, id3 := u2.ID, u3.ID
 
 	var requestID uint
 
@@ -113,36 +102,4 @@ func TestFriendEndpoints(t *testing.T) {
 		defer func() { _ = res.Body.Close() }()
 		assert.Equal(t, 204, res.StatusCode)
 	})
-
-	// Let's get User 3's ID properly in `registerUser` helper
-}
-
-// Helper to register user and return token + ID
-func registerUser(t *testing.T, app interface {
-	Test(req *http.Request, msTimeout ...int) (*http.Response, error)
-}, username, email string,
-) (string, uint) {
-	signupBody := map[string]string{
-		"username": username,
-		"email":    email,
-		"password": "TestPass123!@#",
-	}
-	b, _ := json.Marshal(signupBody)
-	req := httptest.NewRequest(http.MethodPost, "/api/auth/signup", bytes.NewReader(b))
-	req.Header.Set("Content-Type", "application/json")
-	res, err := app.Test(req, -1)
-	if err != nil {
-		t.Fatalf("signup error: %v", err)
-	}
-	defer func() { _ = res.Body.Close() }()
-	assert.Equal(t, 201, res.StatusCode)
-
-	var signupResp struct {
-		Token string `json:"token"`
-		User  struct {
-			ID uint `json:"id"`
-		} `json:"user"`
-	}
-	_ = json.NewDecoder(res.Body).Decode(&signupResp)
-	return signupResp.Token, signupResp.User.ID
 }

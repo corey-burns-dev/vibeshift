@@ -1,3 +1,5 @@
+//go:build integration
+
 // Package test contains integration and API tests for the application.
 package test
 
@@ -7,40 +9,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
-	"sanctum/internal/config"
-	"sanctum/internal/server"
-
-	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 )
 
-func setupApp() *fiber.App {
-	if err := os.Setenv("APP_ENV", "test"); err != nil {
-		panic(fmt.Errorf("failed to set env: %w", err))
-	}
-
-	// Leave DB_HOST/DB_PORT to be read from config or environment so
-	// `config.test.yml` can specify localhost/mapped ports for local testing.
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		panic(fmt.Errorf("failed to load config: %w", err))
-	}
-	srv, err := server.NewServer(cfg)
-	if err != nil {
-		panic(err)
-	}
-	app := fiber.New()
-	srv.SetupMiddleware(app)
-	srv.SetupRoutes(app)
-	return app
-}
-
 func TestHealthCheck(t *testing.T) {
-	app := setupApp()
+	app := newSanctumTestApp(t)
 
 	t.Run("Liveness", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/health/live", nil)
@@ -82,7 +58,7 @@ func TestHealthCheck(t *testing.T) {
 }
 
 func TestSignupAndLogin(t *testing.T) {
-	app := setupApp()
+	app := newSanctumTestApp(t)
 
 	timestamp := time.Now().UnixNano()
 	email := fmt.Sprintf("apitestuser_%d@example.com", timestamp)
@@ -124,7 +100,7 @@ func TestSignupAndLogin(t *testing.T) {
 }
 
 func TestFullAPIFlow(t *testing.T) {
-	app := setupApp()
+	app := newSanctumTestApp(t)
 
 	timestamp := time.Now().UnixNano()
 	email := fmt.Sprintf("apitestuser2_%d@example.com", timestamp)
@@ -294,9 +270,4 @@ func TestFullAPIFlow(t *testing.T) {
 		defer func() { _ = res.Body.Close() }()
 		assert.Equal(t, 200, res.StatusCode)
 	})
-}
-
-// Helper for uint to string
-func itoa(i uint) string {
-	return fmt.Sprintf("%d", i)
 }
