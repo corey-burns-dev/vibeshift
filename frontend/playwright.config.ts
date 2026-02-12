@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
-  testDir: './tests/e2e',
+  testDir: './reports/test/tests/e2e',
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
   forbidOnly: !!process.env.CI,
@@ -14,9 +14,9 @@ export default defineConfig({
   },
   reporter: [
     ['list'],
-    ['html', { open: 'never', outputFolder: 'playwright-report' }],
+    ['html', { open: 'never', outputFolder: 'reports/playwright-report' }],
   ],
-  globalSetup: './tests/e2e/global-setup.ts',
+  globalSetup: './test/tests/e2e/global-setup.ts',
   projects: [
     {
       name: 'chromium',
