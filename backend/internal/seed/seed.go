@@ -63,6 +63,7 @@ func (s *Seeder) SeedSocialMesh(userCount int) ([]*models.User, error) {
 	// Friendships
 	// #nosec G404: Non-cryptographic randomness is acceptable for seeding test data
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	existingFriendships := make(map[string]bool)
 	for _, u1 := range users {
 		targets := r.Intn(5) + 1
 		for i := 0; i < targets; i++ {
@@ -70,11 +71,20 @@ func (s *Seeder) SeedSocialMesh(userCount int) ([]*models.User, error) {
 			if u1.ID == u2.ID {
 				continue
 			}
+
+			// Avoid duplicates
+			pairKey := fmt.Sprintf("%d-%d", u1.ID, u2.ID)
+			if existingFriendships[pairKey] {
+				continue
+			}
+
 			status := models.FriendshipStatusAccepted
 			if r.Float32() < 0.2 {
 				status = models.FriendshipStatusPending
 			}
-			_ = s.factory.CreateFriendship(u1, u2, status)
+			if err := s.factory.CreateFriendship(u1, u2, status); err == nil {
+				existingFriendships[pairKey] = true
+			}
 		}
 	}
 
@@ -99,9 +109,15 @@ func (s *Seeder) SeedEngagement(users []*models.User, postCount int) ([]*models.
 
 		// Random likes
 		likersCount := r.Intn(len(users) / 2)
+		likedBy := make(map[uint]bool)
 		for j := 0; j < likersCount; j++ {
 			liker := users[r.Intn(len(users))]
-			_ = s.factory.CreateLike(liker, p)
+			if likedBy[liker.ID] {
+				continue
+			}
+			if err := s.factory.CreateLike(liker, p); err == nil {
+				likedBy[liker.ID] = true
+			}
 		}
 
 		// Random comments
@@ -203,9 +219,15 @@ func (s *Seeder) SeedSanctumPosts(users []*models.User) error {
 
 			// Random likes
 			likersCount := r.Intn(len(users) / 3)
+			likedBy := make(map[uint]bool)
 			for j := 0; j < likersCount; j++ {
 				liker := users[r.Intn(len(users))]
-				_ = s.factory.CreateLike(liker, p)
+				if likedBy[liker.ID] {
+					continue
+				}
+				if err := s.factory.CreateLike(liker, p); err == nil {
+					likedBy[liker.ID] = true
+				}
 			}
 
 			// Random comments
