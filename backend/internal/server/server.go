@@ -57,12 +57,10 @@ type Server struct {
 	chatRepo       repository.ChatRepository
 	friendRepo     repository.FriendRepository
 	gameRepo       repository.GameRepository
-	streamRepo     repository.StreamRepository
 	notifier       *notifications.Notifier
 	hub            *notifications.Hub
 	chatHub        *notifications.ChatHub
 	gameHub        *notifications.GameHub
-	videoChatHub   *notifications.VideoChatHub
 	hubs           []wireableHub // all hubs for wiring/shutdown iteration
 	featureFlags   *featureflags.Manager
 	postService    *service.PostService
@@ -90,7 +88,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	chatRepo := repository.NewChatRepository(db)
 	friendRepo := repository.NewFriendRepository(db)
 	gameRepo := repository.NewGameRepository(db)
-	streamRepo := repository.NewStreamRepository(db)
 
 	// Initialize Prometheus metrics
 	prom := middleware.InitMetrics("sanctum-api")
@@ -106,7 +103,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		chatRepo:       chatRepo,
 		friendRepo:     friendRepo,
 		gameRepo:       gameRepo,
-		streamRepo:     streamRepo,
 		featureFlags:   featureflags.NewManager(cfg.FeatureFlags),
 	}
 	server.postService = service.NewPostService(server.postRepo, server.isAdminByUserID)
@@ -122,8 +118,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		server.hub = notifications.NewHub()
 		server.chatHub = notifications.NewChatHub()
 		server.gameHub = notifications.NewGameHub(db, server.notifier)
-		server.videoChatHub = notifications.NewVideoChatHub()
-		server.hubs = []wireableHub{server.hub, server.chatHub, server.gameHub, server.videoChatHub}
+		server.hubs = []wireableHub{server.hub, server.chatHub, server.gameHub}
 	}
 
 	return server, nil
@@ -140,7 +135,6 @@ func NewServerWithDeps(cfg *config.Config, db *gorm.DB, redisClient *redis.Clien
 	chatRepo := repository.NewChatRepository(db)
 	friendRepo := repository.NewFriendRepository(db)
 	gameRepo := repository.NewGameRepository(db)
-	streamRepo := repository.NewStreamRepository(db)
 
 	// Initialize Prometheus metrics
 	prom := middleware.InitMetrics("sanctum-api")
@@ -156,7 +150,6 @@ func NewServerWithDeps(cfg *config.Config, db *gorm.DB, redisClient *redis.Clien
 		chatRepo:       chatRepo,
 		friendRepo:     friendRepo,
 		gameRepo:       gameRepo,
-		streamRepo:     streamRepo,
 		featureFlags:   featureflags.NewManager(cfg.FeatureFlags),
 	}
 
@@ -171,8 +164,7 @@ func NewServerWithDeps(cfg *config.Config, db *gorm.DB, redisClient *redis.Clien
 		server.hub = notifications.NewHub()
 		server.chatHub = notifications.NewChatHub()
 		server.gameHub = notifications.NewGameHub(db, server.notifier)
-		server.videoChatHub = notifications.NewVideoChatHub()
-		server.hubs = []wireableHub{server.hub, server.chatHub, server.gameHub, server.videoChatHub}
+		server.hubs = []wireableHub{server.hub, server.chatHub, server.gameHub}
 	}
 
 	return server, nil
@@ -362,29 +354,11 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	games.Get("/stats/:type", s.GetGameStats)
 	games.Get("/rooms/:id", s.GetGameRoom)
 
-	// Stream routes - public browse
-	publicStreams := api.Group("/streams")
-	publicStreams.Get("/", s.GetStreams)
-	publicStreams.Get("/categories", s.GetStreamCategories)
-	publicStreams.Get("/:id", s.GetStream)
-	publicStreams.Get("/:id/messages", s.GetStreamMessages)
-
-	// Stream routes - protected
-	streams := protected.Group("/streams")
-	streams.Get("/me", s.GetMyStreams)
-	streams.Post("/", s.CreateStream)
-	streams.Put("/:id", s.UpdateStream)
-	streams.Delete("/:id", s.DeleteStream)
-	streams.Post("/:id/go-live", s.GoLive)
-	streams.Post("/:id/end", s.EndStream)
-	streams.Post("/:id/messages", middleware.RateLimit(s.redis, 30, time.Minute, "stream_chat"), s.SendStreamMessage)
-
 	// Websocket endpoints - protected by AuthRequired
 	ws := api.Group("/ws", s.AuthRequired())
-	ws.Get("/", s.WebsocketHandler())                   // General notifications
-	ws.Get("/chat", s.WebSocketChatHandler())           // Real-time chat
-	ws.Get("/game", s.WebSocketGameHandler())           // Multiplayer games
-	ws.Get("/videochat", s.WebSocketVideoChatHandler()) // WebRTC video chat signaling
+	ws.Get("/", s.WebsocketHandler())         // General notifications
+	ws.Get("/chat", s.WebSocketChatHandler()) // Real-time chat
+	ws.Get("/game", s.WebSocketGameHandler()) // Multiplayer games
 
 	// Admin routes
 	admin := protected.Group("/admin", s.AdminRequired())

@@ -23,7 +23,6 @@ var reservedSanctumSlugs = map[string]struct{}{
 	"chatrooms":     {},
 	"friends":       {},
 	"games":         {},
-	"streams":       {},
 	"ws":            {},
 	"swagger":       {},
 	"metrics":       {},

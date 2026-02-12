@@ -9,6 +9,3 @@ DROP INDEX IF EXISTS idx_likes_post_id;
 DROP INDEX IF EXISTS idx_sanctums_created_by_user_id;
 DROP INDEX IF EXISTS idx_sanctum_requests_requested_by_user_id;
 DROP INDEX IF EXISTS idx_friendships_addressee_id;
-DROP INDEX IF EXISTS idx_streams_user_id;
-DROP INDEX IF EXISTS idx_stream_messages_stream_id;
-DROP INDEX IF EXISTS idx_stream_messages_user_id;

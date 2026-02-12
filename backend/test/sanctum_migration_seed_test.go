@@ -126,8 +126,6 @@ func runAutoMigrate(t *testing.T, db *gorm.DB) {
 		&models.GameRoom{},
 		&models.GameMove{},
 		&models.GameStats{},
-		&models.Stream{},
-		&models.StreamMessage{},
 		&models.Sanctum{},
 		&models.SanctumRequest{},
 		&models.SanctumMembership{},

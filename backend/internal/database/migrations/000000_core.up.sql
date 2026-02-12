@@ -1,6 +1,4 @@
 -- Nuking existing tables to ensure clean state with SQL migrations
-DROP TABLE IF EXISTS stream_messages CASCADE;
-DROP TABLE IF EXISTS streams CASCADE;
 DROP TABLE IF EXISTS game_stats CASCADE;
 DROP TABLE IF EXISTS game_moves CASCADE;
 DROP TABLE IF EXISTS game_rooms CASCADE;
@@ -176,30 +174,4 @@ CREATE TABLE game_stats (
     total_games INT NOT NULL DEFAULT 0,
     points INT NOT NULL DEFAULT 0,
     UNIQUE(user_id, game_type)
-);
-
-CREATE TABLE streams (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL DEFAULT '',
-    thumbnail_url VARCHAR(500) NOT NULL DEFAULT '',
-    stream_url VARCHAR(500) NOT NULL DEFAULT '',
-    stream_type VARCHAR(50) NOT NULL,
-    is_live BOOLEAN NOT NULL DEFAULT FALSE,
-    viewer_count INT NOT NULL DEFAULT 0,
-    category VARCHAR(100) NOT NULL DEFAULT '',
-    tags TEXT NOT NULL DEFAULT '',
-    started_at TIMESTAMPTZ,
-    ended_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE stream_messages (
-    id BIGSERIAL PRIMARY KEY,
-    stream_id BIGINT REFERENCES streams(id) ON DELETE CASCADE,
-    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
-    content TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

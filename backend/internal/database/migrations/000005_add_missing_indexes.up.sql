@@ -9,6 +9,3 @@ CREATE INDEX IF NOT EXISTS idx_likes_post_id ON likes(post_id);
 CREATE INDEX IF NOT EXISTS idx_sanctums_created_by_user_id ON sanctums(created_by_user_id);
 CREATE INDEX IF NOT EXISTS idx_sanctum_requests_requested_by_user_id ON sanctum_requests(requested_by_user_id);
 CREATE INDEX IF NOT EXISTS idx_friendships_addressee_id ON friendships(addressee_id);
-CREATE INDEX IF NOT EXISTS idx_streams_user_id ON streams(user_id);
-CREATE INDEX IF NOT EXISTS idx_stream_messages_stream_id ON stream_messages(stream_id);
-CREATE INDEX IF NOT EXISTS idx_stream_messages_user_id ON stream_messages(user_id);

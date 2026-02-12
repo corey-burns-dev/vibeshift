@@ -28,16 +28,6 @@ services:
     volumes:
       - ./frontend:/app
 
-  # Local Media Server for RTMP -> HLS
-  media-server:
-    image: tiangolo/nginx-rtmp
-    ports:
-      - "1935:1935" # RTMP OBS Ingest
-      - "8082:80"   # HLS Playback
-    volumes:
-      - ./infra/nginx-rtmp/nginx.conf:/etc/nginx/nginx.conf
-      - /tmp/hls:/tmp/hls # Shared volume for segments (internal)
-
   # Test services are dev-only
   postgres_test:
     image: postgres:16-alpine
