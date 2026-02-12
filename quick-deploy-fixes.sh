@@ -130,9 +130,9 @@ Thumbs.db
 logs/
 
 # Testing
-coverage/
+frontend/reports/coverage/
 *.test
-test-results/
+frontend/reports/test-results/
 EOF
 
 echo -e "${GREEN}✓ Created root .dockerignore${NC}"
@@ -149,7 +149,7 @@ build
 .cache
 
 # Testing
-coverage
+reports/coverage
 *.test
 
 # IDE
