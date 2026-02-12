@@ -16,7 +16,7 @@ export default defineConfig({
     ['list'],
     ['html', { open: 'never', outputFolder: 'reports/playwright-report' }],
   ],
-  globalSetup: './test/tests/e2e/global-setup.ts',
+  globalSetup: './reports/test/tests/e2e/global-setup.ts',
   projects: [
     {
       name: 'chromium',
