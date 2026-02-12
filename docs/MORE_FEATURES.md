@@ -4,19 +4,19 @@
 
 ### Observability & Monitoring
 
-- [ ] **Implement Custom Prometheus Metrics**
+- [x] **Implement Custom Prometheus Metrics** (in progress on obs-monitoring branch)
   - Add custom collectors for Redis error rates
   - Track database query P95 latency
   - Monitor WebSocket connection counts per room
   - Track message throughput rates
 
-- [ ] **Add Distributed Tracing**
+- [x] **Add Distributed Tracing** (in progress on obs-monitoring branch)
   - Integrate OpenTelemetry for end-to-end request tracing
   - Trace requests through API → Service → Database → Redis
   - Add trace context propagation across WebSocket connections
   - Configure sampling rates for production
 
-- [ ] **Enhance Logging Coverage**
+- [x] **Enhance Logging Coverage** (in progress on obs-monitoring branch)
   - Add structured logging to all repository methods
   - Log WebSocket connection lifecycle events (connect, disconnect, errors)
   - Include correlation IDs in all async operations

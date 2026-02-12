@@ -101,9 +101,9 @@ func TestSanctumRequestApprovalAndPostingFlow(t *testing.T) {
 
 	// 5. User seeds a post to the new sanctum
 	postPayload := map[string]any{
-		"title":       "First Post in New Sanctum",
-		"content":     "Hello world from my new sanctum!",
-		"sanctum_id":  approveResult.Sanctum.ID,
+		"title":      "First Post in New Sanctum",
+		"content":    "Hello world from my new sanctum!",
+		"sanctum_id": approveResult.Sanctum.ID,
 	}
 	createPostReq := authReq(t, http.MethodPost, "/api/posts", requester.Token, postPayload)
 	createPostResp, err := app.Test(createPostReq, -1)

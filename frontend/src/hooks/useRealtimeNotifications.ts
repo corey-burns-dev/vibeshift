@@ -154,6 +154,11 @@ export function useRealtimeNotifications(enabled = true) {
           path: '/api/ws',
           onOpen: () => {
             reconnectAttempts = 0
+            // Debug: log that notifications WS opened
+            try {
+              // eslint-disable-next-line no-console
+              console.debug('[realtime] notifications websocket opened')
+            } catch {}
           },
           onMessage: event => {
             let data: RealtimeEvent
@@ -162,6 +167,12 @@ export function useRealtimeNotifications(enabled = true) {
             } catch {
               return
             }
+
+            // Debug: log incoming realtime event types for visibility
+            try {
+              // eslint-disable-next-line no-console
+              console.debug('[realtime] event received', data.type, data.payload)
+            } catch {}
 
             const payload = data.payload ?? {}
             switch (data.type) {

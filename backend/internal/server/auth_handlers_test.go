@@ -334,5 +334,3 @@ func TestLogout(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 }
-
-

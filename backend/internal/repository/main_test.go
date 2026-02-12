@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 }
 
 func truncateTables(db *gorm.DB) {
-	// Simple cleanup between runs if desired, 
+	// Simple cleanup between runs if desired,
 	// though usually we use transactions or fresh IDs in tests.
 	db.Exec("TRUNCATE TABLE users, posts, comments, likes, conversations, conversation_participants, friendships CASCADE")
 }

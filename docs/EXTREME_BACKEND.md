@@ -121,11 +121,13 @@ You must prove these invariants:
    * Validates exp/nbf/iat
    * Requires sub
    * Handles clock skew
+  
 4. WebSocket ticket:
 
    * Has TTL
    * Single use
    * Cannot be replayed
+  
 5. CORS never allows wildcard + credentials in production
 6. Request size limits are enforced
 7. All DB calls use `db.WithContext(ctx)`

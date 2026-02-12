@@ -75,7 +75,7 @@ func TestUserRepository_Integration(t *testing.T) {
 
 		fetched, err := repo.GetByIDWithPosts(ctx, user.ID, 2)
 		assert.NoError(t, err)
-		assert.Len(t, fetched.Posts, 2) // Limited to 2
+		assert.Len(t, fetched.Posts, 2)                   // Limited to 2
 		assert.Equal(t, "Post 3", fetched.Posts[0].Title) // Ordered by DESC
 	})
 
