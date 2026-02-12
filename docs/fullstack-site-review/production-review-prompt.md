@@ -8,7 +8,8 @@ You are an experienced senior engineer conducting a comprehensive pre-production
 
 - **Application**: Sanctum - Reddit-style social platform for hobbies and interests
 - **Stack**: Go (Fiber) backend, React 19 frontend, PostgreSQL, Redis
-- **Features**: Posts/comments, real-time chat (WebSockets), video streaming, multiplayer games, friend system, Sanctums (communities)
+- **Features**: Posts/comments, real-time chat (WebSockets), multiplayer games, friend system, Sanctums (communities)
+- **Note**: Video streaming and WebRTC video chat have been moved to the `with-streaming-video` branch.
 - **Deployment Target**: Production environment with real users
 - **Current State**: Development-complete, needs production hardening
 

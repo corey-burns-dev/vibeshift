@@ -5,12 +5,16 @@ Sanctum is a Reddit-style social platform focused on creativity, hobbies, and sh
 ## Features
 
 - **Community Feed:** Threaded post-and-reply experience for interest-based communities
-- **Backend:** Go REST API with health and ping endpoints
+- **Real-time Chat:** WebSocket-based direct messaging and group chatrooms
+- **Multiplayer Games:** Real-time social games (Connect Four, Chess, etc.)
+- **Sanctums:** High-performance, interest-based communities (Subreddit-style)
+- **Backend:** Go REST API (Fiber) with high-concurrency architecture
 - **Frontend:** React 19 with TanStack Query, Tailwind CSS, and shadcn components
-- **Databases:** PostgreSQL for persistence, Redis for caching
-- **Development:** Hot reloading for both backend and frontend
-- **Containerization:** Docker multi-stage builds for optimized images
-- **Developer Workflow:** Organized Makefile for common development tasks
+- **Databases:** PostgreSQL for persistence, Redis for caching and pub/sub
+- **Observability:** Prometheus metrics and health monitoring integration
+
+> [!NOTE]
+> **Video Streaming & Video Chat:** These features have been moved to the specialized branch `with-streaming-video`. Use that branch if you need to test or develop streaming functionality.
 
 ## Prerequisites
 

@@ -13,12 +13,7 @@ Main issues found are transport/proxy mismatches, fragile WS auth/URL constructi
 `frontend/src/lib/chat-utils.ts:85` hardcodes `hostname + VITE_API_PORT|8375`, ignoring `VITE_API_URL` host/path.
 `frontend/src/api/client.ts:50` defaults API to `http://localhost:8375/api`, which breaks deployed browser clients unless overridden at build.
 
-3. Critical: Video chat signaling is currently vulnerable to disconnect/drop behavior.
-`backend/internal/server/websocket_videochat.go:69` registers once, then `:81` calls `Join()` which registers again.
-`backend/internal/notifications/videochat_hub.go:50` `Join()` calls `Register()` again.
-`backend/internal/notifications/client.go:21` max inbound WS frame is `512`, too small for many SDP payloads.
-
-4. High: Game WS has duplicate fanout paths and unsafe multi-writer patterns.
+3. High: Game WS has duplicate fanout paths and unsafe multi-writer patterns.
 `backend/internal/server/game_handlers.go:176` per-connection Redis subscription writes directly to socket.
 `backend/internal/notifications/game_hub.go:102` and `:335` also write to same sockets.
 This creates duplicate events and concurrent writes risk.
@@ -57,25 +52,18 @@ This creates duplicate events and concurrent writes risk.
 4. Backend: in `AuthRequired`, for `/api/ws/*`, require valid `ticket` and reject token query auth.
 5. Keep existing Bearer auth behavior unchanged for non-WS HTTP routes.
 
-### Phase 3: Video Chat Reliability Fixes
-1. Remove duplicate register path:
-`backend/internal/server/websocket_videochat.go` remove legacy `Join()` call after `Register()`.
-2. Ensure single disconnect cleanup path and consistent room removal.
-3. Increase allowed inbound WS message size to `16384` (or equivalent per-client option) so SDP offers/answers do not force close.
-4. Preserve ping/pong heartbeat via existing client pump.
-
-### Phase 4: Game Socket Hardening
+### Phase 3: Game Socket Hardening
 1. Remove per-connection Redis subscribe/write loop from `WebSocketGameHandler` and rely on hub wiring fanout.
 2. Ensure serialized writes per game connection (mutex or channel-backed writer path) to avoid concurrent write failures.
 3. Frontend `useGameRoomSession`: add bounded exponential reconnect (start `1s`, cap `30s`, max `8` attempts), and recover join intent after reconnect.
 4. Keep leave semantics intact (`beforeunload` + API leave).
 
-### Phase 5: Reconnect + Capacity Hardening
+### Phase 4: Reconnect + Capacity Hardening
 1. `useRealtimeNotifications`: switch to exponential backoff with jitter (`1s` base, `30s` cap), reset attempts on successful open.
 2. On auth failure while obtaining WS ticket, clear auth and redirect login once (no reconnect loop).
 3. Increase per-user WS limit from `5` to `12` for chat/notification hubs, with explicit log event when limit is hit.
 
-### Phase 6: Local Test Workflow Reliability
+### Phase 5: Local Test Workflow Reliability
 1. Remove hardcoded `DB_HOST=postgres_test` override in integration test setup; use config/env inputs.
 2. In `Dockerfile.test`, set PATH to include `/usr/local/go/bin` explicitly.
 3. Adjust backend test target guidance so host-run and container-run are both deterministic.
@@ -99,7 +87,6 @@ Realtime notifications reconnect backoff behavior.
 WS URL resolver from relative and absolute API URLs.
 2. Backend unit:
 AuthRequired WS path rejects missing/invalid ticket.
-Video chat register/unregister lifecycle without double registration.
 Game hub fanout emits single message per event.
 3. Backend integration:
 Chat + notifications connection and message flow with ticket auth.
@@ -111,11 +98,9 @@ Posts/comments realtime invalidation events still received.
 Frontend container only exposed on `:80`; API + WS work via nginx `/api` proxy.
 2. Multi-tab chat:
 Open 4 tabs, verify no connection-limit rejection and stable reconnect.
-3. Video chat:
-Two users negotiate full offer/answer/ICE cycle without disconnect loops.
-4. Games:
+3. Games:
 Connect Four room join, move stream, reconnect mid-game.
-5. Posts/comments:
+4. Posts/comments:
 Create/update/delete comment and like/unlike post; realtime counters update for other client.
 
 ## Assumptions and Defaults

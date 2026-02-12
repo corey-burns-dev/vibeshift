@@ -44,7 +44,6 @@ Current baseline is healthy: `make test-backend`, `make test-frontend`, `make te
   - Notifications: WS subscribe, receive event fanout under concurrent writes.
   - Games: create room, join room, move loop, room close/leave.
 - Add shared auth/token/ticket utilities in load scripts so WS tests mimic real clients.
-- Keep video streaming/videochat out of phase 1 (explicitly deferred).
 
 4. **Add browser-level concurrency validation**
 - Expand Playwright E2E with critical journey specs:
@@ -91,4 +90,4 @@ Current baseline is healthy: `make test-backend`, `make test-frontend`, `make te
 - Tooling: open-source local stack (Prometheus/Grafana/Loki + k6 + Playwright).
 - Release policy: strict gate.
 - Cadence: nightly + pre-release.
-- Scope for phase 1: text/social/games; video streaming/videochat deferred to phase 2.
+- Scope for phase 1: text/social/games. (Video streaming/videochat moved to with-streaming-video branch).
