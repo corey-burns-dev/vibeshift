@@ -1,16 +1,5 @@
-# Backend (Go) — Claude Notes
+# Moved: backend/CLAUDE.md
 
-Follow `/CLAUDE.md` + `/AI.md` first.
+This file was moved to `docs/agents/archive/backend-CLAUDE.md` during documentation reorganization.
 
-## How to run
-- Prefer Docker-first and Make targets.
-- Useful commands:
-  - `make dev-backend` / `make dev`
-  - `make test-backend`
-  - `make fmt` and `make lint`
-  - `make swagger` and `make openapi-check`
-
-## Rules of thumb
-- Don’t introduce new frameworks unless explicitly requested.
-- Keep API changes reflected in swagger/OpenAPI outputs.
-- If endpoints/types change, ensure frontend API client/types/hooks are updated accordingly.
+See: `docs/agents/archive/backend-CLAUDE.md` for the archived backend Claude notes.
