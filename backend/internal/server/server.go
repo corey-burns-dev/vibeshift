@@ -18,7 +18,6 @@ import (
 	"sanctum/internal/models"
 	"sanctum/internal/notifications"
 	"sanctum/internal/repository"
-	"sanctum/internal/seed"
 	"sanctum/internal/service"
 
 	"github.com/ansrivas/fiberprometheus/v2"
@@ -114,10 +113,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	server.commentService = service.NewCommentService(server.commentRepo, server.postRepo, server.isAdminByUserID)
 	server.chatService = service.NewChatService(server.chatRepo, server.userRepo, server.db, server.isAdminByUserID)
 	server.userService = service.NewUserService(server.userRepo)
-
-	if err := seed.Sanctums(db); err != nil {
-		return nil, fmt.Errorf("failed to seed built-in sanctums: %w", err)
-	}
 
 	// Initialize notifier and hub if Redis is available
 	if redisClient != nil {

@@ -12,6 +12,7 @@ import (
 
 	"sanctum/internal/config"
 	"sanctum/internal/database"
+	"sanctum/internal/seed"
 	"sanctum/internal/server"
 
 	"github.com/gofiber/fiber/v2"
@@ -43,6 +44,19 @@ func newSanctumTestApp(t *testing.T) *fiber.App {
 	app := fiber.New()
 	srv.SetupMiddleware(app)
 	srv.SetupRoutes(app)
+	return app
+}
+
+// newSanctumTestAppWithSeeding creates a test app and seeds built-in sanctums.
+func newSanctumTestAppWithSeeding(t *testing.T) *fiber.App {
+	t.Helper()
+	app := newSanctumTestApp(t)
+
+	// Seed built-in sanctums
+	if err := seed.Sanctums(database.DB); err != nil {
+		t.Fatalf("seed sanctums: %v", err)
+	}
+
 	return app
 }
 

@@ -83,7 +83,7 @@ func runMigrations(t *testing.T, cfg pgEnv, dbName string) {
 		t.Fatalf("bootstrap core tables: %v", err)
 	}
 
-	migrationsPath, err := filepath.Abs("../migrations")
+	migrationsPath, err := filepath.Abs("../internal/database/migrations")
 	if err != nil {
 		t.Fatalf("resolve migrations path: %v", err)
 	}

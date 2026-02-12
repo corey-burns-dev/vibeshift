@@ -37,7 +37,7 @@ func run() error {
 		sslMode = "disable"
 	}
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName, sslMode)
-	migrationsPath, err := filepath.Abs("migrations")
+	migrationsPath, err := filepath.Abs("internal/database/migrations")
 	if err != nil {
 		return fmt.Errorf("resolve migrations path: %w", err)
 	}

@@ -28,3 +28,8 @@ type Sanctum struct {
 	CreatedAt       time.Time     `json:"created_at"`
 	UpdatedAt       time.Time     `json:"updated_at"`
 }
+
+// TableName specifies the table name for GORM.
+func (Sanctum) TableName() string {
+	return "sanctums"
+}

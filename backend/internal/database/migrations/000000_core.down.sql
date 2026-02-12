@@ -1,0 +1,13 @@
+DROP TABLE IF EXISTS stream_messages;
+DROP TABLE IF EXISTS streams;
+DROP TABLE IF EXISTS game_stats;
+DROP TABLE IF EXISTS game_moves;
+DROP TABLE IF EXISTS game_rooms;
+DROP TABLE IF EXISTS friendships;
+DROP TABLE IF EXISTS messages;
+DROP TABLE IF EXISTS conversation_participants;
+DROP TABLE IF EXISTS conversations;
+DROP TABLE IF EXISTS likes;
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS users;

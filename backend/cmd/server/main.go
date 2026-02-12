@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"sanctum/internal/config"
+	"sanctum/internal/database"
+	"sanctum/internal/seed"
 	"sanctum/internal/server"
 
 	"github.com/gofiber/fiber/v2"
@@ -46,6 +48,11 @@ func main() {
 	srv, err := server.NewServer(cfg)
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
+	}
+
+	// Seed built-in sanctums
+	if err := seed.Sanctums(database.DB); err != nil {
+		log.Printf("Warning: failed to seed built-in sanctums: %v", err)
 	}
 
 	// Initialize Fiber app

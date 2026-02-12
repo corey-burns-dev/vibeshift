@@ -12,7 +12,7 @@ import (
 )
 
 func TestSanctumMembershipsBulkAndMe(t *testing.T) {
-	app := newSanctumTestApp(t)
+	app := newSanctumTestAppWithSeeding(t)
 	user := signupSanctumUser(t, app, "membership_user")
 	other := signupSanctumUser(t, app, "membership_other")
 
@@ -152,7 +152,7 @@ func TestSanctumMembershipsBulkAndMe(t *testing.T) {
 }
 
 func TestGetSanctumsStableAfterReseed(t *testing.T) {
-	app := newSanctumTestApp(t)
+	app := newSanctumTestAppWithSeeding(t)
 
 	firstReq := jsonReq(t, http.MethodGet, "/api/sanctums", nil)
 	firstResp, firstErr := app.Test(firstReq, -1)
