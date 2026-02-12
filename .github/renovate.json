@@ -1,0 +1,146 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    ":dependencyDashboard",
+    ":semanticCommitTypeAll(chore)"
+  ],
+  "timezone": "America/New_York",
+  "schedule": [
+    "before 10am on monday"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "prConcurrentLimit": 8,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["^infra/versions\\.env$"],
+      "matchStrings": ["^GO_VERSION=(?<currentValue>[^\\n]+)$"],
+      "depNameTemplate": "golang",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["^infra/versions\\.env$"],
+      "matchStrings": ["^BUN_ALPINE_TAG=(?<currentValue>[^\\n]+)$"],
+      "depNameTemplate": "oven/bun",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["^infra/versions\\.env$"],
+      "matchStrings": ["^BUN_VERSION=(?<currentValue>[^\\n]+)$"],
+      "depNameTemplate": "oven/bun",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["^infra/versions\\.env$"],
+      "matchStrings": ["^NGINX_VERSION=(?<currentValue>[^\\n]+)$"],
+      "depNameTemplate": "nginx",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["^infra/versions\\.env$"],
+      "matchStrings": ["^POSTGRES_VERSION=(?<currentValue>[^\\n]+)$"],
+      "depNameTemplate": "postgres",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["^infra/versions\\.env$"],
+      "matchStrings": ["^REDIS_VERSION=(?<currentValue>[^\\n]+)$"],
+      "depNameTemplate": "redis",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["^infra/versions\\.env$"],
+      "matchStrings": ["^PROMETHEUS_VERSION=(?<currentValue>[^\\n]+)$"],
+      "depNameTemplate": "prom/prometheus",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["^infra/versions\\.env$"],
+      "matchStrings": ["^LOKI_VERSION=(?<currentValue>[^\\n]+)$"],
+      "depNameTemplate": "grafana/loki",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["^infra/versions\\.env$"],
+      "matchStrings": ["^PROMTAIL_VERSION=(?<currentValue>[^\\n]+)$"],
+      "depNameTemplate": "grafana/promtail",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["^infra/versions\\.env$"],
+      "matchStrings": ["^GRAFANA_VERSION=(?<currentValue>[^\\n]+)$"],
+      "depNameTemplate": "grafana/grafana",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["^infra/versions\\.env$"],
+      "matchStrings": ["^CADVISOR_VERSION=(?<currentValue>[^\\n]+)$"],
+      "depNameTemplate": "gcr.io/cadvisor/cadvisor",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["^infra/versions\\.env$"],
+      "matchStrings": ["^DOZZLE_VERSION=(?<currentValue>[^\\n]+)$"],
+      "depNameTemplate": "amir20/dozzle",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["^infra/versions\\.env$"],
+      "matchStrings": ["^UPTIME_KUMA_VERSION=(?<currentValue>[^\\n]+)$"],
+      "depNameTemplate": "louislam/uptime-kuma",
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["dockerfile", "docker-compose"],
+      "groupName": "runtime-images",
+      "labels": ["dependencies", "docker"],
+      "matchUpdateTypes": ["patch", "minor"]
+    },
+    {
+      "matchManagers": ["gomod"],
+      "matchFileNames": ["backend/go.mod"],
+      "groupName": "backend-go",
+      "labels": ["dependencies", "go"],
+      "matchUpdateTypes": ["patch", "minor"]
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchFileNames": ["frontend/package.json"],
+      "groupName": "frontend-js",
+      "labels": ["dependencies", "frontend"],
+      "matchUpdateTypes": ["patch", "minor"]
+    },
+    {
+      "matchPackageNames": ["prom/prometheus", "grafana/grafana", "grafana/loki", "grafana/promtail", "gcr.io/cadvisor/cadvisor"],
+      "groupName": "monitoring-stack",
+      "labels": ["dependencies", "monitoring"],
+      "matchUpdateTypes": ["patch", "minor"]
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr"
+    }
+  ]
+}

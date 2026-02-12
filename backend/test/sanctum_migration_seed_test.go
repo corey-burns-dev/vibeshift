@@ -5,18 +5,15 @@ package test
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
+	"sanctum/internal/config"
+	"sanctum/internal/database"
 	"sanctum/internal/models"
 	"sanctum/internal/seed"
 	"testing"
 	"time"
 
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -78,26 +75,9 @@ func createEphemeralDB(t *testing.T) (pgEnv, string) {
 
 func runMigrations(t *testing.T, cfg pgEnv, dbName string) {
 	t.Helper()
-	bootstrapDB := openEphemeralGorm(t, cfg, dbName)
-	if err := bootstrapDB.AutoMigrate(&models.User{}, &models.Conversation{}); err != nil {
-		t.Fatalf("bootstrap core tables: %v", err)
-	}
-
-	migrationsPath, err := filepath.Abs("../internal/database/migrations")
-	if err != nil {
-		t.Fatalf("resolve migrations path: %v", err)
-	}
-
-	m, err := migrate.New("file://"+migrationsPath, maintenanceDSN(cfg, dbName))
-	if err != nil {
-		t.Fatalf("create migrate client: %v", err)
-	}
-	t.Cleanup(func() {
-		_, _ = m.Close()
-	})
-
-	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		t.Fatalf("run migrations up: %v", err)
+	db := openEphemeralGorm(t, cfg, dbName)
+	if err := database.RunMigrations(context.Background(), db); err != nil {
+		t.Fatalf("run migrations: %v", err)
 	}
 }
 
@@ -111,30 +91,16 @@ func openEphemeralGorm(t *testing.T, cfg pgEnv, dbName string) *gorm.DB {
 	return db
 }
 
-// runAutoMigrate applies the same GORM AutoMigrate model set as internal/database.Connect (non-production).
-func runAutoMigrate(t *testing.T, db *gorm.DB) {
+func runSchemaMode(t *testing.T, db *gorm.DB, env, mode string) {
 	t.Helper()
-	err := db.AutoMigrate(
-		&models.User{},
-		&models.Post{},
-		&models.Comment{},
-		&models.Like{},
-		&models.Conversation{},
-		&models.Message{},
-		&models.ConversationParticipant{},
-		&models.Friendship{},
-		&models.GameRoom{},
-		&models.GameMove{},
-		&models.GameStats{},
-		&models.Sanctum{},
-		&models.SanctumRequest{},
-		&models.SanctumMembership{},
-	)
-	if err != nil {
-		t.Fatalf("auto migrate: %v", err)
+	cfg := &config.Config{
+		Env:                           env,
+		DBSchemaMode:                  mode,
+		DBAutoMigrateAllowDestructive: false,
 	}
-	// Manual migration: opponent_id nullable (matches internal/database)
-	_ = db.Exec("ALTER TABLE game_rooms ALTER COLUMN opponent_id DROP NOT NULL")
+	if err := database.ApplySchema(context.Background(), db, cfg); err != nil {
+		t.Fatalf("apply schema (%s/%s): %v", env, mode, err)
+	}
 }
 
 func TestMigrationsApplyFreshDB(t *testing.T) {
@@ -184,6 +150,63 @@ func TestMigrationsApplyFreshDB(t *testing.T) {
 	if !indexExists {
 		t.Error("expected unique index 'idx_conversations_sanctum_id_unique' to exist")
 	}
+
+	var legacyTableExists bool
+	if err := db.Raw(`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='sancta')`).Scan(&legacyTableExists).Error; err != nil {
+		t.Fatalf("check legacy sancta table: %v", err)
+	}
+	if legacyTableExists {
+		t.Fatal("legacy table sancta should not exist")
+	}
+
+	var nullable string
+	if err := db.Raw(`
+SELECT is_nullable
+FROM information_schema.columns
+WHERE table_schema='public' AND table_name='game_rooms' AND column_name='opponent_id'`).
+		Scan(&nullable).Error; err != nil {
+		t.Fatalf("check game_rooms.opponent_id nullability: %v", err)
+	}
+	if nullable != "YES" {
+		t.Fatalf("expected game_rooms.opponent_id to be nullable, got %q", nullable)
+	}
+}
+
+func TestSchemaModeHybridIsIdempotent(t *testing.T) {
+	cfg, dbName := createEphemeralDB(t)
+	db := openEphemeralGorm(t, cfg, dbName)
+
+	runSchemaMode(t, db, "test", database.SchemaModeHybrid)
+	runSchemaMode(t, db, "test", database.SchemaModeHybrid)
+
+	status, err := database.GetSchemaStatus(context.Background(), db, &config.Config{
+		Env:          "test",
+		DBSchemaMode: database.SchemaModeHybrid,
+	})
+	if err != nil {
+		t.Fatalf("schema status: %v", err)
+	}
+	if len(status.PendingMigrations) != 0 {
+		t.Fatalf("expected no pending migrations, got %d", len(status.PendingMigrations))
+	}
+}
+
+func TestSchemaModeHybridProdSkipsAutoMigrate(t *testing.T) {
+	cfg, dbName := createEphemeralDB(t)
+	db := openEphemeralGorm(t, cfg, dbName)
+
+	status, err := database.GetSchemaStatus(context.Background(), db, &config.Config{
+		Env:          "production",
+		DBSchemaMode: database.SchemaModeHybrid,
+	})
+	if err != nil {
+		t.Fatalf("schema status: %v", err)
+	}
+	if status.WillRunAutoMigrate {
+		t.Fatal("expected auto-migrate to be disabled for production hybrid mode")
+	}
+
+	runSchemaMode(t, db, "production", database.SchemaModeHybrid)
 }
 
 func TestSanctumSeedIdempotent(t *testing.T) {

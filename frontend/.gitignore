@@ -4,4 +4,4 @@ dist/
 reports/coverage/
 reports/playwright-report/
 reports/test-results/
-test/e2e/.auth/
+test/tests/e2e/.auth/

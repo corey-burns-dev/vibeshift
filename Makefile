@@ -1,6 +1,6 @@
 # Variables
 GO ?= go
-DOCKER_COMPOSE ?= docker compose
+DOCKER_COMPOSE ?= ./scripts/compose.sh
 BUN ?= bun
 
 # Environment Orchestration
@@ -19,7 +19,7 @@ GREEN := \033[1;32m
 YELLOW := \033[1;33m
 NC := \033[0m # No Color
 
-.PHONY: help dev dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down
+.PHONY: help dev dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed db-migrate db-migrate-auto db-schema-status deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity
 
 # Default target
 help:
@@ -54,6 +54,8 @@ help:
 	@echo ""
 	@echo "$(GREEN)Environment & Config:$(NC)"
 	@echo "  make config-check       - 🔍 Validate merged Docker Compose config"
+	@echo "  make config-sanity      - 🔍 Validate config and env safety defaults"
+	@echo "  make versions-check     - 🔍 Verify compose/docker versions match catalog"
 	@echo "  make env                - ⚙️  Initialize .env file"
 	@echo ""
 	@echo "$(GREEN)Code Quality:$(NC)"
@@ -71,6 +73,9 @@ help:
 	@echo ""
 	@echo "$(GREEN)Database:$(NC)"
 	@echo "  make seed               - 🌱 Seed database with test data"
+	@echo "  make db-migrate         - 🧭 Apply SQL migrations"
+	@echo "  make db-migrate-auto    - 🧭 Run AutoMigrate mode (explicit)"
+	@echo "  make db-schema-status   - 🧭 Show schema mode and migration status"
 	@echo ""
 	@echo "$(GREEN)Utilities:$(NC)"
 	@echo "  make env                - ⚙️  Initialize .env file"
@@ -85,6 +90,7 @@ help:
 	@echo "  make deps-check         - 🔍 Check for outdated Go dependencies"
 	@echo "  make deps-vuln          - 🛡️  Scan for security vulnerabilities"
 	@echo "  make deps-audit         - 🔎 Full dependency audit (check + vuln)"
+	@echo "  make deps-freshness     - 🔍 Check Go and frontend outdated deps"
 	@echo "  make deps-add-backend pkg=<pkg> - ➕ Add Go dependency inside container"
 	@echo ""
 
@@ -193,6 +199,9 @@ config-check:
 	@echo "$(BLUE)Validating merged Docker Compose configuration for environment: $(ENVIRONMENT)...$(NC)"
 	$(DOCKER_COMPOSE) $(COMPOSE_FILES) config
 
+config-sanity:
+	@bash scripts/config_sanity.sh
+
 # Code quality
 fmt:
 	@echo "$(BLUE)Formatting Go code...$(NC)"
@@ -249,7 +258,10 @@ env:
 restart: down dev
 
 check-versions:
-	@bash scripts/check-versions.sh
+	@bash backend/scripts/check-versions.sh
+
+versions-check:
+	@bash scripts/verify_versions.sh
 
 clean:
 	@echo "$(BLUE)Cleaning up containers, volumes, and artifacts...$(NC)"
@@ -315,6 +327,20 @@ seed:
 	@echo "$(GREEN)✓ Database seeded successfully!$(NC)"
 	@echo "$(YELLOW)📧 Test users password: password123$(NC)"
 
+db-migrate:
+	@echo "$(BLUE)Applying SQL migrations...$(NC)"
+	cd backend && $(GO) run ./cmd/migrate/main.go up
+	@echo "$(GREEN)✓ SQL migrations applied$(NC)"
+
+db-migrate-auto:
+	@echo "$(BLUE)Running explicit automigrations...$(NC)"
+	cd backend && DB_SCHEMA_MODE=auto $(GO) run ./cmd/migrate/main.go auto
+	@echo "$(GREEN)✓ Automigrations completed$(NC)"
+
+db-schema-status:
+	@echo "$(BLUE)Schema status...$(NC)"
+	cd backend && $(GO) run ./cmd/migrate/main.go status
+
 # Dependency Management
 deps-install-backend:
 	@echo "$(BLUE)Installing Go dependencies...$(NC)"
@@ -370,3 +396,10 @@ deps-vuln:
 
 deps-audit: deps-check deps-vuln
 	@echo "$(GREEN)✓ Full dependency audit complete$(NC)"
+
+deps-freshness:
+	@echo "$(BLUE)Checking frontend outdated dependencies...$(NC)"
+	cd frontend && $(BUN) outdated
+	@echo "$(BLUE)Checking backend outdated dependencies...$(NC)"
+	cd backend && $(GO) list -u -m -f '{{if .Update}}{{.Path}} {{.Version}} -> {{.Update.Version}}{{end}}' all
+	@echo "$(GREEN)✓ Freshness check complete$(NC)"

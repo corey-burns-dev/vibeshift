@@ -21,7 +21,7 @@ Sanctum is a Reddit-style social platform focused on creativity, hobbies, and sh
 - Docker and Docker Compose
 - Git
 - Node.js (v24+) and Bun (for local frontend development)
-- Go (v1.23+, optional for local backend development)
+- Go (v1.25+, optional for local backend development)
 
 ## Quick Start
 
@@ -95,6 +95,11 @@ Sanctum is a Reddit-style social platform focused on creativity, hobbies, and sh
 ### Utilities
 
 - `make env` — Initialize .env file
+- `make config-sanity` — Validate config/env safety defaults
+- `make versions-check` — Verify Docker/Compose versions match catalog
+- `make db-migrate` — Apply SQL migrations
+- `make db-migrate-auto` — Run explicit automigrations
+- `make db-schema-status` — Show schema mode and pending migrations
 - `make clean` — Clean containers, volumes, and artifacts
 
 ### Admin Role

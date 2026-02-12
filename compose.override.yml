@@ -2,6 +2,8 @@ services:
   app:
     build:
       dockerfile: Dockerfile.dev
+      args:
+        GO_VERSION: ${GO_VERSION}
     ports:
       - "${GO_PORT:-8375}:${GO_PORT:-8375}"
     volumes:
@@ -21,6 +23,8 @@ services:
   frontend:
     build:
       dockerfile: Dockerfile.dev
+      args:
+        BUN_VERSION: ${BUN_VERSION}
     ports:
       - "5173:5173"
     environment:
@@ -30,7 +34,7 @@ services:
 
   # Test services are dev-only
   postgres_test:
-    image: postgres:16-alpine
+    image: postgres:${POSTGRES_VERSION}
     environment:
       POSTGRES_DB: sanctum_test
       POSTGRES_USER: sanctum_user
@@ -49,6 +53,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.test
+      args:
+        GO_VERSION: ${GO_VERSION}
     depends_on:
       redis:
         condition: service_healthy

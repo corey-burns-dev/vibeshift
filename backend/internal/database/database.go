@@ -19,6 +19,10 @@ import (
 var DB *gorm.DB
 var ReadDB *gorm.DB
 
+type ConnectOptions struct {
+	ApplySchema bool
+}
+
 // CustomGormLogger integrates GORM with slog
 type CustomGormLogger struct {
 	logger *slog.Logger
@@ -166,6 +170,11 @@ func TruncateAllTables(db *gorm.DB) error {
 
 // Connect opens database connections for read/write and optionally read replica.
 func Connect(cfg *config.Config) (*gorm.DB, error) {
+	return ConnectWithOptions(cfg, ConnectOptions{ApplySchema: true})
+}
+
+// ConnectWithOptions opens database connections and optionally applies schema.
+func ConnectWithOptions(cfg *config.Config, opts ConnectOptions) (*gorm.DB, error) {
 	var err error
 	ctx := context.Background()
 
@@ -194,14 +203,11 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to configure database pool: %w", err)
 	}
 
-	if err := RunMigrations(ctx, DB); err != nil {
-		return nil, fmt.Errorf("failed to run migrations: %w", err)
+	if opts.ApplySchema {
+		if err := ApplySchema(ctx, DB, cfg); err != nil {
+			return nil, fmt.Errorf("failed to apply schema: %w", err)
+		}
+		middleware.Logger.Info("Database schema setup completed")
 	}
-
-	if migrateErr := DB.Exec("ALTER TABLE game_rooms ALTER COLUMN opponent_id DROP NOT NULL").Error; migrateErr != nil {
-		middleware.Logger.Warn("Failed to drop NOT NULL constraint on game_rooms.opponent_id", slog.String("error", migrateErr.Error()))
-	}
-
-	middleware.Logger.Info("Database migrations completed")
 	return DB, nil
 }

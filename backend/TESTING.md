@@ -22,11 +22,15 @@ From `backend/`:
 
 ```bash
 go run ./cmd/migrate/main.go up
-go run ./cmd/migrate/main.go down
-go run ./cmd/migrate/main.go version
+go run ./cmd/migrate/main.go auto
+go run ./cmd/migrate/main.go status
+go run ./cmd/migrate/main.go down <version>
 ```
 
-Production runtime no longer relies on `AutoMigrate`; apply SQL migrations before starting the server in production.
+Default runtime mode is `DB_SCHEMA_MODE=sql`:
+- SQL migrations always run.
+- `AutoMigrate` is not run during normal test startup.
+- Use `go run ./cmd/migrate/main.go auto` only when explicitly validating model/schema parity.
 
 ## Containerized Alternatives
 

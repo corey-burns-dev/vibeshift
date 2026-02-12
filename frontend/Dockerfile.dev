@@ -1,6 +1,7 @@
 ### development Dockerfile for frontend (Bun + Vite dev server)
 ### Using official Bun image for better dependency handling and reproducibility
-FROM oven/bun:latest
+ARG BUN_VERSION=1.3.9
+FROM oven/bun:${BUN_VERSION}
 WORKDIR /app
 
 # Copy lockfile and package.json first (dependency layer caching)

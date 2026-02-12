@@ -34,6 +34,12 @@ Install browser dependencies once:
 bun run test:e2e:install
 ```
 
+Install browser + Linux system dependencies (CI/Debian-like images):
+
+```bash
+bun run test:e2e:install:system
+```
+
 Run Sanctum smoke tests (fast PR subset):
 
 ```bash

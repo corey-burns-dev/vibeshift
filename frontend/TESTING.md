@@ -15,7 +15,7 @@ From the `frontend/` directory (or repo root via Make):
 | `bun run test:e2e:smoke` | Run only @smoke E2E tests           |
 | `make test-frontend`     | Run unit tests from repo root       |
 
-**Prerequisites for E2E:** Backend and frontend must be running, and Playwright browsers installed (`bun run test:e2e:install`).
+**Prerequisites for E2E:** Backend and frontend must be running, and Playwright browsers installed (`bun run test:e2e:install` for local/browser-only install, or `bun run test:e2e:install:system` when OS deps must also be installed).
 
 ## Test structure
 

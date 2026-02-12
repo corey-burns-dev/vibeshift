@@ -78,9 +78,15 @@ func (s *migrationStore) RemoveMigration(ctx context.Context, version int) error
 }
 
 func RunMigrations(ctx context.Context, db *gorm.DB) error {
-	// Ensure migration_logs table exists
-	if err := db.WithContext(ctx).AutoMigrate(&MigrationLog{}); err != nil {
-		return fmt.Errorf("failed to auto-migrate migration_logs: %w", err)
+	const ensureMigrationLogTableSQL = `
+CREATE TABLE IF NOT EXISTS migration_logs (
+	version BIGINT PRIMARY KEY,
+	name VARCHAR(255) NOT NULL,
+	applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_migration_logs_applied_at ON migration_logs (applied_at);`
+	if err := db.WithContext(ctx).Exec(ensureMigrationLogTableSQL).Error; err != nil {
+		return fmt.Errorf("failed to ensure migration logs table: %w", err)
 	}
 
 	store := NewMigrationStore(db)
@@ -134,6 +140,9 @@ func RollbackMigration(ctx context.Context, db *gorm.DB, version int) error {
 	}
 
 	middleware.Logger.Info("Rolling back migration", slog.Int("version", version), slog.String("name", m.Name))
+	if err := db.WithContext(ctx).Exec(m.DownScript).Error; err != nil {
+		return fmt.Errorf("failed to run rollback SQL for migration %d (%s): %w", version, m.Name, err)
+	}
 	if err := store.RemoveMigration(ctx, version); err != nil {
 		return err
 	}

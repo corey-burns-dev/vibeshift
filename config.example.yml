@@ -22,3 +22,9 @@ JWT_SECRET: "your-super-secret-key-that-should-be-long-and-random"
 # - on/off
 # - N% rollout by user ID (e.g. new_feed=25%)
 FEATURE_FLAGS: ""
+
+# Schema management mode: hybrid|sql|auto
+DB_SCHEMA_MODE: "sql"
+
+# Only honored when DB_SCHEMA_MODE=auto
+DB_AUTOMIGRATE_ALLOW_DESTRUCTIVE: false

@@ -8,4 +8,8 @@ DROP TABLE IF EXISTS conversations;
 DROP TABLE IF EXISTS likes;
 DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS sanctum_memberships;
+DROP TABLE IF EXISTS sanctum_requests;
+DROP TABLE IF EXISTS sanctums;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS sancta;

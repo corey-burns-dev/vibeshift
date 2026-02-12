@@ -5,31 +5,34 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/spf13/viper"
 )
 
 // Config holds application configuration values loaded from file or environment variables.
 type Config struct {
-	JWTSecret      string `mapstructure:"JWT_SECRET"`
-	Port           string `mapstructure:"PORT"`
-	DBHost         string `mapstructure:"DB_HOST"`
-	DBPort         string `mapstructure:"DB_PORT"`
-	DBUser         string `mapstructure:"DB_USER"`
-	DBPassword     string `mapstructure:"DB_PASSWORD"`
-	DBName         string `mapstructure:"DB_NAME"`
-	DBSSLMode      string `mapstructure:"DB_SSLMODE"`
-	DBReadHost     string `mapstructure:"DB_READ_HOST"`
-	DBReadPort     string `mapstructure:"DB_READ_PORT"`
-	DBReadUser     string `mapstructure:"DB_READ_USER"`
-	DBReadPassword string `mapstructure:"DB_READ_PASSWORD"`
-	RedisURL       string `mapstructure:"REDIS_URL"`
-	AllowedOrigins string `mapstructure:"ALLOWED_ORIGINS"`
-	FeatureFlags   string `mapstructure:"FEATURE_FLAGS"`
-	Env            string `mapstructure:"APP_ENV"`
-	TURNURL        string `mapstructure:"TURN_URL"`
-	TURNUsername   string `mapstructure:"TURN_USERNAME"`
-	TURNPassword   string `mapstructure:"TURN_PASSWORD"`
+	JWTSecret                     string `mapstructure:"JWT_SECRET"`
+	Port                          string `mapstructure:"PORT"`
+	DBHost                        string `mapstructure:"DB_HOST"`
+	DBPort                        string `mapstructure:"DB_PORT"`
+	DBUser                        string `mapstructure:"DB_USER"`
+	DBPassword                    string `mapstructure:"DB_PASSWORD"`
+	DBName                        string `mapstructure:"DB_NAME"`
+	DBSSLMode                     string `mapstructure:"DB_SSLMODE"`
+	DBReadHost                    string `mapstructure:"DB_READ_HOST"`
+	DBReadPort                    string `mapstructure:"DB_READ_PORT"`
+	DBReadUser                    string `mapstructure:"DB_READ_USER"`
+	DBReadPassword                string `mapstructure:"DB_READ_PASSWORD"`
+	RedisURL                      string `mapstructure:"REDIS_URL"`
+	AllowedOrigins                string `mapstructure:"ALLOWED_ORIGINS"`
+	FeatureFlags                  string `mapstructure:"FEATURE_FLAGS"`
+	Env                           string `mapstructure:"APP_ENV"`
+	DBSchemaMode                  string `mapstructure:"DB_SCHEMA_MODE"`
+	DBAutoMigrateAllowDestructive bool   `mapstructure:"DB_AUTOMIGRATE_ALLOW_DESTRUCTIVE"`
+	TURNURL                       string `mapstructure:"TURN_URL"`
+	TURNUsername                  string `mapstructure:"TURN_USERNAME"`
+	TURNPassword                  string `mapstructure:"TURN_PASSWORD"`
 }
 
 // LoadConfig loads application configuration from file and environment variables.
@@ -75,6 +78,8 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("FEATURE_FLAGS", "")
 	viper.SetDefault("APP_ENV", "development")
 	viper.SetDefault("DB_SSLMODE", "disable")
+	viper.SetDefault("DB_SCHEMA_MODE", "sql")
+	viper.SetDefault("DB_AUTOMIGRATE_ALLOW_DESTRUCTIVE", false)
 
 	var config Config
 	if err := viper.Unmarshal(&config); err != nil {
@@ -96,6 +101,16 @@ func (c *Config) Validate() error {
 	if c.JWTSecret == "" {
 		return errors.New("JWT_SECRET is required")
 	}
+	if c.DBSchemaMode == "" {
+		c.DBSchemaMode = "sql"
+	}
+	mode := strings.ToLower(strings.TrimSpace(c.DBSchemaMode))
+	switch mode {
+	case "hybrid", "sql", "auto":
+	default:
+		return fmt.Errorf("DB_SCHEMA_MODE must be one of hybrid|sql|auto, got %q", c.DBSchemaMode)
+	}
+	c.DBSchemaMode = mode
 
 	isProduction := c.Env == "production" || c.Env == "prod"
 

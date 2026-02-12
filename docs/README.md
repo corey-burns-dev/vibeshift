@@ -9,6 +9,8 @@ Welcome to the Sanctum documentation hub. This guide helps you find the right do
 - **API Architecture**: [architecture/api-architecture.md](architecture/api-architecture.md)
 - **Feature Checklist**: [features/implementation-checklist.md](features/implementation-checklist.md)
 - **Production Readiness**: [operations/production-readiness.md](operations/production-readiness.md)
+- **Docker Version Management**: [operations/docker-version-management.md](operations/docker-version-management.md)
+- **Migration Guide**: [development/migrations.md](development/migrations.md)
 - **Testing Guide**: [testing/sanctum-test-matrix.md](testing/sanctum-test-matrix.md)
 
 ## Documentation Structure
@@ -34,6 +36,7 @@ Feature specifications, wishlists, and implementation planning:
 ### `/development/` - Developer Workflow
 Developer setup, tools, and best practices:
 - [seeding.md](development/seeding.md) - Database seeding guide
+- [migrations.md](development/migrations.md) - Database migration workflow and commands
 - [git-best-practices.md](development/git-best-practices.md) - Git workflow and best practices
 - [hooks/](development/hooks/) - Git hooks documentation
   - [hooks-quick-reference.md](development/hooks/hooks-quick-reference.md)
@@ -42,6 +45,7 @@ Developer setup, tools, and best practices:
 ### `/operations/` - Production Operations
 Production deployment, monitoring, and incident response:
 - [production-readiness.md](operations/production-readiness.md) - Production readiness checklist and known issues
+- [docker-version-management.md](operations/docker-version-management.md) - Centralized Docker/Compose version catalog workflow
 - [stress-testing.md](operations/stress-testing.md) - Stress testing guide and scenarios
 - [runbooks/](operations/runbooks/) - Operational runbooks
   - [ci-runbook.md](operations/runbooks/ci-runbook.md)

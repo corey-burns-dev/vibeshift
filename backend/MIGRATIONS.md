@@ -1,47 +1,53 @@
-# Controlled Database Migrations
+# Database Schema and Migrations
 
-This project uses a custom SQL-based migration system instead of GORM AutoMigrate.
+Schema control is centralized in `internal/database` and driven by `DB_SCHEMA_MODE`.
 
-## Writing Migrations
+For a quick operational guide (commands, workflow, reset steps), see:
+`docs/development/migrations.md`.
 
-Create migration files in `backend/internal/server/migrations/` with the naming convention:
+## Modes
+
+- `sql` (default): run SQL migrations only.
+- `hybrid`: run SQL migrations, then run `AutoMigrate` only in non-production environments.
+- `auto`: run `AutoMigrate` only. In `production`/`staging`, this requires `DB_AUTOMIGRATE_ALLOW_DESTRUCTIVE=true`.
+
+## Migration Files
+
+Store SQL migrations in:
+
+- `backend/internal/database/migrations/*.up.sql`
+- `backend/internal/database/migrations/*.down.sql`
+
+Naming format:
+
+```text
+000007_add_example_table.up.sql
+000007_add_example_table.down.sql
 ```
-YYYYMMDDHHMMSS_description.up.sql   # Migration to apply
-YYYYMMDDHHMMSS_description.down.sql # Rollback script
-```
 
-Example:
-```
-20240215120000_create_sessions.up.sql
-20240215120000_create_sessions.down.sql
-```
+## Commands
 
-## Applying Migrations
-
-Migrations run automatically on startup via `database.Connect()`. The system tracks applied migrations in the `migration_logs` table (automatically created by migration 000001).
-
-## Manual Operations
+From `backend/`:
 
 ```bash
-# Run migrations (happens automatically on startup)
-cd backend && go run cmd/server/main.go
+go run ./cmd/migrate/main.go up
+go run ./cmd/migrate/main.go auto
+go run ./cmd/migrate/main.go status
+go run ./cmd/migrate/main.go down <version>
 ```
 
-Rollback is available via `RollbackMigration(ctx, db, version)` in `internal/database/migrate_runner.go`.
+From repo root:
 
-## Configuration
-
-Read replica support (optional):
-```yaml
-DB_READ_HOST: "read-replica-host"
-DB_READ_PORT: "5432"
-DB_READ_USER: "readonly_user"
-DB_READ_PASSWORD: "secret"
+```bash
+make db-migrate
+make db-migrate-auto
+make db-schema-status
 ```
 
-## Best Practices
+## Runtime Behavior
 
-1. Always write both up and down scripts
-2. Down scripts should be idempotent
-3. Test rollbacks before deploying
-4. Back up data before applying migrations in production
+- Server startup calls `database.Connect()`, which applies schema according to `DB_SCHEMA_MODE`.
+- Recommended for development and test: `DB_SCHEMA_MODE=sql`.
+- Use `DB_SCHEMA_MODE=auto` only for explicit/manual schema reconciliation.
+- SQL migrations are tracked in `migration_logs`.
+- Rollbacks execute the corresponding `*.down.sql` and remove the migration log row.

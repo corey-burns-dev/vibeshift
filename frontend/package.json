@@ -18,7 +18,8 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:smoke": "playwright test --grep @smoke",
-    "test:e2e:install": "playwright install --with-deps chromium"
+    "test:e2e:install": "playwright install chromium",
+    "test:e2e:install:system": "playwright install --with-deps chromium"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -47,7 +48,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.14",
+    "@biomejs/biome": "^2.3.15",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4.1.18",
     "@testing-library/jest-dom": "^6.9.1",

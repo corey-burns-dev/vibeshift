@@ -1,22 +1,17 @@
 ### production Dockerfile for frontend (build static files and serve with nginx)
-FROM node:24.11.0-alpine3.21 AS build
+ARG BUN_ALPINE_TAG=1.3.9-alpine
+FROM oven/bun:${BUN_ALPINE_TAG} AS build
 WORKDIR /app
 
-# Install required packages for Bun installation
-RUN apk add --no-cache curl bash
-
-# Install Bun
-RUN curl -fsSL https://bun.sh/install | bash && \
-  mv ~/.bun/bin/bun /usr/local/bin/
-
-COPY package.json bun.lockb* ./
-RUN bun install
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 COPY tsconfig.json vite.config.ts ./
 COPY src ./src
 COPY index.html ./
 RUN bun --bun run build
 
-FROM nginx:1.29.3-alpine AS runtime
+ARG NGINX_VERSION=1.28.2-alpine3.23
+FROM nginx:${NGINX_VERSION} AS runtime
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80

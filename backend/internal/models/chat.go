@@ -15,7 +15,7 @@ type Conversation struct {
 	IsGroup      bool           `gorm:"default:false" json:"is_group"`
 	Avatar       string         `json:"avatar"` // For group chats
 	CreatedBy    uint           `json:"created_by"`
-	SanctumID    *uint          `gorm:"index" json:"sanctum_id,omitempty"`
+	SanctumID    *uint          `gorm:"uniqueIndex:idx_conversations_sanctum_id_unique,where:sanctum_id IS NOT NULL" json:"sanctum_id,omitempty"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`

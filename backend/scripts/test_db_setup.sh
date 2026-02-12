@@ -20,6 +20,7 @@ for i in {1..60}; do
 	sleep 1
 done
 
-# Run seeder
+# Run SQL migrations before seeding
 cd "$(dirname "$0")/.."
+go run ./cmd/migrate/main.go up
 go run ./cmd/seed/main.go

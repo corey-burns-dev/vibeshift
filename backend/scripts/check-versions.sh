@@ -1,9 +1,19 @@
 #!/bin/bash
 
 # Script to check latest versions of Docker images used in sanctum
-# Usage: bash scripts/check-versions.sh
+# Usage: bash backend/scripts/check-versions.sh
 
 set -e
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+VERSIONS_FILE="$ROOT_DIR/infra/versions.env"
+
+if [ ! -f "$VERSIONS_FILE" ]; then
+    echo "Missing $VERSIONS_FILE"
+    exit 1
+fi
+
+# shellcheck disable=SC1090
+source "$VERSIONS_FILE"
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "📦 Sanctum Docker Image Version Checker"
@@ -21,14 +31,20 @@ check_image() {
     local image=$1
     local name=$2
     local current_version=$3
+    local repo_path
     
     echo -n "🔍 Checking $name... "
     
     # Get the latest tag from Docker Hub API
     # Note: This requires jq to be installed. If not available, use simpler approach
     if command -v jq &> /dev/null; then
+        if [[ "$image" == */* ]]; then
+            repo_path="$image"
+        else
+            repo_path="library/$image"
+        fi
         # Try to get latest tag (simple approach - gets a few tags)
-        latest=$(curl -s "https://registry.hub.docker.com/v2/repositories/library/$image/tags?page_size=1" | jq -r '.results[0].name' 2>/dev/null || echo "unknown")
+        latest=$(curl -s "https://registry.hub.docker.com/v2/repositories/$repo_path/tags?page_size=1" | jq -r '.results[0].name' 2>/dev/null || echo "unknown")
         
         if [ "$latest" != "unknown" ] && [ -n "$latest" ]; then
             if [ "$current_version" = "$latest" ]; then
@@ -47,18 +63,17 @@ check_image() {
 
 # Check each image
 echo -e "${BLUE}Backend:${NC}"
-check_image "golang" "Go" "1.23.4-alpine3.21"
-check_image "alpine" "Alpine" "3.21"
+check_image "golang" "Go" "$GO_VERSION"
 
 echo ""
 echo -e "${BLUE}Database:${NC}"
-check_image "postgres" "PostgreSQL" "18-alpine"
-check_image "redis" "Redis" "8.2.3-alpine"
+check_image "postgres" "PostgreSQL" "$POSTGRES_VERSION"
+check_image "redis" "Redis" "$REDIS_VERSION"
 
 echo ""
 echo -e "${BLUE}Frontend:${NC}"
-check_image "node" "Node.js" "24.11.0-alpine3.21"
-check_image "nginx" "nginx" "1.29.3-alpine"
+check_image "oven/bun" "Bun" "$BUN_ALPINE_TAG"
+check_image "nginx" "nginx" "$NGINX_VERSION"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

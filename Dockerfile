@@ -1,4 +1,5 @@
-FROM golang:1.25.7-alpine AS builder
+ARG GO_VERSION=1.25.7-alpine3.23
+FROM golang:${GO_VERSION} AS builder
 
 WORKDIR /app
 
@@ -8,7 +9,8 @@ RUN go mod download
 COPY backend/ .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o main ./cmd/server
 
-FROM gcr.io/distroless/static-debian12
+ARG DISTROLESS_IMAGE=gcr.io/distroless/static-debian12@sha256:cd64bec9cec257044ce3a8dd3620cf83b387920100332f2b041f19c4d2febf93
+FROM ${DISTROLESS_IMAGE}
 
 WORKDIR /
 

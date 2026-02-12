@@ -20,7 +20,7 @@ const (
 type Sanctum struct {
 	ID              uint          `gorm:"primaryKey" json:"id"`
 	Name            string        `gorm:"size:120;not null" json:"name"`
-	Slug            string        `gorm:"size:24;not null;uniqueIndex" json:"slug"`
+	Slug            string        `gorm:"size:24;not null;unique" json:"slug"`
 	Description     string        `gorm:"type:text" json:"description"`
 	CreatedByUserID *uint         `json:"created_by_user_id"`
 	CreatedByUser   *User         `gorm:"foreignKey:CreatedByUserID" json:"created_by_user,omitempty"`

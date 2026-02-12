@@ -4,45 +4,46 @@ set -euo pipefail
 CFG="config.yml"
 
 if [ ! -f "$CFG" ]; then
-  echo "Creating $CFG from config.example.yml";
-  cp config.example.yml "$CFG";
-  echo "Please update $CFG with your settings if needed.";
+  echo "Creating $CFG from config.example.yml"
+  cp config.example.yml "$CFG"
+  echo "Please update $CFG with your settings if needed."
 fi
 
 if [ -f .env ]; then
-  echo ".env already exists — skipping generation.";
+  echo ".env already exists - skipping generation."
   exit 0
 fi
 
-if command -v yq >/dev/null 2>&1; then
-  YQ_VER=$(yq --version 2>/dev/null || true)
-  if echo "$YQ_VER" | grep -E 'yq[^0-9]*4|version[^0-9]*4' >/dev/null 2>&1; then
-    POSTGRES_USER=$(yq e '.DB_USER' -r "$CFG" || true)
-    POSTGRES_DB=$(yq e '.DB_NAME' -r "$CFG" || true)
-    POSTGRES_PASSWORD=$(yq e '.DB_PASSWORD' -r "$CFG" || true)
-    GO_PORT=$(yq e '.PORT' -r "$CFG" || true)
-    REDIS_URL=$(yq e '.REDIS_URL' -r "$CFG" || true)
-  else
-    POSTGRES_USER=$(yq r "$CFG" DB_USER -r 2>/dev/null || yq r "$CFG" DB_USER 2>/dev/null || true)
-    POSTGRES_DB=$(yq r "$CFG" DB_NAME -r 2>/dev/null || yq r "$CFG" DB_NAME 2>/dev/null || true)
-    POSTGRES_PASSWORD=$(yq r "$CFG" DB_PASSWORD -r 2>/dev/null || yq r "$CFG" DB_PASSWORD 2>/dev/null || true)
-    GO_PORT=$(yq r "$CFG" PORT -r 2>/dev/null || yq r "$CFG" PORT 2>/dev/null || true)
-    REDIS_URL=$(yq r "$CFG" REDIS_URL -r 2>/dev/null || yq r "$CFG" REDIS_URL 2>/dev/null || true)
+extract_cfg() {
+  local key="$1"
+  if command -v yq >/dev/null 2>&1; then
+    local yq_ver
+    yq_ver="$(yq --version 2>/dev/null || true)"
+    if echo "$yq_ver" | grep -E 'yq[^0-9]*4|version[^0-9]*4' >/dev/null 2>&1; then
+      yq e ".${key}" -r "$CFG" 2>/dev/null || true
+      return
+    fi
+    yq r "$CFG" "$key" -r 2>/dev/null || yq r "$CFG" "$key" 2>/dev/null || true
+    return
   fi
-else
-  POSTGRES_USER=$(sed -n 's/^DB_USER:[[:space:]]*"\(.*\)"/\1/p' "$CFG" || true)
-  POSTGRES_DB=$(sed -n 's/^DB_NAME:[[:space:]]*"\(.*\)"/\1/p' "$CFG" || true)
-  POSTGRES_PASSWORD=$(sed -n 's/^DB_PASSWORD:[[:space:]]*"\(.*\)"/\1/p' "$CFG" || true)
-  GO_PORT=$(sed -n 's/^PORT:[[:space:]]*"\(.*\)"/\1/p' "$CFG" || true)
-  REDIS_URL=$(sed -n 's/^REDIS_URL:[[:space:]]*"\(.*\)"/\1/p' "$CFG" || true)
-fi
+  sed -n "s/^${key}:[[:space:]]*\"\\(.*\\)\"/\\1/p" "$CFG" 2>/dev/null || true
+}
+
+POSTGRES_USER="$(extract_cfg DB_USER)"
+POSTGRES_DB="$(extract_cfg DB_NAME)"
+POSTGRES_PASSWORD="$(extract_cfg DB_PASSWORD)"
+GO_PORT="$(extract_cfg PORT)"
+REDIS_URL="$(extract_cfg REDIS_URL)"
 
 cat > .env <<EOF
-POSTGRES_USER=${POSTGRES_USER:-}
-POSTGRES_DB=${POSTGRES_DB:-}
-POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
-GO_PORT=${GO_PORT:-}
-REDIS_URL=${REDIS_URL:-}
+APP_ENV=development
+DB_AUTOMIGRATE_ALLOW_DESTRUCTIVE=false
+DB_SCHEMA_MODE=hybrid
+GO_PORT=${GO_PORT:-8375}
+POSTGRES_DB=${POSTGRES_DB:-sanctum}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+POSTGRES_USER=${POSTGRES_USER:-user}
+REDIS_URL=${REDIS_URL:-localhost:6379}
 EOF
 
 echo "✓ .env generated (edit .env if needed)"

@@ -3,6 +3,7 @@
 Summary
 - Consolidated all frontend test artifacts and reports into `frontend/reports/`.
 - Updated configs, CI workflows, and helper scripts to reference the new paths.
+- Update (same-day follow-up): Playwright source tests were moved back to `frontend/test/tests/e2e`; `frontend/reports/` remains artifact-only.
 
 Why
 - Reduce clutter in repo root and make CI artifact paths consistent.
@@ -12,10 +13,9 @@ Mapping (old -> new)
 - `frontend/playwright-report/` -> `frontend/reports/playwright-report/`
 - `frontend/test-results/` -> `frontend/reports/test-results/`
 - `frontend/coverage/` -> `frontend/reports/coverage/`
-- `frontend/test/` -> `frontend/reports/test/`
 
 Files / Configs updated
-- `frontend/playwright.config.ts` — `testDir` now points to `./reports/test/tests/e2e` and Playwright HTML output uses `reports/playwright-report`.
+- `frontend/playwright.config.ts` — Playwright HTML output uses `reports/playwright-report`; source tests live at `./test/tests/e2e`.
 - `.github/workflows/ci.yml` and `.github/workflows/e2e-nightly.yml` — artifact upload paths updated to `frontend/reports/*`.
 - `quick-deploy-fixes.sh` — Dockerignore generation updated to ignore `frontend/reports/coverage/` and `frontend/reports/test-results/`.
 - `frontend/.gitignore`, `frontend/.biomeignore`, `frontend/tsconfig.json` — ignores/excludes updated for `reports/*` paths.
@@ -32,10 +32,7 @@ How to verify locally
 
 ```bash
 cd frontend
-# run Playwright via Bun/npm/yarn as configured in package.json (example)
-npm run test:e2e
-# or use the local Playwright CLI
-npx playwright test
+bun run test:e2e
 ```
 
 3. Inspect generated artifacts under `frontend/reports/playwright-report/` and `frontend/reports/test-results/`.

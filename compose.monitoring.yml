@@ -1,8 +1,6 @@
-version: "3.8"
-
 services:
   prometheus:
-    image: prom/prometheus:v2.49.1
+    image: prom/prometheus:${PROMETHEUS_VERSION}
     container_name: sanctum_prometheus
     ports:
       - "9090:9090"
@@ -19,7 +17,7 @@ services:
       - sanctum_default
 
   loki:
-    image: grafana/loki:2.9.4
+    image: grafana/loki:${LOKI_VERSION}
     container_name: sanctum_loki
     volumes:
       - ./infra/loki/loki-config.yml:/etc/loki/local-config.yaml
@@ -29,7 +27,7 @@ services:
       - sanctum_default
 
   promtail:
-    image: grafana/promtail:2.9.4
+    image: grafana/promtail:${PROMTAIL_VERSION}
     container_name: sanctum_promtail
     volumes:
       - /var/log:/var/log
@@ -41,7 +39,7 @@ services:
       - sanctum_default
 
   grafana:
-    image: grafana/grafana:10.3.1
+    image: grafana/grafana:${GRAFANA_VERSION}
     container_name: sanctum_grafana
     ports:
       - "3000:3000"
@@ -56,7 +54,7 @@ services:
       - sanctum_default
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION}
     container_name: sanctum_cadvisor
     volumes:
       - /:/rootfs:ro

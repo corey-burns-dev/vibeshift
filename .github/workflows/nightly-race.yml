@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16.11-alpine3.23
         env:
           POSTGRES_DB: sanctum_test
           POSTGRES_USER: sanctum_user
@@ -23,7 +23,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       redis:
-        image: redis:7.2-alpine
+        image: redis:7.4.7-alpine
         ports: ["6379:6379"]
         options: >-
           --health-cmd "redis-cli ping"

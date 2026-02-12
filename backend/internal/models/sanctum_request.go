@@ -20,9 +20,9 @@ type SanctumRequest struct {
 	RequestedName     string               `gorm:"size:120;not null" json:"requested_name"`
 	RequestedSlug     string               `gorm:"size:24;not null" json:"requested_slug"`
 	Reason            string               `gorm:"type:text;not null" json:"reason"`
-	RequestedByUserID uint                 `gorm:"not null;index" json:"requested_by_user_id"`
+	RequestedByUserID uint                 `gorm:"not null;index:idx_sanctum_requests_requested_by_user_id" json:"requested_by_user_id"`
 	RequestedByUser   *User                `gorm:"foreignKey:RequestedByUserID" json:"requested_by_user,omitempty"`
-	Status            SanctumRequestStatus `gorm:"type:varchar(20);not null;default:'pending';index" json:"status"`
+	Status            SanctumRequestStatus `gorm:"type:varchar(20);not null;default:'pending';index:idx_sanctum_requests_status" json:"status"`
 	ReviewedByUserID  *uint                `json:"reviewed_by_user_id"`
 	ReviewedByUser    *User                `gorm:"foreignKey:ReviewedByUserID" json:"reviewed_by_user,omitempty"`
 	ReviewNotes       string               `gorm:"type:text" json:"review_notes"`

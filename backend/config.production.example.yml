@@ -14,3 +14,7 @@ DB_NAME: "sanctum_prod"
 # ALLOWED_ORIGINS: "https://your-domain.com"
 # JWT_SECRET: "A-VERY-LONG-AND-SECURE-RANDOM-STRING"
 # FEATURE_FLAGS: "new_feed=10%,beta_chat=off"
+
+# Schema behavior for production: SQL migrations only
+DB_SCHEMA_MODE: "sql"
+DB_AUTOMIGRATE_ALLOW_DESTRUCTIVE: false
