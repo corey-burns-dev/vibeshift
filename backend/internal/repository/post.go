@@ -44,87 +44,82 @@ func (r *postRepository) GetByID(ctx context.Context, id uint, currentUserID uin
 	key := cache.PostKey(id)
 
 	err := cache.Aside(ctx, key, &post, cache.PostTTL, func() error {
-		return r.db.WithContext(ctx).Preload("User").First(&post, id).Error
+		return r.applyPostDetails(r.db.WithContext(ctx), 0).Preload("User").First(&post, id).Error
 	})
 
 	if err != nil {
 		return nil, err
 	}
-	// populate comments and likes count
-	r.populatePostDetails(ctx, &post, currentUserID)
+
+	// Fetch liked status separately for the current user
+	if currentUserID != 0 {
+		var count int64
+		r.db.WithContext(ctx).Model(&models.Like{}).Where("post_id = ? AND user_id = ?", post.ID, currentUserID).Count(&count)
+		post.Liked = count > 0
+	}
+
 	return &post, nil
 }
 
 func (r *postRepository) GetByUserID(ctx context.Context, userID uint, limit, offset int, currentUserID uint) ([]*models.Post, error) {
 	var posts []*models.Post
-	err := r.db.WithContext(ctx).
+	err := r.applyPostDetails(r.db.WithContext(ctx), currentUserID).
 		Preload("User").
 		Where("user_id = ?", userID).
 		Order("created_at DESC").
 		Limit(limit).
 		Offset(offset).
 		Find(&posts).Error
-	if err != nil {
-		return posts, err
-	}
-	for _, p := range posts {
-		r.populatePostDetails(ctx, p, currentUserID)
-	}
 	return posts, err
 }
 
 func (r *postRepository) GetBySanctumID(ctx context.Context, sanctumID uint, limit, offset int, currentUserID uint) ([]*models.Post, error) {
 	var posts []*models.Post
-	err := r.db.WithContext(ctx).
+	err := r.applyPostDetails(r.db.WithContext(ctx), currentUserID).
 		Preload("User").
 		Where("sanctum_id = ?", sanctumID).
 		Order("created_at DESC").
 		Limit(limit).
 		Offset(offset).
 		Find(&posts).Error
-	if err != nil {
-		return posts, err
-	}
-	for _, p := range posts {
-		r.populatePostDetails(ctx, p, currentUserID)
-	}
 	return posts, err
 }
 
 func (r *postRepository) List(ctx context.Context, limit, offset int, currentUserID uint) ([]*models.Post, error) {
 	var posts []*models.Post
-	err := r.db.WithContext(ctx).
+	err := r.applyPostDetails(r.db.WithContext(ctx), currentUserID).
 		Preload("User").
 		Order("created_at DESC").
 		Limit(limit).
 		Offset(offset).
 		Find(&posts).Error
-	if err != nil {
-		return posts, err
-	}
-	for _, p := range posts {
-		r.populatePostDetails(ctx, p, currentUserID)
-	}
 	return posts, err
 }
 
 func (r *postRepository) Search(ctx context.Context, query string, limit, offset int, currentUserID uint) ([]*models.Post, error) {
 	var posts []*models.Post
 	like := "%" + query + "%"
-	err := r.db.WithContext(ctx).
+	err := r.applyPostDetails(r.db.WithContext(ctx), currentUserID).
 		Preload("User").
 		Where("title ILIKE ? OR content ILIKE ?", like, like).
 		Order("created_at DESC").
 		Limit(limit).
 		Offset(offset).
 		Find(&posts).Error
-	if err != nil {
-		return posts, err
-	}
-	for _, p := range posts {
-		r.populatePostDetails(ctx, p, currentUserID)
-	}
 	return posts, err
+}
+
+// applyPostDetails adds subqueries to fetch counts and liked status in a single query.
+func (r *postRepository) applyPostDetails(db *gorm.DB, currentUserID uint) *gorm.DB {
+	selectQuery := "posts.*, " +
+		"(SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.deleted_at IS NULL) as comments_count, " +
+		"(SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as likes_count"
+
+	if currentUserID != 0 {
+		return db.Select(selectQuery+", EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as liked", currentUserID)
+	}
+
+	return db.Select(selectQuery + ", false as liked")
 }
 
 // populatePostDetails fetches counts for comments and likes, and checks if the post is liked by the current user.

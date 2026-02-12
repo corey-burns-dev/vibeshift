@@ -99,6 +99,36 @@ func TestChatHub_MultiDeviceSupport(t *testing.T) {
 	}
 }
 
+func TestChatHub_BroadcastToConversation_DoesNotSendToNonParticipants(t *testing.T) {
+	hub := NewChatHub()
+
+	participant := &Client{UserID: 1, Send: make(chan []byte, 10)}
+	outsider := &Client{UserID: 2, Send: make(chan []byte, 10)}
+
+	hub.RegisterUser(participant)
+	hub.RegisterUser(outsider)
+	hub.JoinConversation(1, 404)
+
+	msg := ChatMessage{
+		Type:           "room_message",
+		ConversationID: 404,
+		Payload:        "Scoped fanout",
+	}
+	hub.BroadcastToConversation(404, msg)
+
+	select {
+	case <-participant.Send:
+	default:
+		t.Fatal("participant did not receive room_message")
+	}
+
+	select {
+	case <-outsider.Send:
+		t.Fatal("non-participant unexpectedly received room_message")
+	default:
+	}
+}
+
 func TestChatHub_UnregisterCleanup(t *testing.T) {
 	hub := NewChatHub()
 	userID := uint(7)

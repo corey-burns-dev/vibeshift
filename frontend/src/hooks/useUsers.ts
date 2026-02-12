@@ -6,7 +6,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
-import { apiClient } from '../api/client'
+import { ApiError, apiClient } from '../api/client'
 import type { UpdateProfileRequest, User } from '../api/types'
 
 // Query keys
@@ -137,16 +137,17 @@ export function useValidateToken() {
     queryKey: ['auth', 'validate'],
     queryFn: async () => {
       try {
-        await apiClient.healthCheck()
+        await apiClient.getCurrentUser()
         return true
       } catch (error) {
-        // If health check fails with auth error, token is invalid
-        const err = error as Error
         const isAuthError =
-          err?.message?.includes('401') ||
-          err?.message?.includes('403') ||
-          err?.message?.includes('Unauthorized') ||
-          err?.message?.includes('Forbidden')
+          (error instanceof ApiError &&
+            (error.status === 401 || error.status === 403)) ||
+          (error instanceof Error &&
+            (error.message.includes('401') ||
+              error.message.includes('403') ||
+              error.message.includes('Unauthorized') ||
+              error.message.includes('Forbidden')))
         if (isAuthError) {
           // Clear invalid token
           localStorage.removeItem('token')

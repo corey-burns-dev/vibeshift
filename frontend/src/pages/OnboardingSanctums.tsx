@@ -20,8 +20,12 @@ export default function OnboardingSanctums() {
     [sanctums]
   )
 
-  const selectedCount = selected.size
-  const canSubmit = selectedCount >= 3 && selected.has(REQUIRED_SLUG)
+  const chosen = useMemo(
+    () => sortedSanctums.map(s => s.slug).filter(slug => selected.has(slug)),
+    [sortedSanctums, selected]
+  )
+  const selectedCount = chosen.length
+  const canSubmit = selectedCount >= 3 && chosen.includes(REQUIRED_SLUG)
 
   const toggle = (slug: string) => {
     if (slug === REQUIRED_SLUG) return
@@ -42,10 +46,6 @@ export default function OnboardingSanctums() {
       toast.error('Pick at least 3 sanctums. Atrium is required.')
       return
     }
-
-    const chosen = sortedSanctums
-      .map(s => s.slug)
-      .filter(slug => selected.has(slug))
 
     try {
       await upsert.mutateAsync({ sanctum_slugs: chosen })

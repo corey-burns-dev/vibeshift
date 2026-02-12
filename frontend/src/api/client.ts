@@ -89,12 +89,51 @@ class ApiClient {
       const response = await fetch(url, {
         ...options,
         headers,
+        credentials: 'include',
       })
 
       const text = await response.text()
       const requestId = response.headers.get('X-Request-ID') || undefined
 
       if (!response.ok) {
+        // Handle token refresh on 401
+        if (
+          response.status === 401 &&
+          endpoint !== '/auth/login' &&
+          endpoint !== '/auth/signup' &&
+          endpoint !== '/auth/refresh' &&
+          token // Only try to refresh if we actually had a token
+        ) {
+          logger.info('Access token expired, attempting refresh...')
+          try {
+            const refreshResponse = await fetch(
+              `${this.baseUrl}/auth/refresh`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+              }
+            )
+
+            if (refreshResponse.ok) {
+              const data = await refreshResponse.json()
+              if (data.token) {
+                localStorage.setItem('token', data.token)
+                logger.info('Token refreshed successfully, retrying request')
+                // Retry with new token
+                return this.request(endpoint, options)
+              }
+            }
+          } catch (refreshErr) {
+            logger.error('Token refresh failed', { error: refreshErr })
+          }
+
+          // If refresh fails, clear auth and redirect to login
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+          window.location.href = '/login'
+        }
+
         let errMsg = `HTTP ${response.status}: ${response.statusText}`
         let code: string | undefined
 
@@ -156,6 +195,22 @@ class ApiClient {
     return this.request('/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
+    })
+  }
+
+  async logout(): Promise<void> {
+    try {
+      await this.request('/auth/logout', {
+        method: 'POST',
+      })
+    } catch (err) {
+      logger.error('Logout request failed', { error: err })
+    }
+  }
+
+  async refresh(): Promise<{ token: string }> {
+    return this.request('/auth/refresh', {
+      method: 'POST',
     })
   }
 

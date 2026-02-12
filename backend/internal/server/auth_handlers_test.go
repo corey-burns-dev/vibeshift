@@ -322,6 +322,7 @@ func TestLogout(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, _ := app.Test(req)
+		defer func() { _ = resp.Body.Close() }()
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 
@@ -331,6 +332,7 @@ func TestLogout(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, _ := app.Test(req)
+		defer func() { _ = resp.Body.Close() }()
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 }

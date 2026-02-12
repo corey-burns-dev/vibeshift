@@ -159,7 +159,16 @@ func (s *Server) WebSocketGameHandler() fiber.Handler {
 		client := notifications.NewClient(s.gameHub, c, userID)
 
 		// Register connection with GameHub
-		s.gameHub.RegisterClient(roomID, client)
+		if err := s.gameHub.RegisterClient(roomID, client); err != nil {
+			log.Printf("GameWS: Registration failed: %v", err)
+			_ = c.WriteJSON(notifications.GameAction{
+				Type:    "error",
+				RoomID:  roomID,
+				Payload: map[string]string{"message": err.Error()},
+			})
+			_ = c.Close()
+			return
+		}
 		defer func() {
 			s.gameHub.UnregisterClient(client)
 			_ = c.Close()

@@ -3,6 +3,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	"sanctum/internal/models"
@@ -36,7 +37,8 @@ func (s *Server) CreateConversation(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		status := fiber.StatusInternalServerError
-		if appErr, ok := err.(*models.AppError); ok && appErr.Code == "VALIDATION_ERROR" {
+		var appErr *models.AppError
+		if errors.As(err, &appErr) && appErr.Code == "VALIDATION_ERROR" {
 			status = fiber.StatusBadRequest
 		}
 		return models.RespondWithError(c, status, err)
@@ -76,9 +78,10 @@ func (s *Server) GetConversation(c *fiber.Ctx) error {
 	conv, err := s.chatSvc().GetConversationForUser(ctx, convID, userID)
 	if err != nil {
 		status := fiber.StatusInternalServerError
-		if appErr, ok := err.(*models.AppError); ok && appErr.Code == "UNAUTHORIZED" {
+		var appErr *models.AppError
+		if errors.As(err, &appErr) && appErr.Code == "UNAUTHORIZED" {
 			status = fiber.StatusForbidden
-		} else if err == gorm.ErrRecordNotFound {
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
 			status = fiber.StatusNotFound
 		}
 		return models.RespondWithError(c, status, err)
@@ -119,14 +122,15 @@ func (s *Server) SendMessage(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		status := fiber.StatusInternalServerError
-		if appErr, ok := err.(*models.AppError); ok {
+		var appErr *models.AppError
+		if errors.As(err, &appErr) {
 			switch appErr.Code {
 			case "VALIDATION_ERROR":
 				status = fiber.StatusBadRequest
 			case "UNAUTHORIZED":
 				status = fiber.StatusForbidden
 			}
-		} else if err == gorm.ErrRecordNotFound {
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
 			status = fiber.StatusNotFound
 		}
 		return models.RespondWithError(c, status, err)
@@ -148,10 +152,10 @@ func (s *Server) SendMessage(c *fiber.Ctx) error {
 		})
 	}
 
-	// For public chatrooms, broadcast room-level realtime updates to all connected users
-	// so room tabs/counters can react even when the room isn't currently open.
+	// For public chatrooms, broadcast room-level realtime updates only to
+	// connected participants in that conversation.
 	if conv.IsGroup && s.chatHub != nil {
-		s.chatHub.BroadcastToAllUsers(notifications.ChatMessage{
+		s.chatHub.BroadcastToConversation(convID, notifications.ChatMessage{
 			Type:           "room_message",
 			ConversationID: convID,
 			UserID:         userID,
@@ -195,9 +199,10 @@ func (s *Server) GetMessages(c *fiber.Ctx) error {
 	messages, err := s.chatSvc().GetMessagesForUser(ctx, convID, userID, page.Limit, page.Offset)
 	if err != nil {
 		status := fiber.StatusInternalServerError
-		if appErr, ok := err.(*models.AppError); ok && appErr.Code == "UNAUTHORIZED" {
+		var appErr *models.AppError
+		if errors.As(err, &appErr) && appErr.Code == "UNAUTHORIZED" {
 			status = fiber.StatusForbidden
-		} else if err == gorm.ErrRecordNotFound {
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
 			status = fiber.StatusNotFound
 		}
 		return models.RespondWithError(c, status, err)
@@ -225,14 +230,15 @@ func (s *Server) AddParticipant(c *fiber.Ctx) error {
 
 	if err := s.chatSvc().AddParticipant(ctx, convID, userID, req.UserID); err != nil {
 		status := fiber.StatusInternalServerError
-		if appErr, ok := err.(*models.AppError); ok {
+		var appErr *models.AppError
+		if errors.As(err, &appErr) {
 			switch appErr.Code {
 			case "UNAUTHORIZED":
 				status = fiber.StatusForbidden
 			case "VALIDATION_ERROR":
 				status = fiber.StatusBadRequest
 			}
-		} else if err == gorm.ErrRecordNotFound {
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
 			status = fiber.StatusNotFound
 		}
 		return models.RespondWithError(c, status, err)
@@ -254,9 +260,10 @@ func (s *Server) LeaveConversation(c *fiber.Ctx) error {
 	conv, err := s.chatSvc().LeaveConversation(ctx, convID, userID)
 	if err != nil {
 		status := fiber.StatusInternalServerError
-		if appErr, ok := err.(*models.AppError); ok && appErr.Code == "UNAUTHORIZED" {
+		var appErr *models.AppError
+		if errors.As(err, &appErr) && appErr.Code == "UNAUTHORIZED" {
 			status = fiber.StatusForbidden
-		} else if err == gorm.ErrRecordNotFound {
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
 			status = fiber.StatusNotFound
 		}
 		return models.RespondWithError(c, status, err)
@@ -327,13 +334,16 @@ func (s *Server) JoinChatroom(c *fiber.Ctx) error {
 
 	if _, err := s.chatSvc().JoinChatroom(ctx, roomID, userID); err != nil {
 		status := fiber.StatusInternalServerError
-		if appErr, ok := err.(*models.AppError); ok {
+		var appErr *models.AppError
+		if errors.As(err, &appErr) {
 			switch appErr.Code {
 			case "NOT_FOUND":
 				status = fiber.StatusNotFound
 			case "VALIDATION_ERROR":
 				status = fiber.StatusBadRequest
 			}
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			status = fiber.StatusNotFound
 		}
 		return models.RespondWithError(c, status, err)
 	}
@@ -360,13 +370,16 @@ func (s *Server) RemoveParticipant(c *fiber.Ctx) error {
 	username, err := s.chatSvc().RemoveParticipant(ctx, roomID, userID, participantID)
 	if err != nil {
 		status := fiber.StatusInternalServerError
-		if appErr, ok := err.(*models.AppError); ok {
+		var appErr *models.AppError
+		if errors.As(err, &appErr) {
 			switch appErr.Code {
 			case "NOT_FOUND":
 				status = fiber.StatusNotFound
 			case "UNAUTHORIZED":
 				status = fiber.StatusForbidden
 			}
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			status = fiber.StatusNotFound
 		}
 		return models.RespondWithError(c, status, err)
 	}

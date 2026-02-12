@@ -50,6 +50,8 @@ const sanctums = [
   },
 ]
 
+let sanctumsData = sanctums
+
 vi.mock('react-router-dom', async () => {
   const actual =
     await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
@@ -61,7 +63,7 @@ vi.mock('react-router-dom', async () => {
 
 vi.mock('@/hooks/useSanctums', () => ({
   useSanctums: () => ({
-    data: sanctums,
+    data: sanctumsData,
     isLoading: false,
     isError: false,
   }),
@@ -75,6 +77,7 @@ describe('OnboardingSanctums', () => {
   afterEach(() => {
     mutateAsyncMock.mockReset()
     navigateMock.mockReset()
+    sanctumsData = sanctums
   })
 
   it('forces Atrium and preselects Atrium + Forge + Game Room', () => {
@@ -134,5 +137,19 @@ describe('OnboardingSanctums', () => {
       sanctum_slugs: ['atrium', 'development', 'gaming'],
     })
     expect(navigateMock).toHaveBeenCalledWith('/posts')
+  })
+
+  it('keeps Continue disabled when only two visible sanctums are selected', () => {
+    sanctumsData = sanctums.filter(
+      sanctum => sanctum.slug === 'atrium' || sanctum.slug === 'development'
+    )
+
+    render(
+      <MemoryRouter>
+        <OnboardingSanctums />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled()
   })
 })

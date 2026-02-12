@@ -20,6 +20,7 @@ vi.mock('@/api/client', () => ({
   apiClient: {
     signup: vi.fn(),
     login: vi.fn(),
+    logout: vi.fn().mockResolvedValue(undefined),
   },
 }))
 
@@ -133,12 +134,14 @@ describe('useLogout', () => {
     localStorage?.setItem?.('user', JSON.stringify({ id: 1, username: 'u' }))
   })
 
-  it('clears token and user and navigates to /login', () => {
+  it('clears token and user and navigates to /login', async () => {
     const { result } = renderHook(() => useLogout(), {
       wrapper: createWrapper(),
     })
 
-    result.current()
+    await act(async () => {
+      await result.current()
+    })
 
     expect(localStorage.getItem('token')).toBeNull()
     expect(localStorage.getItem('user')).toBeNull()

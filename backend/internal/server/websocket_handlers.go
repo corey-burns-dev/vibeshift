@@ -185,7 +185,7 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 						}
 
 						if s.chatHub != nil && s.isGroupConversation(ctx, convID) {
-							s.chatHub.BroadcastToAllUsers(notifications.ChatMessage{
+							s.chatHub.BroadcastToConversation(convID, notifications.ChatMessage{
 								Type:           "room_message",
 								ConversationID: convID,
 								UserID:         userID,

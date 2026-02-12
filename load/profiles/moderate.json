@@ -1,0 +1,39 @@
+{
+  "scenarios": {
+    "auth": {
+      "executor": "ramping-vus",
+      "startVUs": 0,
+      "stages": [
+        { "duration": "1m", "target": 50 },
+        { "duration": "3m", "target": 50 },
+        { "duration": "1m", "target": 0 }
+      ],
+      "gracefulStop": "30s"
+    },
+    "social": {
+      "executor": "ramping-vus",
+      "startVUs": 0,
+      "stages": [
+        { "duration": "1m", "target": 100 },
+        { "duration": "3m", "target": 100 },
+        { "duration": "1m", "target": 0 }
+      ],
+      "gracefulStop": "30s"
+    },
+    "messaging": {
+      "executor": "ramping-vus",
+      "startVUs": 0,
+      "stages": [
+        { "duration": "1m", "target": 30 },
+        { "duration": "3m", "target": 30 },
+        { "duration": "1m", "target": 0 }
+      ],
+      "gracefulStop": "30s"
+    }
+  },
+  "thresholds": {
+    "http_req_duration": ["p(95)<300"],
+    "http_req_failed": ["rate<0.01"],
+    "ws_connecting": ["p(95)<500"]
+  }
+}

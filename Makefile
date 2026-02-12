@@ -196,7 +196,7 @@ config-check:
 # Code quality
 fmt:
 	@echo "$(BLUE)Formatting Go code...$(NC)"
-	$(GO) fmt ./...
+	cd backend && $(GO) fmt ./...
 	@echo "$(GREEN)✓ Code formatted$(NC)"
 
 lint:
@@ -265,7 +265,29 @@ test: test-backend
 
 test-backend:
 	@echo "$(BLUE)Running backend tests...$(NC)"
-	cd backend && $(GO) test ./...
+	cd backend && $(GO) test -race ./...
+
+test-load:
+	@echo "$(BLUE)Running backend load smoke tests...$(NC)"
+	cd backend && APP_ENV=test $(GO) test ./test -tags=load -run TestLoadScenarios -count=1
+
+test-stress-http:
+	@echo "$(BLUE)Running HTTP stress tests with k6...$(NC)"
+	k6 run --config load/profiles/moderate.json load/scripts/http_stress.js
+
+test-stress-ws:
+	@echo "$(BLUE)Running WebSocket stress tests with k6...$(NC)"
+	k6 run --config load/profiles/moderate.json load/scripts/ws_stress.js
+
+test-soak:
+	@echo "$(BLUE)Running 2-hour soak test...$(NC)"
+	k6 run --duration 2h load/scripts/soak_test.js
+
+observability-verify:
+	@echo "$(BLUE)Verifying observability stack health...$(NC)"
+	@curl -s http://localhost:9090/-/healthy | grep -q "Prometheus is Healthy" || (echo "$(RED)Prometheus unhealthy$(NC)"; exit 1)
+	@curl -s http://localhost:3000/api/health | grep -q '"database":"ok"' || (echo "$(RED)Grafana unhealthy$(NC)"; exit 1)
+	@echo "$(GREEN)✓ Observability stack is healthy$(NC)"
 
 test-api:
 	@echo "$(BLUE)Running API endpoint tests...$(NC)"
@@ -283,7 +305,7 @@ test-down:
 
 test-backend-integration: test-up
 	@echo "$(BLUE)Running backend integration tests (tag=integration)...$(NC)"
-	cd backend && $(GO) test -tags=integration ./test/...
+	cd backend && $(GO) test -race -tags=integration ./test/...
 	@echo "$(GREEN)✓ Integration tests finished$(NC)"
 
 # Database seeding

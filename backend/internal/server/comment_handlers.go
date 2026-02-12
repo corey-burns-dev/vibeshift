@@ -2,6 +2,7 @@
 package server
 
 import (
+	"errors"
 	"time"
 
 	"sanctum/internal/models"
@@ -34,7 +35,8 @@ func (s *Server) CreateComment(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		status := fiber.StatusInternalServerError
-		if appErr, ok := err.(*models.AppError); ok {
+		var appErr *models.AppError
+		if errors.As(err, &appErr) {
 			switch appErr.Code {
 			case "VALIDATION_ERROR":
 				status = fiber.StatusBadRequest
@@ -71,7 +73,8 @@ func (s *Server) GetComments(c *fiber.Ctx) error {
 	comments, err := s.commentSvc().ListComments(ctx, postID)
 	if err != nil {
 		status := fiber.StatusInternalServerError
-		if appErr, ok := err.(*models.AppError); ok && appErr.Code == "NOT_FOUND" {
+		var appErr *models.AppError
+		if errors.As(err, &appErr) && appErr.Code == "NOT_FOUND" {
 			status = fiber.StatusNotFound
 		}
 		return models.RespondWithError(c, status, err)
@@ -104,7 +107,8 @@ func (s *Server) UpdateComment(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		status := fiber.StatusInternalServerError
-		if appErr, ok := err.(*models.AppError); ok {
+		var appErr *models.AppError
+		if errors.As(err, &appErr) {
 			switch appErr.Code {
 			case "VALIDATION_ERROR":
 				status = fiber.StatusBadRequest
@@ -147,7 +151,8 @@ func (s *Server) DeleteComment(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		status := fiber.StatusInternalServerError
-		if appErr, ok := err.(*models.AppError); ok {
+		var appErr *models.AppError
+		if errors.As(err, &appErr) {
 			switch appErr.Code {
 			case "NOT_FOUND":
 				status = fiber.StatusNotFound

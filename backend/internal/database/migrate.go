@@ -53,7 +53,10 @@ func RegisterMigrations(efs embed.FS) error {
 		}
 
 		var version int
-		fmt.Sscanf(parts[0], "%d", &version)
+		if _, err := fmt.Sscanf(parts[0], "%d", &version); err != nil {
+			middleware.Logger.Warn("Skipping migration with invalid version", slog.String("file", name), slog.String("version", parts[0]))
+			continue
+		}
 
 		upBytes, err := efs.ReadFile(filepath.Join("migrations", name))
 		if err != nil {

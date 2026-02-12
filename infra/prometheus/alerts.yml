@@ -1,0 +1,38 @@
+groups:
+  - name: sanctum_alerts
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.005
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High 5xx error rate on {{ $labels.instance }}"
+          description: "Error rate is above 0.5% for more than 5 minutes."
+
+      - alert: HighAuthFailureRate
+        expr: rate(http_requests_total{path="/api/auth/login", status="401"}[5m]) / rate(http_requests_total{path="/api/auth/login"}[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Auth failure rate is above 1% for more than 5 minutes."
+
+      - alert: HighLatencyP95
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[10m]))) > 0.3
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High P95 API latency"
+          description: "P95 latency is above 300ms for more than 10 minutes."
+
+      - alert: WebSocketBackpressure
+        expr: rate(ws_backpressure_drops_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "WebSocket backpressure detected"
+          description: "Messages are being dropped due to WebSocket backpressure."

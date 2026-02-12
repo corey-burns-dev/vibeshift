@@ -48,7 +48,10 @@ export function useLogout() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  return () => {
+  return async () => {
+    // Call backend logout (best effort)
+    await apiClient.logout()
+
     // Clear local storage
     localStorage.removeItem('token')
     localStorage.removeItem('user')

@@ -3,6 +3,7 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
@@ -22,7 +23,7 @@ func (h metricsHook) DialHook(next redis.DialHook) redis.DialHook {
 func (h metricsHook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 	return func(ctx context.Context, cmd redis.Cmder) error {
 		err := next(ctx, cmd)
-		if err != nil && err != redis.Nil {
+		if err != nil && !errors.Is(err, redis.Nil) {
 			middleware.RedisErrors.WithLabelValues(cmd.Name()).Inc()
 		}
 		return err
@@ -32,7 +33,7 @@ func (h metricsHook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 func (h metricsHook) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.ProcessPipelineHook {
 	return func(ctx context.Context, cmds []redis.Cmder) error {
 		err := next(ctx, cmds)
-		if err != nil && err != redis.Nil {
+		if err != nil && !errors.Is(err, redis.Nil) {
 			middleware.RedisErrors.WithLabelValues("pipeline").Inc()
 		}
 		return err

@@ -18,11 +18,11 @@ type Post struct {
 	SanctumID *uint    `gorm:"index" json:"sanctum_id,omitempty"`
 	Sanctum   *Sanctum `gorm:"foreignKey:SanctumID" json:"sanctum,omitempty"`
 	// LikesCount is not persisted; computed at query time
-	LikesCount int `gorm:"-" json:"likes_count"`
+	LikesCount int `gorm:"->" json:"likes_count"`
 	// CommentsCount is not persisted; computed at query time
-	CommentsCount int `gorm:"-" json:"comments_count"`
+	CommentsCount int `gorm:"->" json:"comments_count"`
 	// Liked indicates whether the current requesting user liked this post (computed)
-	Liked     bool           `gorm:"-" json:"liked"`
+	Liked     bool           `gorm:"->" json:"liked"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`

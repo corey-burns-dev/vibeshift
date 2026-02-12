@@ -150,6 +150,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const reconnectAttemptsRef = useRef(0)
   const currentUserRef = useRef<{ id: number; username: string } | null>(null)
   const joinedRoomsRef = useRef<Set<number>>(new Set())
+  const conversationsInvalidateTimerRef = useRef<number | null>(null)
   const shouldReconnectRef = useRef(true)
 
   // Subscription-based handlers (support multiple subscribers)
@@ -378,6 +379,32 @@ export function ChatProvider({ children }: ChatProviderProps) {
               }
             }
 
+            const scheduleConversationsInvalidate = () => {
+              if (conversationsInvalidateTimerRef.current !== null) return
+              conversationsInvalidateTimerRef.current = window.setTimeout(
+                () => {
+                  conversationsInvalidateTimerRef.current = null
+                  queryClient.invalidateQueries({
+                    queryKey: ['chat', 'conversations'],
+                  })
+                },
+                250
+              )
+            }
+
+            const isKnownConversation = (conversationID: number) => {
+              if (joinedRoomsRef.current.has(conversationID)) return true
+
+              const conversations = queryClient.getQueryData<
+                Array<{ id: number }>
+              >(['chat', 'conversations'])
+              return Array.isArray(conversations)
+                ? conversations.some(
+                    conversation => conversation.id === conversationID
+                  )
+                : false
+            }
+
             switch (data.type) {
               case 'connected':
                 break
@@ -391,8 +418,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
                 break
               }
 
-              case 'message':
-              case 'room_message': {
+              case 'message': {
                 // Support payload either under `payload` or flat top-level keys
                 const payload = data.payload || data
                 const convId = payload.conversation_id || data.conversation_id
@@ -428,6 +454,44 @@ export function ChatProvider({ children }: ChatProviderProps) {
                 })
 
                 // Notify all subscribers
+                for (const cb of messageHandlersRef.current) {
+                  try {
+                    cb(message, convId)
+                  } catch (e) {
+                    console.error('message handler failed', e)
+                  }
+                }
+                break
+              }
+              case 'room_message': {
+                const payload = data.payload || data
+                const convId = payload.conversation_id || data.conversation_id
+                const message = payload as Message
+                if (!convId || !message || !message.id) break
+                if (!isKnownConversation(convId)) break
+
+                const key = `${convId}:${message.id}`
+                const now = Date.now()
+                const recent = recentMessageMapRef.current
+                if (recent.size > 2000) {
+                  for (const [k, ts] of recent) {
+                    if (now - ts > 1000 * 60 * 5) recent.delete(k)
+                  }
+                }
+                if (recent.has(key)) break
+                recent.set(key, now)
+
+                queryClient.setQueryData<Message[]>(
+                  ['chat', 'messages', convId],
+                  old => {
+                    if (!old) return [message]
+                    if (old.some(m => m.id === message.id)) return old
+                    return [...old, message]
+                  }
+                )
+
+                scheduleConversationsInvalidate()
+
                 for (const cb of messageHandlersRef.current) {
                   try {
                     cb(message, convId)
@@ -593,6 +657,10 @@ export function ChatProvider({ children }: ChatProviderProps) {
       if (wsRef.current) {
         wsRef.current.close()
         wsRef.current = null
+      }
+      if (conversationsInvalidateTimerRef.current !== null) {
+        clearTimeout(conversationsInvalidateTimerRef.current)
+        conversationsInvalidateTimerRef.current = null
       }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current)

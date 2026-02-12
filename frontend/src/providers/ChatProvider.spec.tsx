@@ -198,4 +198,80 @@ describe('ChatProvider websocket behavior', () => {
     // New connection attempt should have created another WebSocket instance
     expect(MockWebSocket.instances.length).toBeGreaterThan(1)
   })
+
+  it('ignores room_message for unknown conversation', async () => {
+    const calls: Array<[unknown, number]> = []
+
+    const wrapper = ({ children }: { children?: React.ReactNode }) => (
+      <QueryClientProvider client={qc}>
+        <ChatProvider>{children}</ChatProvider>
+      </QueryClientProvider>
+    )
+
+    render(
+      <HookTest
+        cb={ctx =>
+          ctx.subscribeOnMessage((m: unknown, id: number) =>
+            calls.push([m, id])
+          )
+        }
+      />,
+      { wrapper }
+    )
+
+    await waitFor(() =>
+      expect(MockWebSocket.instances.length).toBeGreaterThan(0)
+    )
+    const ws = MockWebSocket.instances[0]
+
+    act(() => {
+      ws.receive({
+        type: 'room_message',
+        conversation_id: 999,
+        payload: { id: 321, content: 'unknown room' },
+      })
+    })
+
+    await act(async () => {})
+    expect(calls.length).toBe(0)
+  })
+
+  it('accepts room_message for known conversation', async () => {
+    const calls: Array<[unknown, number]> = []
+    qc.setQueryData(['chat', 'conversations'], [{ id: 77 }])
+
+    const wrapper = ({ children }: { children?: React.ReactNode }) => (
+      <QueryClientProvider client={qc}>
+        <ChatProvider>{children}</ChatProvider>
+      </QueryClientProvider>
+    )
+
+    render(
+      <HookTest
+        cb={ctx =>
+          ctx.subscribeOnMessage((m: unknown, id: number) =>
+            calls.push([m, id])
+          )
+        }
+      />,
+      { wrapper }
+    )
+
+    await waitFor(() =>
+      expect(MockWebSocket.instances.length).toBeGreaterThan(0)
+    )
+    const ws = MockWebSocket.instances[0]
+
+    act(() => {
+      ws.receive({
+        type: 'room_message',
+        conversation_id: 77,
+        payload: { id: 322, content: 'known room' },
+      })
+    })
+
+    await act(async () => {})
+    expect(calls.length).toBe(1)
+    expect(calls[0][1]).toBe(77)
+  })
 })

@@ -104,10 +104,24 @@ func (s *Server) Signup(c *fiber.Ctx) error {
 			models.NewInternalError(err))
 	}
 
+	s.setRefreshTokenCookie(c, refreshToken)
+
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"token":         accessToken,
 		"refresh_token": refreshToken,
 		"user":          user,
+	})
+}
+
+func (s *Server) setRefreshTokenCookie(c *fiber.Ctx, token string) {
+	c.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    token,
+		Expires:  time.Now().Add(7 * 24 * time.Hour),
+		HTTPOnly: true,
+		Secure:   s.config.Env == "production" || s.config.Env == "prod",
+		SameSite: "Lax",
+		Path:     "/api/auth",
 	})
 }
 
@@ -161,6 +175,8 @@ func (s *Server) Login(c *fiber.Ctx) error {
 			models.NewInternalError(err))
 	}
 
+	s.setRefreshTokenCookie(c, refreshToken)
+
 	return c.JSON(fiber.Map{
 		"token":         accessToken,
 		"refresh_token": refreshToken,
@@ -183,17 +199,21 @@ func (s *Server) Refresh(c *fiber.Ctx) error {
 		RefreshToken string `json:"refresh_token"`
 	}
 	if err := c.BodyParser(&req); err != nil {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid request body"))
+		// Ignore parser error if it's just an empty body, we'll check cookie
 	}
 
-	if req.RefreshToken == "" {
+	refreshTokenString := req.RefreshToken
+	if refreshTokenString == "" {
+		refreshTokenString = c.Cookies("refresh_token")
+	}
+
+	if refreshTokenString == "" {
 		return models.RespondWithError(c, fiber.StatusUnauthorized,
 			models.NewUnauthorizedError("Refresh token required"))
 	}
 
 	// Parse and validate refresh token
-	token, err := jwt.Parse(req.RefreshToken, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(refreshTokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -277,6 +297,8 @@ func (s *Server) Refresh(c *fiber.Ctx) error {
 			models.NewInternalError(err))
 	}
 
+	s.setRefreshTokenCookie(c, newRefreshToken)
+
 	return c.JSON(fiber.Map{
 		"token":         newAccessToken,
 		"refresh_token": newRefreshToken,
@@ -325,6 +347,13 @@ func (s *Server) Logout(c *fiber.Ctx) error {
 			}
 		}
 	}
+
+	if req.RefreshToken == "" {
+		req.RefreshToken = c.Cookies("refresh_token")
+	}
+
+	// Clear the refresh token cookie
+	c.ClearCookie("refresh_token")
 
 	if req.RefreshToken == "" {
 		return c.JSON(fiber.Map{"message": "Logged out successfully"})

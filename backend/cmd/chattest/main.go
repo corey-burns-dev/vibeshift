@@ -2,9 +2,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
@@ -29,7 +32,9 @@ type Metrics struct {
 var metrics Metrics
 
 func main() {
-	host := flag.String("host", "localhost:8080", "WebSocket server host")
+	host := flag.String("host", "localhost:8080", "API server host")
+	email := flag.String("email", "admin@example.com", "Test user email")
+	password := flag.String("password", "password123", "Test user password")
 	clients := flag.Int("clients", 50, "Number of concurrent clients")
 	duration := flag.Duration("duration", 30*time.Second, "Test duration")
 	flag.Parse()
@@ -38,6 +43,13 @@ func main() {
 	log.Printf("Target: %s", *host)
 	log.Printf("Clients: %d", *clients)
 	log.Printf("Duration: %v", *duration)
+
+	// Get a token first
+	token, err := login(*host, *email, *password)
+	if err != nil {
+		log.Fatalf("❌ Login failed: %v", err)
+	}
+	log.Printf("✅ Logged in successfully")
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
@@ -48,8 +60,8 @@ func main() {
 	// Start clients
 	for i := 0; i < *clients; i++ {
 		wg.Add(1)
-		go runClient(*host, i, stopChan, &wg)
-		time.Sleep(10 * time.Millisecond) // Stagger connections slightly
+		go runClient(*host, token, i, stopChan, &wg)
+		time.Sleep(50 * time.Millisecond) // Stagger connections to allow ticket issuance
 	}
 
 	// Wait for duration or interrupt
@@ -67,29 +79,84 @@ func main() {
 	printMetrics()
 }
 
-func runClient(host string, id int, stopChan <-chan struct{}, wg *sync.WaitGroup) {
+func login(host, email, password string) (string, error) {
+	loginURL := fmt.Sprintf("http://%s/api/auth/login", host)
+	payload := map[string]string{
+		"email":    email,
+		"password": password,
+	}
+	body, _ := json.Marshal(payload)
+
+	resp, err := http.Post(loginURL, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("login failed with status %d", resp.StatusCode)
+	}
+
+	var result struct {
+		Token string `json:"token"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", err
+	}
+
+	return result.Token, nil
+}
+
+func getTicket(host, token string) (string, error) {
+	ticketURL := fmt.Sprintf("http://%s/api/ws/ticket", host)
+	req, _ := http.NewRequest("POST", ticketURL, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("ticket issuance failed with status %d", resp.StatusCode)
+	}
+
+	var result struct {
+		Ticket string `json:"ticket"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", err
+	}
+
+	return result.Ticket, nil
+}
+
+func runClient(host, token string, id int, stopChan <-chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
 	atomic.AddInt64(&metrics.ConnectionsAttempted, 1)
 
-	// Build URL
-	u := url.URL{Scheme: "ws", Host: host, Path: "/ws/1"} // Connecting to room 1 (General)
-	// Add dummy token query param if your auth middleware roughly checks for it,
-	// or you might need a real login flow if strict auth is on.
-	// For this test, we assume we might need to bypass auth or the server accepts a test token?
-	// Based on previous code, the server might require a JWT in cookie or header.
-	// Let's assume dev mode might verify but maybe we need a real token.
-	// NOTE: If strict auth is enabled, this will fail without a valid token.
-	// For now, let's try connecting without one, or maybe add a "token" param if needed later.
-
-	c, resp, err := websocket.DefaultDialer.Dial(u.String(), nil)
-	if resp != nil {
-		defer func() { _ = resp.Body.Close() }()
-	}
+	// Get a fresh ticket for this connection
+	ticket, err := getTicket(host, token)
 	if err != nil {
 		atomic.AddInt64(&metrics.ConnectionsFailed, 1)
-		// log.Printf("Client %d connect error: %v", id, err)
 		atomic.AddInt64(&metrics.Errors, 1)
 		return
+	}
+
+	// Build WS URL with ticket
+	u := url.URL{Scheme: "ws", Host: host, Path: "/ws/1", RawQuery: "ticket=" + ticket}
+
+	dialer := websocket.DefaultDialer
+	c, resp, err := dialer.Dial(u.String(), nil)
+	if err != nil {
+		atomic.AddInt64(&metrics.ConnectionsFailed, 1)
+		atomic.AddInt64(&metrics.Errors, 1)
+		return
+	}
+	if resp != nil && resp.Body != nil {
+		defer func() { _ = resp.Body.Close() }()
 	}
 	defer func() { _ = c.Close() }()
 
@@ -97,7 +164,6 @@ func runClient(host string, id int, stopChan <-chan struct{}, wg *sync.WaitGroup
 
 	// Read loop
 	go func() {
-		defer func() { _ = c.Close() }()
 		for {
 			_, _, err := c.ReadMessage()
 			if err != nil {
@@ -107,24 +173,21 @@ func runClient(host string, id int, stopChan <-chan struct{}, wg *sync.WaitGroup
 		}
 	}()
 
-	ticker := time.NewTicker(time.Second * 2)
+	ticker := time.NewTicker(time.Second * 5)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-stopChan:
-			// Send close message
 			_ = c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			return
 		case <-ticker.C:
-			// Send a test message
-			msg := fmt.Sprintf("Test message from client %d at %v", id, time.Now().Format(time.Kitchen))
-			// Current backend expects JSON probably?
-			// Or simple text handling?
-			// Based on previous contexts, likely JSON with content/type.
-			// Let's send a simple JSON structure if we knew it, but plain text might echo or error depending on backend.
-			// For stress testing the connection, even a ping is good.
-			err := c.WriteMessage(websocket.TextMessage, []byte(msg))
+			msg := map[string]interface{}{
+				"content":      fmt.Sprintf("Stress test message from client %d", id),
+				"message_type": "text",
+			}
+			msgJSON, _ := json.Marshal(msg)
+			err := c.WriteMessage(websocket.TextMessage, msgJSON)
 			if err != nil {
 				atomic.AddInt64(&metrics.Errors, 1)
 				return

@@ -34,7 +34,8 @@ func TestGameHub_RegisterUnregister(t *testing.T) {
 	conn := &websocket.Conn{}
 	client := &Client{UserID: userID, Conn: conn}
 
-	hub.RegisterClient(roomID, client)
+	err := hub.RegisterClient(roomID, client)
+	assert.NoError(t, err)
 	hub.mu.RLock()
 	assert.Equal(t, client, hub.rooms[roomID][userID])
 	assert.Contains(t, hub.userRooms[userID], roomID)
@@ -93,9 +94,11 @@ func TestGameHub_MultipleSocketsSameUserUnregisterBehavior(t *testing.T) {
 	clientB := &Client{UserID: userID, Conn: connB}
 
 	// Register first client
-	hub.RegisterClient(roomID, clientA)
+	err := hub.RegisterClient(roomID, clientA)
+	require.NoError(t, err)
 	// Register second client for same user; should replace mapping in room
-	hub.RegisterClient(roomID, clientB)
+	err = hub.RegisterClient(roomID, clientB)
+	require.NoError(t, err)
 
 	hub.mu.RLock()
 	// The room mapping for the user should point to the most recently registered client

@@ -12,6 +12,13 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	// MaxGamePeersPerRoom prevents unbounded room growth
+	MaxGamePeersPerRoom = 2 // Game rooms are currently 1v1
+	// MaxGameTotalRooms prevents unbounded map growth
+	MaxGameTotalRooms = 1000
+)
+
 // GameAction represents a message sent via WebSocket for games
 type GameAction struct {
 	Type    string      `json:"type"` // "create_room", "join_room", "make_move", "chat", "game_state", "error"
@@ -47,14 +54,25 @@ func NewGameHub(db *gorm.DB, notifier *Notifier) *GameHub {
 	}
 }
 
-// RegisterClient registers a user's client in a room
-func (h *GameHub) RegisterClient(roomID uint, client *Client) {
+// RegisterClient registers a user's client in a room. Returns error if limits exceeded.
+func (h *GameHub) RegisterClient(roomID uint, client *Client) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+
+	// Enforce total room count limit
+	if h.rooms[roomID] == nil && len(h.rooms) >= MaxGameTotalRooms {
+		return fmt.Errorf("too many active rooms")
+	}
 
 	if h.rooms[roomID] == nil {
 		h.rooms[roomID] = make(map[uint]*Client)
 	}
+
+	// Enforce per-room peer limit
+	if len(h.rooms[roomID]) >= MaxGamePeersPerRoom {
+		return fmt.Errorf("room is full")
+	}
+
 	h.rooms[roomID][client.UserID] = client
 
 	if h.userRooms[client.UserID] == nil {
@@ -63,6 +81,7 @@ func (h *GameHub) RegisterClient(roomID uint, client *Client) {
 	h.userRooms[client.UserID][roomID] = struct{}{}
 
 	log.Printf("GameHub: User %d registered in room %d", client.UserID, roomID)
+	return nil
 }
 
 // UnregisterClient removes a user's client from all rooms

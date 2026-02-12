@@ -159,7 +159,7 @@ func (l *WSLogger) LogConnect(ctx context.Context, userID uint, roomID string) {
 	}
 	l.logger.InfoContext(ctx, "websocket connected",
 		slog.String("hub", l.hubName),
-		slog.Int("user_id", int(userID)),
+		slog.Uint64("user_id", uint64(userID)),
 		slog.String("room_id", roomID),
 		slog.String("correlation_id", ExtractCorrelationID(ctx)),
 	)
@@ -171,7 +171,7 @@ func (l *WSLogger) LogDisconnect(ctx context.Context, userID uint, roomID string
 	}
 	l.logger.InfoContext(ctx, "websocket disconnected",
 		slog.String("hub", l.hubName),
-		slog.Int("user_id", int(userID)),
+		slog.Uint64("user_id", uint64(userID)),
 		slog.String("room_id", roomID),
 		slog.String("reason", reason),
 		slog.String("correlation_id", ExtractCorrelationID(ctx)),
@@ -184,7 +184,7 @@ func (l *WSLogger) LogError(ctx context.Context, userID uint, roomID string, err
 	}
 	l.logger.ErrorContext(ctx, "websocket error",
 		slog.String("hub", l.hubName),
-		slog.Int("user_id", int(userID)),
+		slog.Uint64("user_id", uint64(userID)),
 		slog.String("room_id", roomID),
 		slog.String("event_type", eventType),
 		slog.String("error", err.Error()),
@@ -198,7 +198,7 @@ func (l *WSLogger) LogMessage(ctx context.Context, userID uint, roomID string, m
 	}
 	l.logger.InfoContext(ctx, "websocket message",
 		slog.String("hub", l.hubName),
-		slog.Int("user_id", int(userID)),
+		slog.Uint64("user_id", uint64(userID)),
 		slog.String("room_id", roomID),
 		slog.String("message_type", messageType),
 		slog.String("correlation_id", ExtractCorrelationID(ctx)),

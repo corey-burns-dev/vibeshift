@@ -156,6 +156,11 @@ export function ChatDock() {
     const handleMessage = (message: Message, conversationId: number) => {
       if (message.sender_id === currentUser?.id) return
 
+      const conv = conversations.find(
+        (conversation: Conversation) => conversation.id === conversationId
+      )
+      if (!conv) return
+
       const state = useChatDockStore.getState()
       const isCurrentConversation =
         conversationId === state.activeConversationId &&
@@ -166,9 +171,6 @@ export function ChatDock() {
       incrementUnread(conversationId)
 
       // Show toast when dock is closed, minimized, or another conversation is active
-      const conv = conversations.find(
-        (c: Conversation) => c.id === conversationId
-      )
       const conversationName = conv
         ? conv.is_group
           ? conv.name || 'Unnamed Group'

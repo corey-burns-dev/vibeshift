@@ -11,13 +11,26 @@ import {
   vi,
 } from 'vitest'
 import { apiClient } from '@/api/client'
-import { getCurrentUser, useAllUsers, useUserProfile } from '@/hooks/useUsers'
+import {
+  getCurrentUser,
+  useAllUsers,
+  useUserProfile,
+  useValidateToken,
+} from '@/hooks/useUsers'
 import { createTestQueryClient } from '@/test/test-utils'
 
 vi.mock('@/api/client', () => ({
+  ApiError: class ApiError extends Error {
+    status?: number
+    constructor(message: string, status?: number) {
+      super(message)
+      this.status = status
+    }
+  },
   apiClient: {
     getUsers: vi.fn(),
     getUserProfile: vi.fn(),
+    getCurrentUser: vi.fn(),
   },
 }))
 
@@ -55,6 +68,7 @@ describe('useUsers hooks', () => {
 
   afterEach(() => {
     localStorage.removeItem('user')
+    localStorage.removeItem('token')
   })
 
   describe('getCurrentUser', () => {
@@ -114,6 +128,21 @@ describe('useUsers hooks', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true))
       expect(result.current.data).toEqual(user)
       expect(vi.mocked(apiClient).getUserProfile).toHaveBeenCalledWith(5)
+    })
+  })
+
+  describe('useValidateToken', () => {
+    it('returns true when authenticated endpoint succeeds', async () => {
+      localStorage.setItem('token', 'some-token')
+      vi.mocked(apiClient).getCurrentUser.mockResolvedValue({} as never)
+
+      const { result } = renderHook(() => useValidateToken(), {
+        wrapper: createWrapper(),
+      })
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true))
+      expect(result.current.data).toBe(true)
+      expect(vi.mocked(apiClient).getCurrentUser).toHaveBeenCalled()
     })
   })
 })
