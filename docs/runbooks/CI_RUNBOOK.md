@@ -64,4 +64,4 @@ Notes:
 If CI fails on formatting or linting, fix locally and push; do not merge until checks are green.
 
 Operational rollback procedure:
-- See `docs/ROLLBACK_RUNBOOK.md` (including `scripts/rollback_to_ref.sh` dry-run and execute modes).
+- See `docs/runbooks/ROLLBACK_RUNBOOK.md` (including `scripts/rollback_to_ref.sh` dry-run and execute modes).

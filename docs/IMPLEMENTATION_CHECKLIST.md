@@ -68,7 +68,7 @@ Historical and point-in-time analyses are in `docs/reports/` and should be treat
   - [x] Add OpenAPI drift guard in CI (`.github/workflows/openapi-drift.yml`)
   - [x] Keep backend/frontend contract synchronized (automated path coverage check via `scripts/check_openapi_frontend_sync.sh`)
   - [x] Add backward-compatibility checks against base branch OpenAPI in CI (`backend/cmd/openapi-compat`, wired in `.github/workflows/openapi-drift.yml`)
-  - [x] Document contract-change workflow in contributor docs (`docs/CI_RUNBOOK.md`)
+  - [x] Document contract-change workflow in contributor docs (`docs/runbooks/CI_RUNBOOK.md`)
 
 ### Data and Caching
 
@@ -104,5 +104,5 @@ Historical and point-in-time analyses are in `docs/reports/` and should be treat
   - Added admin visibility endpoint `GET /api/admin/feature-flags`
   - Added rollout guidance in `docs/FEATURE_FLAGS.md`
 - [x] **Rollback-ready deployment process**
-  - Added rollback playbook in `docs/ROLLBACK_RUNBOOK.md`
+  - Added rollback playbook in `docs/runbooks/ROLLBACK_RUNBOOK.md`
   - Added guarded rollback helper `scripts/rollback_to_ref.sh` (dry-run default, execute mode with readiness checks and auto-fallback)

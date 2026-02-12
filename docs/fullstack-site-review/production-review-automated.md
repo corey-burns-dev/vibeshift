@@ -261,8 +261,8 @@ done
 test -f backend/docs/swagger.json && echo "✓ API docs exist" || echo "✗ Missing API docs"
 
 # Check for runbook documentation
-test -f docs/ROLLBACK_RUNBOOK.md && echo "✓ Rollback runbook exists"
-test -f docs/CI_RUNBOOK.md && echo "✓ CI runbook exists"
+test -f docs/runbooks/ROLLBACK_RUNBOOK.md && echo "✓ Rollback runbook exists"
+test -f docs/runbooks/CI_RUNBOOK.md && echo "✓ CI runbook exists"
 ```
 
 ## Phase 8: Build & Deploy Verification
