@@ -99,6 +99,7 @@ export default function ConnectFour() {
   const defeatTimeoutRef = useRef<number | null>(null)
   const rematchDialogTimeoutRef = useRef<number | null>(null)
   const didShowGameStartedToastRef = useRef(false)
+  const movePendingRef = useRef(false)
 
   const { data: room, isError } = useQuery({
     queryKey: ['gameRoom', id],
@@ -211,6 +212,7 @@ export default function ConnectFour() {
 
       switch (actionType) {
         case 'game_state':
+          movePendingRef.current = false
           setGameState(payload as unknown as GameState)
           break
         case 'game_started':
@@ -256,6 +258,7 @@ export default function ConnectFour() {
           break
         }
         case 'error': {
+          movePendingRef.current = false
           const message =
             typeof payload.message === 'string'
               ? payload.message
@@ -347,6 +350,7 @@ export default function ConnectFour() {
   }, [])
 
   const makeMove = (col: number) => {
+    if (movePendingRef.current) return
     if (
       !gameState ||
       gameState.status !== 'active' ||
@@ -355,6 +359,7 @@ export default function ConnectFour() {
       return
     if (gameState.board[0][col] !== '') return
 
+    movePendingRef.current = true
     gameSession.sendAction({
       type: 'make_move',
       payload: { column: col },

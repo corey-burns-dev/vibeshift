@@ -34,6 +34,7 @@ export default function Messages() {
   const remoteTypingTimeoutsRef = useRef<Record<number, number>>({})
   const hasHydratedMessagesRef = useRef(false)
   const lastChimedMessageIdRef = useRef<number | null>(null)
+  const lastMarkedReadRef = useRef<number | null>(null)
 
   const onlineUserIds = usePresenceStore(state => state.onlineUserIds)
   const setOnline = usePresenceStore(state => state.setOnline)
@@ -174,8 +175,10 @@ export default function Messages() {
 
   useEffect(() => {
     if (!canAccessSelectedConversation || !selectedConversationId) return
+    if (lastMarkedReadRef.current === selectedConversationId) return
+    lastMarkedReadRef.current = selectedConversationId
     markAsRead.mutate(selectedConversationId)
-  }, [canAccessSelectedConversation, selectedConversationId, markAsRead])
+  }, [canAccessSelectedConversation, selectedConversationId])
 
   const playIncomingMessageChime = useCallback(() => {
     const AudioContextClass = window.AudioContext

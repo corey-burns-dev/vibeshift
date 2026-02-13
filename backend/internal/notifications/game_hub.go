@@ -380,8 +380,15 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 		"next_turn": room.NextTurnID,
 		"is_draw":   room.IsDraw,
 	}
-	actionJSON, _ := json.Marshal(action)
-	_ = h.notifier.PublishGameAction(context.Background(), action.RoomID, string(actionJSON))
+
+	// Always broadcast directly to connected sockets in this process.
+	h.BroadcastToRoom(action.RoomID, action)
+
+	// Also publish through Redis for cross-process fanout when available.
+	if h.notifier != nil {
+		actionJSON, _ := json.Marshal(action)
+		_ = h.notifier.PublishGameAction(context.Background(), action.RoomID, string(actionJSON))
+	}
 }
 
 func (h *GameHub) handleChat(_ uint, action GameAction) {

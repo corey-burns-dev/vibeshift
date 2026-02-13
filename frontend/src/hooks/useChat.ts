@@ -161,6 +161,11 @@ export function useMarkAsRead() {
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() })
     },
     onError: error => {
+      // 403 from mark-as-read means "not a participant" -- not an auth failure.
+      // Silently ignore to avoid false session invalidation.
+      const msg = error instanceof Error ? error.message : String(error)
+      if (msg.includes('403') || msg.toLowerCase().includes('forbidden'))
+        return
       handleAuthOrFKError(error)
     },
   })
