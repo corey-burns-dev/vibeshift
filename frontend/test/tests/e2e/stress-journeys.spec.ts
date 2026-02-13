@@ -44,7 +44,7 @@ test.describe('Stress Journeys @preprod', () => {
 
     // Login User 2 (if we had another test user seeded)
     // For now we just check if we can open chat
-    await page1.goto('/messages')
-    await expect(page1.locator('text=Messages')).toBeVisible()
+    await page1.goto('/chat')
+    await expect(page1.locator('h2')).toContainText('Chatrooms')
   })
 })

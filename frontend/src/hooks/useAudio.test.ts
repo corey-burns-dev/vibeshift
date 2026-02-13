@@ -3,9 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAudio } from '@/hooks/useAudio'
 
 // Mock asset imports so tests don't depend on actual files
-vi.mock('@/assets/sounds/drop-piece.m4a', () => ({ default: 'mock://drop-piece.m4a' }))
-vi.mock('@/assets/sounds/drop-piece.mp3', () => ({ default: 'mock://drop-piece.mp3' }))
-vi.mock('@/assets/sounds/drop-piece.ogg', () => ({ default: 'mock://drop-piece.ogg' }))
+vi.mock('@/assets/sounds/drop-piece.m4a', () => ({
+  default: 'mock://drop-piece.m4a',
+}))
+vi.mock('@/assets/sounds/drop-piece.mp3', () => ({
+  default: 'mock://drop-piece.mp3',
+}))
+vi.mock('@/assets/sounds/drop-piece.ogg', () => ({
+  default: 'mock://drop-piece.ogg',
+}))
 vi.mock('@/assets/sounds/friend-online.m4a', () => ({
   default: 'mock://friend-online.m4a',
 }))
@@ -35,17 +41,19 @@ describe('useAudio', () => {
       play: vi.fn().mockResolvedValue(undefined),
     }
     OriginalAudio = window.Audio
-    ;(window as unknown as { Audio: typeof window.Audio }).Audio = function MockAudio() {
-      return mockAudioInstance as unknown as HTMLAudioElement
-    } as unknown as typeof window.Audio
+    ;(window as unknown as { Audio: typeof window.Audio }).Audio =
+      function MockAudio() {
+        return mockAudioInstance as unknown as HTMLAudioElement
+      } as unknown as typeof window.Audio
 
     OriginalAudioContext = window.AudioContext
   })
 
   afterEach(() => {
     ;(window as unknown as { Audio: typeof window.Audio }).Audio = OriginalAudio
-    ;(window as unknown as { AudioContext: typeof window.AudioContext }).AudioContext =
-      OriginalAudioContext
+    ;(
+      window as unknown as { AudioContext: typeof window.AudioContext }
+    ).AudioContext = OriginalAudioContext
     vi.restoreAllMocks()
   })
 
@@ -90,16 +98,14 @@ describe('useAudio', () => {
   })
 
   it('playDirectMessageSound no-ops when AudioContext is missing', () => {
-    ;(window as unknown as { AudioContext: undefined }).AudioContext =
-      undefined as unknown as typeof window.AudioContext
+    ;(window as any).AudioContext = undefined
     const { result } = renderHook(() => useAudio())
 
     expect(() => result.current.playDirectMessageSound()).not.toThrow()
   })
 
   it('playRoomAlertSound no-ops when AudioContext is missing', () => {
-    ;(window as unknown as { AudioContext: undefined }).AudioContext =
-      undefined as unknown as typeof window.AudioContext
+    ;(window as any).AudioContext = undefined
     const { result } = renderHook(() => useAudio())
 
     expect(() => result.current.playRoomAlertSound()).not.toThrow()
@@ -131,8 +137,9 @@ describe('useAudio', () => {
       }
       close = mockClose
     }
-    ;(window as unknown as { AudioContext: typeof window.AudioContext }).AudioContext =
-      MockAudioContext as unknown as typeof window.AudioContext
+    ;(
+      window as unknown as { AudioContext: typeof window.AudioContext }
+    ).AudioContext = MockAudioContext as unknown as typeof window.AudioContext
 
     const { result } = renderHook(() => useAudio())
 
@@ -164,8 +171,9 @@ describe('useAudio', () => {
       }
       close = mockClose
     }
-    ;(window as unknown as { AudioContext: typeof window.AudioContext }).AudioContext =
-      MockAudioContext as unknown as typeof window.AudioContext
+    ;(
+      window as unknown as { AudioContext: typeof window.AudioContext }
+    ).AudioContext = MockAudioContext as unknown as typeof window.AudioContext
 
     const { result } = renderHook(() => useAudio())
 
@@ -181,7 +189,10 @@ describe('useAudio', () => {
 
     await new Promise(r => setTimeout(r, 0))
 
-    expect(warnSpy).toHaveBeenCalledWith('Audio playback failed:', expect.any(Error))
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Audio playback failed:',
+      expect.any(Error)
+    )
     warnSpy.mockRestore()
   })
 })

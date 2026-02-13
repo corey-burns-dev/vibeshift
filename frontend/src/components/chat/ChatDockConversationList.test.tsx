@@ -2,11 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ChatDockConversationList } from '@/components/chat/ChatDockConversationList'
-import {
-  buildConversation,
-  buildMessage,
-  buildUser,
-} from '@/test/test-utils'
+import { buildConversation, buildMessage, buildUser } from '@/test/test-utils'
 
 vi.mock('@/hooks/usePresence', () => ({
   usePresenceStore: () => new Set<number>(),
@@ -26,9 +22,7 @@ describe('ChatDockConversationList', () => {
       />
     )
 
-    expect(
-      screen.getByText('No friend conversations yet')
-    ).toBeInTheDocument()
+    expect(screen.getByText('No friend conversations yet')).toBeInTheDocument()
   })
 
   it('renders conversation list and calls onSelect when clicked', async () => {

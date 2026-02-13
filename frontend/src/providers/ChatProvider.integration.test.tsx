@@ -87,7 +87,10 @@ describe('ChatProvider integration', () => {
     originalConsoleError = console.error
     vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
       const combined = args.map(a => String(a)).join(' ')
-      if (combined.includes('ChatProvider') && combined.includes('was not wrapped in act'))
+      if (
+        combined.includes('ChatProvider') &&
+        combined.includes('was not wrapped in act')
+      )
         return
       originalConsoleError.apply(console, args)
     })
@@ -194,17 +197,19 @@ describe('ChatProvider integration', () => {
       render(
         <HookTest
           cb={ctx => {
-            ctx.subscribeOnMessage((msg: { sender_id?: number }, _convId: number) => {
-              if (
-                shouldPlayNewMessageSoundForDM(
-                  false,
-                  msg.sender_id ?? 0,
-                  currentUserId
-                )
-              ) {
-                mockPlayNewMessageSound()
+            ctx.subscribeOnMessage(
+              (msg: { sender_id?: number }, _convId: number) => {
+                if (
+                  shouldPlayNewMessageSoundForDM(
+                    false,
+                    msg.sender_id ?? 0,
+                    currentUserId
+                  )
+                ) {
+                  mockPlayNewMessageSound()
+                }
               }
-            })
+            )
             ctx.subscribeOnPresence(
               (userId: number, _username: string, status: string) => {
                 if (

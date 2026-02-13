@@ -86,7 +86,10 @@ describe('ChatProvider websocket behavior', () => {
     originalConsoleError = console.error
     vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
       const combined = args.map(a => String(a)).join(' ')
-      if (combined.includes('ChatProvider') && combined.includes('was not wrapped in act'))
+      if (
+        combined.includes('ChatProvider') &&
+        combined.includes('was not wrapped in act')
+      )
         return
       originalConsoleError.apply(console, args)
     })
@@ -130,7 +133,9 @@ describe('ChatProvider websocket behavior', () => {
     ;(globalThis as GlobalWithMocks).WebSocket =
       originalWS as GlobalWithMocks['WebSocket']
     MockWebSocket.instances = []
-    ;(globalThis as GlobalWithMocks as { localStorage?: unknown }).localStorage = undefined
+    ;(
+      globalThis as GlobalWithMocks as { localStorage?: unknown }
+    ).localStorage = undefined
     useAuthSessionStore.getState().clear()
     qc.clear()
     vi.useRealTimers()
