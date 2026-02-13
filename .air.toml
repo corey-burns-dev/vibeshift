@@ -7,6 +7,7 @@ tmp_dir = "tmp"
   bin = "./tmp/main"
   cmd = "cd backend && go build -o ./tmp/main ./cmd/server"
   delay = 1000
+  entrypoint = "./tmp/main"
   exclude_dir = ["assets", "tmp", "vendor", "testdata"]
   exclude_file = []
   exclude_regex = ["_test.go"]

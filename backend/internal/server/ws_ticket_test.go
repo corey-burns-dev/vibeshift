@@ -63,7 +63,7 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 		ticket := "ws-test-ticket-1"
 		userID := "123"
 		key := fmt.Sprintf("ws_ticket:%s", ticket)
-		
+
 		// Set ticket in Redis
 		err := rdb.Set(ctx, key, userID, time.Minute).Err()
 		assert.NoError(t, err)
@@ -91,7 +91,7 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 		ticket := "other-test-ticket-1"
 		userID := "456"
 		key := fmt.Sprintf("ws_ticket:%s", ticket)
-		
+
 		// Set ticket in Redis
 		err := rdb.Set(ctx, key, userID, time.Minute).Err()
 		assert.NoError(t, err)

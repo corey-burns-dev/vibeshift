@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, render, waitFor } from '@testing-library/react'
+import { act, render } from '@testing-library/react'
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ChatProvider, useChatContext } from './ChatProvider'
 import { useAuthSessionStore } from '@/stores/useAuthSessionStore'
+import { ChatProvider, useChatContext } from './ChatProvider'
 
 // Mock apiClient
 vi.mock('@/api/client', () => ({
@@ -36,7 +36,7 @@ function HookTest({
   return null
 }
 
-// Mock WebSocket
+// Mock WebSocket: connection/open is deferred so tests can run it inside act()
 class MockWebSocket {
   static instances: MockWebSocket[] = []
   static nextShouldClose = false
@@ -50,17 +50,18 @@ class MockWebSocket {
   constructor(url: string) {
     this.url = url
     MockWebSocket.instances.push(this)
-    // simulate async connect
-    setTimeout(() => {
-      if (MockWebSocket.nextShouldClose) {
-        this.readyState = 3
-        this.onclose?.()
-        MockWebSocket.nextShouldClose = false
-        return
-      }
-      this.readyState = 1
-      this.onopen?.()
-    }, 0)
+  }
+
+  /** Run deferred open (or close if nextShouldClose). Call inside act(). */
+  flushConnect() {
+    if (MockWebSocket.nextShouldClose) {
+      MockWebSocket.nextShouldClose = false
+      this.readyState = 3
+      this.onclose?.()
+      return
+    }
+    this.readyState = 1
+    this.onopen?.()
   }
 
   send(_data: string) {}
@@ -69,7 +70,7 @@ class MockWebSocket {
     this.onclose?.()
   }
 
-  // helper to simulate inbound server message
+  /** Simulate inbound server message. Call inside act(). */
   receive(obj: unknown) {
     const data = typeof obj === 'string' ? obj : JSON.stringify(obj)
     this.onmessage?.({ data })
@@ -79,16 +80,31 @@ class MockWebSocket {
 describe('ChatProvider websocket behavior', () => {
   let originalWS: unknown
   let qc: QueryClient
+  let originalConsoleError: typeof console.error
+
+  beforeAll(() => {
+    originalConsoleError = console.error
+    vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      const combined = args.map(a => String(a)).join(' ')
+      if (combined.includes('ChatProvider') && combined.includes('was not wrapped in act'))
+        return
+      originalConsoleError.apply(console, args)
+    })
+  })
+
+  afterAll(() => {
+    vi.restoreAllMocks()
+  })
 
   beforeEach(() => {
-    originalWS = (global as GlobalWithMocks).WebSocket
-    ;(global as GlobalWithMocks).WebSocket =
+    originalWS = (globalThis as GlobalWithMocks).WebSocket
+    ;(globalThis as GlobalWithMocks).WebSocket =
       MockWebSocket as unknown as GlobalWithMocks['WebSocket']
     qc = new QueryClient()
     // set token + user in localStorage so provider attempts connect
     // provide simple in-memory localStorage for test environment
     const _store: Record<string, string> = {}
-    ;(global as GlobalWithMocks).localStorage = {
+    ;(globalThis as GlobalWithMocks).localStorage = {
       getItem: (k: string) => _store[k] ?? null,
       setItem: (k: string, v: string) => {
         _store[k] = String(v)
@@ -99,29 +115,29 @@ describe('ChatProvider websocket behavior', () => {
       clear: () => {
         for (const k of Object.keys(_store)) delete _store[k]
       },
+      length: 0,
+      key: () => null,
     }
     // set token + user in localStorage so provider attempts connect
     const jwtPayload = { exp: Math.floor(Date.now() / 1000) + 60 * 60 }
-    const base =
-      typeof Buffer !== 'undefined'
-        ? Buffer.from(JSON.stringify(jwtPayload)).toString('base64')
-        : btoa(JSON.stringify(jwtPayload))
+    const base = btoa(JSON.stringify(jwtPayload))
     const token = `a.${base}.c`
     useAuthSessionStore.getState().setAccessToken(token)
     localStorage.setItem('user', JSON.stringify({ id: 42, username: 'alice' }))
   })
 
   afterEach(() => {
-    ;(global as GlobalWithMocks).WebSocket =
+    ;(globalThis as GlobalWithMocks).WebSocket =
       originalWS as GlobalWithMocks['WebSocket']
     MockWebSocket.instances = []
-    delete (global as GlobalWithMocks).localStorage
+    ;(globalThis as GlobalWithMocks as { localStorage?: unknown }).localStorage = undefined
     useAuthSessionStore.getState().clear()
     qc.clear()
     vi.useRealTimers()
   })
 
   it('dedupes duplicate message and room_message events', async () => {
+    vi.useFakeTimers()
     const calls: Array<[unknown, number]> = []
 
     const wrapper = ({ children }: { children?: React.ReactNode }) => (
@@ -130,21 +146,26 @@ describe('ChatProvider websocket behavior', () => {
       </QueryClientProvider>
     )
 
-    render(
-      <HookTest
-        cb={ctx =>
-          ctx.subscribeOnMessage((m: unknown, id: number) =>
-            calls.push([m, id])
-          )
-        }
-      />,
-      { wrapper }
-    )
+    act(() => {
+      render(
+        <HookTest
+          cb={ctx =>
+            ctx.subscribeOnMessage((m: unknown, id: number) =>
+              calls.push([m, id])
+            )
+          }
+        />,
+        { wrapper }
+      )
+    })
+    await act(async () => {})
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+      const w = MockWebSocket.instances[0]
+      if (w) w.flushConnect()
+    })
 
-    // wait for websocket to be constructed/opened
-    await waitFor(() =>
-      expect(MockWebSocket.instances.length).toBeGreaterThan(0)
-    )
+    expect(MockWebSocket.instances.length).toBeGreaterThan(0)
     const ws = MockWebSocket.instances[0]
 
     const msg = {
@@ -180,30 +201,28 @@ describe('ChatProvider websocket behavior', () => {
       </QueryClientProvider>
     )
 
-    // Make the first WS instance immediately close to simulate initial failure
     MockWebSocket.nextShouldClose = true
 
-    render(<HookTest cb={() => {}} />, { wrapper })
-
-    // first instance created; advance timers so constructor runs and onclose is fired
     act(() => {
-      vi.advanceTimersByTime(1)
+      render(<HookTest cb={() => {}} />, { wrapper })
     })
     await act(async () => {})
-
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+      const firstWs = MockWebSocket.instances[0]
+      if (firstWs) firstWs.flushConnect()
+    })
     expect(MockWebSocket.instances.length).toBe(1)
 
-    // advance timers to trigger reconnect scheduling (code uses exponential backoff starting at 2000ms)
-    act(() => {
-      vi.advanceTimersByTime(2500)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2500)
     })
-    await act(async () => {})
 
-    // New connection attempt should have created another WebSocket instance
     expect(MockWebSocket.instances.length).toBeGreaterThan(1)
   })
 
   it('ignores room_message for unknown conversation', async () => {
+    vi.useFakeTimers()
     const calls: Array<[unknown, number]> = []
 
     const wrapper = ({ children }: { children?: React.ReactNode }) => (
@@ -212,20 +231,26 @@ describe('ChatProvider websocket behavior', () => {
       </QueryClientProvider>
     )
 
-    render(
-      <HookTest
-        cb={ctx =>
-          ctx.subscribeOnMessage((m: unknown, id: number) =>
-            calls.push([m, id])
-          )
-        }
-      />,
-      { wrapper }
-    )
+    act(() => {
+      render(
+        <HookTest
+          cb={ctx =>
+            ctx.subscribeOnMessage((m: unknown, id: number) =>
+              calls.push([m, id])
+            )
+          }
+        />,
+        { wrapper }
+      )
+    })
+    await act(async () => {})
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+      const w = MockWebSocket.instances[0]
+      if (w) w.flushConnect()
+    })
 
-    await waitFor(() =>
-      expect(MockWebSocket.instances.length).toBeGreaterThan(0)
-    )
+    expect(MockWebSocket.instances.length).toBeGreaterThan(0)
     const ws = MockWebSocket.instances[0]
 
     act(() => {
@@ -241,6 +266,7 @@ describe('ChatProvider websocket behavior', () => {
   })
 
   it('accepts room_message for known conversation', async () => {
+    vi.useFakeTimers()
     const calls: Array<[unknown, number]> = []
     qc.setQueryData(['chat', 'conversations'], [{ id: 77 }])
 
@@ -250,20 +276,26 @@ describe('ChatProvider websocket behavior', () => {
       </QueryClientProvider>
     )
 
-    render(
-      <HookTest
-        cb={ctx =>
-          ctx.subscribeOnMessage((m: unknown, id: number) =>
-            calls.push([m, id])
-          )
-        }
-      />,
-      { wrapper }
-    )
+    act(() => {
+      render(
+        <HookTest
+          cb={ctx =>
+            ctx.subscribeOnMessage((m: unknown, id: number) =>
+              calls.push([m, id])
+            )
+          }
+        />,
+        { wrapper }
+      )
+    })
+    await act(async () => {})
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+      const w = MockWebSocket.instances[0]
+      if (w) w.flushConnect()
+    })
 
-    await waitFor(() =>
-      expect(MockWebSocket.instances.length).toBeGreaterThan(0)
-    )
+    expect(MockWebSocket.instances.length).toBeGreaterThan(0)
     const ws = MockWebSocket.instances[0]
 
     act(() => {

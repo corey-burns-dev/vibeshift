@@ -72,6 +72,7 @@ describe('useSignup onboarding behavior', () => {
 
   it('redirects to /onboarding/sanctums after successful signup', async () => {
     vi.mocked(apiClient.signup).mockImplementation(async () => {
+      const t = new Date().toISOString()
       const data = {
         token: 'token-123',
         user: {
@@ -79,6 +80,8 @@ describe('useSignup onboarding behavior', () => {
           username: 'tester',
           email: 'tester@example.com',
           is_admin: false,
+          created_at: t,
+          updated_at: t,
         },
       }
       useAuthSessionStore.getState().setAccessToken(data.token)
@@ -112,6 +115,7 @@ describe('useLogin', () => {
 
   it('stores token and user then navigates to /posts on success', async () => {
     vi.mocked(apiClient.login).mockImplementation(async () => {
+      const t = new Date().toISOString()
       const data = {
         token: 'login-token',
         user: {
@@ -119,6 +123,8 @@ describe('useLogin', () => {
           username: 'logintest',
           email: 'login@example.com',
           is_admin: false,
+          created_at: t,
+          updated_at: t,
         },
       }
       useAuthSessionStore.getState().setAccessToken(data.token)

@@ -30,7 +30,6 @@ const PostDetail = lazy(() => import('@/pages/PostDetail'))
 const PostEdit = lazy(() => import('@/pages/PostEdit'))
 const Profile = lazy(() => import('@/pages/Profile'))
 const Friends = lazy(() => import('@/pages/Friends'))
-const Messages = lazy(() => import('@/pages/Messages'))
 const Chat = lazy(() => import('@/pages/Chat'))
 const UsersPage = lazy(() => import('@/pages/Users'))
 const UserProfilePage = lazy(() => import('@/pages/UserProfile'))
@@ -202,14 +201,6 @@ function RoutesWithPrefetch() {
           element={
             <ProtectedRoute>
               <Chat />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/messages/:id?'
-          element={
-            <ProtectedRoute>
-              <Messages />
             </ProtectedRoute>
           }
         />
@@ -449,12 +440,8 @@ function MainLayout({ children }: { children: ReactNode }) {
   const location = useLocation()
   const isChatRoute =
     location.pathname === '/chat' || location.pathname.startsWith('/chat/')
-  const isMessagesRoute =
-    location.pathname === '/messages' ||
-    location.pathname.startsWith('/messages/')
   const isGameRoomRoute = /^\/games\/connect4\/[^/]+$/.test(location.pathname)
-  const isViewportLockedRoute =
-    isChatRoute || isMessagesRoute || isGameRoomRoute
+  const isViewportLockedRoute = isChatRoute || isGameRoomRoute
 
   return (
     <div

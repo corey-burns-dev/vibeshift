@@ -10,6 +10,7 @@ import {
 } from '@/hooks/useChat'
 import { useReportMessage } from '@/hooks/useModeration'
 import { formatTimestamp, getAvatarUrl, getUserColor } from '@/lib/chat-utils'
+import { cn } from '@/lib/utils'
 
 interface MessageItemProps {
   message: Message
@@ -18,6 +19,8 @@ interface MessageItemProps {
   isDirectMessage?: boolean
   showReadReceipt?: boolean
   conversationId?: number
+  isIRCStyle?: boolean
+  showTimestamps?: boolean
 }
 
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '🔥', '😮']
@@ -91,6 +94,8 @@ export const MessageItem = memo(function MessageItem({
   isDirectMessage = false,
   showReadReceipt = false,
   conversationId,
+  isIRCStyle = false,
+  showTimestamps = true,
 }: MessageItemProps) {
   const sender = message.sender
   const resolvedConversationId = conversationId ?? message.conversation_id
@@ -130,11 +135,62 @@ export const MessageItem = memo(function MessageItem({
     )
   }
 
+  const renderUsername = (isBold = false) => {
+    if (!sender) {
+      return (
+        <span
+          className={cn('text-[13px]', isBold ? 'font-bold' : 'font-semibold')}
+          style={{ color: getUserColor(message.sender_id) }}
+        >
+          Unknown
+        </span>
+      )
+    }
+
+    return (
+      <UserMenu user={sender}>
+        <span
+          className={cn(
+            'cursor-pointer text-[13px] hover:underline',
+            isBold ? 'font-bold' : 'font-semibold'
+          )}
+          style={{ color: getUserColor(message.sender_id) }}
+        >
+          {isOwnMessage ? 'You' : sender.username}
+          {isIRCStyle ? ':' : ''}
+        </span>
+      </UserMenu>
+    )
+  }
+
+  if (isIRCStyle) {
+    return (
+      <div
+        className={cn(
+          'group flex items-baseline gap-1 py-px leading-none',
+          !showTimestamps && 'pl-2'
+        )}
+      >
+        {showTimestamps && (
+          <span className='shrink-0 text-[10px] text-muted-foreground/60 transition-opacity'>
+            [{formatTimestamp(message.created_at)}]
+          </span>
+        )}
+        <div className='min-w-0 flex-1 flex items-baseline gap-1'>
+          {renderUsername(true)}
+          <p className='wrap-break-word whitespace-pre-wrap text-[13px] leading-snug text-foreground/90'>
+            {renderMessageWithMentions(message.content)}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className='group flex items-start gap-2.5'>
+    <div className='group relative flex items-start gap-2 py-0.5'>
       {sender ? (
         <UserMenu user={sender}>
-          <Avatar className='mt-0.5 h-7 w-7 shrink-0 cursor-pointer transition-opacity hover:opacity-80'>
+          <Avatar className='h-6 w-6 shrink-0 cursor-pointer transition-opacity hover:opacity-80'>
             <AvatarImage src={sender.avatar || getAvatarUrl(sender.username)} />
             <AvatarFallback className='text-[10px]'>
               {sender.username?.[0]?.toUpperCase() || 'U'}
@@ -142,84 +198,74 @@ export const MessageItem = memo(function MessageItem({
           </Avatar>
         </UserMenu>
       ) : (
-        <Avatar className='mt-0.5 h-7 w-7 shrink-0'>
+        <Avatar className='h-6 w-6 shrink-0'>
           <AvatarImage src={getAvatarUrl('unknown')} />
           <AvatarFallback className='text-[10px]'>U</AvatarFallback>
         </Avatar>
       )}
       <div className='min-w-0 flex-1'>
-        <div className='mb-0.5 flex items-baseline gap-2'>
-          {sender ? (
-            <UserMenu user={sender}>
-              <span
-                className='cursor-pointer text-[13px] font-semibold hover:underline'
-                style={{ color: getUserColor(message.sender_id) }}
-              >
-                {isOwnMessage ? 'You' : sender.username}
-              </span>
-            </UserMenu>
-          ) : (
-            <span
-              className='text-[13px] font-semibold'
-              style={{ color: getUserColor(message.sender_id) }}
-            >
-              Unknown
+        <div className='flex items-center gap-1.5'>
+          {renderUsername()}
+          {showTimestamps && (
+            <span className='text-[9px] text-muted-foreground/60'>
+              {formatTimestamp(message.created_at)}
             </span>
           )}
-          <span className='text-[9px] text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100'>
-            {formatTimestamp(message.created_at)}
-          </span>
+
+          {/* Applied Reactions */}
+          {reactionSummary.length > 0 && (
+            <div className='flex items-center gap-1'>
+              {reactionSummary.map(reaction => (
+                <button
+                  key={`${message.id}-${reaction.emoji}`}
+                  type='button'
+                  onClick={() => toggleReaction(reaction.emoji)}
+                  className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0 text-[10px] transition-colors ${
+                    reaction.reacted_by_me
+                      ? 'border-primary/40 bg-primary/15 text-primary'
+                      : 'border-border/70 bg-card hover:bg-muted/70'
+                  }`}
+                >
+                  <span>{reaction.emoji}</span>
+                  <span className='font-medium'>{reaction.count}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Quick Reactions: Show on hover beside timestamp */}
+          <div className='flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100'>
+            {QUICK_REACTIONS.map(emoji => (
+              <button
+                key={`${message.id}-quick-${emoji}`}
+                type='button'
+                onClick={() => toggleReaction(emoji)}
+                className='inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] transition-colors hover:bg-muted'
+                title={`React with ${emoji}`}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+
           {!isOwnMessage && (
             <button
               type='button'
               onClick={handleReport}
-              className='ml-auto inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground opacity-0 transition hover:bg-muted hover:text-destructive group-hover:opacity-100'
+              className='ml-auto inline-flex h-4 w-4 items-center justify-center rounded text-muted-foreground opacity-0 transition hover:bg-muted hover:text-destructive group-hover:opacity-100'
               title='Report message'
             >
-              <Flag className='h-3.5 w-3.5' />
+              <Flag className='h-3 w-3' />
             </button>
           )}
         </div>
+
         <p className='wrap-break-word whitespace-pre-wrap text-[13px] leading-snug text-foreground/90'>
           {renderMessageWithMentions(message.content)}
         </p>
 
-        {(reactionSummary.length > 0 || Boolean(currentUserId)) && (
-          <div className='mt-1.5 flex flex-wrap items-center gap-1'>
-            {reactionSummary.map(reaction => (
-              <button
-                key={`${message.id}-${reaction.emoji}`}
-                type='button'
-                onClick={() => toggleReaction(reaction.emoji)}
-                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors ${
-                  reaction.reacted_by_me
-                    ? 'border-primary/40 bg-primary/15 text-primary'
-                    : 'border-border/70 bg-card hover:bg-muted/70'
-                }`}
-              >
-                <span>{reaction.emoji}</span>
-                <span>{reaction.count}</span>
-              </button>
-            ))}
-
-            <div className='flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100'>
-              {QUICK_REACTIONS.map(emoji => (
-                <button
-                  key={`${message.id}-quick-${emoji}`}
-                  type='button'
-                  onClick={() => toggleReaction(emoji)}
-                  className='inline-flex h-6 w-6 items-center justify-center rounded-full border border-border/70 bg-card text-xs transition-colors hover:bg-muted/70'
-                  title={`React with ${emoji}`}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {showReadReceipt && isDirectMessage && isOwnMessage && (
-          <p className='mt-1 text-[10px] text-muted-foreground'>
+          <p className='text-[9px] text-muted-foreground/70'>
             {formatReadReceipt(message)}
           </p>
         )}

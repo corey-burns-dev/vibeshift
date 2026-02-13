@@ -163,6 +163,42 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const conversationsInvalidateTimerRef = useRef<number | null>(null)
   const shouldReconnectRef = useRef(true)
 
+  // Load joined rooms from localStorage on mount
+  useEffect(() => {
+    const userStr = localStorage.getItem('user')
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr)
+        const storageKey = `joined_rooms:${user.id}`
+        const saved = localStorage.getItem(storageKey)
+        if (saved) {
+          const ids = JSON.parse(saved) as number[]
+          for (const id of ids) {
+            joinedRoomsRef.current.add(id)
+          }
+          setJoinedRooms(new Set(joinedRoomsRef.current))
+        }
+      } catch (e) {
+        console.error('Failed to load joined rooms', e)
+      }
+    }
+  }, [])
+
+  // Save joined rooms to localStorage when they change
+  useEffect(() => {
+    const userStr = localStorage.getItem('user')
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr)
+        const storageKey = `joined_rooms:${user.id}`
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify(Array.from(joinedRooms))
+        )
+      } catch {}
+    }
+  }, [joinedRooms])
+
   // Subscription-based handlers (support multiple subscribers)
   const messageHandlersRef = useRef<
     Set<(message: Message, conversationId: number) => void>
@@ -482,6 +518,26 @@ export function ChatProvider({ children }: ChatProviderProps) {
                   old => {
                     if (!old) return [message]
                     if (old.some(m => m.id === message.id)) return old
+
+                    // If this is our own message coming back via WebSocket, replace the optimistic one
+                    const tempId = (message.metadata as Record<string, unknown>)
+                      ?.tempId
+                    if (tempId) {
+                      const hasOptimistic = old.some(
+                        m =>
+                          (m.metadata as Record<string, unknown>)?.tempId ===
+                          tempId
+                      )
+                      if (hasOptimistic) {
+                        return old.map(m =>
+                          (m.metadata as Record<string, unknown>)?.tempId ===
+                          tempId
+                            ? message
+                            : m
+                        )
+                      }
+                    }
+
                     return [...old, message]
                   }
                 )
@@ -530,6 +586,26 @@ export function ChatProvider({ children }: ChatProviderProps) {
                   old => {
                     if (!old) return [message]
                     if (old.some(m => m.id === message.id)) return old
+
+                    // If this is our own message coming back via WebSocket, replace the optimistic one
+                    const tempId = (message.metadata as Record<string, unknown>)
+                      ?.tempId
+                    if (tempId) {
+                      const hasOptimistic = old.some(
+                        m =>
+                          (m.metadata as Record<string, unknown>)?.tempId ===
+                          tempId
+                      )
+                      if (hasOptimistic) {
+                        return old.map(m =>
+                          (m.metadata as Record<string, unknown>)?.tempId ===
+                          tempId
+                            ? message
+                            : m
+                        )
+                      }
+                    }
+
                     return [...old, message]
                   }
                 )

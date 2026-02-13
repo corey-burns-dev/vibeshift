@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { getCurrentUser } from '@/hooks'
+import { getCurrentUser, useAudio } from '@/hooks'
 import { useAuthToken } from '@/hooks/useAuth'
 import { useGameRoomSession } from '@/hooks/useGameRoomSession'
 import { getAvatarUrl } from '@/lib/chat-utils'
@@ -93,6 +93,7 @@ export default function ConnectFour() {
   const [showRematchDialog, setShowRematchDialog] = useState(false)
   const [isStartingRematch, setIsStartingRematch] = useState(false)
 
+  const { playDropPieceSound } = useAudio()
   const chatScrollRef = useRef<HTMLDivElement>(null)
   const didShowEndGameUiRef = useRef(false)
   const victoryTimeoutRef = useRef<number | null>(null)
@@ -211,10 +212,21 @@ export default function ConnectFour() {
           : {}
 
       switch (actionType) {
-        case 'game_state':
+        case 'game_state': {
           movePendingRef.current = false
-          setGameState(payload as unknown as GameState)
+          const newState = payload as unknown as GameState
+          setGameState(prev => {
+            if (
+              prev &&
+              newState &&
+              JSON.stringify(prev.board) !== JSON.stringify(newState.board)
+            ) {
+              playDropPieceSound()
+            }
+            return newState
+          })
           break
+        }
         case 'game_started':
           setGameState(prev => ({
             board:
@@ -225,12 +237,12 @@ export default function ConnectFour() {
             status:
               typeof payload.status === 'string'
                 ? (payload.status as GameState['status'])
-                : prev?.status ?? 'active',
+                : (prev?.status ?? 'active'),
             winner_id: prev?.winner_id ?? null,
             next_turn:
               typeof payload.next_turn === 'number'
                 ? payload.next_turn
-                : prev?.next_turn ?? 0,
+                : (prev?.next_turn ?? 0),
             is_draw: prev?.is_draw ?? false,
           }))
           void queryClient.invalidateQueries({ queryKey: ['gameRoom', id] })
@@ -273,7 +285,7 @@ export default function ConnectFour() {
         }
       }
     },
-    [id, queryClient]
+    [id, queryClient, playDropPieceSound]
   )
 
   const gameSession = useGameRoomSession({

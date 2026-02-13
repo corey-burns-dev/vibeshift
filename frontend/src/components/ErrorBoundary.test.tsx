@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
-function Thrower() {
+function Thrower(): null {
   throw new Error('Test error')
 }
 

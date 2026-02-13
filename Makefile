@@ -19,7 +19,7 @@ GREEN := \033[1;32m
 YELLOW := \033[1;33m
 NC := \033[0m # No Color
 
-.PHONY: help dev dev-clean dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed db-migrate db-migrate-up db-migrate-auto db-schema-status db-reset-dev deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity
+.PHONY: help dev dev-build dev-clean dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed db-migrate db-migrate-up db-migrate-auto db-schema-status db-reset-dev deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity
 
 # Default target
 help:
@@ -28,8 +28,9 @@ help:
 	@echo "$(BLUE)╚════════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
 	@echo "$(GREEN)Development:$(NC)"
-	@echo "  make dev                - 🚀 Start full stack (backend + frontend + databases)"
-	@echo "  make dev-clean          - 🧹 Fresh start (clean volumes/data + dev)"
+	@echo "  make dev                - 🚀 Start full stack (fast; no rebuild)"
+	@echo "  make dev-build          - 🔨 Build images then start (first time or after Dockerfile change)"
+	@echo "  make dev-clean          - 🧹 Fresh start (clean volumes/data + build + dev)"
 	@echo "  make dev-backend        - 🔧 Backend only (Go + Redis + Postgres)"
 	@echo "  make dev-frontend       - 🎨 Frontend only (Vite dev server, local)"
 	@echo "  make dev-both           - 🔀 Backend in Docker + Frontend local (best DX)"
@@ -96,16 +97,23 @@ help:
 	@echo "  make deps-add-backend pkg=<pkg> - ➕ Add Go dependency inside container"
 	@echo ""
 
-# Development targets
+# Development targets (make dev = fast start; make dev-build = first time or after Dockerfile changes)
 dev: env
 	@echo "$(BLUE)Starting full stack development environment...$(NC)"
-	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) $(COMPOSE_FILES) up --build
+	@echo "$(YELLOW)Tip: First time or after Dockerfile changes? Run 'make dev-build'$(NC)"
+	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) $(COMPOSE_FILES) up app redis postgres frontend
 
-dev-clean: clean dev
+dev-build: env
+	@echo "$(BLUE)Building dev images (first time or after Dockerfile changes)...$(NC)"
+	@$(MAKE) build
+	@echo "$(BLUE)Starting dev stack...$(NC)"
+	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) $(COMPOSE_FILES) up app redis postgres frontend
+
+dev-clean: clean dev-build
 
 dev-backend: env
 	@echo "$(BLUE)Starting backend services (Go, Redis, Postgres)...$(NC)"
-	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) $(COMPOSE_FILES) up --build app redis postgres
+	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) $(COMPOSE_FILES) up app redis postgres
 
 dev-frontend: install
 	@echo "$(BLUE)Starting frontend dev server...$(NC)"
@@ -114,7 +122,7 @@ dev-frontend: install
 dev-both: env install
 	@echo "$(BLUE)Starting backend in Docker + frontend locally...$(NC)"
 	@echo "$(YELLOW)Backend will start in background...$(NC)"
-	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) $(COMPOSE_FILES) up --build app redis postgres -d
+	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) $(COMPOSE_FILES) up app redis postgres -d
 	@echo "$(YELLOW)Frontend starting in foreground...$(NC)"
 	@cd frontend && $(BUN) --bun vite --host
 
@@ -124,11 +132,11 @@ build: build-backend build-frontend
 
 build-backend:
 	@echo "$(BLUE)Building backend image...$(NC)"
-	$(DOCKER_COMPOSE) $(COMPOSE_FILES) build app
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 $(DOCKER_COMPOSE) $(COMPOSE_FILES) build app
 
 build-frontend:
 	@echo "$(BLUE)Building frontend image...$(NC)"
-	$(DOCKER_COMPOSE) $(COMPOSE_FILES) build frontend
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 $(DOCKER_COMPOSE) $(COMPOSE_FILES) build frontend
 
 # Container management
 up:

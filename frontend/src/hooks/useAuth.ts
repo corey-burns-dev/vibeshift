@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/client'
 import type { LoginRequest, SignupRequest } from '../api/types'
 import { useAuthSessionStore } from '../stores/useAuthSessionStore'
+import { useChatDockStore } from '../stores/useChatDockStore'
 
 export function useSignup() {
   const navigate = useNavigate()
@@ -48,6 +49,9 @@ export function useLogout() {
   const queryClient = useQueryClient()
 
   return async () => {
+    // Clear chat dock state
+    useChatDockStore.getState().clearOpenConversations()
+
     // Call backend logout (handles store + user cleanup in apiClient)
     await apiClient.logout()
 

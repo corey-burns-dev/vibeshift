@@ -25,30 +25,19 @@ export function ChatDockConversationList({
   const onlineUserIds = usePresenceStore(s => s.onlineUserIds)
   const unreadCounts = useChatDockStore(s => s.unreadCounts)
 
-  // Merge deduplicated DMs + group chatrooms, sorted by last message time
-  const dedupedDMs = deduplicateDMConversations(conversations, currentUserId)
-  const groups = conversations.filter(c => c.is_group)
-  const merged = [...dedupedDMs, ...groups]
+  // Deduplicate and sort friend DMs by last message time
+  const sorted = deduplicateDMConversations(conversations, currentUserId)
+    .slice()
+    .sort((a, b) => {
+      const ta = a.last_message?.created_at || a.created_at
+      const tb = b.last_message?.created_at || b.created_at
+      return new Date(tb).getTime() - new Date(ta).getTime()
+    })
 
-  // Deduplicate by id (in case a group was already in both lists)
-  const seen = new Set<number>()
-  const unique = merged.filter(c => {
-    if (seen.has(c.id)) return false
-    seen.add(c.id)
-    return true
-  })
-
-  // Sort by last_message.created_at desc
-  unique.sort((a, b) => {
-    const ta = a.last_message?.created_at || a.created_at
-    const tb = b.last_message?.created_at || b.created_at
-    return new Date(tb).getTime() - new Date(ta).getTime()
-  })
-
-  if (unique.length === 0) {
+  if (sorted.length === 0) {
     return (
       <div className='flex flex-1 items-center justify-center p-6 text-sm text-muted-foreground'>
-        No conversations yet
+        No friend conversations yet
       </div>
     )
   }
@@ -56,17 +45,10 @@ export function ChatDockConversationList({
   return (
     <ScrollArea className='flex-1'>
       <div className='divide-y divide-border/50'>
-        {unique.map(conv => {
-          const isDM = !conv.is_group
-          const name = isDM
-            ? getDirectMessageName(conv, currentUserId)
-            : conv.name || 'Unnamed Group'
-          const avatar = isDM
-            ? getDirectMessageAvatar(conv, currentUserId)
-            : conv.avatar
-          const otherUser = isDM
-            ? conv.participants?.find(p => p.id !== currentUserId)
-            : null
+        {sorted.map(conv => {
+          const name = getDirectMessageName(conv, currentUserId)
+          const avatar = getDirectMessageAvatar(conv, currentUserId)
+          const otherUser = conv.participants?.find(p => p.id !== currentUserId)
           const isOnline = otherUser ? onlineUserIds.has(otherUser.id) : false
           const unread = unreadCounts[conv.id] || 0
           const preview = conv.last_message?.content
@@ -89,7 +71,7 @@ export function ChatDockConversationList({
                     {name.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                {isDM && isOnline && (
+                {isOnline && (
                   <span className='absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-green-500' />
                 )}
               </div>

@@ -132,7 +132,7 @@ export function useRealtimeNotifications(enabled = true) {
       const conv = await apiClient.createConversation({
         participant_ids: [userID],
       })
-      window.location.href = `/messages/${conv.id}`
+      window.location.href = `/chat/${conv.id}`
     } catch {
       // Silently ignore failures; user can still navigate manually.
     }
@@ -312,10 +312,7 @@ export function useRealtimeNotifications(enabled = true) {
                 })
                 const path = window.location.pathname
                 const inMessagingView =
-                  path === '/messages' ||
-                  path.startsWith('/messages/') ||
-                  path === '/chat' ||
-                  path.startsWith('/chat/')
+                  path === '/chat' || path.startsWith('/chat/')
 
                 if (inMessagingView) {
                   break

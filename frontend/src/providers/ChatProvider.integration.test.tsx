@@ -3,11 +3,15 @@
  * and subscription behavior. Builds on unit tests in ChatProvider.spec.tsx.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, render, waitFor } from '@testing-library/react'
+import { act, render } from '@testing-library/react'
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ChatProvider, useChatContext } from './ChatProvider'
+import {
+  shouldPlayFriendOnlineSound,
+  shouldPlayNewMessageSoundForDM,
+} from '@/lib/chat-sounds'
 import { useAuthSessionStore } from '@/stores/useAuthSessionStore'
+import { ChatProvider, useChatContext } from './ChatProvider'
 
 vi.mock('@/api/client', () => ({
   apiClient: {
@@ -16,6 +20,18 @@ vi.mock('@/api/client', () => ({
       .mockResolvedValue({ ticket: 'test-ticket', expires_in: 60 }),
     getMyBlocks: vi.fn().mockResolvedValue([]),
   },
+}))
+
+const mockPlayNewMessageSound = vi.fn()
+const mockPlayFriendOnlineSound = vi.fn()
+vi.mock('@/hooks/useAudio', () => ({
+  useAudio: () => ({
+    playNewMessageSound: mockPlayNewMessageSound,
+    playFriendOnlineSound: mockPlayFriendOnlineSound,
+    playDirectMessageSound: vi.fn(),
+    playRoomAlertSound: vi.fn(),
+    playDropPieceSound: vi.fn(),
+  }),
 }))
 
 type GlobalWithMocks = typeof globalThis & {
@@ -43,10 +59,12 @@ class MockWS {
   constructor(url: string) {
     this.url = url
     MockWS.instances.push(this)
-    setTimeout(() => {
-      this.readyState = 1
-      this.onopen?.()
-    }, 0)
+  }
+
+  /** Run deferred open. Call inside act() so setIsConnected runs inside act. */
+  flushOpen() {
+    this.readyState = 1
+    this.onopen?.()
   }
 
   send() {}
@@ -63,8 +81,16 @@ class MockWS {
 describe('ChatProvider integration', () => {
   let originalWS: unknown
   let qc: QueryClient
+  let originalConsoleError: typeof console.error
 
   beforeAll(() => {
+    originalConsoleError = console.error
+    vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      const combined = args.map(a => String(a)).join(' ')
+      if (combined.includes('ChatProvider') && combined.includes('was not wrapped in act'))
+        return
+      originalConsoleError.apply(console, args)
+    })
     const store: Record<string, string> = {}
     Object.defineProperty(globalThis, 'localStorage', {
       configurable: true,
@@ -81,9 +107,13 @@ describe('ChatProvider integration', () => {
     })
   })
 
+  afterAll(() => {
+    vi.restoreAllMocks()
+  })
+
   beforeEach(() => {
-    originalWS = (global as GlobalWithMocks).WebSocket
-    ;(global as GlobalWithMocks).WebSocket =
+    originalWS = (globalThis as GlobalWithMocks).WebSocket
+    ;(globalThis as GlobalWithMocks).WebSocket =
       MockWS as unknown as GlobalWithMocks['WebSocket']
     MockWS.instances = []
     qc = new QueryClient()
@@ -95,14 +125,18 @@ describe('ChatProvider integration', () => {
   })
 
   afterEach(() => {
-    ;(global as GlobalWithMocks).WebSocket =
+    vi.useRealTimers()
+    ;(globalThis as GlobalWithMocks).WebSocket =
       originalWS as GlobalWithMocks['WebSocket']
     MockWS.instances = []
     useAuthSessionStore.getState().clear()
     qc.clear()
+    mockPlayNewMessageSound.mockClear()
+    mockPlayFriendOnlineSound.mockClear()
   })
 
   it('subscribed callback receives messages from WebSocket', async () => {
+    vi.useFakeTimers()
     const received: unknown[] = []
     const wrapper = ({ children }: { children?: React.ReactNode }) => (
       <QueryClientProvider client={qc}>
@@ -110,20 +144,27 @@ describe('ChatProvider integration', () => {
       </QueryClientProvider>
     )
 
-    render(
-      <HookTest
-        cb={ctx =>
-          ctx.subscribeOnMessage((m: unknown) => {
-            received.push(m)
-          })
-        }
-      />,
-      { wrapper }
-    )
+    act(() => {
+      render(
+        <HookTest
+          cb={ctx =>
+            ctx.subscribeOnMessage((m: unknown) => {
+              received.push(m)
+            })
+          }
+        />,
+        { wrapper }
+      )
+    })
+    await act(async () => {})
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+      const w = MockWS.instances[0]
+      if (w) w.flushOpen()
+    })
 
-    await waitFor(() => expect(MockWS.instances.length).toBeGreaterThan(0))
+    expect(MockWS.instances.length).toBeGreaterThan(0)
     const ws = MockWS.instances[0]
-
     act(() => {
       ws.receive({
         type: 'message',
@@ -135,5 +176,84 @@ describe('ChatProvider integration', () => {
 
     expect(received.length).toBe(1)
     expect((received[0] as { content: string }).content).toBe('Hi')
+  })
+
+  it('sound helpers trigger playNewMessageSound and playFriendOnlineSound when conditions met', async () => {
+    vi.useFakeTimers()
+    const currentUserId = 1
+    const friendIds = [2]
+    const notifiedUserIds = new Set<number>()
+
+    const wrapper = ({ children }: { children?: React.ReactNode }) => (
+      <QueryClientProvider client={qc}>
+        <ChatProvider>{children}</ChatProvider>
+      </QueryClientProvider>
+    )
+
+    act(() => {
+      render(
+        <HookTest
+          cb={ctx => {
+            ctx.subscribeOnMessage((msg: { sender_id?: number }, _convId: number) => {
+              if (
+                shouldPlayNewMessageSoundForDM(
+                  false,
+                  msg.sender_id ?? 0,
+                  currentUserId
+                )
+              ) {
+                mockPlayNewMessageSound()
+              }
+            })
+            ctx.subscribeOnPresence(
+              (userId: number, _username: string, status: string) => {
+                if (
+                  shouldPlayFriendOnlineSound(
+                    userId,
+                    status,
+                    currentUserId,
+                    notifiedUserIds,
+                    friendIds
+                  )
+                ) {
+                  notifiedUserIds.add(userId)
+                  mockPlayFriendOnlineSound()
+                }
+              }
+            )
+          }}
+        />,
+        { wrapper }
+      )
+    })
+    await act(async () => {})
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+      const w = MockWS.instances[0]
+      if (w) w.flushOpen()
+    })
+
+    expect(MockWS.instances.length).toBeGreaterThan(0)
+    const ws = MockWS.instances[0]
+    act(() => {
+      ws.receive({
+        type: 'message',
+        conversation_id: 1,
+        payload: { id: 10, content: 'Hi', sender_id: 2 },
+      })
+    })
+    await act(async () => {})
+
+    expect(mockPlayNewMessageSound).toHaveBeenCalled()
+
+    act(() => {
+      ws.receive({
+        type: 'presence',
+        payload: { user_id: 2, username: 'friend', status: 'online' },
+      })
+    })
+    await act(async () => {})
+
+    expect(mockPlayFriendOnlineSound).toHaveBeenCalled()
   })
 })

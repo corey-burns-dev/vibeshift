@@ -1,4 +1,11 @@
 import { useCallback } from 'react'
+import dropPieceM4a from '@/assets/sounds/drop-piece.m4a'
+import dropPieceMp3 from '@/assets/sounds/drop-piece.mp3'
+import dropPieceOgg from '@/assets/sounds/drop-piece.ogg'
+import friendOnlineM4a from '@/assets/sounds/friend-online.m4a'
+import friendOnlineMp3 from '@/assets/sounds/friend-online.mp3'
+import friendOnlineOgg from '@/assets/sounds/friend-online.ogg'
+import newMessageMp3 from '@/assets/sounds/new-message.mp3'
 
 /**
  * Shared audio notification hooks for chat sounds.
@@ -7,6 +14,45 @@ import { useCallback } from 'react'
  * playRoomAlertSound     — single soft triangle ping for chatroom activity
  */
 export function useAudio() {
+  const playFileSound = useCallback(
+    (sources: { src: string; type: string }[]) => {
+      const audio = new Audio()
+
+      // Find first supported source or fallback to first
+      const supportedSource =
+        sources.find(s => audio.canPlayType(s.type) !== '') || sources[0]
+
+      if (supportedSource) {
+        audio.src = supportedSource.src
+        audio.play().catch(err => {
+          // Browsers often block audio until user interaction
+          console.warn('Audio playback failed:', err)
+        })
+      }
+    },
+    []
+  )
+
+  const playDropPieceSound = useCallback(() => {
+    playFileSound([
+      { src: dropPieceM4a, type: 'audio/mp4' },
+      { src: dropPieceOgg, type: 'audio/ogg' },
+      { src: dropPieceMp3, type: 'audio/mpeg' },
+    ])
+  }, [playFileSound])
+
+  const playFriendOnlineSound = useCallback(() => {
+    playFileSound([
+      { src: friendOnlineM4a, type: 'audio/mp4' },
+      { src: friendOnlineOgg, type: 'audio/ogg' },
+      { src: friendOnlineMp3, type: 'audio/mpeg' },
+    ])
+  }, [playFileSound])
+
+  const playNewMessageSound = useCallback(() => {
+    playFileSound([{ src: newMessageMp3, type: 'audio/mpeg' }])
+  }, [playFileSound])
+
   const playDirectMessageSound = useCallback(() => {
     const AudioContextClass = window.AudioContext
     if (!AudioContextClass) return
@@ -62,5 +108,11 @@ export function useAudio() {
     }, 500)
   }, [])
 
-  return { playDirectMessageSound, playRoomAlertSound }
+  return {
+    playDirectMessageSound,
+    playRoomAlertSound,
+    playDropPieceSound,
+    playFriendOnlineSound,
+    playNewMessageSound,
+  }
 }

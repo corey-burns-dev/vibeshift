@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"sanctum/internal/models"
+	"sanctum/internal/notifications"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -71,12 +72,33 @@ func (s *Server) maybeSendWelcomeRoomJoinMessage(ctx context.Context, userID, co
 		UserID:         bot.ID,
 	}).Error
 
-	_ = s.db.WithContext(ctx).Create(&models.Message{
+	welcomeMsg := &models.Message{
 		ConversationID: conversationID,
 		SenderID:       bot.ID,
 		Content:        fmt.Sprintf("Welcome, user #%d. Keep it respectful and use reports for safety issues.", userID),
 		MessageType:    "text",
-	}).Error
+		Sender:         bot,
+	}
+	_ = s.db.WithContext(ctx).Create(welcomeMsg).Error
+
+	// Broadcast the welcome message so the user sees it immediately
+	if s.chatHub != nil {
+		s.chatHub.BroadcastToConversation(conversationID, notifications.ChatMessage{
+			Type:           "room_message",
+			ConversationID: conversationID,
+			UserID:         bot.ID,
+			Username:       bot.Username,
+			Payload:        welcomeMsg,
+		})
+	}
+
+	// IMMEDIATELY leave so the bot isn't a persistent (and confusingly offline) member
+	_ = s.db.WithContext(ctx).
+		Where("conversation_id = ? AND user_id = ?", conversationID, bot.ID).
+		Delete(&models.ConversationParticipant{}).Error
+
+	// Broadcast presence update so the member count in the UI reflects the bot leaving
+	s.broadcastChatroomPresenceSnapshot(ctx, conversationID, bot.ID, bot.Username, "left_room")
 }
 
 func (s *Server) ensureWelcomeBotUser(ctx context.Context) (*models.User, error) {

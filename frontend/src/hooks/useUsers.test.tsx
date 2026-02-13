@@ -17,8 +17,8 @@ import {
   useUserProfile,
   useValidateToken,
 } from '@/hooks/useUsers'
-import { createTestQueryClient } from '@/test/test-utils'
 import { useAuthSessionStore } from '@/stores/useAuthSessionStore'
+import { createTestQueryClient } from '@/test/test-utils'
 
 vi.mock('@/api/client', () => ({
   ApiError: class ApiError extends Error {

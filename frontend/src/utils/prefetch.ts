@@ -50,5 +50,4 @@ export const routePrefetchMap: Record<
   '/profile': prefetchUtils.prefetchUserProfile,
   '/friends': prefetchUtils.prefetchFriends,
   '/chat': prefetchUtils.prefetchConversations,
-  '/messages': prefetchUtils.prefetchConversations,
 }

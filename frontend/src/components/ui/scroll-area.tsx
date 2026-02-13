@@ -1,20 +1,14 @@
-'use client'
-
-import type * as React from 'react'
+import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 
-// CSS-based scroll area — replaces Radix ScrollArea which has an infinite
-// re-render loop with React 19 (setState inside ref callback).
-// Scrollbar styling is handled via CSS in globals.css.
-
-function ScrollArea({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<'div'>) {
+const ScrollArea = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<'div'>
+>(({ className, children, ...props }, ref) => {
   return (
     <div
+      ref={ref}
       data-slot='scroll-area'
       className={cn('relative overflow-y-auto scroll-area-styled', className)}
       {...props}
@@ -22,7 +16,8 @@ function ScrollArea({
       {children}
     </div>
   )
-}
+})
+ScrollArea.displayName = 'ScrollArea'
 
 interface ScrollBarProps extends React.ComponentProps<'div'> {
   orientation?: 'vertical' | 'horizontal'

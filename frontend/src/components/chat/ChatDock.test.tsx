@@ -1,23 +1,29 @@
 import { render } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { Message, User } from '@/api/types'
 import { ChatDock } from '@/components/chat/ChatDock'
 
 const toastMessageMock = vi.fn()
 let onMessageSubscription:
-  | ((message: any, conversationId: number) => void)
+  | ((message: Message, conversationId: number) => void)
   | null = null
 const incrementUnreadMock = vi.fn()
 const chatDockState = {
   isOpen: false,
   minimized: false,
-  view: 'list',
+  view: 'list' as const,
   activeConversationId: null as number | null,
+  activePageConversationId: null as number | null,
+  openConversationIds: [] as number[],
   unreadCounts: {} as Record<number, number>,
   toggle: vi.fn(),
   minimize: vi.fn(),
   close: vi.fn(),
+  open: vi.fn(),
   setActiveConversation: vi.fn(),
+  removeOpenConversation: vi.fn(),
+  clearOpenConversations: vi.fn(),
   incrementUnread: incrementUnreadMock,
 }
 
@@ -31,13 +37,17 @@ vi.mock('@/hooks/useMediaQuery', () => ({
   useIsMobile: () => false,
 }))
 
+vi.mock('@/hooks/useFriends', () => ({
+  useFriends: () => ({ data: [{ id: 2, username: 'friend' }] }),
+}))
+
 vi.mock('@/hooks/useChat', () => ({
   useConversations: () => ({
     data: [
       {
         id: 1,
-        is_group: true,
-        name: 'General',
+        is_group: false,
+        name: null,
         participants: [{ id: 2, username: 'friend' }],
       },
     ],
@@ -51,8 +61,9 @@ vi.mock('@/providers/ChatProvider', () => ({
     joinRoom: vi.fn(),
     leaveRoom: vi.fn(),
     sendTyping: vi.fn(),
+    subscribeOnTyping: () => () => {},
     subscribeOnMessage: (
-      cb: (message: any, conversationId: number) => void
+      cb: (message: Message, conversationId: number) => void
     ) => {
       onMessageSubscription = cb
       return () => {
@@ -72,6 +83,17 @@ vi.mock('@/hooks/useUsers', () => ({
   getCurrentUser: () => ({ id: 1, username: 'me' }),
 }))
 
+function minimalUser(username: string): User {
+  const t = new Date().toISOString()
+  return {
+    id: 2,
+    username,
+    email: `${username}@test.example`,
+    created_at: t,
+    updated_at: t,
+  }
+}
+
 describe('ChatDock', () => {
   afterEach(() => {
     onMessageSubscription = null
@@ -88,12 +110,18 @@ describe('ChatDock', () => {
 
     expect(onMessageSubscription).toBeTypeOf('function')
 
+    const now = new Date().toISOString()
     onMessageSubscription?.(
       {
         id: 50,
+        conversation_id: 999,
         sender_id: 2,
         content: 'hello',
-        sender: { username: 'friend' },
+        message_type: 'text',
+        is_read: false,
+        created_at: now,
+        updated_at: now,
+        sender: minimalUser('friend'),
       },
       999
     )
@@ -109,12 +137,18 @@ describe('ChatDock', () => {
       </MemoryRouter>
     )
 
+    const now = new Date().toISOString()
     onMessageSubscription?.(
       {
         id: 51,
+        conversation_id: 1,
         sender_id: 2,
         content: 'hello known room',
-        sender: { username: 'friend' },
+        message_type: 'text',
+        is_read: false,
+        created_at: now,
+        updated_at: now,
+        sender: minimalUser('friend'),
       },
       1
     )

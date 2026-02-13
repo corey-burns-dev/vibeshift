@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import type { Message } from '@/api/types'
 import { MessageItem } from '@/components/chat/MessageItem'
+import { cn } from '@/lib/utils'
 
 interface MessageListProps {
   messages: Message[]
@@ -9,6 +10,8 @@ interface MessageListProps {
   isDirectMessage?: boolean
   showReadReceipts?: boolean
   conversationId?: number
+  isIRCStyle?: boolean
+  showTimestamps?: boolean
 }
 
 export const MessageList = memo(function MessageList({
@@ -18,6 +21,8 @@ export const MessageList = memo(function MessageList({
   isDirectMessage = false,
   showReadReceipts = false,
   conversationId,
+  isIRCStyle = false,
+  showTimestamps = true,
 }: MessageListProps) {
   if (isLoading) {
     return (
@@ -36,7 +41,9 @@ export const MessageList = memo(function MessageList({
   }
 
   return (
-    <div className='space-y-3'>
+    <div
+      className={cn('flex flex-col', isIRCStyle ? 'space-y-0' : 'space-y-1')}
+    >
       {messages.map(msg => (
         <MessageItem
           key={msg.id}
@@ -46,6 +53,8 @@ export const MessageList = memo(function MessageList({
           isDirectMessage={isDirectMessage}
           showReadReceipt={showReadReceipts}
           conversationId={conversationId}
+          isIRCStyle={isIRCStyle}
+          showTimestamps={showTimestamps}
         />
       ))}
     </div>

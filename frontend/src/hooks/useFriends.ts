@@ -14,10 +14,11 @@ export const friendKeys = {
 }
 
 // Get friends list
-export function useFriends() {
+export function useFriends(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: friendKeys.lists(),
     queryFn: () => apiClient.getFriends(),
+    enabled: options?.enabled ?? true,
   })
 }
 
@@ -38,11 +39,14 @@ export function useSentRequests() {
 }
 
 // Get friendship status with a specific user
-export function useFriendshipStatus(userId: number) {
+export function useFriendshipStatus(
+  userId: number,
+  options?: { enabled?: boolean }
+) {
   return useQuery({
     queryKey: friendKeys.status(userId),
     queryFn: () => apiClient.getFriendshipStatus(userId),
-    enabled: !!userId,
+    enabled: !!userId && (options?.enabled ?? true),
   })
 }
 

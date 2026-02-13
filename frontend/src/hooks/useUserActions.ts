@@ -16,16 +16,19 @@ import {
   useReportUser,
   useUnblockUser,
 } from '@/hooks/useModeration'
-import { getCurrentUser } from '@/hooks/useUsers'
+import { getCurrentUser, useIsAuthenticated } from '@/hooks/useUsers'
 
 export function useUserActions(user: User) {
   const navigate = useNavigate()
   const currentUser = getCurrentUser()
-  const { data: statusData, isLoading } = useFriendshipStatus(user.id)
+  const isAuthenticated = useIsAuthenticated()
+  const { data: statusData, isLoading } = useFriendshipStatus(user.id, {
+    enabled: isAuthenticated,
+  })
   const sendRequest = useSendFriendRequest()
   const removeFriend = useRemoveFriend()
   const createConversation = useCreateConversation()
-  const { data: myBlocks = [] } = useMyBlocks()
+  const { data: myBlocks = [] } = useMyBlocks({ enabled: isAuthenticated })
   const blockUser = useBlockUser()
   const unblockUser = useUnblockUser()
   const reportUser = useReportUser()

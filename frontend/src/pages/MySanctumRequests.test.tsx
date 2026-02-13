@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SanctumRequest } from '@/api/types'
 import { useMySanctumRequests } from '@/hooks/useSanctums'
 import MySanctumRequests from '@/pages/MySanctumRequests'
@@ -14,7 +14,7 @@ const mockedUseMySanctumRequests = vi.mocked(useMySanctumRequests)
 function request(status: SanctumRequest['status'], id: number): SanctumRequest {
   return {
     id,
-    user_id: 1,
+    requested_by_user_id: 1,
     requested_name: `Request ${id}`,
     requested_slug: `request-${id}`,
     reason: 'Because',

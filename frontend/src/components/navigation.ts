@@ -1,12 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import {
-  Gamepad2,
-  Home,
-  Landmark,
-  MessageCircle,
-  MessageSquare,
-  Users,
-} from 'lucide-react'
+import { Gamepad2, Home, Landmark, MessageSquare, Users } from 'lucide-react'
 
 export interface NavItem {
   icon: LucideIcon
@@ -22,8 +15,7 @@ export interface NavSection {
 
 export const topRouteNav: NavItem[] = [
   { icon: Home, label: 'Home', path: '/' },
-  { icon: MessageCircle, label: 'Messages', path: '/messages' },
-  { icon: MessageSquare, label: 'Chatrooms', path: '/chat' },
+  { icon: MessageSquare, label: 'Chat', path: '/chat' },
 ]
 
 export const topServiceNav: NavItem[] = [
@@ -39,14 +31,12 @@ export const sideNavSections: NavSection[] = [
 
 export const mobileNav: NavItem[] = [
   { icon: Home, label: 'Home', path: '/' },
-  { icon: MessageCircle, label: 'Messages', path: '/messages' },
+  { icon: MessageSquare, label: 'Chat', path: '/chat' },
   { icon: Gamepad2, label: 'Games', path: '/games' },
-  { icon: MessageSquare, label: 'Chatrooms', path: '/chat' },
 ]
 
 const routeTitles: Array<{ path: string; title: string }> = [
-  { path: '/messages', title: 'Messages' },
-  { path: '/chat', title: 'Chatrooms' },
+  { path: '/chat', title: 'Chat' },
   { path: '/admin', title: 'Admin Console' },
   { path: '/sanctums/requests', title: 'My Sanctum Requests' },
   { path: '/sanctums/request', title: 'Request Sanctum' },

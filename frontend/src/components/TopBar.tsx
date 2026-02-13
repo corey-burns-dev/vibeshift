@@ -1,4 +1,4 @@
-import { Bell, LogOut, Menu, Search, ShieldCheck, User } from 'lucide-react'
+import { Bell, LogOut, Search, ShieldCheck, User } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { ModeToggle } from '@/components/mode-toggle'
@@ -74,330 +74,182 @@ export function TopBar() {
   }
 
   return (
-    <>
-      <header className='fixed top-0 left-0 right-0 z-50 md:hidden'>
-        <div className='border-b border-border/70 bg-background/90 shadow-sm'>
-          <div className='flex h-12 items-center justify-between gap-3 px-3'>
-            <Link to='/' className='inline-flex items-center gap-2'>
-              <span className='bg-linear-to-r from-primary via-emerald-400 to-cyan-400 bg-clip-text text-sm font-black text-transparent uppercase'>
-                Sanctum
-              </span>
-              <span className='text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground'>
-                {pageTitle}
-              </span>
-            </Link>
+    <header className='fixed top-0 left-0 right-0 z-50 hidden md:block'>
+      <div className='border-b border-border/70 bg-background/75 shadow-lg backdrop-blur-xl relative'>
+        <div className='flex h-14 items-center gap-3 px-3 lg:px-4'>
+          <Link
+            to='/'
+            className='mr-4 inline-flex min-w-fit flex-col leading-none'
+          >
+            <span className='bg-linear-to-r from-primary via-emerald-400 to-cyan-400 bg-clip-text text-base font-black tracking-[0.18em] text-transparent uppercase'>
+              Sanctum
+            </span>
+            <span className='text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground'>
+              {pageTitle}
+            </span>
+          </Link>
 
-            <div className='flex items-center gap-2'>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type='button'
-                    className='inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
-                    aria-label='Open navigation'
-                  >
-                    <Menu className='h-5 w-5' />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align='end' className='w-56'>
-                  <DropdownMenuLabel>Navigation</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {navItems.map(item => (
-                    <DropdownMenuItem key={item.path} asChild>
-                      <Link to={item.path} className='flex items-center gap-2'>
-                        <item.icon className='h-5 w-5' />
-                        <span>{item.label}</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+          <Link
+            to='/users'
+            className='ml-1 hidden h-9 flex-1 items-center gap-2 rounded-xl border border-border/60 bg-card/60 px-3 text-sm text-muted-foreground transition-colors hover:text-foreground xl:flex'
+          >
+            <Search className='h-5 w-5' />
+            <span>Search people and rooms</span>
+          </Link>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type='button'
-                    className='relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
-                    aria-label='Notifications'
-                  >
-                    <Bell className='h-5 w-5' />
-                    {unreadCount > 0 && (
-                      <span className='absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground'>
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </span>
-                    )}
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align='end' className='w-80'>
-                  <DropdownMenuLabel className='flex items-center justify-between'>
-                    <span>Notifications</span>
-                    {notifications.length > 0 && unreadCount > 0 && (
-                      <button
-                        type='button'
-                        onClick={markAllRead}
-                        className='text-[11px] font-medium text-primary'
-                      >
-                        Mark all read
-                      </button>
-                    )}
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {notifications.length === 0 ? (
-                    <div className='px-2 py-6 text-center text-xs text-muted-foreground'>
-                      No notifications yet
-                    </div>
-                  ) : (
-                    notifications.slice(0, 8).map(item => (
-                      <DropdownMenuItem
-                        key={item.id}
-                        className='flex flex-col items-start gap-2 py-2'
-                      >
-                        <div className='flex w-full items-start justify-between gap-2'>
-                          <span className='text-xs font-semibold'>
-                            {item.title}
-                          </span>
-                          {!item.read && (
-                            <span className='mt-1 h-2 w-2 shrink-0 rounded-full bg-primary' />
-                          )}
-                        </div>
-                        <div className='flex w-full items-center justify-between gap-2'>
-                          <span className='line-clamp-2 text-[11px] text-muted-foreground flex-1'>
-                            {item.description}
-                          </span>
-                        </div>
-                      </DropdownMenuItem>
-                    ))
+          <div className='absolute left-1/2 top-0 flex h-14 -translate-x-1/2 items-center gap-3 lg:gap-1.5 overflow-x-auto px-1 pointer-events-auto'>
+            {navItems.map(item => (
+              <NavPill
+                key={item.path}
+                item={item}
+                active={isRouteActive(location.pathname, item.path)}
+              />
+            ))}
+          </div>
+
+          <div className='ml-auto flex shrink-0 items-center gap-2'>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type='button'
+                  className='relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
+                  aria-label='Notifications'
+                >
+                  <Bell className='h-5 w-5' />
+                  {unreadCount > 0 && (
+                    <span className='absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground'>
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
                   )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {currentUser ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align='end' className='w-80'>
+                <DropdownMenuLabel className='flex items-center justify-between'>
+                  <span>Notifications</span>
+                  {notifications.length > 0 && unreadCount > 0 && (
                     <button
                       type='button'
-                      className='inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-background/85 transition-colors hover:bg-card'
+                      onClick={markAllRead}
+                      className='text-[11px] font-medium text-primary'
                     >
-                      <Avatar className='h-7 w-7'>
-                        <AvatarImage src={currentUser.avatar} />
-                        <AvatarFallback>
-                          {currentUser.username?.[0]?.toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
+                      Mark all read
                     </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className='w-56' align='end'>
-                    <DropdownMenuLabel className='font-normal'>
-                      <div className='flex flex-col space-y-1'>
-                        <div className='flex items-center gap-2'>
-                          <p className='text-sm font-medium leading-none'>
-                            {currentUser.username}
-                          </p>
-                        </div>
-                        <p className='text-xs leading-none text-muted-foreground'>
-                          {currentUser.email}
-                        </p>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link to='/profile' className='cursor-pointer'>
-                        <User className='mr-2 h-4 w-4' />
-                        <span>Profile</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
+                  )}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {notifications.length === 0 ? (
+                  <div className='px-2 py-6 text-center text-xs text-muted-foreground'>
+                    No notifications yet
+                  </div>
+                ) : (
+                  notifications.slice(0, 8).map(item => (
                     <DropdownMenuItem
-                      onClick={logout}
-                      className='cursor-pointer text-destructive focus:text-destructive'
+                      key={item.id}
+                      className='flex flex-col items-start gap-2 py-2'
                     >
-                      <LogOut className='mr-2 h-4 w-4' />
-                      <span>Log out</span>
+                      <div className='flex w-full items-start justify-between gap-2'>
+                        <span className='text-xs font-semibold'>
+                          {item.title}
+                        </span>
+                        {!item.read && (
+                          <span className='mt-1 h-2 w-2 shrink-0 rounded-full bg-primary' />
+                        )}
+                      </div>
+                      <div className='flex w-full items-center justify-between gap-2'>
+                        <span className='line-clamp-2 text-[11px] text-muted-foreground flex-1'>
+                          {item.description}
+                        </span>
+                        {item.meta?.type === 'friend_request' &&
+                        item.meta.requestId ? (
+                          <div className='flex items-center gap-2'>
+                            <button
+                              type='button'
+                              className='text-[11px] rounded-md bg-emerald-600 px-2 py-1 text-emerald-foreground'
+                              onClick={() => {
+                                if (item.meta?.requestId) {
+                                  acceptReq.mutate(item.meta.requestId)
+                                  removeNotification(item.id)
+                                }
+                              }}
+                            >
+                              Accept
+                            </button>
+                            <button
+                              type='button'
+                              className='text-[11px] rounded-md bg-destructive px-2 py-1 text-destructive-foreground'
+                              onClick={() => {
+                                if (item.meta?.requestId) {
+                                  rejectReq.mutate(item.meta.requestId)
+                                  removeNotification(item.id)
+                                }
+                              }}
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
                     </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      </header>
+                  ))
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <ModeToggle />
 
-      <header className='fixed top-0 left-0 right-0 z-50 hidden md:block'>
-        <div className='border-b border-border/70 bg-background/75 shadow-lg backdrop-blur-xl relative'>
-          <div className='flex h-14 items-center gap-3 px-3 lg:px-4'>
-            <Link
-              to='/'
-              className='mr-4 inline-flex min-w-fit flex-col leading-none'
-            >
-              <span className='bg-linear-to-r from-primary via-emerald-400 to-cyan-400 bg-clip-text text-base font-black tracking-[0.18em] text-transparent uppercase'>
-                Sanctum
-              </span>
-              <span className='text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground'>
-                {pageTitle}
-              </span>
-            </Link>
-
-            <Link
-              to='/users'
-              className='ml-1 hidden h-9 flex-1 items-center gap-2 rounded-xl border border-border/60 bg-card/60 px-3 text-sm text-muted-foreground transition-colors hover:text-foreground xl:flex'
-            >
-              <Search className='h-5 w-5' />
-              <span>Search people and rooms</span>
-            </Link>
-
-            <div className='absolute left-1/2 top-0 flex h-14 -translate-x-1/2 items-center gap-3 lg:gap-1.5 overflow-x-auto px-1 pointer-events-auto'>
-              {navItems.map(item => (
-                <NavPill
-                  key={item.path}
-                  item={item}
-                  active={isRouteActive(location.pathname, item.path)}
-                />
-              ))}
-            </div>
-
-            <div className='ml-auto flex shrink-0 items-center gap-2'>
+            {currentUser ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     type='button'
-                    className='relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
-                    aria-label='Notifications'
+                    className='inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-background/85 transition-colors hover:bg-card'
                   >
-                    <Bell className='h-5 w-5' />
-                    {unreadCount > 0 && (
-                      <span className='absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground'>
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </span>
-                    )}
+                    <Avatar className='h-9 w-9'>
+                      <AvatarImage src={currentUser.avatar} />
+                      <AvatarFallback>
+                        {currentUser.username?.[0]?.toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align='end' className='w-80'>
-                  <DropdownMenuLabel className='flex items-center justify-between'>
-                    <span>Notifications</span>
-                    {notifications.length > 0 && unreadCount > 0 && (
-                      <button
-                        type='button'
-                        onClick={markAllRead}
-                        className='text-[11px] font-medium text-primary'
-                      >
-                        Mark all read
-                      </button>
-                    )}
+                <DropdownMenuContent className='w-56' align='end'>
+                  <DropdownMenuLabel className='font-normal'>
+                    <div className='flex flex-col space-y-1'>
+                      <div className='flex items-center gap-2'>
+                        <p className='text-sm font-medium leading-none'>
+                          {currentUser.username}
+                        </p>
+                        {currentUser.is_admin ? (
+                          <span className='rounded-full border border-primary/40 bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary'>
+                            Admin
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className='text-xs leading-none text-muted-foreground'>
+                        {currentUser.email}
+                      </p>
+                    </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {notifications.length === 0 ? (
-                    <div className='px-2 py-6 text-center text-xs text-muted-foreground'>
-                      No notifications yet
-                    </div>
-                  ) : (
-                    notifications.slice(0, 8).map(item => (
-                      <DropdownMenuItem
-                        key={item.id}
-                        className='flex flex-col items-start gap-2 py-2'
-                      >
-                        <div className='flex w-full items-start justify-between gap-2'>
-                          <span className='text-xs font-semibold'>
-                            {item.title}
-                          </span>
-                          {!item.read && (
-                            <span className='mt-1 h-2 w-2 shrink-0 rounded-full bg-primary' />
-                          )}
-                        </div>
-                        <div className='flex w-full items-center justify-between gap-2'>
-                          <span className='line-clamp-2 text-[11px] text-muted-foreground flex-1'>
-                            {item.description}
-                          </span>
-                          {item.meta?.type === 'friend_request' &&
-                          item.meta.requestId ? (
-                            <div className='flex items-center gap-2'>
-                              <button
-                                type='button'
-                                className='text-[11px] rounded-md bg-emerald-600 px-2 py-1 text-emerald-foreground'
-                                onClick={() => {
-                                  if (item.meta?.requestId) {
-                                    acceptReq.mutate(item.meta.requestId)
-                                    removeNotification(item.id)
-                                  }
-                                }}
-                              >
-                                Accept
-                              </button>
-                              <button
-                                type='button'
-                                className='text-[11px] rounded-md bg-destructive px-2 py-1 text-destructive-foreground'
-                                onClick={() => {
-                                  if (item.meta?.requestId) {
-                                    rejectReq.mutate(item.meta.requestId)
-                                    removeNotification(item.id)
-                                  }
-                                }}
-                              >
-                                Decline
-                              </button>
-                            </div>
-                          ) : null}
-                        </div>
-                      </DropdownMenuItem>
-                    ))
-                  )}
+                  <DropdownMenuItem asChild>
+                    <Link to='/profile' className='cursor-pointer'>
+                      <User className='mr-2 h-5 w-5' />
+                      <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={logout}
+                    className='cursor-pointer text-destructive focus:text-destructive'
+                  >
+                    <LogOut className='mr-2 h-5 w-5' />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <ModeToggle />
-
-              {currentUser ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type='button'
-                      className='inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-background/85 transition-colors hover:bg-card'
-                    >
-                      <Avatar className='h-9 w-9'>
-                        <AvatarImage src={currentUser.avatar} />
-                        <AvatarFallback>
-                          {currentUser.username?.[0]?.toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className='w-56' align='end'>
-                    <DropdownMenuLabel className='font-normal'>
-                      <div className='flex flex-col space-y-1'>
-                        <div className='flex items-center gap-2'>
-                          <p className='text-sm font-medium leading-none'>
-                            {currentUser.username}
-                          </p>
-                          {currentUser.is_admin ? (
-                            <span className='rounded-full border border-primary/40 bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary'>
-                              Admin
-                            </span>
-                          ) : null}
-                        </div>
-                        <p className='text-xs leading-none text-muted-foreground'>
-                          {currentUser.email}
-                        </p>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link to='/profile' className='cursor-pointer'>
-                        <User className='mr-2 h-5 w-5' />
-                        <span>Profile</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={logout}
-                      className='cursor-pointer text-destructive focus:text-destructive'
-                    >
-                      <LogOut className='mr-2 h-5 w-5' />
-                      <span>Log out</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : null}
-            </div>
+            ) : null}
           </div>
         </div>
-      </header>
-    </>
+      </div>
+    </header>
   )
 }

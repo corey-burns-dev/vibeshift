@@ -7,13 +7,16 @@ import { createTicketedWS, getNextBackoff } from '@/lib/ws-utils'
 // Zustand store for global presence state
 interface PresenceState {
   onlineUserIds: Set<number>
+  notifiedUserIds: Set<number>
   setOnline: (userId: number) => void
   setOffline: (userId: number) => void
   setInitialOnlineUsers: (userIds: number[]) => void
+  markNotified: (userId: number) => void
 }
 
 export const usePresenceStore = create<PresenceState>(set => ({
   onlineUserIds: new Set<number>(),
+  notifiedUserIds: new Set<number>(),
   setOnline: (userId: number) =>
     set(state => {
       const newSet = new Set(state.onlineUserIds)
@@ -22,12 +25,26 @@ export const usePresenceStore = create<PresenceState>(set => ({
     }),
   setOffline: (userId: number) =>
     set(state => {
-      const newSet = new Set(state.onlineUserIds)
-      newSet.delete(userId)
-      return { onlineUserIds: newSet }
+      const newOnlineSet = new Set(state.onlineUserIds)
+      newOnlineSet.delete(userId)
+      const newNotifiedSet = new Set(state.notifiedUserIds)
+      newNotifiedSet.delete(userId)
+      return {
+        onlineUserIds: newOnlineSet,
+        notifiedUserIds: newNotifiedSet,
+      }
     }),
   setInitialOnlineUsers: (userIds: number[]) =>
-    set(() => ({ onlineUserIds: new Set<number>(userIds) })),
+    set(() => ({
+      onlineUserIds: new Set<number>(userIds),
+      notifiedUserIds: new Set<number>(userIds),
+    })),
+  markNotified: (userId: number) =>
+    set(state => {
+      const newNotified = new Set(state.notifiedUserIds)
+      newNotified.add(userId)
+      return { notifiedUserIds: newNotified }
+    }),
 }))
 
 // Types for presence events

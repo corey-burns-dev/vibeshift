@@ -155,17 +155,28 @@ export function useMarkAsRead() {
     mutationFn: (conversationId: number) =>
       apiClient.markConversationAsRead(conversationId),
     onSuccess: (_, conversationId) => {
-      queryClient.invalidateQueries({
-        queryKey: chatKeys.conversation(conversationId),
-      })
-      queryClient.invalidateQueries({ queryKey: chatKeys.conversations() })
+      // Optimistically update cache instead of invalidating to avoid refetch storms
+      // that could re-trigger effects and cause request loops.
+      queryClient.setQueryData(
+        chatKeys.conversation(conversationId),
+        (old: { unread_count?: number } | undefined) =>
+          old ? { ...old, unread_count: 0 } : old
+      )
+      queryClient.setQueryData(
+        chatKeys.conversations(),
+        (old: Array<{ id: number; unread_count?: number }> | undefined) =>
+          Array.isArray(old)
+            ? old.map(c =>
+                c.id === conversationId ? { ...c, unread_count: 0 } : c
+              )
+            : old
+      )
     },
     onError: error => {
       // 403 from mark-as-read means "not a participant" -- not an auth failure.
       // Silently ignore to avoid false session invalidation.
       const msg = error instanceof Error ? error.message : String(error)
-      if (msg.includes('403') || msg.toLowerCase().includes('forbidden'))
-        return
+      if (msg.includes('403') || msg.toLowerCase().includes('forbidden')) return
       handleAuthOrFKError(error)
     },
   })
