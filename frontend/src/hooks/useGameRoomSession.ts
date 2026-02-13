@@ -189,9 +189,12 @@ export function useGameRoomSession({
             setIsSocketReady(true)
             reconnectAttempts = 0
             didSetConnectionErrorRef.current = false
-            // Recover join intent after reconnect
+            // Recover join intent after reconnect — only if the join
+            // hasn't been sent yet.  Re-sending after a successful join
+            // causes "Game already started" errors on every reconnect.
             if (
-              (shouldAutoJoinRef.current || hasJoinedRef.current) &&
+              shouldAutoJoinRef.current &&
+              !hasJoinedRef.current &&
               ws.readyState === WebSocket.OPEN
             ) {
               sendJoinNow()

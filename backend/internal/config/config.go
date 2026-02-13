@@ -40,6 +40,14 @@ type Config struct {
 	DevRootEmail                  string `mapstructure:"DEV_ROOT_EMAIL"`
 	DevRootPassword               string `mapstructure:"DEV_ROOT_PASSWORD"`
 	DevRootForceCredentials       bool   `mapstructure:"DEV_ROOT_FORCE_CREDENTIALS"`
+	DBMaxOpenConns                int    `mapstructure:"DB_MAX_OPEN_CONNS"`
+	DBMaxIdleConns                int    `mapstructure:"DB_MAX_IDLE_CONNS"`
+	DBConnMaxLifetimeMinutes      int    `mapstructure:"DB_CONN_MAX_LIFETIME_MINUTES"`
+	TracingEnabled                bool   `mapstructure:"TRACING_ENABLED"`
+	TracingExporter               string `mapstructure:"TRACING_EXPORTER"`
+	OTLPEndpoint                  string `mapstructure:"OTEL_EXPORTER_OTLP_ENDPOINT"`
+	OTELServiceName               string `mapstructure:"OTEL_SERVICE_NAME"`
+	OTELTracesSamplerRatio        float64 `mapstructure:"OTEL_TRACES_SAMPLER_RATIO"`
 }
 
 // LoadConfig loads application configuration from file and environment variables.
@@ -94,6 +102,14 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("DEV_ROOT_EMAIL", "root@sanctum.local")
 	viper.SetDefault("DEV_ROOT_PASSWORD", "DevRoot123!")
 	viper.SetDefault("DEV_ROOT_FORCE_CREDENTIALS", true)
+	viper.SetDefault("DB_MAX_OPEN_CONNS", 25)
+	viper.SetDefault("DB_MAX_IDLE_CONNS", 5)
+	viper.SetDefault("DB_CONN_MAX_LIFETIME_MINUTES", 5)
+	viper.SetDefault("TRACING_ENABLED", false)
+	viper.SetDefault("TRACING_EXPORTER", "stdout")
+	viper.SetDefault("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4318")
+	viper.SetDefault("OTEL_SERVICE_NAME", "sanctum-api")
+	viper.SetDefault("OTEL_TRACES_SAMPLER_RATIO", 1.0)
 
 	var config Config
 	if err := viper.Unmarshal(&config); err != nil {
@@ -132,6 +148,19 @@ func (c *Config) Validate() error {
 		return errors.New("IMAGE_MAX_UPLOAD_SIZE_MB must be greater than 0")
 	}
 
+	if c.DBMaxOpenConns < 0 {
+		return errors.New("DB_MAX_OPEN_CONNS must be >= 0")
+	}
+	if c.DBMaxIdleConns < 0 {
+		return errors.New("DB_MAX_IDLE_CONNS must be >= 0")
+	}
+	if c.DBConnMaxLifetimeMinutes < 0 {
+		return errors.New("DB_CONN_MAX_LIFETIME_MINUTES must be >= 0")
+	}
+	if c.DBMaxOpenConns > 0 && c.DBMaxIdleConns > c.DBMaxOpenConns {
+		return errors.New("DB_MAX_IDLE_CONNS cannot be greater than DB_MAX_OPEN_CONNS")
+	}
+
 	isProduction := c.Env == "production" || c.Env == "prod"
 
 	// DB SSL Mode normalization
@@ -139,6 +168,9 @@ func (c *Config) Validate() error {
 
 	// Strict checks for production
 	if isProduction {
+		if c.DBConnMaxLifetimeMinutes < 1 {
+			return errors.New("DB_CONN_MAX_LIFETIME_MINUTES must be >= 1 in production")
+		}
 		if c.JWTSecret == "your-secret-key-change-in-production" {
 			return errors.New("JWT_SECRET must be changed from the default value in production")
 		}

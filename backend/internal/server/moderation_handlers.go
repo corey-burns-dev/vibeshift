@@ -14,6 +14,8 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+const maxAdminUserSearchLen = 64
+
 func (s *Server) GetMyBlocks(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	userID := c.Locals("userID").(uint)
@@ -287,11 +289,16 @@ func (s *Server) GetAdminBanRequests(c *fiber.Ctx) error {
 func (s *Server) GetAdminUsers(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	page := parsePagination(c, 100)
-	q := strings.TrimSpace(strings.ToLower(c.Query("q")))
+	q := strings.TrimSpace(c.Query("q"))
+
+	if len(q) > maxAdminUserSearchLen {
+		return models.RespondWithError(c, fiber.StatusBadRequest,
+			models.NewValidationError("Search query too long (max 64 characters)"))
+	}
 
 	query := s.db.WithContext(ctx).Model(&models.User{})
 	if q != "" {
-		like := "%" + q + "%"
+		like := "%" + strings.ToLower(q) + "%"
 		query = query.Where("LOWER(username) LIKE ? OR LOWER(email) LIKE ?", like, like)
 	}
 

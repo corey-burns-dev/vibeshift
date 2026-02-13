@@ -140,14 +140,14 @@ func newDBInstance(dsn string, cfg *config.Config) (*gorm.DB, error) {
 	})
 }
 
-func configurePool(db *gorm.DB) error {
+func configurePool(db *gorm.DB, cfg *config.Config) error {
 	sqlDB, err := db.DB()
 	if err != nil {
 		return err
 	}
-	sqlDB.SetMaxOpenConns(25)
-	sqlDB.SetMaxIdleConns(5)
-	sqlDB.SetConnMaxLifetime(5 * time.Minute)
+	sqlDB.SetMaxOpenConns(cfg.DBMaxOpenConns)
+	sqlDB.SetMaxIdleConns(cfg.DBMaxIdleConns)
+	sqlDB.SetConnMaxLifetime(time.Duration(cfg.DBConnMaxLifetimeMinutes) * time.Minute)
 	return nil
 }
 
@@ -193,13 +193,13 @@ func ConnectWithOptions(cfg *config.Config, opts ConnectOptions) (*gorm.DB, erro
 			ReadDB = nil
 		} else {
 			middleware.Logger.Info("Read replica connected successfully")
-			if err := configurePool(ReadDB); err != nil {
+			if err := configurePool(ReadDB, cfg); err != nil {
 				middleware.Logger.Warn("Failed to configure read replica pool", slog.String("error", err.Error()))
 			}
 		}
 	}
 
-	if err := configurePool(DB); err != nil {
+	if err := configurePool(DB, cfg); err != nil {
 		return nil, fmt.Errorf("failed to configure database pool: %w", err)
 	}
 

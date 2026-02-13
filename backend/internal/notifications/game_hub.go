@@ -68,9 +68,14 @@ func (h *GameHub) RegisterClient(roomID uint, client *Client) error {
 		h.rooms[roomID] = make(map[uint]*Client)
 	}
 
-	// Enforce per-room peer limit
-	if len(h.rooms[roomID]) >= MaxGamePeersPerRoom {
-		return fmt.Errorf("room is full")
+	// Allow reconnection: if user is already in this room, replace their client.
+	// Only enforce per-room peer limit for genuinely new users.
+	if _, alreadyIn := h.rooms[roomID][client.UserID]; !alreadyIn {
+		if len(h.rooms[roomID]) >= MaxGamePeersPerRoom {
+			return fmt.Errorf("room is full")
+		}
+	} else {
+		log.Printf("GameHub: User %d reconnecting in room %d (replacing old client)", client.UserID, roomID)
 	}
 
 	h.rooms[roomID][client.UserID] = client

@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"sanctum/internal/middleware"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"gorm.io/gorm"
@@ -159,8 +157,4 @@ func GenerateTraceID() string {
 
 func GenerateSpanID() string {
 	return strconv.FormatInt(time.Now().UnixNano()%10000000000, 36)
-}
-
-func init() {
-	middleware.Logger.Info("Observability metrics initialized")
 }

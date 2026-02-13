@@ -203,6 +203,9 @@ func (s *Server) SetupMiddleware(app *fiber.App) {
 	// Panic recovery
 	app.Use(recover.New())
 
+	// Tracing (OTEL)
+	app.Use(middleware.TracingMiddleware())
+
 	// Request ID for tracing
 	app.Use(requestid.New())
 
@@ -282,10 +285,10 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 
 	// Auth routes
 	auth := api.Group("/auth")
-	auth.Post("/signup", middleware.RateLimit(
-		s.redis, 3, 10*time.Minute, "signup"), s.Signup)
-	auth.Post("/login", middleware.RateLimit(
-		s.redis, 10, 5*time.Minute, "login"), s.Login)
+	auth.Post("/signup", middleware.RateLimitWithPolicy(
+		s.redis, 3, 10*time.Minute, middleware.FailClosed, "signup"), s.Signup)
+	auth.Post("/login", middleware.RateLimitWithPolicy(
+		s.redis, 10, 5*time.Minute, middleware.FailClosed, "login"), s.Login)
 	auth.Post("/refresh", s.Refresh)
 	auth.Post("/logout", s.Logout)
 
@@ -339,7 +342,7 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	users.Post("/:id/demote-admin", s.AdminRequired(), s.DemoteFromAdmin)
 	users.Post("/:id/block", s.BlockUser)
 	users.Delete("/:id/block", s.UnblockUser)
-	users.Post("/:id/report", middleware.RateLimit(s.redis, 5, 10*time.Minute, "report"), s.ReportUser)
+	users.Post("/:id/report", middleware.RateLimitWithPolicy(s.redis, 5, 10*time.Minute, middleware.FailClosed, "report"), s.ReportUser)
 	users.Get("/:id", s.GetUserProfile)
 
 	// Friend routes
@@ -368,7 +371,7 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 		s.redis, 1, time.Minute, "create_comment"), s.CreateComment)
 	posts.Put("/:id/comments/:commentId", s.UpdateComment)
 	posts.Delete("/:id/comments/:commentId", s.DeleteComment)
-	posts.Post("/:id/report", middleware.RateLimit(s.redis, 5, 10*time.Minute, "report"), s.ReportPost)
+	posts.Post("/:id/report", middleware.RateLimitWithPolicy(s.redis, 5, 10*time.Minute, middleware.FailClosed, "report"), s.ReportPost)
 	posts.Post("/:id/poll/vote", s.VotePoll)
 	// Generic /:id routes (for item detail, update, delete)
 	posts.Put("/:id", s.UpdatePost)
@@ -385,7 +388,7 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	conversations.Post("/:id/read", s.MarkConversationRead)
 	conversations.Post("/:id/messages/:messageId/reactions", s.AddMessageReaction)
 	conversations.Delete("/:id/messages/:messageId/reactions", s.RemoveMessageReaction)
-	conversations.Post("/:id/messages/:messageId/report", middleware.RateLimit(s.redis, 5, 10*time.Minute, "report"), s.ReportMessage)
+	conversations.Post("/:id/messages/:messageId/report", middleware.RateLimitWithPolicy(s.redis, 5, 10*time.Minute, middleware.FailClosed, "report"), s.ReportMessage)
 	conversations.Post("/:id/participants", s.AddParticipant)
 	conversations.Delete("/:id", s.LeaveConversation)
 	// Generic /:id route must be last
@@ -420,18 +423,18 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 
 	// Admin routes
 	admin := protected.Group("/admin", s.AdminRequired())
-	admin.Get("/feature-flags", middleware.RateLimit(s.redis, 30, time.Minute, "admin_read"), s.GetFeatureFlags)
-	admin.Get("/reports", middleware.RateLimit(s.redis, 30, time.Minute, "admin_read"), s.GetAdminReports)
-	admin.Post("/reports/:id/resolve", middleware.RateLimit(s.redis, 10, 5*time.Minute, "admin_write"), s.ResolveAdminReport)
-	admin.Get("/ban-requests", middleware.RateLimit(s.redis, 30, time.Minute, "admin_read"), s.GetAdminBanRequests)
-	admin.Get("/users", middleware.RateLimit(s.redis, 30, time.Minute, "admin_read"), s.GetAdminUsers)
-	admin.Get("/users/:id", middleware.RateLimit(s.redis, 30, time.Minute, "admin_read"), s.GetAdminUserDetail)
-	admin.Post("/users/:id/ban", middleware.RateLimit(s.redis, 10, 5*time.Minute, "admin_write"), s.BanUser)
-	admin.Post("/users/:id/unban", middleware.RateLimit(s.redis, 10, 5*time.Minute, "admin_write"), s.UnbanUser)
+	admin.Get("/feature-flags", middleware.RateLimitWithPolicy(s.redis, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetFeatureFlags)
+	admin.Get("/reports", middleware.RateLimitWithPolicy(s.redis, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminReports)
+	admin.Post("/reports/:id/resolve", middleware.RateLimitWithPolicy(s.redis, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.ResolveAdminReport)
+	admin.Get("/ban-requests", middleware.RateLimitWithPolicy(s.redis, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminBanRequests)
+	admin.Get("/users", middleware.RateLimitWithPolicy(s.redis, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminUsers)
+	admin.Get("/users/:id", middleware.RateLimitWithPolicy(s.redis, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminUserDetail)
+	admin.Post("/users/:id/ban", middleware.RateLimitWithPolicy(s.redis, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.BanUser)
+	admin.Post("/users/:id/unban", middleware.RateLimitWithPolicy(s.redis, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.UnbanUser)
 	adminSanctumRequests := admin.Group("/sanctum-requests")
-	adminSanctumRequests.Get("/", middleware.RateLimit(s.redis, 30, time.Minute, "admin_read"), s.GetAdminSanctumRequests)
-	adminSanctumRequests.Post("/:id/approve", middleware.RateLimit(s.redis, 10, 5*time.Minute, "admin_write"), s.ApproveSanctumRequest)
-	adminSanctumRequests.Post("/:id/reject", middleware.RateLimit(s.redis, 10, 5*time.Minute, "admin_write"), s.RejectSanctumRequest)
+	adminSanctumRequests.Get("/", middleware.RateLimitWithPolicy(s.redis, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminSanctumRequests)
+	adminSanctumRequests.Post("/:id/approve", middleware.RateLimitWithPolicy(s.redis, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.ApproveSanctumRequest)
+	adminSanctumRequests.Post("/:id/reject", middleware.RateLimitWithPolicy(s.redis, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.RejectSanctumRequest)
 }
 
 // HealthCheck is a legacy/simple alias for ReadinessCheck

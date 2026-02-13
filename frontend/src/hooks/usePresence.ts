@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { create } from 'zustand'
-import { createTicketedWS } from '@/lib/ws-utils'
+import { createTicketedWS, getNextBackoff } from '@/lib/ws-utils'
 
 // Zustand store for global presence state
 interface PresenceState {
@@ -55,6 +55,7 @@ export function usePresenceListener() {
   )
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<number | undefined>(undefined)
+  const reconnectAttemptsRef = useRef(0)
 
   useEffect(() => {
     const connect = () => {
@@ -67,6 +68,9 @@ export function usePresenceListener() {
         try {
           const ws = await createTicketedWS({
             path: '/api/ws/chat',
+            onOpen: () => {
+              reconnectAttemptsRef.current = 0
+            },
             onMessage: event => {
               try {
                 const data: PresenceEvent = JSON.parse(event.data)
@@ -91,10 +95,10 @@ export function usePresenceListener() {
               }
             },
             onClose: () => {
-              // Attempt to reconnect after 5 seconds
+              const delay = getNextBackoff(reconnectAttemptsRef.current++)
               reconnectTimeoutRef.current = window.setTimeout(() => {
                 connect()
-              }, 5000)
+              }, delay)
             },
             onError: () => {
               // Error handling - connection will close and trigger reconnect
@@ -104,9 +108,10 @@ export function usePresenceListener() {
           wsRef.current = ws
         } catch {
           // Failed to get ticket or connect - retry after delay
+          const delay = getNextBackoff(reconnectAttemptsRef.current++)
           reconnectTimeoutRef.current = window.setTimeout(() => {
             connect()
-          }, 5000)
+          }, delay)
         }
       }
 

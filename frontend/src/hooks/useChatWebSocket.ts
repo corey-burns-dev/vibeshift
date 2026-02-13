@@ -9,6 +9,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Message, User } from '@/api/types'
+import { logger } from '@/lib/logger'
 import { createTicketedWS, getNextBackoff } from '@/lib/ws-utils'
 
 interface ChatWebSocketMessage {
@@ -175,7 +176,7 @@ export function useChatWebSocket({
             const data: ChatWebSocketMessage = JSON.parse(event.data)
 
             if (data.error) {
-              console.error('WS Server Error:', data.error)
+              logger.error('WS Server Error:', data.error)
               // If invalid token/ticket, we don't force redirect here since it's deprecated
             }
 
@@ -336,14 +337,14 @@ export function useChatWebSocket({
                 break
             }
           } catch (error) {
-            console.error('Failed to parse WebSocket message:', error)
+            logger.error('Failed to parse WebSocket message:', error)
           }
         },
         onClose: event => {
           // Only reconnect if this is the ACTIVE socket
           if (ws !== wsRef.current) return
 
-          console.log('WebSocket disconnected:', event.code, event.reason)
+          logger.debug('WebSocket disconnected:', event.code, event.reason)
           wsRef.current = null
           setIsConnected(false)
           joinedRoomsRef.current.clear()
@@ -359,7 +360,7 @@ export function useChatWebSocket({
         },
         onError: error => {
           if (ws !== wsRef.current) return
-          console.error('WebSocket error:', error)
+          logger.error('WebSocket error:', error)
         },
       })
       wsRef.current = ws

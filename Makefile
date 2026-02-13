@@ -211,12 +211,17 @@ fmt:
 
 lint:
 	@echo "$(BLUE)Linting Go code with golangci-lint...$(NC)"
-	@if ! command -v golangci-lint >/dev/null 2>&1; then \
-		echo "$(YELLOW)golangci-lint not found. Run 'make install-linter' to install it.$(NC)"; \
-		exit 1; \
+	@if command -v golangci-lint >/dev/null 2>&1; then \
+		cd backend && golangci-lint run ./...; \
+	else \
+		$(MAKE) lint-backend-docker; \
 	fi
-	cd backend && golangci-lint run ./...
 	@echo "$(GREEN)✓ Linting passed$(NC)"
+
+lint-backend-docker:
+	@echo "$(BLUE)Linting Go code via Docker (toolchain-stable)...$(NC)"
+	docker run --rm -v $(shell pwd)/backend:/app -v $(shell pwd)/.golangci.yml:/.golangci.yml -w /app golangci/golangci-lint:latest golangci-lint run ./...
+	@echo "$(GREEN)✓ Docker linting passed$(NC)"
 
 .PHONY: install-linter
 install-linter:
@@ -401,12 +406,17 @@ deps-check:
 
 deps-vuln:
 	@echo "$(BLUE)Scanning for security vulnerabilities...$(NC)"
-	@if [ ! -f "$(HOME)/go/bin/govulncheck" ]; then \
-		echo "$(YELLOW)Installing govulncheck...$(NC)"; \
-		$(GO) install golang.org/x/vuln/cmd/govulncheck@latest; \
+	@if command -v govulncheck >/dev/null 2>&1; then \
+		cd backend && govulncheck ./...; \
+	else \
+		$(MAKE) deps-vuln-docker; \
 	fi
-	cd backend && $(HOME)/go/bin/govulncheck ./...
 	@echo "$(GREEN)✓ Vulnerability scan complete$(NC)"
+
+deps-vuln-docker:
+	@echo "$(BLUE)Scanning vulnerabilities via Docker...$(NC)"
+	docker run --rm -v $(shell pwd)/backend:/app -w /app golang:1.25 sh -c "go install golang.org/x/vuln/cmd/govulncheck@latest && govulncheck ./..."
+	@echo "$(GREEN)✓ Docker vulnerability scan complete$(NC)"
 
 deps-audit: deps-check deps-vuln
 	@echo "$(GREEN)✓ Full dependency audit complete$(NC)"

@@ -322,10 +322,19 @@ func TestGetAdminUsers(t *testing.T) {
 	})
 
 	t.Run("list with filter", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/admin/users?search=target", nil)
+		req := httptest.NewRequest(http.MethodGet, "/admin/users?q=target", nil)
 		resp, _ := app.Test(req)
 		if resp.StatusCode != http.StatusOK {
 			t.Errorf("expected 200, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("validation error - query too long", func(t *testing.T) {
+		longQ := "this_is_a_very_long_search_query_that_exceeds_sixty_four_characters_limit_1234567890"
+		req := httptest.NewRequest(http.MethodGet, "/admin/users?q="+longQ, nil)
+		resp, _ := app.Test(req)
+		if resp.StatusCode != http.StatusBadRequest {
+			t.Errorf("expected 400, got %d", resp.StatusCode)
 		}
 	})
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"sanctum/internal/models"
 
@@ -155,7 +154,5 @@ func (s *Server) ensureDirectConversation(ctx context.Context, userID, otherUser
 		}
 	}
 
-	// Keep empty names for DMs.
-	_ = strings.TrimSpace(conv.Name)
 	return conv.ID, nil
 }

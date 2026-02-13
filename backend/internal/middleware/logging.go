@@ -17,6 +17,7 @@ type contextKey string
 const (
 	RequestIDKey contextKey = "request_id"
 	UserIDKey    contextKey = "user_id"
+	TraceIDKey   contextKey = "trace_id"
 )
 
 // ctxHandler is a slog.Handler that adds context values to the log record.
@@ -31,6 +32,9 @@ func (h *ctxHandler) Handle(ctx context.Context, r slog.Record) error {
 	}
 	if uid, ok := ctx.Value(UserIDKey).(uint); ok {
 		r.AddAttrs(slog.Any("user_id", uid))
+	}
+	if tid, ok := ctx.Value(TraceIDKey).(string); ok {
+		r.AddAttrs(slog.String("trace_id", tid))
 	}
 	return h.Handler.Handle(ctx, r)
 }
@@ -69,6 +73,13 @@ func ContextMiddleware() fiber.Handler {
 		if uid := c.Locals("userID"); uid != nil {
 			if uidUint, ok := uid.(uint); ok {
 				ctx = context.WithValue(ctx, UserIDKey, uidUint)
+			}
+		}
+
+		// Extract Trace ID
+		if tid := c.Locals("traceID"); tid != nil {
+			if tidStr, ok := tid.(string); ok {
+				ctx = context.WithValue(ctx, TraceIDKey, tidStr)
 			}
 		}
 

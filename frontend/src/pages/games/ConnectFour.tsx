@@ -276,6 +276,7 @@ export default function ConnectFour() {
     token,
     room: room
       ? {
+          id: room.id,
           creator_id: room.creator_id,
           opponent_id: room.opponent_id,
           status: room.status,

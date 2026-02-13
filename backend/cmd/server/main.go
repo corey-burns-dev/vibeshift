@@ -12,6 +12,7 @@ import (
 	"sanctum/internal/bootstrap"
 	"sanctum/internal/config"
 	"sanctum/internal/database"
+	"sanctum/internal/observability"
 	"sanctum/internal/seed"
 	"sanctum/internal/server"
 
@@ -43,6 +44,20 @@ func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	// Initialize tracing
+	shutdownTracing, err := observability.InitTracing(observability.TracingConfig{
+		ServiceName:    cfg.OTELServiceName,
+		ServiceVersion: "1.0.0",
+		Environment:    cfg.Env,
+		Enabled:        cfg.TracingEnabled,
+		Exporter:       cfg.TracingExporter,
+		OTLPEndpoint:   cfg.OTLPEndpoint,
+		SamplerRatio:   cfg.OTELTracesSamplerRatio,
+	})
+	if err != nil {
+		log.Printf("Warning: failed to initialize tracing: %v", err)
 	}
 
 	// Initialize runtime (DB, Redis) and seed built-ins for runtime startup
@@ -93,6 +108,13 @@ func main() {
 		// Shutdown server resources
 		if err := srv.Shutdown(ctx); err != nil {
 			log.Printf("Server resource shutdown error: %v", err)
+		}
+
+		// Shutdown tracing
+		if shutdownTracing != nil {
+			if err := shutdownTracing(ctx); err != nil {
+				log.Printf("Tracing shutdown error: %v", err)
+			}
 		}
 	}()
 

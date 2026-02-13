@@ -4,11 +4,22 @@ package middleware
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
+)
+
+// FailPolicy defines the behavior when the rate limit store (Redis) is unavailable.
+type FailPolicy int
+
+const (
+	// FailOpen allows the request to proceed if Redis is unavailable.
+	FailOpen FailPolicy = iota
+	// FailClosed blocks the request (503 Service Unavailable) if Redis is unavailable.
+	FailClosed
 )
 
 // CheckRateLimit checks if a resource has exceeded its rate limit.
@@ -21,7 +32,7 @@ func CheckRateLimit(ctx context.Context, rdb *redis.Client, resource, id string,
 	}
 
 	if rdb == nil {
-		return true, nil // Fail-open if Redis is not available
+		return false, fmt.Errorf("redis client is nil")
 	}
 
 	key := fmt.Sprintf("rl:%s:%s", resource, id)
@@ -29,7 +40,7 @@ func CheckRateLimit(ctx context.Context, rdb *redis.Client, resource, id string,
 	// INCR and set EXPIRE if new
 	cnt, err := rdb.Incr(ctx, key).Result()
 	if err != nil {
-		return true, err // Fail-open on Redis error
+		return false, err
 	}
 	if cnt == 1 {
 		rdb.Expire(ctx, key, window)
@@ -42,8 +53,13 @@ func CheckRateLimit(ctx context.Context, rdb *redis.Client, resource, id string,
 
 // RateLimit returns a Fiber middleware enforcing `limit` requests per `window`.
 // It keys by authenticated userID (if set in c.Locals("userID")) otherwise by remote IP.
-// The optional `name` parameter allows grouping different routes under the same rate limit.
+// It defaults to FailOpen policy.
 func RateLimit(rdb *redis.Client, limit int, window time.Duration, name ...string) fiber.Handler {
+	return RateLimitWithPolicy(rdb, limit, window, FailOpen, name...)
+}
+
+// RateLimitWithPolicy returns a Fiber middleware enforcing `limit` requests per `window` with a specific failure policy.
+func RateLimitWithPolicy(rdb *redis.Client, limit int, window time.Duration, policy FailPolicy, name ...string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx := context.Background()
 
@@ -62,7 +78,13 @@ func RateLimit(rdb *redis.Client, limit int, window time.Duration, name ...strin
 
 		allowed, err := CheckRateLimit(ctx, rdb, resource, id, limit, window)
 		if err != nil {
-			// Fail-open
+			if policy == FailClosed {
+				log.Printf("WARNING: Rate limit fail-closed for route %s (resource: %s, policy: FailClosed): %v", c.Path(), resource, err)
+				return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+					"error": "rate limit unavailable",
+				})
+			}
+			// Default FailOpen
 			return c.Next()
 		}
 

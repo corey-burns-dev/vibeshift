@@ -70,24 +70,58 @@ func TestCheckRateLimit(t *testing.T) {
 			}
 
 			allowed, err := CheckRateLimit(context.Background(), nil, tt.resource, tt.id, tt.limit, tt.window)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedAllow, allowed)
+			// In our new implementation, CheckRateLimit returns error if rdb is nil
+			if tt.name == "Nil Redis Fail-Open" {
+				assert.Error(t, err)
+				assert.False(t, allowed)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedAllow, allowed)
+			}
 		})
 	}
 }
 
 func TestRateLimitMiddleware(t *testing.T) {
-	app := fiber.New()
+	t.Run("Bypass in test mode", func(t *testing.T) {
+		app := fiber.New()
+		t.Setenv("APP_ENV", "test")
+		app.Get("/test", RateLimit(nil, 1, time.Minute), func(c *fiber.Ctx) error {
+			return c.SendStatus(fiber.StatusOK)
+		})
 
-	// Testing bypass in test mode
-	t.Setenv("APP_ENV", "test")
-	app.Get("/test", RateLimit(nil, 1, time.Minute), func(c *fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusOK)
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		resp, err := app.Test(req)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		_ = resp.Body.Close()
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
-	resp, err := app.Test(req)
-	defer func() { _ = resp.Body.Close() }()
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	t.Run("FailOpen with nil redis in production", func(t *testing.T) {
+		app := fiber.New()
+		t.Setenv("APP_ENV", "production")
+		app.Get("/test", RateLimit(nil, 1, time.Minute), func(c *fiber.Ctx) error {
+			return c.SendStatus(fiber.StatusOK)
+		})
+
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		resp, err := app.Test(req)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		_ = resp.Body.Close()
+	})
+
+	t.Run("FailClosed with nil redis in production", func(t *testing.T) {
+		app := fiber.New()
+		t.Setenv("APP_ENV", "production")
+		app.Get("/sensitive", RateLimitWithPolicy(nil, 1, time.Minute, FailClosed), func(c *fiber.Ctx) error {
+			return c.SendStatus(fiber.StatusOK)
+		})
+
+		req := httptest.NewRequest(http.MethodGet, "/sensitive", nil)
+		resp, err := app.Test(req)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+		_ = resp.Body.Close()
+	})
 }

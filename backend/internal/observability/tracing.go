@@ -2,10 +2,12 @@ package observability
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -17,21 +19,40 @@ import (
 var Tracer trace.Tracer
 
 type TracingConfig struct {
-	ServiceName    string
-	ServiceVersion string
-	Environment    string
-	Enabled        bool
+	ServiceName     string
+	ServiceVersion  string
+	Environment     string
+	Enabled         bool
+	Exporter        string // "stdout" or "otlp"
+	OTLPEndpoint    string
+	SamplerRatio    float64
 }
 
-func InitTracing(cfg TracingConfig) error {
+// InitTracing initializes the OpenTelemetry tracer provider.
+// Returns a shutdown function and an error.
+func InitTracing(cfg TracingConfig) (func(context.Context) error, error) {
 	if !cfg.Enabled {
 		Tracer = otel.Tracer(cfg.ServiceName)
-		return nil
+		return func(_ context.Context) error { return nil }, nil
 	}
 
-	exporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
+	var exporter sdktrace.SpanExporter
+	var err error
+
+	switch cfg.Exporter {
+	case "otlp":
+		exporter, err = otlptracehttp.New(context.Background(),
+			otlptracehttp.WithEndpoint(cfg.OTLPEndpoint),
+			otlptracehttp.WithInsecure(), // Adjust as needed for production
+		)
+	case "stdout":
+		fallthrough
+	default:
+		exporter, err = stdouttrace.New(stdouttrace.WithPrettyPrint())
+	}
+
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to create tracing exporter: %w", err)
 	}
 
 	res, err := resource.New(context.Background(),
@@ -42,13 +63,18 @@ func InitTracing(cfg TracingConfig) error {
 		),
 	)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to create resource: %w", err)
+	}
+
+	sampler := sdktrace.ParentBased(sdktrace.TraceIDRatioBased(cfg.SamplerRatio))
+	if cfg.SamplerRatio >= 1.0 {
+		sampler = sdktrace.AlwaysSample()
 	}
 
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSampler(sampler),
 	)
 
 	otel.SetTracerProvider(tp)
@@ -59,7 +85,7 @@ func InitTracing(cfg TracingConfig) error {
 
 	Tracer = tp.Tracer(cfg.ServiceName)
 
-	return nil
+	return tp.Shutdown, nil
 }
 
 type Span struct {

@@ -29,6 +29,9 @@ DB_PASSWORD="${DB_PASSWORD:-$(get_cfg DB_PASSWORD)}"
 DB_SSLMODE="${DB_SSLMODE:-$(get_cfg DB_SSLMODE)}"
 DB_SCHEMA_MODE="${DB_SCHEMA_MODE:-$(get_cfg DB_SCHEMA_MODE)}"
 DB_SCHEMA_MODE="${DB_SCHEMA_MODE:-sql}"
+DB_MAX_OPEN_CONNS="${DB_MAX_OPEN_CONNS:-$(get_cfg DB_MAX_OPEN_CONNS)}"
+DB_MAX_IDLE_CONNS="${DB_MAX_IDLE_CONNS:-$(get_cfg DB_MAX_IDLE_CONNS)}"
+DB_CONN_MAX_LIFETIME_MINUTES="${DB_CONN_MAX_LIFETIME_MINUTES:-$(get_cfg DB_CONN_MAX_LIFETIME_MINUTES)}"
 
 case "$DB_SCHEMA_MODE" in
   hybrid|sql|auto) ;;
@@ -38,7 +41,17 @@ case "$DB_SCHEMA_MODE" in
     ;;
 esac
 
+# Validate numbers
+if [ -n "$DB_MAX_OPEN_CONNS" ] && ! [[ "$DB_MAX_OPEN_CONNS" =~ ^[0-9]+$ ]]; then
+  echo "DB_MAX_OPEN_CONNS must be a non-negative integer"
+  exit 1
+fi
+
 if [ "$APP_ENV" = "production" ] || [ "$APP_ENV" = "prod" ]; then
+  if [ -n "$DB_CONN_MAX_LIFETIME_MINUTES" ] && [ "$DB_CONN_MAX_LIFETIME_MINUTES" -lt 1 ]; then
+    echo "Production requires DB_CONN_MAX_LIFETIME_MINUTES >= 1."
+    exit 1
+  fi
   if [ -z "$JWT_SECRET" ] || [ "$JWT_SECRET" = "your-super-secret-key-that-should-be-long-and-random" ] || [ ${#JWT_SECRET} -lt 32 ]; then
     echo "Production requires a strong JWT_SECRET (>=32 chars, non-default)."
     exit 1

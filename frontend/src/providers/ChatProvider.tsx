@@ -12,6 +12,7 @@ import { apiClient } from '@/api/client'
 import type { Message, User } from '@/api/types'
 import { useMyBlocks } from '@/hooks/useModeration'
 import { useIsAuthenticated } from '@/hooks/useUsers'
+import { logger } from '@/lib/logger'
 import { createTicketedWS, getNextBackoff } from '@/lib/ws-utils'
 
 interface ChatWebSocketMessage {
@@ -700,7 +701,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
         },
         onError: error => {
           if (ws !== wsRef.current) return
-          console.error('WebSocket error:', error)
+          logger.error('WebSocket error:', error)
         },
         onClose: () => {
           if (ws !== wsRef.current) return
@@ -711,7 +712,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
           // Only reconnect if still authenticated and not explicitly disabled
           if (isAuthenticated && shouldReconnectRef.current) {
             const delay = getNextBackoff(reconnectAttemptsRef.current++)
-            console.log(
+            logger.debug(
               `WebSocket disconnected. Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})`
             )
             reconnectTimeoutRef.current = window.setTimeout(() => {
