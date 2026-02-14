@@ -13,7 +13,7 @@ services:
       - DB_NAME=${POSTGRES_DB}
       - IMAGE_UPLOAD_DIR=/var/sanctum/uploads/images
     volumes:
-      - uploads_data:/var/sanctum/uploads
+      - /mnt/storage/Sanctum/dev/uploads:/var/sanctum/uploads
     depends_on:
       redis:
         condition: service_healthy
@@ -37,7 +37,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - /mnt/storage/Sanctum/dev/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -48,7 +48,7 @@ services:
     image: redis:${REDIS_VERSION}
     command: redis-server --save 60 1 --loglevel warning
     volumes:
-      - redis_data:/data
+      - /mnt/storage/Sanctum/dev/redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -63,11 +63,12 @@ services:
         BUN_ALPINE_TAG: ${BUN_ALPINE_TAG}
         NGINX_VERSION: ${NGINX_VERSION}
     volumes:
-      - uploads_data:/var/sanctum/uploads:ro
+      - /mnt/storage/Sanctum/dev/uploads:/var/sanctum/uploads:ro
     depends_on:
       - app
 
-volumes:
-  postgres_data:
-  redis_data:
-  uploads_data:
+# Volumes section removed as we are using bind mounts now
+# volumes:
+#   postgres_data:
+#   redis_data:
+#   uploads_data:

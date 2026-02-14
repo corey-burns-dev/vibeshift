@@ -6,6 +6,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
     volumes:
       - ./backend/config.staging.yml:/config.staging.yml:ro
+      - /mnt/storage/Sanctum/staging/uploads:/var/sanctum/uploads
     restart: always
     logging:
       driver: "json-file"
@@ -22,6 +23,8 @@ services:
 
   postgres:
     restart: always
+    volumes:
+      - /mnt/storage/Sanctum/staging/postgres:/var/lib/postgresql/data
     deploy:
       resources:
         limits:
@@ -32,6 +35,8 @@ services:
 
   redis:
     restart: always
+    volumes:
+      - /mnt/storage/Sanctum/staging/redis:/data
     deploy:
       resources:
         limits:
@@ -44,6 +49,8 @@ services:
     image: ghcr.io/${GITHUB_REPOSITORY:-cburns/sanctum}/frontend:latest
     ports:
       - "8081:80"
+    volumes:
+      - /mnt/storage/Sanctum/staging/uploads:/var/sanctum/uploads:ro
     restart: always
     deploy:
       resources:
