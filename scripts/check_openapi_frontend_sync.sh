@@ -41,7 +41,7 @@ normalize_spec_path() {
 declare -a missing=()
 declare -A missing_set=()
 
-rg -N '^  /.*:$' "${SPEC_FILE}" \
+grep '^  /.*:$' "${SPEC_FILE}" \
   | sed -E 's/^  (\/.*):$/\1/; s/\{[^}]+\}/{param}/g' \
   | sort -u > "${tmp_spec_paths}"
 
