@@ -83,7 +83,7 @@ If you do only the parts that create immediate agent behavior change:
    * `CLAUDE-CORE.md`
    * the relevant context doc
    * `docs/context/known-issues.md`
-   * `docs/lessons/INDEX.md` (even if it’s manual at first)
+   * `docs/lessons/index.md` (even if it’s manual at first)
 
 This already captures most of the benefits described in the “optimized flow” section.
 

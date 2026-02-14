@@ -418,7 +418,7 @@ Pre-release validation checklist:
 
 ## 📋 Reporting & Sign-off
 
-After running the tests, document results using the template at `docs/reports/REPORT_TEMPLATE.md`.
+After running the tests, document results using the template at `docs/reports/report-template.md`.
 
 **Required Information:**
 - Test execution date/time

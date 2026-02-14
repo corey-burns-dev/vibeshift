@@ -108,7 +108,7 @@ Historical implementation reports following `YYYY-MM-DD-HHMM-<slug>.md` naming c
 ## Documentation Standards
 
 - **Naming**: Use kebab-case for all files and directories (e.g., `production-readiness.md`)
-- **Reports**: Create timestamped reports in `/reports/` using `REPORT_TEMPLATE.md`
+- **Reports**: Create timestamped reports in `/reports/` using `report-template.md`
 - **Updates**: When restructuring docs, update this navigation hub
 
 ## Contributing to Documentation

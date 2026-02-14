@@ -67,7 +67,7 @@ Read these only when relevant:
 - Backend work: `backend/AGENTS.md`
 - Frontend work: `frontend/AGENTS.md`
 - Pattern memory: `docs/context/`
-- Incident memory: `docs/lessons/INDEX.md`
+- Incident memory: `docs/lessons/index.md`
 - Architecture decisions: `docs/decisions/`
 
 ## Doc Budget Rule
@@ -80,7 +80,7 @@ For substantial tasks, create a report:
 
 - Path: `docs/reports/`
 - Naming (new reports): `YYYY-MM-DD-HHMM-short-slug.md`
-- Template: `docs/reports/REPORT_TEMPLATE.md`
+- Template: `docs/reports/report-template.md`
 
 ## Change Discipline
 

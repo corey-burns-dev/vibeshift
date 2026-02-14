@@ -12,7 +12,7 @@ Track these metrics monthly to confirm the instruction system stays effective.
 ## Measurement Inputs
 
 - `docs/reports/*.md` (new reports only for compliance baseline)
-- `docs/lessons/INDEX.md`
+- `docs/lessons/index.md`
 - `docs/context/known-issues.md`
 - PR workflow outcomes from CI checks
 

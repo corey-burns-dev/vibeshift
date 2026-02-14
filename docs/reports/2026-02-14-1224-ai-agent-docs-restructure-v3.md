@@ -66,12 +66,12 @@
     - `docs/decisions/0001-auth-ticket-flow.md`
     - `docs/decisions/0002-websocket-handshake.md`
   - Added lessons system:
-    - `docs/lessons/TEMPLATE.md`
-    - `docs/lessons/INDEX.md`
+    - `docs/lessons/template.md`
+    - `docs/lessons/index.md`
     - Backfilled lessons from the targeted 5 reports.
   - Added automation CLI: `scripts/agent_memory.py` (`backfill`, `update`, `validate`).
 - Governance automation:
-  - Updated `docs/reports/REPORT_TEMPLATE.md` with required structured signals block.
+  - Updated `docs/reports/report-template.md` with required structured signals block.
   - Updated `scripts/new_report.sh` metadata formatting.
   - Enhanced `.github/workflows/report-required.yml` with:
     - report filename convention enforcement
@@ -96,7 +96,7 @@
   - `./scripts/verify_agent_template_sync.sh`
   - `python3 scripts/agent_memory.py backfill --reports-dir docs/reports --lessons-dir docs/lessons`
   - `python3 scripts/agent_memory.py validate`
-  - `python3 scripts/agent_memory.py validate --report docs/reports/REPORT_TEMPLATE.md --require-structured`
+  - `python3 scripts/agent_memory.py validate --report docs/reports/report-template.md --require-structured`
   - `./scripts/check_doc_links.sh`
   - `bash -n scripts/new_report.sh scripts/check_doc_links.sh scripts/sync_agent_templates.sh scripts/verify_agent_template_sync.sh`
   - `make ai-docs-verify`
@@ -115,7 +115,7 @@
   - New report-required checks may initially fail PRs that use old report naming/schema habits.
 - Mitigations:
   - `scripts/new_report.sh` now produces compliant report skeletons.
-  - `docs/reports/REPORT_TEMPLATE.md` includes explicit machine-readable requirements.
+  - `docs/reports/report-template.md` includes explicit machine-readable requirements.
 
 ## Follow-ups
 

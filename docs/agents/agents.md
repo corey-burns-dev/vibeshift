@@ -20,6 +20,6 @@ Use this directory as an index for agent-related assets, not as a duplicate poli
 ## Memory Layer
 
 - Context docs: `/docs/context/`
-- Lessons index: `/docs/lessons/INDEX.md`
+- Lessons index: `/docs/lessons/index.md`
 - Decisions: `/docs/decisions/`
 - Metrics and maintenance: `/docs/agents/metrics.md`

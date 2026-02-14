@@ -240,7 +240,7 @@ def parse_frontmatter(path: Path) -> dict[str, Any]:
 def read_lessons() -> list[tuple[Path, dict[str, Any], str]]:
     rows: list[tuple[Path, dict[str, Any], str]] = []
     for path in sorted(LESSONS_DIR.glob("*.md")):
-        if path.name in {"INDEX.md", "TEMPLATE.md"}:
+        if path.name.lower() in {"index.md", "template.md"}:
             continue
         text = path.read_text(encoding="utf-8")
         title_match = re.search(r"^#\s+Lesson:\s+(.+)$", text, re.M)
@@ -288,7 +288,7 @@ def regenerate_index() -> None:
                 out.append(f"- [{title}]({rel.as_posix()})")
         out.append("")
 
-    (LESSONS_DIR / "INDEX.md").write_text("\n".join(out).rstrip() + "\n", encoding="utf-8")
+    (LESSONS_DIR / "index.md").write_text("\n".join(out).rstrip() + "\n", encoding="utf-8")
 
 
 def regenerate_known_issues() -> None:

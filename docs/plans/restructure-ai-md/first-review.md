@@ -34,7 +34,7 @@ Your current AI documentation setup is **well-structured** but has **significant
    - Behavioral preservation emphasis
 
 3. **Report Template System**
-   - Structured format in docs/reports/REPORT_TEMPLATE.md
+   - Structured format in docs/reports/report-template.md
    - Consistent naming (YYYY-MM-DD-HHMM-slug.md)
    - Good metadata tracking
 
@@ -65,14 +65,14 @@ Your current AI documentation setup is **well-structured** but has **significant
 **Current Structure**:
 
 ```
-/AI.md (redirects to docs/agents/AI.md)
+/AI.md (redirects to docs/agents/ai.md)
 /CLAUDE.md (core rules, references /AI.md)
-/AGENTS.md (redirects to docs/agents/AGENTS.md)
+/AGENTS.md (redirects to docs/agents/agents.md)
 /frontend/AI.md (references /AI.md)
 /frontend/CLAUDE.md (redirects)
 /backend/CLAUDE.md (redirects)
-/docs/agents/AI.md (canonical)
-/docs/agents/AGENTS.md (canonical)
+/docs/agents/ai.md (canonical)
+/docs/agents/agents.md (canonical)
 /.github/agents/_conventions.md (references /AI.md)
 /.github/agents/backend-feature-agent.md
 /.github/agents/frontend-feature-agent.md
@@ -263,7 +263,7 @@ Add to golangci-lint ignore config or create custom linter.
 
 ## Pre-Flight Checklist
 ☐ Read /docs/context/backend-patterns.md (~1500 tokens)
-☐ Review /docs/lessons/INDEX.md for similar tasks
+☐ Review /docs/lessons/index.md for similar tasks
 ☐ Check /docs/context/known-issues.md for active gotchas
 
 ## Hard Rules (with examples from real incidents)
@@ -322,7 +322,7 @@ Add to golangci-lint ignore config or create custom linter.
 # Parse all reports in docs/reports/
 # Extract sections: "Critical Issues", "Risks", "Follow-ups"
 # Generate lesson files in docs/lessons/
-# Update docs/lessons/INDEX.md
+# Update docs/lessons/index.md
 
 for report in docs/reports/*.md; do
     # Extract CRITICAL/HIGH severity items
@@ -353,7 +353,7 @@ done
    # This script:
    # - Parses latest report
    # - Updates relevant docs/context/*.md files
-   # - Regenerates docs/lessons/INDEX.md
+   # - Regenerates docs/lessons/index.md
    ```
 
 2. **Weekly Maintenance**:
@@ -388,10 +388,10 @@ done
 ```
 Session Start
 ├─ Read AI.md (redirect) → 300 tokens
-├─ Read docs/agents/AI.md → 1200 tokens
+├─ Read docs/agents/ai.md → 1200 tokens
 ├─ Read CLAUDE.md → 600 tokens
 ├─ Read AGENTS.md (redirect) → 300 tokens
-├─ Read docs/agents/AGENTS.md → 1400 tokens
+├─ Read docs/agents/agents.md → 1400 tokens
 ├─ Read frontend/AI.md → 800 tokens (if frontend task)
 ├─ Read agent template → 1000 tokens
 └─ TOTAL: ~5600 tokens before doing ANY work
@@ -458,7 +458,7 @@ Redis: docs/context/redis-patterns.md
 Testing: docs/context/testing-strategy.md
 
 ## Lessons Learned
-Index: docs/lessons/INDEX.md
+Index: docs/lessons/index.md
 Recent incidents: docs/context/known-issues.md
 
 ## Emergency
@@ -532,7 +532,7 @@ Example: "sanctum:user:123:session"
 
 ---
 
-### 3. Create `/docs/lessons/INDEX.md`
+### 3. Create `/docs/lessons/index.md`
 
 **Auto-generated from reports**:
 
@@ -629,9 +629,9 @@ echo "Context updated. Review docs/context/ for changes."
 
 ```bash
 #!/bin/bash
-# Auto-generates docs/lessons/INDEX.md from lesson files
+# Auto-generates docs/lessons/index.md from lesson files
 
-cat > docs/lessons/INDEX.md << 'EOF'
+cat > docs/lessons/index.md << 'EOF'
 # Lessons Learned Index
 
 Last Updated: $(date +%Y-%m-%d)
@@ -647,7 +647,7 @@ for lesson in docs/lessons/2*.md; do
     TITLE=$(grep "^# " "$lesson" | head -1 | sed 's/^# //')
     
     # Add to index
-    echo "- [$TITLE]($lesson) ← $(basename $lesson .md | cut -d- -f1-3)" >> docs/lessons/INDEX.md
+    echo "- [$TITLE]($lesson) ← $(basename $lesson .md | cut -d- -f1-3)" >> docs/lessons/index.md
 done
 
 echo "Lessons index regenerated."
@@ -675,7 +675,7 @@ echo "Lessons index regenerated."
 ## Pre-Implementation (Read First)
 ☐ /CLAUDE-CORE.md (core rules)
 ☐ /docs/context/backend-patterns.md (conventions)
-☐ /docs/lessons/INDEX.md (scan for similar work)
+☐ /docs/lessons/index.md (scan for similar work)
 ☐ /docs/context/known-issues.md (active gotchas)
 
 ## Hard Rules (with incident references)
@@ -827,7 +827,7 @@ Track these to measure improvement:
 - [ ] Create docs/lessons/ directory
 - [ ] Write scripts/extract-lessons.sh
 - [ ] Process all 16 existing reports
-- [ ] Generate docs/lessons/INDEX.md
+- [ ] Generate docs/lessons/index.md
 - [ ] Create 10-15 initial lesson files
 
 **Deliverable**: Searchable database of past incidents
