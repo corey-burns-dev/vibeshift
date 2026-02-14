@@ -25,7 +25,7 @@ Sanctum is a Reddit-style social platform focused on creativity, hobbies, and sh
 - Docker and Docker Compose
 - Git
 - Node.js (v24+) and Bun (for local frontend development)
-- Go (v1.25+, optional for local backend development)
+- Go (v1.26+, optional for local backend development)
 
 ## Quick Start
 

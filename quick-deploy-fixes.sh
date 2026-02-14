@@ -175,7 +175,7 @@ echo "📦 Backed up existing Dockerfile to Dockerfile.backup"
 # Updated production Dockerfile for backend
 cat > Dockerfile << 'EOF'
 # Build stage
-FROM golang:1.25.7-alpine AS builder
+FROM golang:1.26.0-alpine AS builder
 
 WORKDIR /build
 

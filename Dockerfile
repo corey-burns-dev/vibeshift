@@ -1,4 +1,4 @@
-ARG GO_VERSION=1.25.7-alpine3.23
+ARG GO_VERSION=1.26.0-alpine3.23
 FROM golang:${GO_VERSION} AS builder
 
 RUN apk add --no-cache build-base libwebp-dev

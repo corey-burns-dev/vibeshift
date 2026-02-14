@@ -695,7 +695,7 @@ deps-vuln:
 
 deps-vuln-docker:
 	@echo "$(BLUE)Scanning vulnerabilities via Docker...$(NC)"
-	docker run --rm -v $(shell pwd)/backend:/app -w /app golang:1.25 sh -c "go install golang.org/x/vuln/cmd/govulncheck@latest && govulncheck ./..."
+	docker run --rm -v $(shell pwd)/backend:/app -w /app golang:1.26 sh -c "go install golang.org/x/vuln/cmd/govulncheck@latest && govulncheck ./..."
 	@echo "$(GREEN)✓ Docker vulnerability scan complete$(NC)"
 
 deps-audit: deps-check deps-vuln
