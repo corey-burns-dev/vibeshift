@@ -56,6 +56,17 @@ func (s *Server) findSanctumBySlug(ctx context.Context, slug string) (*models.Sa
 }
 
 // GetSanctumAdmins handles GET /api/sanctums/:slug/admins.
+// @Summary List sanctum admins
+// @Description List owners and moderators for a sanctum.
+// @Tags sanctums-admin
+// @Produce json
+// @Param slug path string true "Sanctum slug"
+// @Success 200 {array} SanctumAdminDTO
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Security BearerAuth
+// @Router /sanctums/{slug}/admins [get]
 func (s *Server) GetSanctumAdmins(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	actorUserID := c.Locals("userID").(uint)
@@ -105,6 +116,18 @@ func (s *Server) GetSanctumAdmins(c *fiber.Ctx) error {
 }
 
 // PromoteSanctumAdmin handles POST /api/sanctums/:slug/admins/:userId.
+// @Summary Promote user to sanctum admin
+// @Description Promote a user to moderator role in a sanctum.
+// @Tags sanctums-admin
+// @Produce json
+// @Param slug path string true "Sanctum slug"
+// @Param userId path int true "User ID"
+// @Success 200 {object} SanctumAdminDTO
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Security BearerAuth
+// @Router /sanctums/{slug}/admins/{userId} [post]
 func (s *Server) PromoteSanctumAdmin(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	actorUserID := c.Locals("userID").(uint)
@@ -175,6 +198,18 @@ func (s *Server) PromoteSanctumAdmin(c *fiber.Ctx) error {
 }
 
 // DemoteSanctumAdmin handles DELETE /api/sanctums/:slug/admins/:userId.
+// @Summary Demote sanctum admin
+// @Description Demote a moderator back to member role in a sanctum.
+// @Tags sanctums-admin
+// @Produce json
+// @Param slug path string true "Sanctum slug"
+// @Param userId path int true "User ID"
+// @Success 200 {object} SanctumAdminDTO
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Security BearerAuth
+// @Router /sanctums/{slug}/admins/{userId} [delete]
 func (s *Server) DemoteSanctumAdmin(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	actorUserID := c.Locals("userID").(uint)

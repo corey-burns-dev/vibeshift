@@ -191,6 +191,18 @@ func (s *Server) ReportMessage(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(report)
 }
 
+// GetAdminReports handles GET /api/admin/reports.
+// @Summary List moderation reports
+// @Description List all moderation reports with optional filters.
+// @Tags moderation-admin
+// @Produce json
+// @Param status query string false "Filter by status"
+// @Param target_type query string false "Filter by target type"
+// @Success 200 {array} models.ModerationReport
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Security BearerAuth
+// @Router /admin/reports [get]
 func (s *Server) GetAdminReports(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	status := strings.TrimSpace(c.Query("status"))
@@ -220,6 +232,19 @@ func (s *Server) GetAdminReports(c *fiber.Ctx) error {
 	return c.JSON(reports)
 }
 
+// ResolveAdminReport handles POST /api/admin/reports/:id/resolve.
+// @Summary Resolve moderation report
+// @Description Resolve or dismiss a moderation report.
+// @Tags moderation-admin
+// @Accept json
+// @Produce json
+// @Param id path int true "Report ID"
+// @Param request body object{status=string,resolution_note=string} true "Resolution details"
+// @Success 200 {object} models.ModerationReport
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Security BearerAuth
+// @Router /admin/reports/{id}/resolve [post]
 func (s *Server) ResolveAdminReport(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	adminID := c.Locals("userID").(uint)
@@ -274,6 +299,16 @@ func (s *Server) moderationSvc() *service.ModerationService {
 	return s.moderationService
 }
 
+// GetAdminBanRequests handles GET /api/admin/ban-requests.
+// @Summary List ban requests
+// @Description List all ban requests.
+// @Tags moderation-admin
+// @Produce json
+// @Success 200 {array} service.BanRequestRow
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Security BearerAuth
+// @Router /admin/ban-requests [get]
 func (s *Server) GetAdminBanRequests(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	page := parsePagination(c, 100)
@@ -286,6 +321,17 @@ func (s *Server) GetAdminBanRequests(c *fiber.Ctx) error {
 	return c.JSON(rows)
 }
 
+// GetAdminUsers handles GET /api/admin/users.
+// @Summary List users for admin
+// @Description List users with search and pagination.
+// @Tags moderation-admin
+// @Produce json
+// @Param q query string false "Search query (username or email)"
+// @Success 200 {array} models.User
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Security BearerAuth
+// @Router /admin/users [get]
 func (s *Server) GetAdminUsers(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	page := parsePagination(c, 100)
@@ -309,6 +355,18 @@ func (s *Server) GetAdminUsers(c *fiber.Ctx) error {
 	return c.JSON(users)
 }
 
+// GetAdminUserDetail handles GET /api/admin/users/:id.
+// @Summary Get user detail for admin
+// @Description Fetch detailed information about a user for moderation.
+// @Tags moderation-admin
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} service.AdminUserDetail
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Security BearerAuth
+// @Router /admin/users/{id} [get]
 func (s *Server) GetAdminUserDetail(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	targetID, err := s.parseID(c, "id")
@@ -327,6 +385,19 @@ func (s *Server) GetAdminUserDetail(c *fiber.Ctx) error {
 	return c.JSON(detail)
 }
 
+// BanUser handles POST /api/admin/users/:id/ban.
+// @Summary Ban a user
+// @Description Ban a user from the platform.
+// @Tags moderation-admin
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param request body object{reason=string} true "Ban reason"
+// @Success 200 {object} object{message=string}
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Security BearerAuth
+// @Router /admin/users/{id}/ban [post]
 func (s *Server) BanUser(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	adminID := c.Locals("userID").(uint)
@@ -363,6 +434,17 @@ func (s *Server) BanUser(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "User banned"})
 }
 
+// UnbanUser handles POST /api/admin/users/:id/unban.
+// @Summary Unban a user
+// @Description Remove ban from a user.
+// @Tags moderation-admin
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} object{message=string}
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Security BearerAuth
+// @Router /admin/users/{id}/unban [post]
 func (s *Server) UnbanUser(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	targetID, err := s.parseID(c, "id")

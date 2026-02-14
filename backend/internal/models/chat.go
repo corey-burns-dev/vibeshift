@@ -32,8 +32,8 @@ type Message struct {
 	SenderID       uint              `gorm:"not null;index" json:"sender_id"`
 	Sender         *User             `gorm:"foreignKey:SenderID" json:"sender,omitempty"`
 	Content        string            `gorm:"type:text;not null" json:"content"`
-	MessageType    string            `gorm:"default:'text'" json:"message_type"`  // text, image, file, etc.
-	Metadata       json.RawMessage   `gorm:"type:json" json:"metadata,omitempty"` // For file URLs, image URLs, etc.
+	MessageType    string            `gorm:"default:'text'" json:"message_type"`                      // text, image, file, etc.
+	Metadata       json.RawMessage   `gorm:"type:json" json:"metadata,omitempty" swaggertype:"object"` // For file URLs, image URLs, etc.
 	IsRead         bool              `gorm:"default:false" json:"is_read"`
 	ReadAt         *time.Time        `json:"read_at,omitempty"`
 	Reactions      []MessageReaction `gorm:"foreignKey:MessageID" json:"reactions,omitempty"`
