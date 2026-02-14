@@ -238,7 +238,7 @@ func TestChatService_RemoveParticipant_Authorization(t *testing.T) {
 	db.Create(&conv)
 
 	// Mock isAdmin to return false
-	isAdmin := func(ctx context.Context, userID uint) (bool, error) {
+	isAdmin := func(_ context.Context, _ uint) (bool, error) {
 		return false, nil
 	}
 
@@ -252,7 +252,7 @@ func TestChatService_RemoveParticipant_Authorization(t *testing.T) {
 	assert.Equal(t, "UNAUTHORIZED", appErr.Code)
 
 	// Admin can remove
-	isAdminAdmin := func(ctx context.Context, userID uint) (bool, error) {
+	isAdminAdmin := func(_ context.Context, _ uint) (bool, error) {
 		return true, nil
 	}
 	svcAdmin := NewChatService(repo, noopUserRepo(), db, isAdminAdmin, nil)

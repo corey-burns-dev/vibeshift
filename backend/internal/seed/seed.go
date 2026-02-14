@@ -22,8 +22,8 @@ type Seeder struct {
 	factory *Factory
 }
 
-// SeedOptions configures seeding behavior (dev ergonomics).
-type SeedOptions struct {
+// Options configures seeding behavior (dev ergonomics).
+type Options struct {
 	SkipBcrypt bool
 	DryRun     bool
 	BatchSize  int
@@ -182,7 +182,7 @@ func computeCounts(total int, dist Distribution) (text, media, link, video int) 
 }
 
 // NewSeeder creates a Seeder for the given Gorm DB.
-func NewSeeder(db *gorm.DB, opts SeedOptions) *Seeder {
+func NewSeeder(db *gorm.DB, opts Options) *Seeder {
 	return &Seeder{
 		db:      db,
 		factory: NewFactory(db, opts),

@@ -60,7 +60,7 @@ func TestIntegration_SeedSanctumsAuto(t *testing.T) {
 		t.Fatalf("truncate failed: %v", truncateErr)
 	}
 
-	seed := NewSeeder(db, SeedOptions{SkipBcrypt: true, BatchSize: 50, MaxDays: 30})
+	seed := NewSeeder(db, Options{SkipBcrypt: true, BatchSize: 50, MaxDays: 30})
 	users, meshErr := seed.SeedSocialMesh(10)
 	if meshErr != nil {
 		t.Fatalf("SeedSocialMesh failed: %v", meshErr)

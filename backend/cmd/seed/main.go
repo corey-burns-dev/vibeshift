@@ -49,7 +49,7 @@ func main() {
 	}
 
 	// Run seeder
-	opts := seed.SeedOptions{
+	opts := seed.Options{
 		SkipBcrypt: *skipBcrypt,
 		DryRun:     *dryRun,
 		BatchSize:  *batchSize,

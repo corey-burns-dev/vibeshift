@@ -10,7 +10,7 @@ import (
 )
 
 func TestBuildPostWithTemplate_TimestampsAndFormats(t *testing.T) {
-	opts := SeedOptions{DryRun: true, MaxDays: 30}
+	opts := Options{DryRun: true, MaxDays: 30}
 	f := NewFactory(nil, opts)
 	user := &models.User{ID: 1}
 

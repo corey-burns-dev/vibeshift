@@ -20,13 +20,13 @@ import (
 // It is a thin helper used by seed presets and tests.
 type Factory struct {
 	db   *gorm.DB
-	opts SeedOptions
+	opts Options
 	// synthetic ID counter when running in DryRun mode
 	nextID uint
 }
 
 // NewFactory creates a new Factory bound to the provided Gorm DB.
-func NewFactory(db *gorm.DB, opts SeedOptions) *Factory {
+func NewFactory(db *gorm.DB, opts Options) *Factory {
 	// seed gofakeit for richer content
 	gofakeit.Seed(time.Now().UnixNano())
 	return &Factory{db: db, opts: opts, nextID: 1000}

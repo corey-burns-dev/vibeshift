@@ -25,7 +25,7 @@ import (
 
 	"github.com/chai2010/webp"
 	xdraw "golang.org/x/image/draw"
-	_ "golang.org/x/image/webp"
+	_ "golang.org/x/image/webp" // Register WebP decoder
 	"gorm.io/gorm"
 )
 

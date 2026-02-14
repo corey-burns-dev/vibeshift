@@ -174,11 +174,11 @@ func TestServer_ConsumeWSTicket(t *testing.T) {
 		assert.False(t, exists, "Ticket should be removed from in-process cache")
 	})
 
-	t.Run("Consume nil ticket - noop", func(t *testing.T) {
+	t.Run("Consume nil ticket - noop", func(_ *testing.T) {
 		s.consumeWSTicket(ctx, nil)
 	})
 
-	t.Run("Consume empty ticket - noop", func(t *testing.T) {
+	t.Run("Consume empty ticket - noop", func(_ *testing.T) {
 		s.consumeWSTicket(ctx, "")
 	})
 }
