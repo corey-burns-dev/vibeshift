@@ -66,4 +66,4 @@ For admin bootstrap in E2E global setup (DB promote-admin update), set either
 - `DB_PASSWORD` / `PGPASSWORD`
 - `DB_NAME` / `PGDATABASE`
 
-For repo-wide rules and constraints, see `/AI.md`.
+For repo-wide rules and constraints, see `/AGENTS.md`.

@@ -38,7 +38,7 @@ TODAY="$(date +%Y-%m-%d)"
 BRANCH="$(git -C "$ROOT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")"
 sed -i \
   -e "s/- Date: \`YYYY-MM-DD\`/- Date: \`$TODAY\`/" \
-  -e "s/- Branch:/- Branch: $BRANCH/" \
+  -e "s/- Branch:/- Branch: \`$BRANCH\`/" \
   "$OUT_PATH"
 
 echo "Created report: $OUT_PATH"

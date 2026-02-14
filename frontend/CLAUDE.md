@@ -1,5 +1,9 @@
-# Moved: frontend/CLAUDE.md
+# Frontend CLAUDE Overlay
 
-This file was moved to `docs/agents/archive/frontend-CLAUDE.md` during documentation reorganization.
+Follow `/AGENTS.md` and `/frontend/AGENTS.md` first.
 
-See: `docs/agents/archive/frontend-CLAUDE.md` for the archived frontend Claude notes.
+## Claude-specific Frontend Notes
+
+- Keep UI diffs intentional and bounded to requested scope.
+- Prefer incremental changes over broad visual refactors.
+- Document manual verification steps for user-visible flows.

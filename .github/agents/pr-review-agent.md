@@ -16,7 +16,7 @@ tools:
 
 # PR Review Agent
 
-> Follow `/AI.md` for repo-wide rules and constraints.
+> Follow `/AGENTS.md` for repo-wide rules and constraints.
 
 ## Purpose
 

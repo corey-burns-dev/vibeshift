@@ -20,7 +20,9 @@ test.describe('Stress Journeys @preprod', () => {
     await page.fill('textarea[placeholder*="Write your post"]', postText)
     await page.getByRole('button', { name: /^Post$/ }).click()
 
-    await expect(page.locator('p').filter({ hasText: postText }).first()).toBeVisible()
+    await expect(
+      page.locator('p').filter({ hasText: postText }).first()
+    ).toBeVisible()
   })
 
   test('Authenticated user can open chat', async ({ browser }) => {

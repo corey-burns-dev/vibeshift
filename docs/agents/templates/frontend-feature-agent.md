@@ -17,7 +17,7 @@ tools:
 
 # Frontend Feature Agent (React / TS / Tailwind / Biome)
 
-> Follow `/AI.md` for repo-wide rules and constraints.
+> Follow `/AGENTS.md` for repo-wide rules and constraints.
 
 ## Purpose
 

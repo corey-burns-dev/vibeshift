@@ -6,14 +6,14 @@ Historical and point-in-time analyses are in `docs/reports/` and should be treat
 
 ## Related References
 
-- Repo-wide AI and workflow rules: `/AI.md`
-- Frontend-specific AI guidance: `frontend/AI.md`
+- Repo-wide AI and workflow rules: `/AGENTS.md`
+- Frontend-specific AI guidance: `frontend/AGENTS.md`
 - Backend testing guidance: `backend/TESTING.md`
 - Redis canonical guidance: `backend/docs/REDIS_BEST_PRACTICES.md`
 - Historical reports:
   - `docs/reports/2026-02-06-full-stack-review.md`
   - `docs/reports/2026-01-31-deployment-readiness.md`
-  - `docs/reports/2025-06-01-review-implementation.md`
+  - `docs/reports/2026-02-12-2250-deep-production-review.md`
 
 ## 🔴 Critical - Tier 1: Production Readiness
 
@@ -68,7 +68,7 @@ Historical and point-in-time analyses are in `docs/reports/` and should be treat
   - [x] Add OpenAPI drift guard in CI (`.github/workflows/openapi-drift.yml`)
   - [x] Keep backend/frontend contract synchronized (automated path coverage check via `scripts/check_openapi_frontend_sync.sh`)
   - [x] Add backward-compatibility checks against base branch OpenAPI in CI (`backend/cmd/openapi-compat`, wired in `.github/workflows/openapi-drift.yml`)
-  - [x] Document contract-change workflow in contributor docs (`docs/runbooks/CI_RUNBOOK.md`)
+  - [x] Document contract-change workflow in contributor docs (`docs/operations/runbooks/ci-runbook.md`)
 
 ### Data and Caching
 
@@ -104,5 +104,5 @@ Historical and point-in-time analyses are in `docs/reports/` and should be treat
   - Added admin visibility endpoint `GET /api/admin/feature-flags`
   - Added rollout guidance in `docs/FEATURE_FLAGS.md`
 - [x] **Rollback-ready deployment process**
-  - Added rollback playbook in `docs/runbooks/ROLLBACK_RUNBOOK.md`
+  - Added rollback playbook in `docs/operations/runbooks/rollback-runbook.md`
   - Added guarded rollback helper `scripts/rollback_to_ref.sh` (dry-run default, execute mode with readiness checks and auto-fallback)

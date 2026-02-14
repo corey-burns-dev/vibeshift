@@ -1,5 +1,3 @@
-Repo-wide AI and engineering rules are maintained in /AI.md.
+Canonical repository AI rules are maintained in `AGENTS.md`.
 
-Frontend-specific guidance is in frontend/AI.md.
-
-Use /AI.md as the canonical source of truth.
+For frontend-only work in `frontend/`, also load `frontend/AGENTS.md`.

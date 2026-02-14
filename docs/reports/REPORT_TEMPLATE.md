@@ -9,6 +9,29 @@ Use this template for substantial agent/contributor tasks.
 - Author/Agent:
 - Scope:
 
+## Structured Signals
+
+Required for new reports. Keep this block machine-parseable.
+
+```json
+{
+  "Report-Version": "1.0",
+  "Domains": ["docs"],
+  "Lessons": [
+    {
+      "title": "Replace with concrete lesson title",
+      "severity": "HIGH",
+      "anti_pattern": "Describe the anti-pattern or failure mode",
+      "detection": "rg -n \"pattern\" backend frontend",
+      "prevention": "Describe guardrail/prevention pattern"
+    }
+  ]
+}
+```
+
+Domain values: `backend`, `frontend`, `auth`, `websocket`, `db`, `redis`, `infra`, `docs`.
+Severity values: `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`.
+
 ## Summary
 
 - What was requested.
@@ -39,4 +62,3 @@ Use this template for substantial agent/contributor tasks.
 ## Rollback Notes
 
 - How to revert safely if needed.
-

@@ -70,6 +70,44 @@ jobs:
           echo "Added report files:"
           echo "$ADDED_REPORTS"
           echo "has_report=true" >> "$GITHUB_OUTPUT"
+          {
+            echo "added_reports<<EOF"
+            echo "$ADDED_REPORTS"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Enforce report filename convention
+        if: steps.changes.outputs.code_changed == 'true' && steps.report.outputs.has_report == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BAD=0
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            b="$(basename "$f")"
+            if [[ ! "$b" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{4}-[a-z0-9-]+\.md$ ]]; then
+              echo "invalid report filename: $f"
+              BAD=1
+            fi
+          done <<< "${{ steps.report.outputs.added_reports }}"
+
+          if [ "$BAD" -ne 0 ]; then
+            echo "Report filenames must match: docs/reports/YYYY-MM-DD-HHMM-short-slug.md"
+            exit 1
+          fi
+
+      - name: Validate report structured signals
+        if: steps.changes.outputs.code_changed == 'true' && steps.report.outputs.has_report == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            echo "Validating report schema: $f"
+            python3 scripts/agent_memory.py validate --report "$f" --require-structured
+          done <<< "${{ steps.report.outputs.added_reports }}"
 
       - name: Fail when report is missing
         if: steps.changes.outputs.code_changed == 'true' && steps.report.outputs.has_report != 'true'

@@ -1,23 +1,12 @@
 ---
 description: 'Performance Audit Agent for Sanctum: identify bottlenecks, measure, propose fixes, and implement low-risk wins.'
 tools:
-  - search/changes
-  - search/codebase
-  - search/usages
-  - web/fetch
-  - web/githubRepo
-  - read/problems
-  - read/terminalLastCommand
-  - execute/getTerminalOutput
-  - execute/runInTerminal
-  - execute/createAndRunTask
-  - execute/runTests
-  - execute/testFailure
+  [execute/testFailure, execute/getTerminalOutput, execute/createAndRunTask, execute/runInTerminal, execute/runTests, read/problems, read/terminalLastCommand, edit/createDirectory, edit/createFile, edit/createJupyterNotebook, edit/editFiles, edit/editNotebook, search/changes, search/codebase, web/fetch, web/githubRepo, context7/get-library-docs, context7/resolve-library-id]
 ---
 
 # Performance Audit Agent
 
-> Follow `/AI.md` for repo-wide rules and constraints.
+> Follow `/AGENTS.md` for repo-wide rules and constraints.
 
 ## Purpose
 

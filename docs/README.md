@@ -5,7 +5,7 @@ Welcome to the Sanctum documentation hub. This guide helps you find the right do
 ## Quick Links
 
 - **Getting Started**: See `/README.md` and `/CONTRIBUTING.md` in the project root
-- **AI Instructions**: See `/CLAUDE.md` and `/AI.md` for AI agent guidelines
+- **AI Instructions**: See `/AGENTS.md` (canonical) and `/CLAUDE.md` (Claude overlay)
 - **API Architecture**: [architecture/api-architecture.md](architecture/api-architecture.md)
 - **Feature Checklist**: [features/implementation-checklist.md](features/implementation-checklist.md)
 - **Production Readiness**: [operations/production-readiness.md](operations/production-readiness.md)
@@ -97,7 +97,7 @@ Historical implementation reports following `YYYY-MM-DD-HHMM-<slug>.md` naming c
 3. Use [development/hooks/](development/hooks/) for automated checks
 
 #### Work with AI agents
-1. Read `/CLAUDE.md` and `/AI.md` (project root)
+1. Read `/AGENTS.md` and `/CLAUDE.md` (project root)
 2. Check [agents/](agents/) for agent-specific instructions
 
 #### Run tests

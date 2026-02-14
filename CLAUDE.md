@@ -1,47 +1,16 @@
-# Claude Instructions (Sanctum)
+# CLAUDE.md - Claude Overlay
 
-This file contains the **must-follow** rules Claude should apply at all times.
-For full repo rules, see `/AI.md`. For frontend-specific rules, see `/frontend/AI.md`.
+Follow `AGENTS.md` first. This file only adds Claude-specific operating context.
 
-## Non-negotiables
+## Claude Overlay Rules
 
-- Extend existing patterns; avoid architecture rewrites.
-- Prefer small, reviewable diffs.
-- Preserve behavior unless explicitly asked to change behavior.
-- Keep docs and commands accurate to this repo.
+- Keep responses explicit about what changed, how validated, and follow-ups.
+- Default to behavior-preserving changes unless task requests behavior change.
+- Prefer deterministic, reproducible commands and outputs.
 
-## Environment + tooling assumptions
+## Where To Go Next
 
-- **Docker-first** workflow for backend + infra tasks.
-- Do **not** assume the host has the Go toolchain installed.
-- Default shell assumptions may be Fish locally, but scripts should remain POSIX-sh compatible.
-- Frontend package manager/runtime: **Bun**
-- Frontend lint/format: **Biome**
-- Backend lint: **golangci-lint**
-
-## Command safety
-
-### Backend
-
-- Prefer Make targets: `make dev`, `make test-backend`, `make fmt`, `make lint`, `make swagger`, `make openapi-check`.
-- If direct Go execution is required, run it inside containers (`docker compose exec` / `docker compose run --rm`).
-
-### Frontend
-
-- Run Bun commands from `frontend/` (or via Make targets).
-- Prefer: `make test-frontend`, `make fmt-frontend`, `make lint-frontend`, `bun run type-check`.
-
-## Workflow expectations
-
-- Read existing patterns before editing.
-- Always report: what changed, how to validate, and followups.
-- Split substantial work into small atomic commits.
-- For substantial tasks, add a report in `docs/reports/` named:
-  `YYYY-MM-DD-HHMM-<slug>.md` using `docs/reports/REPORT_TEMPLATE.md`.
-
-## Where to look next
-
-- Repo-wide rules: `/AI.md`
-- Frontend rules: `/frontend/AI.md`
-- Contributor workflow: `/CONTRIBUTING.md`
-- Make targets (source of truth): `/Makefile`
+- Canonical rules: `AGENTS.md`
+- Backend scoped guidance: `backend/CLAUDE.md`
+- Frontend scoped guidance: `frontend/CLAUDE.md`
+- Contributor workflow: `CONTRIBUTING.md`

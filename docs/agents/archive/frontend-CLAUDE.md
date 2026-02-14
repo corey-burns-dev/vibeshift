@@ -1,6 +1,6 @@
 # Frontend (React) — Claude Notes
 
-Follow `/CLAUDE.md` + `/AI.md` first. Frontend conventions live in `/frontend/AI.md`.
+Follow `/CLAUDE.md` + `/AGENTS.md` first. Frontend conventions live in `/frontend/AGENTS.md`.
 
 ## How to run
 - From `frontend/`:
@@ -15,5 +15,5 @@ Follow `/CLAUDE.md` + `/AI.md` first. Frontend conventions live in `/frontend/AI
   - `make lint-frontend`
 
 ## Rules of thumb
-- Follow existing TanStack Query + hooks patterns in `/frontend/AI.md`.
+- Follow existing TanStack Query + hooks patterns in `/frontend/AGENTS.md`.
 - Prefer small UI diffs; keep styling consistent with Tailwind/shadcn usage in this repo.

@@ -24,7 +24,7 @@ YELLOW := \033[1;33m
 RED := \033[1;31m
 NC := \033[0m # No Color
 
-.PHONY: help dev dev-build dev-clean dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed db-migrate db-migrate-up db-migrate-auto db-schema-status db-reset-dev deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity stress-stack-up stress-stack-down stress-low stress-medium stress-high stress-extreme stress-insane stress-all ai-report stress-ai-low stress-ai-medium stress-ai-high stress-ai-extreme stress-ai-insane stress-index gateway-up gateway-down gateway-logs
+.PHONY: help dev dev-build dev-clean dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed db-migrate db-migrate-up db-migrate-auto db-schema-status db-reset-dev deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity stress-stack-up stress-stack-down stress-low stress-medium stress-high stress-extreme stress-insane stress-all ai-report stress-ai-low stress-ai-medium stress-ai-high stress-ai-extreme stress-ai-insane stress-index gateway-up gateway-down gateway-logs ai-memory-backfill ai-memory-update ai-memory-validate ai-docs-verify openapi-check
 
 # Default target
 help:
@@ -70,6 +70,7 @@ help:
 	@echo "  make fmt-frontend       - 🎨 Format frontend code (Biome)"
 	@echo "  make lint               - 🔍 Lint Go code"
 	@echo "  make lint-frontend      - 🔍 Lint frontend code (Biome)"
+	@echo "  make openapi-check      - 🔍 Verify frontend endpoints are covered by OpenAPI"
 	@echo "  make install            - 📦 Install frontend dependencies"
 	@echo ""
 	@echo "$(GREEN)Testing:$(NC)"
@@ -108,6 +109,10 @@ help:
 	@echo "  make restart            - 🔄 Restart all services"
 	@echo "  make clean              - 🧹 Clean containers, volumes, and artifacts"
 	@echo "  make check-versions     - 🔍 Check latest Docker image versions"
+	@echo "  make ai-memory-backfill - 🧠 Backfill lessons/context from high-signal reports"
+	@echo "  make ai-memory-update   - 🧠 Update memory from one report (REPORT=docs/reports/...)"
+	@echo "  make ai-memory-validate - 🧠 Validate lesson/report memory schema"
+	@echo "  make ai-docs-verify     - 📚 Verify template sync, memory schema, and docs links"
 	@echo ""
 	@echo "$(GREEN)Dependencies:$(NC)"
 	@echo "  make deps-update        - 📦 Update all dependencies (Go + frontend)"
@@ -285,6 +290,11 @@ swagger:
 	cd backend && go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/server/main.go --output ./docs
 	@echo "$(GREEN)✓ Swagger docs generated$(NC)"
 
+openapi-check:
+	@echo "$(BLUE)Verifying frontend API paths against OpenAPI...$(NC)"
+	@./scripts/check_openapi_frontend_sync.sh
+	@echo "$(GREEN)✓ OpenAPI frontend sync check passed$(NC)"
+
 # Environment setup
 env:
 	@if [ ! -f config.yml ]; then \
@@ -302,6 +312,21 @@ check-versions:
 
 versions-check:
 	@bash scripts/verify_versions.sh
+
+ai-memory-backfill:
+	@python3 scripts/agent_memory.py backfill --reports-dir docs/reports --lessons-dir docs/lessons
+
+ai-memory-update:
+	@if [ -z "$(REPORT)" ]; then echo "Usage: make ai-memory-update REPORT=docs/reports/YYYY-MM-DD-HHMM-slug.md"; exit 1; fi
+	@python3 scripts/agent_memory.py update --report "$(REPORT)"
+
+ai-memory-validate:
+	@python3 scripts/agent_memory.py validate
+
+ai-docs-verify:
+	@./scripts/verify_agent_template_sync.sh
+	@python3 scripts/agent_memory.py validate
+	@./scripts/check_doc_links.sh
 
 clean:
 	@echo "$(BLUE)Cleaning up containers, volumes, and artifacts...$(NC)"

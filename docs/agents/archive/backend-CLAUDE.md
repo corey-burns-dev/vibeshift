@@ -1,6 +1,6 @@
 # Backend (Go) — Claude Notes
 
-Follow `/CLAUDE.md` + `/AI.md` first.
+Follow `/CLAUDE.md` + `/AGENTS.md` first.
 
 ## How to run
 - Prefer Docker-first and Make targets.

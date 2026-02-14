@@ -1,7 +1,5 @@
-# Antigravity Instructions
+# Compatibility Pointer: ANTIGRAVITY.md
 
-Repo-wide AI and engineering rules are maintained in `/AI.md`.
+Canonical agent rules are in `AGENTS.md`.
 
-Frontend-specific guidance is in `frontend/AI.md`.
-
-Use this file as a compatibility pointer and follow `/AI.md` first.
+This file is a compatibility shim only.

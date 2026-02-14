@@ -1,6 +1,6 @@
 # Backend Testing
 
-For repo-wide command and environment rules, see `/AI.md`.
+For repo-wide command and environment rules, see `/AGENTS.md`.
 
 ## Scope
 
