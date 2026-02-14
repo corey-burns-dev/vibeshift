@@ -51,6 +51,15 @@ func TestCheckRateLimit(t *testing.T) {
 			env:           "development",
 		},
 		{
+			name:          "Stress Environment Bypass",
+			resource:      "test",
+			id:            "1",
+			limit:         1,
+			window:        time.Minute,
+			expectedAllow: true,
+			env:           "stress",
+		},
+		{
 			name:          "Nil Redis Fail-Open",
 			resource:      "test",
 			id:            "1",
@@ -86,6 +95,20 @@ func TestRateLimitMiddleware(t *testing.T) {
 	t.Run("Bypass in test mode", func(t *testing.T) {
 		app := fiber.New()
 		t.Setenv("APP_ENV", "test")
+		app.Get("/test", RateLimit(nil, 1, time.Minute), func(c *fiber.Ctx) error {
+			return c.SendStatus(fiber.StatusOK)
+		})
+
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		resp, err := app.Test(req)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		_ = resp.Body.Close()
+	})
+
+	t.Run("Bypass in stress mode", func(t *testing.T) {
+		app := fiber.New()
+		t.Setenv("APP_ENV", "stress")
 		app.Get("/test", RateLimit(nil, 1, time.Minute), func(c *fiber.Ctx) error {
 			return c.SendStatus(fiber.StatusOK)
 		})

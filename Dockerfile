@@ -16,11 +16,12 @@ RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-w -s" -o main ./cmd/server && \
 FROM alpine:3.23
 
 RUN apk add --no-cache libwebp ca-certificates && \
-    adduser -D -u 65534 nonroot
+    adduser -D -u 10001 nonroot
 
 WORKDIR /
 
 COPY --from=builder /app/main .
+COPY --from=builder /app/*.yml ./
 COPY --from=builder --chown=nonroot:nonroot /tmp/sanctum /tmp/sanctum
 
 USER nonroot:nonroot

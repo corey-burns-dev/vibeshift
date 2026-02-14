@@ -48,6 +48,7 @@ type Config struct {
 	OTLPEndpoint                  string  `mapstructure:"OTEL_EXPORTER_OTLP_ENDPOINT"`
 	OTELServiceName               string  `mapstructure:"OTEL_SERVICE_NAME"`
 	OTELTracesSamplerRatio        float64 `mapstructure:"OTEL_TRACES_SAMPLER_RATIO"`
+	EnableProxyHeader             bool    `mapstructure:"ENABLE_PROXY_HEADER"`
 }
 
 // LoadConfig loads application configuration from file and environment variables.
@@ -110,6 +111,7 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4318")
 	viper.SetDefault("OTEL_SERVICE_NAME", "sanctum-api")
 	viper.SetDefault("OTEL_TRACES_SAMPLER_RATIO", 1.0)
+	viper.SetDefault("ENABLE_PROXY_HEADER", false)
 
 	var config Config
 	if err := viper.Unmarshal(&config); err != nil {

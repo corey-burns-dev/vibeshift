@@ -39,6 +39,8 @@ The repository now supports a Makefile-first AI stress reporting flow:
 make stress-ai-low
 make stress-ai-medium
 make stress-ai-high
+make stress-ai-extreme
+make stress-ai-insane
 ```
 
 Each run will:
@@ -49,7 +51,10 @@ Each run will:
 4. Query Prometheus + Loki and send structured context to local Ollama.
 5. Generate `ai-analysis.json`, `report.html`, `report.md`, and `report.txt` in the run folder.
 
-To execute all three profiles with an index page:
+**Load-test design (realistic user simulation)**  
+Profiles use **many concurrent users** (VUs) with **human-like pacing**: each virtual user waits 10–30 seconds between actions so that per-user rate limits (e.g. 1 comment/min, 10 posts/5 min) are not hit. Total load is increased by adding more users, not by having each user blast the API. That way certification runs measure **system capacity** (throughput, latency, DB/Redis) rather than rate-limit policy. If you still see 429s under these profiles, the AI report will call that out (see **Rate Limit Signals** below).
+
+To execute all five profiles with an index page:
 
 ```bash
 make stress-all
@@ -317,16 +322,20 @@ make stress-stack-up        # Start app + monitoring + health verification
 make stress-low             # Mixed low-profile run (k6 summary artifact)
 make stress-medium          # Mixed medium-profile run
 make stress-high            # Mixed high-profile run
+make stress-extreme         # Mixed extreme-profile run (Hacker News / Trending)
+make stress-insane          # Mixed insane-profile run (The "Bomb")
 make ai-report              # Generate AI report for latest run
 make stress-ai-medium       # End-to-end medium run + AI report
 make stress-ai-high         # End-to-end high run + AI report
-make stress-all             # Run low/medium/high with AI reports + index
+make stress-ai-extreme      # End-to-end extreme run + AI report
+make stress-ai-insane       # End-to-end insane run + AI report
+make stress-all             # Run all profiles with AI reports + index
 make stress-index           # Build tmp/stress-runs/index.html
 ```
 
 ### Load Profile Configuration
 
-**Files:** `load/profiles/low.json`, `load/profiles/medium.json`, `load/profiles/high.json`
+**Files:** `load/profiles/low.json`, `load/profiles/medium.json`, `load/profiles/high.json`, `load/profiles/extreme.json`, `load/profiles/insane.json`
 
 Source of truth for:
 - Virtual users (VUs)
@@ -345,6 +354,16 @@ Defaults used by the stress + AI pipeline:
 - `PROM_URL=http://localhost:9090`
 - `LOKI_URL=http://localhost:3100`
 - `ARTIFACT_DIR=tmp/stress-runs`
+
+#### Interpreting results: throughput vs rate limits
+
+- **Throughput bottlenecks:** High latency, 5xx errors, or timeouts under load usually indicate capacity or backend limits (CPU, DB, connections). Address by scaling or optimizing.
+- **Policy bottlenecks (429s):** When the app returns **HTTP 429 Too Many Requests**, the limiter is working as configured; the load profile is hitting rate-limit policy. The report’s **Rate Limit Signals** section shows Loki 429 sample count and which write-heavy checks (e.g. create post, comment, friend request, DM send) are failing. Use this to distinguish “system overload” from “rate limit triggered.”
+- **Rate Limit Signals (in reports):** In `report.html`, `report.md`, and `report.txt` you’ll see:
+  - **Loki 429/rate-limit entry count** — log lines matching `request processed` and `status=429` in the run window.
+  - **Critical write checks** — pass rates for the canonical write checks from `social_mixed.js`; pass rate &lt; 20% is treated as severely constrained.
+  - **Likely rate-limited endpoints** — endpoints inferred from failing checks (e.g. `POST /api/posts`, `POST /api/posts/:id/comments`).
+- **Deterministic status:** The report applies a policy after the AI response. If `http_req_failed` exceeds the profile threshold or any primary write-check pass rate is &lt; 20%, the final status is escalated to `CRITICAL` regardless of the model output.
 
 ### Artifact Contract
 
@@ -367,6 +386,7 @@ Every run directory contains:
 - **Prometheus empty metrics**: confirm app metrics endpoint is scraped (`http://localhost:9090/targets`) and rerun with longer profile duration.
 - **Loki missing logs**: verify promtail is running and container log labels are present in Loki.
 - **k6 summary missing**: ensure stress command completed and `summary.json` exists in the run directory.
+- **429s in Rate Limit Signals**: 429s are sourced from **INFO-level** request logs (e.g. “request processed” with `status=429`). Ensure the app logs HTTP status for each request so Loki can index them; without that, the rate-limit sample count may be zero even when k6 sees 429s.
 
 ### Prometheus Configuration
 

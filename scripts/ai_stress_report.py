@@ -64,7 +64,7 @@ def resolve_run_dir(args: argparse.Namespace) -> pathlib.Path:
 
     run_dirs = list_run_dirs(pathlib.Path(args.artifact_dir))
     if not run_dirs:
-        raise SystemExit("No run directories found. Execute make stress-low/medium/high first.")
+        raise SystemExit("No run directories found. Execute make stress-low/medium/high/extreme/insane first.")
     return run_dirs[-1]
 
 
@@ -143,43 +143,75 @@ def collect_prometheus(prom_url: str, start: dt.datetime, end: dt.datetime, time
     return payload, health
 
 
+# Canonical write-heavy checks from load/scripts/social_mixed.js (used for rate-limit severity).
+CANONICAL_WRITE_CHECKS = (
+    "create post status 201",
+    "comment status ok",
+    "friend request status acceptable",
+    "dm send status acceptable",
+)
+
+# Profile default failure-rate thresholds when not in summary (rate < value).
+PROFILE_FAILURE_THRESHOLDS = {"low": 0.05, "medium": 0.08, "high": 0.10, "extreme": 0.12, "insane": 0.15}
+
+
+def _loki_query_range(
+    loki_url: str, query: str, start: dt.datetime, end: dt.datetime, limit: int, timeout: int
+) -> list[dict[str, Any]]:
+    """Fetch Loki query_range and return list of entries with no category (caller adds it)."""
+    response = requests.get(
+        f"{loki_url.rstrip('/')}/loki/api/v1/query_range",
+        params={
+            "query": query,
+            "start": to_ns(start),
+            "end": to_ns(end),
+            "limit": limit,
+            "direction": "BACKWARD",
+        },
+        timeout=timeout,
+    )
+    response.raise_for_status()
+    entries: list[dict[str, Any]] = []
+    data = response.json().get("data", {})
+    for stream in data.get("result", []):
+        labels = stream.get("stream", {})
+        for value in stream.get("values", []):
+            if len(value) != 2:
+                continue
+            ts_ns, line = value
+            entries.append({"timestamp_ns": ts_ns, "line": line, "labels": labels})
+    return entries
+
+
 def collect_loki(loki_url: str, start: dt.datetime, end: dt.datetime, timeout: int) -> tuple[dict[str, Any], dict[str, Any]]:
-    query = '{container=~".+"} |~ "(?i)(error|warn|panic|fatal)"'
+    severity_query = '{container=~".+"} |~ "(?i)(error|warn|panic|fatal)"'
+    rate_limit_query = '{container=~".+"} |= "request processed" |= "status=429"'
+    limit_per_query = 200
     payload: dict[str, Any] = {
         "window": {"start": start.isoformat(), "end": end.isoformat()},
-        "query": query,
+        "query": severity_query,
+        "queries": [
+            {"name": "severity", "query": severity_query, "entry_count": 0},
+            {"name": "rate_limit", "query": rate_limit_query, "entry_count": 0},
+        ],
         "entries": [],
     }
     health: dict[str, Any] = {"status": "ok", "error": ""}
 
-    try:
-        response = requests.get(
-            f"{loki_url.rstrip('/')}/loki/api/v1/query_range",
-            params={
-                "query": query,
-                "start": to_ns(start),
-                "end": to_ns(end),
-                "limit": 200,
-                "direction": "BACKWARD",
-            },
-            timeout=timeout,
-        )
-        response.raise_for_status()
-        data = response.json().get("data", {})
-        for stream in data.get("result", []):
-            labels = stream.get("stream", {})
-            for value in stream.get("values", []):
-                if len(value) != 2:
-                    continue
-                ts_ns, line = value
-                payload["entries"].append({
-                    "timestamp_ns": ts_ns,
-                    "line": line,
-                    "labels": labels,
-                })
-    except requests.RequestException as exc:
-        health["status"] = "degraded"
-        health["error"] = f"Loki query failure: {exc}"
+    for q in payload["queries"]:
+        name = q["name"]
+        query = q["query"]
+        category = name
+        try:
+            part = _loki_query_range(loki_url, query, start, end, limit_per_query, timeout)
+        except requests.RequestException as exc:
+            health["status"] = "degraded"
+            health["error"] = f"Loki query failure: {exc}"
+            part = []
+        q["entry_count"] = len(part)
+        for e in part:
+            e["category"] = category
+            payload["entries"].append(e)
 
     return payload, health
 
@@ -218,6 +250,97 @@ def extract_k6_highlights(summary: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _parse_failure_threshold_from_summary(summary: dict[str, Any]) -> float | None:
+    """Parse http_req_failed threshold from summary (e.g. rate<0.08 -> 0.08). Returns None if not found."""
+    metrics = summary.get("metrics", {}) or {}
+    m = metrics.get("http_req_failed") or {}
+    thresholds = m.get("thresholds") or {}
+    if not isinstance(thresholds, dict):
+        return None
+    for expr, _ in thresholds.items():
+        if not isinstance(expr, str):
+            continue
+        match = re.search(r"rate\s*<\s*([\d.]+)", expr, re.IGNORECASE)
+        if match:
+            try:
+                return float(match.group(1))
+            except ValueError:
+                pass
+    return None
+
+
+def _extract_root_group_checks(summary: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Extract per-check pass/fail from root_group.checks. Returns dict check_name -> {passes, fails, pass_rate}."""
+    root = summary.get("root_group") or {}
+    checks = root.get("checks") or {}
+    if not isinstance(checks, dict):
+        return {}
+    result: dict[str, dict[str, Any]] = {}
+    for name, data in checks.items():
+        if not isinstance(data, dict):
+            continue
+        passes = data.get("passes", 0) or 0
+        fails = data.get("fails", 0) or 0
+        total = passes + fails
+        pass_rate = (passes / total) if total else 1.0
+        result[str(name)] = {"passes": passes, "fails": fails, "pass_rate": pass_rate}
+    return result
+
+
+def build_rate_limit_signals(
+    summary: dict[str, Any],
+    profile: str,
+    loki_payload: dict[str, Any],
+) -> dict[str, Any]:
+    """Build rate_limit_signals from k6 summary and Loki rate_limit entries."""
+    metrics = summary.get("metrics", {}) or {}
+    http_failed = metrics.get("http_req_failed") or {}
+    failed_rate = None
+    if isinstance(http_failed.get("values"), dict):
+        failed_rate = http_failed["values"].get("rate") or http_failed["values"].get("value")
+    if failed_rate is None and isinstance(http_failed.get("value"), (int, float)):
+        failed_rate = http_failed["value"]
+    if failed_rate is not None:
+        failed_rate = float(failed_rate)
+
+    threshold = _parse_failure_threshold_from_summary(summary)
+    if threshold is None:
+        threshold = PROFILE_FAILURE_THRESHOLDS.get(profile, 0.08)
+
+    rate_limit_entries = [e for e in (loki_payload.get("entries") or []) if e.get("category") == "rate_limit"]
+    loki_rate_limit_entry_count = len(rate_limit_entries)
+
+    per_check = _extract_root_group_checks(summary)
+    critical_write_checks: list[dict[str, Any]] = []
+    severely_constrained_names: list[str] = []
+    for name in CANONICAL_WRITE_CHECKS:
+        if name not in per_check:
+            continue
+        rec = per_check[name].copy()
+        rec["check_name"] = name
+        critical_write_checks.append(rec)
+        if rec.get("pass_rate", 1) < 0.20:
+            severely_constrained_names.append(name)
+
+    likely_rate_limited_endpoints: list[str] = []
+    if "create post status 201" in severely_constrained_names:
+        likely_rate_limited_endpoints.append("POST /api/posts")
+    if "comment status ok" in severely_constrained_names:
+        likely_rate_limited_endpoints.append("POST /api/posts/:id/comments")
+    if "friend request status acceptable" in severely_constrained_names:
+        likely_rate_limited_endpoints.append("POST /api/friends/requests/:id")
+    if "dm send status acceptable" in severely_constrained_names:
+        likely_rate_limited_endpoints.append("POST /api/conversations/:id/messages")
+
+    return {
+        "http_req_failed_rate": failed_rate,
+        "http_req_failed_threshold": threshold,
+        "loki_rate_limit_entry_count": loki_rate_limit_entry_count,
+        "critical_write_checks": critical_write_checks,
+        "likely_rate_limited_endpoints": likely_rate_limited_endpoints,
+    }
+
+
 def parse_model_json(raw_text: str) -> dict[str, Any]:
     raw_text = raw_text.strip()
     if not raw_text:
@@ -238,11 +361,55 @@ def parse_model_json(raw_text: str) -> dict[str, Any]:
         return {}
 
 
-def build_ollama_prompt(profile: str, metadata: dict[str, Any], highlights: dict[str, Any], prom: dict[str, Any], loki: dict[str, Any]) -> str:
+def apply_status_policy(
+    model_analysis: dict[str, Any],
+    rate_limit_signals: dict[str, Any],
+    profile: str,
+) -> dict[str, Any]:
+    """Compute deterministic_status and merge with model status. Returns updated analysis with status/reasons."""
+    reasons: list[str] = []
+    deterministic_status = "HEALTHY"
+    threshold = rate_limit_signals.get("http_req_failed_threshold") or PROFILE_FAILURE_THRESHOLDS.get(profile, 0.08)
+    failed_rate = rate_limit_signals.get("http_req_failed_rate")
+    if failed_rate is not None and failed_rate > threshold:
+        deterministic_status = "CRITICAL"
+        reasons.append(f"http_req_failed rate {failed_rate:.4f} exceeds profile threshold {threshold}")
+
+    for rec in rate_limit_signals.get("critical_write_checks") or []:
+        pass_rate = rec.get("pass_rate")
+        if pass_rate is not None and pass_rate < 0.20:
+            deterministic_status = "CRITICAL"
+            reasons.append(f"Write check '{rec.get('check_name', '')}' pass rate {pass_rate:.2%} < 20%")
+
+    severity_order = {"HEALTHY": 0, "WARNING": 1, "CRITICAL": 2}
+    model_status = (model_analysis.get("status") or "WARNING").upper()
+    if model_status not in severity_order:
+        model_status = "WARNING"
+    final_status = model_status if severity_order.get(model_status, 0) >= severity_order.get(deterministic_status, 0) else deterministic_status
+    if deterministic_status == "CRITICAL" and final_status == "CRITICAL" and reasons:
+        model_analysis.setdefault("findings", [])
+        model_analysis["findings"] = list(model_analysis["findings"])
+        model_analysis["findings"].append(f"Deterministic policy: {'; '.join(reasons)}. Likely cause: rate limiting (429).")
+    model_analysis["deterministic_status"] = deterministic_status
+    model_analysis["deterministic_reasons"] = reasons
+    model_analysis["rate_limit_signals"] = rate_limit_signals
+    model_analysis["status"] = final_status
+    return model_analysis
+
+
+def build_ollama_prompt(
+    profile: str,
+    metadata: dict[str, Any],
+    highlights: dict[str, Any],
+    prom: dict[str, Any],
+    loki: dict[str, Any],
+    rate_limit_signals: dict[str, Any],
+) -> str:
     compact = {
         "profile": profile,
         "run_metadata": metadata,
         "k6_highlights": highlights,
+        "rate_limit_signals": rate_limit_signals,
         "prometheus_queries": prom.get("queries", {}),
         "loki_error_sample_count": len(loki.get("entries", [])),
         "loki_sample": loki.get("entries", [])[:40],
@@ -253,6 +420,7 @@ def build_ollama_prompt(profile: str, metadata: dict[str, Any], highlights: dict
         "Return STRICT JSON only with this schema: "
         "{status,summary,findings[],bottlenecks[],likely_causes[],next_actions[],confidence}. "
         "status must be one of HEALTHY|WARNING|CRITICAL. "
+        "Consider rate_limit_signals (429s, failing write checks) as primary bottleneck when present. "
         "confidence must be a number 0..1. "
         "Use concise actionable language.\n\n"
         f"DATA={json.dumps(compact, separators=(',', ':'))}"
@@ -312,6 +480,15 @@ def format_float(value: Any, digits: int = 4) -> str:
     return "N/A"
 
 
+def _fmt_rate_limit_checks_md(rate_limit_signals: dict[str, Any]) -> str:
+    checks = rate_limit_signals.get("critical_write_checks") or []
+    if not checks:
+        return "- None"
+    return "\n".join(
+        f"- {c.get('check_name', '')}: {c.get('pass_rate', 0):.1%}" for c in checks
+    )
+
+
 def render_report_html(
     run_dir: pathlib.Path,
     profile: str,
@@ -339,6 +516,28 @@ def render_report_html(
 
     loki_lines = loki.get("entries", [])[:20]
     loki_block = "\n".join(html.escape(str(e.get("line", ""))) for e in loki_lines) or "No matching log lines."
+
+    rate_limit_signals = analysis.get("rate_limit_signals") or {}
+    det_status = analysis.get("deterministic_status", "—")
+    det_reasons = analysis.get("deterministic_reasons") or []
+    loki_429_count = rate_limit_signals.get("loki_rate_limit_entry_count", 0)
+    critical_checks = rate_limit_signals.get("critical_write_checks") or []
+    rate_limit_endpoints = rate_limit_signals.get("likely_rate_limited_endpoints") or []
+    rate_limit_rows = []
+    for c in critical_checks:
+        name = c.get("check_name", "")
+        pr = c.get("pass_rate")
+        pr_str = f"{pr:.1%}" if pr is not None else "N/A"
+        rate_limit_rows.append(f"<tr><td>{html.escape(name)}</td><td>{html.escape(pr_str)}</td></tr>")
+    rate_limit_table = (
+        "<table><thead><tr><th>Check</th><th>Pass rate</th></tr></thead><tbody>"
+        + "".join(rate_limit_rows)
+        + "</tbody></table>"
+        if rate_limit_rows
+        else "<p>No canonical write checks in summary.</p>"
+    )
+    rate_limit_endpoint_list = "".join(f"<li>{html.escape(e)}</li>" for e in rate_limit_endpoints) or "<li>None</li>"
+    det_reasons_block = "".join(f"<li>{html.escape(r)}</li>" for r in det_reasons) or "<li>None</li>"
 
     return f"""<!doctype html>
 <html lang=\"en\">
@@ -389,7 +588,11 @@ def render_report_html(
       <div class=\"card\"><h2>Next Actions</h2><ul>{action_items}</ul></div>
     </section>
 
-    <section class=\"card\" style=\"margin-top:12px\"><h2>Loki Error/Warning Sample</h2><pre>{loki_block}</pre></section>
+    <section class=\"card\" style=\"margin-top:12px\"><h2>Deterministic Status Policy</h2><p><strong>{html.escape(str(det_status))}</strong></p><ul>{det_reasons_block}</ul></section>
+
+    <section class=\"card\" style=\"margin-top:12px\"><h2>Rate Limit Signals</h2><p>Loki 429/rate-limit sample count: <strong>{loki_429_count}</strong></p>{rate_limit_table}<p><strong>Likely rate-limited endpoints:</strong></p><ul>{rate_limit_endpoint_list}</ul></section>
+
+    <section class=\"card\" style=\"margin-top:12px\"><h2>Loki Sample (Errors/Warnings and Rate-Limit 429s)</h2><pre>{loki_block}</pre></section>
   </main>
 </body>
 </html>
@@ -440,6 +643,17 @@ def render_report_markdown(
 - Start: `{metadata.get('start_utc', 'N/A')}`
 - End: `{metadata.get('end_utc', 'N/A')}`
 
+## Deterministic Status Policy Result
+
+- **Status:** {analysis.get('deterministic_status', '—')}
+- **Reasons:** {section_items(analysis.get('deterministic_reasons') or [])}
+
+## Rate Limit Signals
+
+- Loki 429/rate-limit entry count: {(analysis.get('rate_limit_signals') or {}).get('loki_rate_limit_entry_count', 0)}
+- Critical write checks (pass rate): {_fmt_rate_limit_checks_md(analysis.get('rate_limit_signals') or {})}
+- Likely rate-limited endpoints: {section_items((analysis.get('rate_limit_signals') or {}).get('likely_rate_limited_endpoints') or [])}
+
 ## Data Source Health
 
 {health_lines}
@@ -466,6 +680,7 @@ def render_report_text(
     highlights: dict[str, Any],
     analysis: dict[str, Any],
 ) -> str:
+    rls = analysis.get("rate_limit_signals") or {}
     lines = [
         f"SANCTUM AI STRESS REPORT ({profile})",
         "=" * 48,
@@ -473,6 +688,29 @@ def render_report_text(
         f"Run Dir: {run_dir}",
         f"Status: {analysis.get('status', 'WARNING')}",
         f"Summary: {analysis.get('summary', 'No summary provided')}",
+        "",
+        "Deterministic Status Policy Result",
+        f"- Status: {analysis.get('deterministic_status', '—')}",
+    ]
+    for r in analysis.get("deterministic_reasons") or []:
+        lines.append(f"- {r}")
+    lines.extend([
+        "",
+        "Rate Limit Signals",
+        f"- Loki 429/rate-limit entry count: {rls.get('loki_rate_limit_entry_count', 0)}",
+    ])
+    critical_checks = rls.get("critical_write_checks") or []
+    if not critical_checks:
+        lines.append("- No canonical write checks in summary.")
+    for c in critical_checks:
+        pr = c.get("pass_rate")
+        lines.append(f"- {c.get('check_name', '')}: {pr:.1%}" if pr is not None else f"- {c.get('check_name', '')}: N/A")
+    lines.append("Likely rate-limited endpoints:")
+    for ep in rls.get("likely_rate_limited_endpoints") or []:
+        lines.append(f"- {ep}")
+    if not rls.get("likely_rate_limited_endpoints"):
+        lines.append("- None")
+    lines.extend([
         "",
         "k6 Highlights",
         f"- P95 latency (ms): {format_float(highlights.get('http_req_duration_p95_ms'), 2)}",
@@ -487,7 +725,7 @@ def render_report_text(
         f"- End: {metadata.get('end_utc', 'N/A')}",
         "",
         "Data Source Health",
-    ]
+    ])
 
     for name, state in health_map.items():
         err = state.get("error")
@@ -590,7 +828,11 @@ def main() -> int:
     write_json_file(run_dir / "metrics.json", prometheus_payload)
     write_json_file(run_dir / "logs.json", loki_payload)
 
-    prompt = build_ollama_prompt(profile, metadata, highlights, prometheus_payload, loki_payload)
+    rate_limit_signals = build_rate_limit_signals(summary, profile, loki_payload)
+
+    prompt = build_ollama_prompt(
+        profile, metadata, highlights, prometheus_payload, loki_payload, rate_limit_signals
+    )
     model_analysis, ollama_health = call_ollama(args.ollama_url, args.ollama_model, prompt, args.timeout_seconds)
 
     health_map = {
@@ -605,6 +847,8 @@ def main() -> int:
     analysis["profile"] = profile
     analysis["run_dir"] = str(run_dir)
     analysis["generated_at"] = utc_now().isoformat()
+    analysis["rate_limit_signals"] = rate_limit_signals
+    analysis = apply_status_policy(analysis, rate_limit_signals, profile)
 
     write_json_file(run_dir / "ai-analysis.json", analysis)
 

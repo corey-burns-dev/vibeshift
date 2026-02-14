@@ -82,10 +82,14 @@ func main() {
 	if bodyLimitBytes <= 0 {
 		bodyLimitBytes = 10 * 1024 * 1024
 	}
-	app := fiber.New(fiber.Config{
+	fiberConfig := fiber.Config{
 		AppName:   "Social Media API",
 		BodyLimit: bodyLimitBytes,
-	})
+	}
+	if cfg.EnableProxyHeader {
+		fiberConfig.ProxyHeader = "X-Forwarded-For"
+	}
+	app := fiber.New(fiberConfig)
 
 	// Setup middleware and routes
 	srv.SetupMiddleware(app)

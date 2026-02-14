@@ -73,6 +73,23 @@ cd backend
 go run cmd/seed/main.go
 ```
 
+You can also target category-accurate sanctum seeding:
+
+```bash
+cd backend
+# Seed all built-in sanctums with 10 posts each (50% text,30%media,10%link,10%video)
+go run cmd/seed/main.go -all-sanctums -count 10
+
+# Seed a single sanctum by slug with 5 posts
+go run cmd/seed/main.go -sanctum pc-gaming -count 5
+```
+
+Validate seed distribution (requires `psql` and `DATABASE_URL` env var):
+
+```bash
+DATABASE_URL=postgres://user:pass@localhost:5432/sanctum scripts/validate_seed.sh
+```
+
 ### Clear and Re-seed
 
 The seeder automatically clears existing data before seeding. If you want to keep existing data, modify `backend/seed/seed.go`:

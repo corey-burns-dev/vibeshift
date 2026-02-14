@@ -98,14 +98,14 @@ describe('useAudio', () => {
   })
 
   it('playDirectMessageSound no-ops when AudioContext is missing', () => {
-    ;(window as any).AudioContext = undefined
+    ;(window as unknown as { AudioContext: undefined }).AudioContext = undefined
     const { result } = renderHook(() => useAudio())
 
     expect(() => result.current.playDirectMessageSound()).not.toThrow()
   })
 
   it('playRoomAlertSound no-ops when AudioContext is missing', () => {
-    ;(window as any).AudioContext = undefined
+    ;(window as unknown as { AudioContext: undefined }).AudioContext = undefined
     const { result } = renderHook(() => useAudio())
 
     expect(() => result.current.playRoomAlertSound()).not.toThrow()

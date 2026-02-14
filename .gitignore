@@ -49,3 +49,4 @@ frontend/reports/playwright-report/
 *.swp
 *~
 sanctum
+backend/main

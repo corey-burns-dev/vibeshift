@@ -7,6 +7,11 @@ export const options = {
     // Scenario/profile settings are loaded via --config load/profiles/*.json
 };
 
+// Realistic think time between actions (seconds). Keeps each VU under per-user rate limits
+// (e.g. 1 comment/min, 10 posts/5min) so the test measures system capacity, not rate-limit hits.
+const THINK_TIME_MIN_SEC = 10;
+const THINK_TIME_MAX_SEC = 30;
+
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8375';
 const WS_URL = BASE_URL.replace('http://', 'ws://').replace('https://', 'wss://');
 const LOAD_PASSWORD = __ENV.LOAD_PASSWORD || 'Password123!';
@@ -122,8 +127,9 @@ function runCommentLikeFlow(user) {
 
     const unlikeRes = http.del(`${BASE_URL}/api/posts/${postId}/like`, null, {
         headers: { Authorization: `Bearer ${user.token}` },
+        responseCallback: http.expectedStatuses(200, 204, 404),
     });
-    check(unlikeRes, { 'unlike status ok': (r) => r.status === 200 || r.status === 204 || r.status === 404 });
+    check(unlikeRes, { 'unlike status ok': (r) => [200, 204, 404].includes(r.status) });
 }
 
 function runFriendFlow(user, partner) {
@@ -134,7 +140,10 @@ function runFriendFlow(user, partner) {
     const sendRes = http.post(
         `${BASE_URL}/api/friends/requests/${partner.userId}`,
         null,
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        {
+            headers: { Authorization: `Bearer ${user.token}` },
+            responseCallback: http.expectedStatuses(200, 201, 409, 404),
+        }
     );
     check(sendRes, {
         'friend request status acceptable': (r) => [201, 200, 409, 404].includes(r.status),
@@ -157,7 +166,10 @@ function runFriendFlow(user, partner) {
                 const acceptRes = http.post(
                     `${BASE_URL}/api/friends/requests/${request.id}/accept`,
                     null,
-                    { headers: { Authorization: `Bearer ${partner.token}` } }
+                    {
+                        headers: { Authorization: `Bearer ${partner.token}` },
+                        responseCallback: http.expectedStatuses(200, 204, 409),
+                    }
                 );
                 check(acceptRes, {
                     'friend accept status acceptable': (r) => [200, 204, 409].includes(r.status),
@@ -168,6 +180,7 @@ function runFriendFlow(user, partner) {
 
     const statusRes = http.get(`${BASE_URL}/api/friends/status/${partner.userId}`, {
         headers: { Authorization: `Bearer ${user.token}` },
+        responseCallback: http.expectedStatuses(200, 404),
     });
     check(statusRes, { 'friend status request acceptable': (r) => [200, 404].includes(r.status) });
 
@@ -186,7 +199,10 @@ function runDMFlow(user, partner) {
         is_group: false,
         participant_ids: [partner.userId],
     });
-    const convRes = http.post(`${BASE_URL}/api/conversations`, convPayload, authHeaders(user.token));
+    const convRes = http.post(`${BASE_URL}/api/conversations`, convPayload, {
+        headers: authHeaders(user.token).headers,
+        responseCallback: http.expectedStatuses(200, 201, 409),
+    });
     check(convRes, {
         'create dm conversation acceptable': (r) => [200, 201, 409].includes(r.status),
     });
@@ -222,13 +238,17 @@ function runDMFlow(user, partner) {
 
     const msgsRes = http.get(`${BASE_URL}/api/conversations/${conv.id}/messages`, {
         headers: { Authorization: `Bearer ${user.token}` },
+        responseCallback: http.expectedStatuses(200, 403, 404),
     });
     check(msgsRes, { 'dm messages status acceptable': (r) => [200, 403, 404].includes(r.status) });
 
     const readRes = http.post(
         `${BASE_URL}/api/conversations/${conv.id}/read`,
         null,
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        {
+            headers: { Authorization: `Bearer ${user.token}` },
+            responseCallback: http.expectedStatuses(200, 400, 403, 404),
+        }
     );
     check(readRes, { 'dm read status acceptable': (r) => [200, 400, 403, 404].includes(r.status) });
 }
@@ -353,5 +373,6 @@ export default function (data) {
         runGameFlow(actor, partner);
     }
 
-    sleep(1);
+    // Realistic pacing: 10–30s between actions so each VU mimics a human and stays under per-user limits.
+    sleep(THINK_TIME_MIN_SEC + Math.random() * (THINK_TIME_MAX_SEC - THINK_TIME_MIN_SEC));
 }

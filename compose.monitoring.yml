@@ -15,6 +15,11 @@ services:
     restart: unless-stopped
     networks:
       - sanctum_default
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
 
   loki:
     image: grafana/loki:${LOKI_VERSION}
@@ -27,6 +32,11 @@ services:
     restart: unless-stopped
     networks:
       - sanctum_default
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
 
   promtail:
     image: grafana/promtail:${PROMTAIL_VERSION}
@@ -39,6 +49,11 @@ services:
     restart: unless-stopped
     networks:
       - sanctum_default
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
 
   grafana:
     image: grafana/grafana:${GRAFANA_VERSION}
@@ -54,6 +69,11 @@ services:
     restart: unless-stopped
     networks:
       - sanctum_default
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION}
@@ -69,6 +89,11 @@ services:
     restart: unless-stopped
     networks:
       - sanctum_default
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
 
 volumes:
   prometheus_data:

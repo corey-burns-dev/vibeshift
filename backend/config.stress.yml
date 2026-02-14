@@ -1,0 +1,24 @@
+# Sanctum Stress Test Configuration
+APP_ENV: stress
+PORT: "8375"
+
+# Database
+DB_HOST: "postgres"
+DB_PORT: "5432"
+DB_USER: "user"
+DB_NAME: "sanctum"
+DB_SSLMODE: "disable" # For easier local/container setup
+DB_MAX_OPEN_CONNS: 50
+DB_MAX_IDLE_CONNS: 10
+DB_CONN_MAX_LIFETIME_MINUTES: 30
+
+# Security
+JWT_SECRET: "VN4nATTzrrCVG8ddNbMPk8LQm2JT8KlMPoO32d2eCHM=" # Match .env for consistency if needed
+
+# Schema behavior: Auto-migrate is useful for stress tests if they start fresh
+DB_SCHEMA_MODE: "sql"
+DB_AUTOMIGRATE_ALLOW_DESTRUCTIVE: false
+
+# Local image uploads (filesystem)
+IMAGE_UPLOAD_DIR: "/var/sanctum/uploads/images"
+IMAGE_MAX_UPLOAD_SIZE_MB: 10

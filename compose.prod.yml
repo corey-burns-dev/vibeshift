@@ -13,6 +13,8 @@ services:
         limits:
           cpus: '1.00'
           memory: 768M
+        reservations:
+          memory: 128M
 
   postgres:
     restart: always
@@ -21,9 +23,8 @@ services:
         limits:
           cpus: '1.50'
           memory: 1G
-    # In real prod, don't expose ports
-    # ports:
-    #   - "5432:5432"
+        reservations:
+          memory: 256M
 
   redis:
     restart: always
@@ -32,6 +33,8 @@ services:
         limits:
           cpus: '0.50'
           memory: 256M
+        reservations:
+          memory: 64M
 
   frontend:
     ports:
@@ -42,3 +45,5 @@ services:
         limits:
           cpus: '0.50'
           memory: 256M
+        reservations:
+          memory: 32M

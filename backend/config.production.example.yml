@@ -18,6 +18,7 @@ DB_CONN_MAX_LIFETIME_MINUTES: 30
 # ALLOWED_ORIGINS: "https://your-domain.com"
 # JWT_SECRET: "A-VERY-LONG-AND-SECURE-RANDOM-STRING"
 # FEATURE_FLAGS: "new_feed=10%,beta_chat=off"
+ENABLE_PROXY_HEADER: true
 
 # Schema behavior for production: SQL migrations only
 DB_SCHEMA_MODE: "sql"

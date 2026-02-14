@@ -1,9 +1,13 @@
 package seed
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"math"
 	"math/rand"
+	"strings"
 	"time"
 
 	"sanctum/internal/models"
@@ -18,12 +22,264 @@ type Seeder struct {
 	factory *Factory
 }
 
+// SeedOptions configures seeding behavior (dev ergonomics).
+type SeedOptions struct {
+	SkipBcrypt bool
+	DryRun     bool
+	BatchSize  int
+	Fast       bool
+	// MaxDays controls how far back CreatedAt may be spread
+	MaxDays int
+}
+
+// Distribution describes fractional weights for post types.
+type Distribution struct {
+	Text  float64
+	Media float64
+	Link  float64
+	Video float64
+}
+
+// CategoryDistributions allows per‑sanctum overrides by slug. Values are
+// fractional weights and will be normalized when computing integer counts.
+var CategoryDistributions = map[string]Distribution{
+	// Example: PC Gaming favors link and video content
+	"pc-gaming": {Text: 0.4, Media: 0.0, Link: 0.4, Video: 0.2},
+}
+
+var defaultDistribution = Distribution{Text: 0.5, Media: 0.3, Link: 0.1, Video: 0.1}
+
+// per-category vocabulary for richer, category-aware content
+var categoryVocab = map[string]map[string][]string{
+	"pc-gaming": {
+		"names":  {"Cyberpunk 2077", "Doom Eternal", "Stardew Valley", "Hades", "Baldur's Gate 3"},
+		"tags":   {"fps", "rpg", "indie", "singleplayer", "multiplayer"},
+		"stores": {"https://store.steampowered.com", "https://www.gog.com"},
+		"yt":     {"review", "gameplay", "first impressions", "walkthrough"},
+	},
+	"photography": {
+		"names": {"portrait", "landscape", "astrophotography", "street", "macro"},
+		"tags":  {"photography", "dslr", "mirrorless", "composition", "lens"},
+		"yt":    {"tutorial", "editing", "gear review"},
+	},
+	"cooking": {
+		"names": {"sourdough", "pasta", "vegan", "bbq", "dessert"},
+		"tags":  {"recipe", "cooking", "baking", "easy", "mealprep"},
+		"yt":    {"recipe", "tutorial", "taste test"},
+	},
+	"music": {
+		"names": {"lofi beats", "synthwave", "classical", "indie rock", "hip hop"},
+		"tags":  {"music", "playlist", "album", "review"},
+		"yt":    {"full album", "live", "review"},
+	},
+	"programming": {
+		"names": {"Go", "Rust", "TypeScript", "React", "Docker"},
+		"tags":  {"programming", "devops", "backend", "frontend", "tutorial"},
+		"yt":    {"tutorial", "deep dive", "best practices"},
+	},
+	"books": {
+		"names": {"Dune", "The Hobbit", "1984", "The Pragmatic Programmer", "Clean Code"},
+		"tags":  {"bookclub", "review", "fiction", "nonfiction"},
+		"yt":    {"review", "summary"},
+	},
+}
+
+func categoryOverrideForSlug(slug string, r *rand.Rand) func(*models.Post) {
+	vocab, ok := categoryVocab[slug]
+	if !ok || len(vocab) == 0 {
+		return nil
+	}
+
+	names := vocab["names"]
+	tags := vocab["tags"]
+	stores := vocab["stores"]
+	yths := vocab["yt"]
+
+	name := names[r.Intn(len(names))]
+
+	return func(p *models.Post) {
+		// Prepend the category-specific name into title and content.
+		p.Title = fmt.Sprintf("%s — %s", name, p.Title)
+
+		// Add a store link when available (for games/physical goods)
+		if len(stores) > 0 {
+			store := stores[r.Intn(len(stores))]
+			p.Content = fmt.Sprintf("%s\n\nBuy: %s/search/?q=%s\n\n%s", name, store, urlQueryEscape(name), p.Content)
+		}
+
+		// Add suggested YouTube search terms to content
+		if len(yths) > 0 {
+			yt := yths[r.Intn(len(yths))]
+			p.Content = fmt.Sprintf("%s\n\nYouTube: https://www.youtube.com/results?search_query=%s+%s\n\n%s", name, urlQueryEscape(name), urlQueryEscape(yt), p.Content)
+		}
+
+		// Inject 1-3 hashtags from tag list into the end of content
+		if len(tags) > 0 {
+			tagCount := 1 + r.Intn(3)
+			var chosen []string
+			for i := 0; i < tagCount; i++ {
+				chosen = append(chosen, tags[r.Intn(len(tags))])
+			}
+			// create hashtag string
+			hs := ""
+			for _, t := range chosen {
+				hs += "#" + strings.ReplaceAll(t, " ", "") + " "
+			}
+			p.Content = fmt.Sprintf("%s\n\n%s", p.Content, strings.TrimSpace(hs))
+		}
+
+		// Category-specific thumbnail seed (helps frontend grids)
+		p.ImageURL = fmt.Sprintf("https://picsum.photos/seed/%s-%s/800/600", slug, urlQueryEscape(name))
+	}
+}
+
+// urlQueryEscape provides a minimal placeholder for escaping spaces to +
+func urlQueryEscape(s string) string {
+	// very small escape: replace spaces with + and remove apostrophes
+	out := ""
+	for _, r := range s {
+		if r == ' ' {
+			out += "+"
+		} else if r == '\'' {
+			// skip
+		} else {
+			out += string(r)
+		}
+	}
+	return out
+}
+
+// computeCounts converts a total count and fractional distribution into
+// integer counts per type. Any rounding remainder is applied to text posts.
+func computeCounts(total int, dist Distribution) (text, media, link, video int) {
+	if total <= 0 {
+		return 0, 0, 0, 0
+	}
+	sum := dist.Text + dist.Media + dist.Link + dist.Video
+	if sum <= 0 {
+		dist = defaultDistribution
+		sum = 1.0
+	}
+	t := float64(total) * (dist.Text / sum)
+	m := float64(total) * (dist.Media / sum)
+	l := float64(total) * (dist.Link / sum)
+	v := float64(total) * (dist.Video / sum)
+
+	text = int(math.Round(t))
+	media = int(math.Round(m))
+	link = int(math.Round(l))
+	video = int(math.Round(v))
+
+	got := text + media + link + video
+	if got != total {
+		text += total - got
+		if text < 0 {
+			text = 0
+		}
+	}
+	return
+}
+
 // NewSeeder creates a Seeder for the given Gorm DB.
-func NewSeeder(db *gorm.DB) *Seeder {
+func NewSeeder(db *gorm.DB, opts SeedOptions) *Seeder {
 	return &Seeder{
 		db:      db,
-		factory: NewFactory(db),
+		factory: NewFactory(db, opts),
 	}
+}
+
+// parseCountsFile reads a JSON file mapping sanctum slug to desired counts.
+// Example shape: { "pc-gaming": { "total": 10, "text":4, "link":4, "video":2 } }
+// ParseCountsFile reads a JSON file mapping sanctum slug to desired counts.
+// Example shape: { "pc-gaming": { "total": 10, "text":4, "link":4, "video":2 } }
+func ParseCountsFile(path string) (map[string]map[string]int, error) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var out map[string]map[string]int
+	if err := json.Unmarshal(b, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SeedSanctumWithExactCounts seeds one sanctum using an exact counts map.
+// Entry may contain keys: "total", or "text","media","link","video".
+func (s *Seeder) SeedSanctumWithExactCounts(users []*models.User, sanctum *models.Sanctum, entry map[string]int) error {
+	// If explicit per-type counts provided, honor them, otherwise use total with distribution
+	var textCount, mediaCount, linkCount, videoCount int
+	if _, ok := entry["text"]; ok {
+		textCount = entry["text"]
+		mediaCount = entry["media"]
+		linkCount = entry["link"]
+		videoCount = entry["video"]
+	} else if total, ok := entry["total"]; ok {
+		dist := defaultDistribution
+		if d, ok := CategoryDistributions[sanctum.Slug]; ok {
+			dist = d
+		}
+		textCount, mediaCount, linkCount, videoCount = computeCounts(total, dist)
+	} else {
+		return fmt.Errorf("no counts provided for sanctum %s", sanctum.Slug)
+	}
+
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	pickUser := func() *models.User { return users[r.Intn(len(users))] }
+
+	for i := 0; i < textCount; i++ {
+		creator := pickUser()
+		overrides := []func(*models.Post){
+			func(p *models.Post) {
+				p.SanctumID = &sanctum.ID
+				p.Title = fmt.Sprintf("[%s] %s", sanctum.Name, p.Title)
+			},
+		}
+		if co := categoryOverrideForSlug(sanctum.Slug, r); co != nil {
+			overrides = append(overrides, co)
+		}
+		_, _ = s.factory.CreatePostWithTemplate(creator, models.PostTypeText, overrides...)
+	}
+	for i := 0; i < mediaCount; i++ {
+		creator := pickUser()
+		overrides := []func(*models.Post){
+			func(p *models.Post) {
+				p.SanctumID = &sanctum.ID
+				p.Title = fmt.Sprintf("[%s] %s", sanctum.Name, p.Title)
+			},
+		}
+		if co := categoryOverrideForSlug(sanctum.Slug, r); co != nil {
+			overrides = append(overrides, co)
+		}
+		_, _ = s.factory.CreatePostWithTemplate(creator, models.PostTypeMedia, overrides...)
+	}
+	for i := 0; i < linkCount; i++ {
+		creator := pickUser()
+		overrides := []func(*models.Post){
+			func(p *models.Post) {
+				p.SanctumID = &sanctum.ID
+				p.Title = fmt.Sprintf("[%s] %s", sanctum.Name, p.Title)
+			},
+		}
+		if co := categoryOverrideForSlug(sanctum.Slug, r); co != nil {
+			overrides = append(overrides, co)
+		}
+		_, _ = s.factory.CreatePostWithTemplate(creator, models.PostTypeLink, overrides...)
+	}
+	for i := 0; i < videoCount; i++ {
+		creator := pickUser()
+		overrides := []func(*models.Post){
+			func(p *models.Post) {
+				p.SanctumID = &sanctum.ID
+				p.Title = fmt.Sprintf("[%s] %s", sanctum.Name, p.Title)
+			},
+		}
+		if co := categoryOverrideForSlug(sanctum.Slug, r); co != nil {
+			overrides = append(overrides, co)
+		}
+		_, _ = s.factory.CreatePostWithTemplate(creator, models.PostTypeVideo, overrides...)
+	}
+	return nil
 }
 
 // ClearAll truncates application tables and resets sequences. Intended
@@ -158,6 +414,74 @@ func (s *Seeder) SeedActiveGames(users []*models.User) error {
 	return nil
 }
 
+// SeedSanctumWithDistributionSingle seeds a single sanctum with the same
+// category-accurate distribution used by SeedSanctumsWithDistribution.
+func (s *Seeder) SeedSanctumWithDistributionSingle(users []*models.User, sanctum *models.Sanctum, countPerSanctum int) error {
+	// Determine distribution for this sanctum (per-slug override if present)
+	dist := defaultDistribution
+	if d, ok := CategoryDistributions[sanctum.Slug]; ok {
+		dist = d
+	}
+	textCount, mediaCount, linkCount, videoCount := computeCounts(countPerSanctum, dist)
+
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	pickUser := func() *models.User { return users[r.Intn(len(users))] }
+
+	for i := 0; i < textCount; i++ {
+		creator := pickUser()
+		overrides := []func(*models.Post){
+			func(p *models.Post) {
+				p.SanctumID = &sanctum.ID
+				p.Title = fmt.Sprintf("[%s] %s", sanctum.Name, p.Title)
+			},
+		}
+		if co := categoryOverrideForSlug(sanctum.Slug, r); co != nil {
+			overrides = append(overrides, co)
+		}
+		_, _ = s.factory.CreatePostWithTemplate(creator, models.PostTypeText, overrides...)
+	}
+	for i := 0; i < mediaCount; i++ {
+		creator := pickUser()
+		overrides := []func(*models.Post){
+			func(p *models.Post) {
+				p.SanctumID = &sanctum.ID
+				p.Title = fmt.Sprintf("[%s] %s", sanctum.Name, p.Title)
+			},
+		}
+		if co := categoryOverrideForSlug(sanctum.Slug, r); co != nil {
+			overrides = append(overrides, co)
+		}
+		_, _ = s.factory.CreatePostWithTemplate(creator, models.PostTypeMedia, overrides...)
+	}
+	for i := 0; i < linkCount; i++ {
+		creator := pickUser()
+		overrides := []func(*models.Post){
+			func(p *models.Post) {
+				p.SanctumID = &sanctum.ID
+				p.Title = fmt.Sprintf("[%s] %s", sanctum.Name, p.Title)
+			},
+		}
+		if co := categoryOverrideForSlug(sanctum.Slug, r); co != nil {
+			overrides = append(overrides, co)
+		}
+		_, _ = s.factory.CreatePostWithTemplate(creator, models.PostTypeLink, overrides...)
+	}
+	for i := 0; i < videoCount; i++ {
+		creator := pickUser()
+		overrides := []func(*models.Post){
+			func(p *models.Post) {
+				p.SanctumID = &sanctum.ID
+				p.Title = fmt.Sprintf("[%s] %s", sanctum.Name, p.Title)
+			},
+		}
+		if co := categoryOverrideForSlug(sanctum.Slug, r); co != nil {
+			overrides = append(overrides, co)
+		}
+		_, _ = s.factory.CreatePostWithTemplate(creator, models.PostTypeVideo, overrides...)
+	}
+	return nil
+}
+
 // SeedDMs creates sample direct message conversations and messages.
 func (s *Seeder) SeedDMs(users []*models.User) error {
 	log.Println("💬 Seeding DM history...")
@@ -242,6 +566,165 @@ func (s *Seeder) SeedSanctumPosts(users []*models.User) error {
 	return nil
 }
 
+// SeedSanctumsWithDistribution seeds each sanctum with a fixed number of
+// posts distributed across post types. Distribution used: 50% text,
+// 30% media, 10% link, 10% video. countPerSanctum controls total posts per
+// sanctum.
+func (s *Seeder) SeedSanctumsWithDistribution(users []*models.User, countPerSanctum int) error {
+	log.Printf("🏰 Seeding %d posts per sanctum with category-accurate distribution...", countPerSanctum)
+	var sanctums []*models.Sanctum
+	if err := s.db.Find(&sanctums).Error; err != nil {
+		return err
+	}
+
+	// Compute counts per type using integer math with remainder going to text
+	for _, sanctum := range sanctums {
+
+		log.Printf("  📍 Seeding %d posts for sanctum: %s", countPerSanctum, sanctum.Name)
+		// choose per‑sanctum distribution if present, otherwise use default
+		dist := defaultDistribution
+		if d, ok := CategoryDistributions[sanctum.Slug]; ok {
+			dist = d
+		}
+		textCount, mediaCount, linkCount, videoCount := computeCounts(countPerSanctum, dist)
+
+		// #nosec G404: Non-cryptographic randomness is acceptable for seeding test data
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+		// helper to pick a random user
+		pickUser := func() *models.User {
+			return users[r.Intn(len(users))]
+		}
+
+		// create text posts
+		var batch []*models.Post
+		flushBatch := func() error {
+			if len(batch) == 0 {
+				return nil
+			}
+			// persist batch via factory helper
+			if err := s.factory.CreatePostsBatch(batch); err != nil {
+				return err
+			}
+			batch = batch[:0]
+			return nil
+		}
+
+		for i := 0; i < textCount; i++ {
+			creator := pickUser()
+			overrides := []func(*models.Post){
+				func(p *models.Post) {
+					p.SanctumID = &sanctum.ID
+					p.Title = fmt.Sprintf("[%s] %s", sanctum.Name, p.Title)
+				},
+			}
+			if co := categoryOverrideForSlug(sanctum.Slug, r); co != nil {
+				overrides = append(overrides, co)
+			}
+			if s.factory.opts.BatchSize > 0 {
+				p := s.factory.BuildPostWithTemplate(creator, models.PostTypeText, overrides...)
+				batch = append(batch, p)
+				if len(batch) >= s.factory.opts.BatchSize {
+					if err := flushBatch(); err != nil {
+						return err
+					}
+				}
+			} else {
+				_, _ = s.factory.CreatePostWithTemplate(creator, models.PostTypeText, overrides...)
+			}
+		}
+		if err := flushBatch(); err != nil {
+			return err
+		}
+
+		// media posts
+		for i := 0; i < mediaCount; i++ {
+			creator := pickUser()
+			overrides := []func(*models.Post){
+				func(p *models.Post) {
+					p.SanctumID = &sanctum.ID
+					p.Title = fmt.Sprintf("[%s] %s", sanctum.Name, p.Title)
+				},
+			}
+			if co := categoryOverrideForSlug(sanctum.Slug, r); co != nil {
+				overrides = append(overrides, co)
+			}
+			if s.factory.opts.BatchSize > 0 {
+				p := s.factory.BuildPostWithTemplate(creator, models.PostTypeMedia, overrides...)
+				batch = append(batch, p)
+				if len(batch) >= s.factory.opts.BatchSize {
+					if err := flushBatch(); err != nil {
+						return err
+					}
+				}
+			} else {
+				_, _ = s.factory.CreatePostWithTemplate(creator, models.PostTypeMedia, overrides...)
+			}
+		}
+		if err := flushBatch(); err != nil {
+			return err
+		}
+
+		// link posts
+		for i := 0; i < linkCount; i++ {
+			creator := pickUser()
+			overrides := []func(*models.Post){
+				func(p *models.Post) {
+					p.SanctumID = &sanctum.ID
+					p.Title = fmt.Sprintf("[%s] %s", sanctum.Name, p.Title)
+				},
+			}
+			if co := categoryOverrideForSlug(sanctum.Slug, r); co != nil {
+				overrides = append(overrides, co)
+			}
+			if s.factory.opts.BatchSize > 0 {
+				p := s.factory.BuildPostWithTemplate(creator, models.PostTypeLink, overrides...)
+				batch = append(batch, p)
+				if len(batch) >= s.factory.opts.BatchSize {
+					if err := flushBatch(); err != nil {
+						return err
+					}
+				}
+			} else {
+				_, _ = s.factory.CreatePostWithTemplate(creator, models.PostTypeLink, overrides...)
+			}
+		}
+		if err := flushBatch(); err != nil {
+			return err
+		}
+
+		// video posts
+		for i := 0; i < videoCount; i++ {
+			creator := pickUser()
+			overrides := []func(*models.Post){
+				func(p *models.Post) {
+					p.SanctumID = &sanctum.ID
+					p.Title = fmt.Sprintf("[%s] %s", sanctum.Name, p.Title)
+				},
+			}
+			if co := categoryOverrideForSlug(sanctum.Slug, r); co != nil {
+				overrides = append(overrides, co)
+			}
+			if s.factory.opts.BatchSize > 0 {
+				p := s.factory.BuildPostWithTemplate(creator, models.PostTypeVideo, overrides...)
+				batch = append(batch, p)
+				if len(batch) >= s.factory.opts.BatchSize {
+					if err := flushBatch(); err != nil {
+						return err
+					}
+				}
+			} else {
+				_, _ = s.factory.CreatePostWithTemplate(creator, models.PostTypeVideo, overrides...)
+			}
+		}
+		if err := flushBatch(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // ApplyPreset runs a named seeder preset (e.g. "MegaPopulated").
 func (s *Seeder) ApplyPreset(name string) error {
 	log.Printf("🌟 Applying seeder preset: %s", name)
@@ -255,6 +738,14 @@ func (s *Seeder) ApplyPreset(name string) error {
 		_ = s.SeedSanctumPosts(users)
 		_ = s.SeedActiveGames(users)
 		_ = s.SeedDMs(users)
+	case "CategoryAccurate":
+		// Seed a smaller social mesh and then seed each sanctum with a
+		// category-accurate distribution of posts (default 10 per sanctum).
+		users, err := s.SeedSocialMesh(20)
+		if err != nil {
+			return err
+		}
+		_ = s.SeedSanctumsWithDistribution(users, 10)
 	default:
 		log.Printf("⚠️ Unknown preset: %s", name)
 	}

@@ -237,8 +237,8 @@ func (s *Server) SetupMiddleware(app *fiber.App) {
 		MaxAge:           86400, // 24 hours
 	}))
 
-	// Global rate limiting (100 requests per minute per IP); disabled in development so dev workflows are not throttled.
-	if s.config.Env != "development" {
+	// Global rate limiting (100 requests per minute per IP); disabled in development/test/stress so workflows are not throttled.
+	if s.config.Env != "development" && s.config.Env != "test" && s.config.Env != "stress" {
 		app.Use(limiter.New(limiter.Config{
 			Max:        100,
 			Expiration: 1 * time.Minute,

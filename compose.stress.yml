@@ -1,0 +1,6 @@
+services:
+  app:
+    ports:
+      - "${GO_PORT:-8375}:${GO_PORT:-8375}"
+    environment:
+      - APP_ENV=stress

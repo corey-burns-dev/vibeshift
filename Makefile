@@ -8,6 +8,8 @@ K6_DOCKER_IMAGE ?= grafana/k6:0.49.0
 ENVIRONMENT ?= dev
 ifeq ($(ENVIRONMENT),prod)
 	COMPOSE_FILES := -f compose.yml -f compose.prod.yml
+else ifeq ($(ENVIRONMENT),stress)
+	COMPOSE_FILES := -f compose.yml -f compose.prod.yml -f compose.stress.yml
 else
 	COMPOSE_FILES := -f compose.yml -f compose.override.yml
 endif
@@ -22,7 +24,7 @@ YELLOW := \033[1;33m
 RED := \033[1;31m
 NC := \033[0m # No Color
 
-.PHONY: help dev dev-build dev-clean dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed db-migrate db-migrate-up db-migrate-auto db-schema-status db-reset-dev deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity stress-stack-up stress-stack-down stress-low stress-medium stress-high stress-all ai-report stress-ai-low stress-ai-medium stress-ai-high stress-index
+.PHONY: help dev dev-build dev-clean dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed db-migrate db-migrate-up db-migrate-auto db-schema-status db-reset-dev deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity stress-stack-up stress-stack-down stress-low stress-medium stress-high stress-extreme stress-insane stress-all ai-report stress-ai-low stress-ai-medium stress-ai-high stress-ai-extreme stress-ai-insane stress-index gateway-up gateway-down gateway-logs
 
 # Default target
 help:
@@ -78,12 +80,21 @@ help:
 	@echo "  make stress-low         - 🧪 Run mixed low-profile stress test (k6 + artifacts)"
 	@echo "  make stress-medium      - 🧪 Run mixed medium-profile stress test (k6 + artifacts)"
 	@echo "  make stress-high        - 🧪 Run mixed high-profile stress test (k6 + artifacts)"
+	@echo "  make stress-extreme     - 🧪 Run mixed extreme-profile stress test (k6 + artifacts)"
+	@echo "  make stress-insane      - 🧪 Run mixed insane-profile stress test (k6 + artifacts)"
 	@echo "  make ai-report          - 🤖 Generate AI report for latest run (or RUN_DIR=...)"
 	@echo "  make stress-ai-low      - 🤖 End-to-end: stack up + low stress + AI report"
 	@echo "  make stress-ai-medium   - 🤖 End-to-end: stack up + medium stress + AI report"
 	@echo "  make stress-ai-high     - 🤖 End-to-end: stack up + high stress + AI report"
-	@echo "  make stress-all         - 🤖 Run low/medium/high with AI report + index"
+	@echo "  make stress-ai-extreme  - 🤖 End-to-end: stack up + extreme stress + AI report"
+	@echo "  make stress-ai-insane   - 🤖 End-to-end: stack up + insane stress + AI report"
+	@echo "  make stress-all         - 🤖 Run low/medium/high/extreme/insane with AI report + index"
 	@echo "  make stress-index       - 📄 Rebuild stress report index page"
+	@echo ""
+	@echo "$(GREEN)Gateway & Proxy:$(NC)"
+	@echo "  make gateway-up         - 🛡️  Start app behind Nginx gateway (port 8080)"
+	@echo "  make gateway-down       - ⬇️  Stop gateway and app stack"
+	@echo "  make gateway-logs       - 📋 View Nginx gateway logs"
 	@echo ""
 	@echo "$(GREEN)Database:$(NC)"
 	@echo "  make seed               - 🌱 Seed database with test data"
@@ -326,8 +337,21 @@ test-soak:
 
 stress-stack-up:
 	@echo "$(BLUE)Starting app + monitoring stack for stress pipeline...$(NC)"
-	@$(MAKE) up
+	@$(MAKE) ENVIRONMENT=stress up
 	@$(MAKE) monitor-up
+	@echo "$(YELLOW)Waiting for app to be healthy...$(NC)"
+	@ATTEMPTS=0; \
+	until [ "$$(docker inspect -f '{{.State.Health.Status}}' sanctum-app-1 2>/dev/null)" = "healthy" ]; do \
+		ATTEMPTS=$$((ATTEMPTS+1)); \
+		if [ $$ATTEMPTS -ge 60 ]; then \
+			echo "$(RED)App did not become healthy after 60 seconds$(NC)"; \
+			docker compose logs app; \
+			exit 1; \
+		fi; \
+		printf "."; \
+		sleep 2; \
+	done
+	@echo "$(GREEN)✓ App is healthy$(NC)"
 	@ATTEMPTS=0; \
 	until $(MAKE) observability-verify >/dev/null 2>&1; do \
 		ATTEMPTS=$$((ATTEMPTS+1)); \
@@ -344,7 +368,7 @@ stress-stack-up:
 stress-stack-down:
 	@echo "$(BLUE)Stopping app + monitoring stack for stress pipeline...$(NC)"
 	@$(MAKE) monitor-down
-	@$(MAKE) down
+	@$(MAKE) ENVIRONMENT=stress down
 	@echo "$(GREEN)✓ Stress stack stopped$(NC)"
 
 stress-low:
@@ -404,6 +428,44 @@ stress-high:
 	python3 -c "import json,sys,time; p=sys.argv[1]; e=int(sys.argv[2]); d=json.load(open(p, encoding='utf-8')); d['end_epoch']=e; d['end_utc']=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(e)); json.dump(d, open(p, 'w', encoding='utf-8'), indent=2)" "$$RUN_DIR/metadata.json" "$$END_EPOCH"; \
 	echo "$(GREEN)✓ high profile complete: $$RUN_DIR$(NC)"
 
+stress-extreme:
+	@echo "$(BLUE)Running mixed social stress profile: extreme$(NC)"
+	@mkdir -p "$(ARTIFACT_DIR)"
+	@set -e; RUN_TS=$$(date -u +%Y%m%dT%H%M%SZ); \
+	RUN_DIR="$(ARTIFACT_DIR)/$${RUN_TS}-extreme"; \
+	START_EPOCH=$$(date -u +%s); \
+	mkdir -p "$$RUN_DIR"; \
+	echo "{\"profile\":\"extreme\",\"start_epoch\":$$START_EPOCH,\"start_utc\":\"$$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > "$$RUN_DIR/metadata.json"; \
+	if command -v k6 >/dev/null 2>&1; then \
+		BASE_URL=$${BASE_URL:-http://localhost:8375} k6 run --config load/profiles/extreme.json --summary-export "$$RUN_DIR/summary.json" load/scripts/social_mixed.js; \
+	else \
+		echo "$(YELLOW)k6 not found locally; using Docker image $(K6_DOCKER_IMAGE)$(NC)"; \
+		BASE_URL=$${BASE_URL:-http://127.0.0.1:8375}; \
+		docker run --rm -i --network host --user $$(id -u):$$(id -g) -v "$(shell pwd):/work" -w /work -e BASE_URL=$$BASE_URL "$(K6_DOCKER_IMAGE)" run --config load/profiles/extreme.json --summary-export "$$RUN_DIR/summary.json" load/scripts/social_mixed.js; \
+	fi; \
+	END_EPOCH=$$(date -u +%s); \
+	python3 -c "import json,sys,time; p=sys.argv[1]; e=int(sys.argv[2]); d=json.load(open(p, encoding='utf-8')); d['end_epoch']=e; d['end_utc']=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(e)); json.dump(d, open(p, 'w', encoding='utf-8'), indent=2)" "$$RUN_DIR/metadata.json" "$$END_EPOCH"; \
+	echo "$(GREEN)✓ extreme profile complete: $$RUN_DIR$(NC)"
+
+stress-insane:
+	@echo "$(BLUE)Running mixed social stress profile: insane$(NC)"
+	@mkdir -p "$(ARTIFACT_DIR)"
+	@set -e; RUN_TS=$$(date -u +%Y%m%dT%H%M%SZ); \
+	RUN_DIR="$(ARTIFACT_DIR)/$${RUN_TS}-insane"; \
+	START_EPOCH=$$(date -u +%s); \
+	mkdir -p "$$RUN_DIR"; \
+	echo "{\"profile\":\"insane\",\"start_epoch\":$$START_EPOCH,\"start_utc\":\"$$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > "$$RUN_DIR/metadata.json"; \
+	if command -v k6 >/dev/null 2>&1; then \
+		BASE_URL=$${BASE_URL:-http://localhost:8375} k6 run --config load/profiles/insane.json --summary-export "$$RUN_DIR/summary.json" load/scripts/social_mixed.js; \
+	else \
+		echo "$(YELLOW)k6 not found locally; using Docker image $(K6_DOCKER_IMAGE)$(NC)"; \
+		BASE_URL=$${BASE_URL:-http://127.0.0.1:8375}; \
+		docker run --rm -i --network host --user $$(id -u):$$(id -g) -v "$(shell pwd):/work" -w /work -e BASE_URL=$$BASE_URL "$(K6_DOCKER_IMAGE)" run --config load/profiles/insane.json --summary-export "$$RUN_DIR/summary.json" load/scripts/social_mixed.js; \
+	fi; \
+	END_EPOCH=$$(date -u +%s); \
+	python3 -c "import json,sys,time; p=sys.argv[1]; e=int(sys.argv[2]); d=json.load(open(p, encoding='utf-8')); d['end_epoch']=e; d['end_utc']=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(e)); json.dump(d, open(p, 'w', encoding='utf-8'), indent=2)" "$$RUN_DIR/metadata.json" "$$END_EPOCH"; \
+	echo "$(GREEN)✓ insane profile complete: $$RUN_DIR$(NC)"
+
 ai-report:
 	@echo "$(BLUE)Generating AI stress report...$(NC)"
 	@ARTIFACT_DIR=$(ARTIFACT_DIR) \
@@ -418,6 +480,19 @@ stress-index:
 	@echo "$(BLUE)Building stress report index...$(NC)"
 	@ARTIFACT_DIR=$(ARTIFACT_DIR) python3 scripts/ai_stress_report.py --build-index
 	@echo "$(GREEN)✓ Index ready: $(ARTIFACT_DIR)/index.html$(NC)"
+
+gateway-up:
+	@echo "$(BLUE)Starting app with Nginx gateway...$(NC)"
+	./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.gateway.yml up -d
+	@echo "$(GREEN)✓ Gateway is running at http://localhost:8080$(NC)"
+
+gateway-down:
+	@echo "$(BLUE)Stopping gateway stack...$(NC)"
+	./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.gateway.yml down
+
+gateway-logs:
+	@echo "$(BLUE)Streaming gateway logs...$(NC)"
+	./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.gateway.yml logs -f gateway
 
 stress-ai-low:
 	@set +e; \
@@ -458,6 +533,32 @@ stress-ai-high:
 	echo "$(YELLOW)Pipeline completed with non-zero stage(s): stack=$$STACK stress=$$STRESS report=$$REPORT index=$$INDEX$(NC)"; \
 	exit 1
 
+stress-ai-extreme:
+	@set +e; \
+	$(MAKE) stress-stack-up; STACK=$$?; \
+	$(MAKE) stress-extreme; STRESS=$$?; \
+	$(MAKE) ai-report; REPORT=$$?; \
+	$(MAKE) stress-index; INDEX=$$?; \
+	if [ $$STACK -eq 0 ] && [ $$STRESS -eq 0 ] && [ $$REPORT -eq 0 ] && [ $$INDEX -eq 0 ]; then \
+		echo "$(GREEN)✓ End-to-end extreme stress + AI pipeline complete$(NC)"; \
+		exit 0; \
+	fi; \
+	echo "$(YELLOW)Pipeline completed with non-zero stage(s): stack=$$STACK stress=$$STRESS report=$$REPORT index=$$INDEX$(NC)"; \
+	exit 1
+
+stress-ai-insane:
+	@set +e; \
+	$(MAKE) stress-stack-up; STACK=$$?; \
+	$(MAKE) stress-insane; STRESS=$$?; \
+	$(MAKE) ai-report; REPORT=$$?; \
+	$(MAKE) stress-index; INDEX=$$?; \
+	if [ $$STACK -eq 0 ] && [ $$STRESS -eq 0 ] && [ $$REPORT -eq 0 ] && [ $$INDEX -eq 0 ]; then \
+		echo "$(GREEN)✓ End-to-end insane stress + AI pipeline complete$(NC)"; \
+		exit 0; \
+	fi; \
+	echo "$(YELLOW)Pipeline completed with non-zero stage(s): stack=$$STACK stress=$$STRESS report=$$REPORT index=$$INDEX$(NC)"; \
+	exit 1
+
 stress-all:
 	@set +e; \
 	STATUS=0; \
@@ -468,9 +569,13 @@ stress-all:
 	$(MAKE) ai-report || STATUS=1; \
 	$(MAKE) stress-high || STATUS=1; \
 	$(MAKE) ai-report || STATUS=1; \
+	$(MAKE) stress-extreme || STATUS=1; \
+	$(MAKE) ai-report || STATUS=1; \
+	$(MAKE) stress-insane || STATUS=1; \
+	$(MAKE) ai-report || STATUS=1; \
 	$(MAKE) stress-index || STATUS=1; \
 	if [ $$STATUS -eq 0 ]; then \
-		echo "$(GREEN)✓ Completed low/medium/high stress runs with AI reports$(NC)"; \
+		echo "$(GREEN)✓ Completed all stress runs (low to insane) with AI reports$(NC)"; \
 		exit 0; \
 	fi; \
 	echo "$(YELLOW)Completed stress-all with one or more non-zero stages; reports were still generated$(NC)"; \
