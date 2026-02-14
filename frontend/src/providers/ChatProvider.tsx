@@ -1,9 +1,3 @@
-import { apiClient } from '@/api/client'
-import type { Message, User } from '@/api/types'
-import { useMyBlocks } from '@/hooks/useModeration'
-import { useIsAuthenticated } from '@/hooks/useUsers'
-import { logger } from '@/lib/logger'
-import { createTicketedWS, getNextBackoff } from '@/lib/ws-utils'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   createContext,
@@ -15,6 +9,12 @@ import {
   useRef,
   useState,
 } from 'react'
+import { apiClient } from '@/api/client'
+import type { Message, User } from '@/api/types'
+import { useMyBlocks } from '@/hooks/useModeration'
+import { useIsAuthenticated } from '@/hooks/useUsers'
+import { logger } from '@/lib/logger'
+import { createTicketedWS, getNextBackoff } from '@/lib/ws-utils'
 
 interface ChatWebSocketMessage {
   type:

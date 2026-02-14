@@ -2,15 +2,16 @@
  * Integration tests for ChatProvider: WebSocket connection, message flow,
  * and subscription behavior. Builds on unit tests in ChatProvider.spec.tsx.
  */
-import {
-    shouldPlayFriendOnlineSound,
-    shouldPlayNewMessageSoundForDM,
-} from '@/lib/chat-sounds'
-import { useAuthSessionStore } from '@/stores/useAuthSessionStore'
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, render } from '@testing-library/react'
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  shouldPlayFriendOnlineSound,
+  shouldPlayNewMessageSoundForDM,
+} from '@/lib/chat-sounds'
+import { useAuthSessionStore } from '@/stores/useAuthSessionStore'
 import { ChatProvider, useChatContext } from './ChatProvider'
 
 vi.mock('@/api/client', () => ({
@@ -192,7 +193,12 @@ describe('ChatProvider integration', () => {
     )
 
     const sent: string[] = []
-    const typingReceived: unknown[] = []
+    const typingReceived: {
+      convId: number
+      userId: number
+      username: string
+      isTyping: boolean
+    }[] = []
     let capturedCtx: ReturnType<typeof useChatContext> | null = null
 
     function TestHook() {
@@ -234,16 +240,20 @@ describe('ChatProvider integration', () => {
     ws.send = (msg: string) => {
       sent.push(msg)
       // also store on instance for visibility
-      // @ts-ignore - test helper mutation
+      // @ts-expect-error - test helper mutation
       ws.sent = ws.sent || []
-      // @ts-ignore - test helper mutation
+      // @ts-expect-error - test helper mutation
       ws.sent.push(msg)
     }
 
     // The provider should have recorded the join intent immediately
     expect(capturedCtx).not.toBeNull()
-    // Use `any` cast to avoid TS narrowing issues in test code
-    expect((capturedCtx as any)?.joinedRooms?.has(123)).toBe(true)
+    // Use `as unknown as { joinedRooms: Set<number> }` to access internal state for test
+    expect(
+      (capturedCtx as unknown as { joinedRooms: Set<number> }).joinedRooms.has(
+        123
+      )
+    ).toBe(true)
 
     // Now open the socket (this should trigger join messages to be sent)
     await act(async () => {
@@ -267,7 +277,7 @@ describe('ChatProvider integration', () => {
     await act(async () => {})
 
     expect(typingReceived.length).toBeGreaterThan(0)
-    expect((typingReceived[0] as any).username).toBe('bob')
+    expect(typingReceived[0].username).toBe('bob')
   })
 
   it('sound helpers trigger playNewMessageSound and playFriendOnlineSound when conditions met', async () => {
