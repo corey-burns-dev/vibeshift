@@ -32,38 +32,42 @@ jobs:
         id: pr
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           set -euo pipefail
 
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             echo "has_pr=true" >> "$GITHUB_OUTPUT"
-            echo "pr_number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
-            echo "base_ref=${{ github.event.pull_request.base.ref }}" >> "$GITHUB_OUTPUT"
+            echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+            echo "base_ref=$BASE_REF" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           BRANCH="${GITHUB_REF_NAME}"
           HEAD_REF="${GITHUB_REPOSITORY_OWNER}:${BRANCH}"
-          PR_NUMBER="$(gh pr list --head "$HEAD_REF" --state open --json number --jq '.[0].number // empty')"
+          PR_NUMBER_LIST="$(gh pr list --head "$HEAD_REF" --state open --json number --jq '.[0].number // empty')"
 
-          if [ -z "$PR_NUMBER" ]; then
+          if [ -z "$PR_NUMBER_LIST" ]; then
             echo "No open PR found for branch '$BRANCH'; skipping."
             echo "has_pr=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          BASE_REF="$(gh pr view "$PR_NUMBER" --json baseRefName --jq '.baseRefName')"
+          BASE_REF_LIST="$(gh pr view "$PR_NUMBER_LIST" --json baseRefName --jq '.baseRefName')"
 
           echo "has_pr=true" >> "$GITHUB_OUTPUT"
-          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "base_ref=$BASE_REF" >> "$GITHUB_OUTPUT"
+          echo "pr_number=$PR_NUMBER_LIST" >> "$GITHUB_OUTPUT"
+          echo "base_ref=$BASE_REF_LIST" >> "$GITHUB_OUTPUT"
 
       - name: Generate PR body
         if: steps.pr.outputs.has_pr == 'true'
+        env:
+          BASE_REF: ${{ steps.pr.outputs.base_ref }}
         run: |
           set -euo pipefail
-          git fetch origin "${{ steps.pr.outputs.base_ref }}" --depth=1
-          bash scripts/gen_pr_body.sh "origin/${{ steps.pr.outputs.base_ref }}" PR_BODY.md
+          git fetch origin "$BASE_REF" --depth=1
+          bash scripts/gen_pr_body.sh "origin/$BASE_REF" PR_BODY.md
 
       - name: Update PR body
         if: >
@@ -77,10 +81,11 @@ jobs:
           )
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
         run: |
           set -euo pipefail
-          gh pr edit "${{ steps.pr.outputs.pr_number }}" --body-file PR_BODY.md
-          echo "Updated PR #${{ steps.pr.outputs.pr_number }}"
+          gh pr edit "$PR_NUMBER" --body-file PR_BODY.md
+          echo "Updated PR #$PR_NUMBER"
 
       - name: Skip PR body update in read-only PR contexts
         if: >
@@ -90,5 +95,7 @@ jobs:
             github.actor == 'dependabot[bot]' ||
             github.event.pull_request.head.repo.full_name != github.repository
           )
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
         run: |
-          echo "Skipping PR #${{ steps.pr.outputs.pr_number }} body update: read-only token context (Dependabot or fork PR)."
+          echo "Skipping PR #$PR_NUMBER body update: read-only token context (Dependabot or fork PR)."

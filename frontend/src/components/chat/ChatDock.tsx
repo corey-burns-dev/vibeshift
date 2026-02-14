@@ -492,7 +492,7 @@ export function ChatDock() {
         ) : (
           <div
             className={cn(
-              'fixed bottom-20 right-6 z-60 flex h-[500px] w-[380px] flex-col rounded-xl border border-border bg-background shadow-2xl 2xl:h-[600px] 2xl:w-[420px]'
+              'fixed bottom-20 right-6 z-60 flex h-125 w-95 flex-col rounded-xl border border-border bg-background shadow-2xl 2xl:h-150 2xl:w-105'
             )}
           >
             <ChatDockPanelContent

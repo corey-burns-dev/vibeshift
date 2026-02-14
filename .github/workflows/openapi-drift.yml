@@ -57,10 +57,14 @@ jobs:
         run: make swagger
 
       - name: Fetch base branch
-        run: git fetch --no-tags --depth=1 origin "${{ github.base_ref }}:${{ github.base_ref }}"
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: git fetch --no-tags --depth=1 origin "$BASE_REF:$BASE_REF"
 
       - name: Capture base OpenAPI spec
-        run: git show "${{ github.base_ref }}:backend/docs/swagger.yaml" > /tmp/base-swagger.yaml
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: git show "$BASE_REF:backend/docs/swagger.yaml" > /tmp/base-swagger.yaml
 
       - name: Check backward compatibility
         run: cd backend && go run ./cmd/openapi-compat -base /tmp/base-swagger.yaml -revision ./docs/swagger.yaml

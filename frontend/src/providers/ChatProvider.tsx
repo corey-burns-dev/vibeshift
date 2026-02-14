@@ -1,20 +1,20 @@
-import { useQueryClient } from '@tanstack/react-query'
-import {
-  createContext,
-  type ReactNode,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
 import { apiClient } from '@/api/client'
 import type { Message, User } from '@/api/types'
 import { useMyBlocks } from '@/hooks/useModeration'
 import { useIsAuthenticated } from '@/hooks/useUsers'
 import { logger } from '@/lib/logger'
 import { createTicketedWS, getNextBackoff } from '@/lib/ws-utils'
+import { useQueryClient } from '@tanstack/react-query'
+import {
+    createContext,
+    type ReactNode,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react'
 
 interface ChatWebSocketMessage {
   type:
@@ -861,26 +861,30 @@ export function ChatProvider({ children }: ChatProviderProps) {
   }, [])
 
   const joinRoom = useCallback((conversationId: number) => {
-    const ws = wsRef.current
-    if (!ws || ws.readyState !== WebSocket.OPEN) return
-
+    // Always record the intent to join this room so we can re-join when
+    // the WebSocket connects. If the socket is open, send the join.
     if (!joinedRoomsRef.current.has(conversationId)) {
-      ws.send(JSON.stringify({ type: 'join', conversation_id: conversationId }))
       joinedRoomsRef.current.add(conversationId)
       setJoinedRooms(new Set(joinedRoomsRef.current))
+    }
+
+    const ws = wsRef.current
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'join', conversation_id: conversationId }))
     }
   }, [])
 
   const leaveRoom = useCallback((conversationId: number) => {
-    const ws = wsRef.current
-    if (!ws || ws.readyState !== WebSocket.OPEN) return
-
+    // Always remove from requested joins immediately. If the socket is open,
+    // also send the leave message to the server.
     if (joinedRoomsRef.current.has(conversationId)) {
-      ws.send(
-        JSON.stringify({ type: 'leave', conversation_id: conversationId })
-      )
       joinedRoomsRef.current.delete(conversationId)
       setJoinedRooms(new Set(joinedRoomsRef.current))
+    }
+
+    const ws = wsRef.current
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'leave', conversation_id: conversationId }))
     }
   }, [])
 

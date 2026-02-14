@@ -22,11 +22,11 @@ jobs:
       - name: Check for code-like changes
         id: changes
         shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-
-          BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
 
           FILES="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" || true)"
           echo "Changed files:"
@@ -49,11 +49,11 @@ jobs:
         id: report
         if: steps.changes.outputs.code_changed == 'true'
         shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-
-          BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
 
           ADDED_REPORTS="$(
             git diff --name-status "$BASE_SHA" "$HEAD_SHA" \
@@ -79,6 +79,8 @@ jobs:
       - name: Enforce report filename convention
         if: steps.changes.outputs.code_changed == 'true' && steps.report.outputs.has_report == 'true'
         shell: bash
+        env:
+          ADDED_REPORTS: ${{ steps.report.outputs.added_reports }}
         run: |
           set -euo pipefail
 
@@ -90,7 +92,7 @@ jobs:
               echo "invalid report filename: $f"
               BAD=1
             fi
-          done <<< "${{ steps.report.outputs.added_reports }}"
+          done <<< "$ADDED_REPORTS"
 
           if [ "$BAD" -ne 0 ]; then
             echo "Report filenames must match: docs/reports/YYYY-MM-DD-HHMM-short-slug.md"
@@ -100,6 +102,8 @@ jobs:
       - name: Validate report structured signals
         if: steps.changes.outputs.code_changed == 'true' && steps.report.outputs.has_report == 'true'
         shell: bash
+        env:
+          ADDED_REPORTS: ${{ steps.report.outputs.added_reports }}
         run: |
           set -euo pipefail
 
@@ -107,7 +111,7 @@ jobs:
             [ -z "$f" ] && continue
             echo "Validating report schema: $f"
             python3 scripts/agent_memory.py validate --report "$f" --require-structured
-          done <<< "${{ steps.report.outputs.added_reports }}"
+          done <<< "$ADDED_REPORTS"
 
       - name: Fail when report is missing
         if: steps.changes.outputs.code_changed == 'true' && steps.report.outputs.has_report != 'true'
