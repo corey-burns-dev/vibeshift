@@ -15,5 +15,5 @@ COPY . ./
 
 EXPOSE 5173
 
-# Run Vite dev server with Bun
-CMD ["bun", "--bun", "vite", "--host"]
+# Run Vite dev server using the package script (ensures Bun runs installed deps)
+CMD ["bun", "run", "dev"]
