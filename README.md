@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="frontend/src/assets/images/logo.jpeg" width="200" alt="Sanctum Logo">
+</p>
+
 # Sanctum
 
 Sanctum is a Reddit-style social platform focused on creativity, hobbies, and shared interests, without politics, religion, or news-driven discourse.
@@ -120,27 +124,30 @@ Signup onboarding flow and backend endpoint contract:
 
 ```txt
 sanctum/
-├── cmd/
-│   └── server/              # Go server entrypoint
-├── internal/
-│   ├── handlers/            # HTTP handlers
-│   ├── server/              # Server setup
-├── pkg/
-│   ├── db/                  # PostgreSQL utilities
-│   ├── redis/               # Redis client
-├── frontend/
-│   ├── src/
-│   │   ├── components/      # React components
-│   │   ├── hooks/           # Custom hooks (useHealth)
-│   │   ├── api/             # API utilities
-│   │   ├── lib/             # Utilities and helpers
-│   │   └── App.tsx          # Main app component
-│   ├── Dockerfile           # Production Dockerfile
-│   └── Dockerfile.dev       # Development Dockerfile
-├── Dockerfile               # Backend Dockerfile
-├── compose.yml              # Docker Compose orchestration
-├── Makefile                 # Development CLI
-└── .env.example             # Environment template
+├── backend/                 # Go backend service
+│   ├── cmd/                 # CLI and server entrypoints
+│   ├── internal/            # Core business logic and repositories
+│   ├── scripts/             # Backend-specific automation
+│   ├── server/              # Fiber server configuration and handlers
+│   └── test/                # Integration and E2E tests
+├── frontend/                # React frontend application
+│   ├── src/                 # Application source code
+│   │   ├── api/             # API client and type definitions
+│   │   ├── components/      # UI components (shadcn/ui)
+│   │   ├── hooks/           # Custom React hooks
+│   │   ├── lib/             # Utility functions
+│   │   └── pages/           # Page-level components
+│   └── public/              # Static assets
+├── infra/                   # Infrastructure configuration (Nginx, Monitoring)
+│   ├── grafana/             # Dashboards and alerts
+│   ├── loki/                # Log aggregation
+│   └── prometheus/          # Metrics collection
+├── load/                    # Load testing profiles (k6)
+├── scripts/                 # Root-level automation and devops scripts
+├── docs/                    # Comprehensive documentation and reports
+├── compose.yml              # Primary Docker Compose orchestration
+├── Makefile                 # Unified development interface
+└── .env.example             # Environment variable template
 ```
 
 ## Architecture
