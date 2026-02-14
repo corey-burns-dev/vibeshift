@@ -153,10 +153,14 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	// Initialize notifier and hub if Redis is available
 	if redisClient != nil {
 		server.notifier = notifications.NewNotifier(redisClient)
-		server.hub = notifications.NewHub()
-		server.chatHub = notifications.NewChatHub()
+		server.hub = notifications.NewHub(redisClient)
+		server.chatHub = notifications.NewChatHub(redisClient)
 		server.gameHub = notifications.NewGameHub(db, server.notifier)
 		server.hubs = []wireableHub{server.hub, server.chatHub, server.gameHub}
+		server.hub.SetPresenceCallbacks(
+			func(userID uint) { server.notifyFriendsPresence(userID, "online") },
+			func(userID uint) { server.notifyFriendsPresence(userID, "offline") },
+		)
 	}
 
 	return server, nil
@@ -216,10 +220,14 @@ func NewServerWithDeps(cfg *config.Config, db *gorm.DB, redisClient *redis.Clien
 	// Initialize notifier and hub if Redis is available
 	if redisClient != nil {
 		server.notifier = notifications.NewNotifier(redisClient)
-		server.hub = notifications.NewHub()
-		server.chatHub = notifications.NewChatHub()
+		server.hub = notifications.NewHub(redisClient)
+		server.chatHub = notifications.NewChatHub(redisClient)
 		server.gameHub = notifications.NewGameHub(db, server.notifier)
 		server.hubs = []wireableHub{server.hub, server.chatHub, server.gameHub}
+		server.hub.SetPresenceCallbacks(
+			func(userID uint) { server.notifyFriendsPresence(userID, "online") },
+			func(userID uint) { server.notifyFriendsPresence(userID, "offline") },
+		)
 	}
 
 	return server, nil

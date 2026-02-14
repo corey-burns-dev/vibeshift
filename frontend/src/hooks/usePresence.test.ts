@@ -4,7 +4,10 @@ import { usePresenceStore } from '@/hooks/usePresence'
 
 describe('usePresenceStore', () => {
   beforeEach(() => {
-    usePresenceStore.setState({ onlineUserIds: new Set() })
+    usePresenceStore.setState({
+      onlineUserIds: new Set(),
+      notifiedUserIds: new Set(),
+    })
   })
 
   it('starts with empty onlineUserIds', () => {
@@ -48,5 +51,21 @@ describe('usePresenceStore', () => {
     })
 
     expect(result.current.onlineUserIds).toEqual(new Set([3, 4, 5]))
+  })
+
+  it('reset clears online and notified user ids', () => {
+    const { result } = renderHook(() => usePresenceStore(state => state))
+
+    act(() => {
+      result.current.setInitialOnlineUsers([1, 2, 3])
+      result.current.markNotified(4)
+    })
+
+    act(() => {
+      result.current.reset()
+    })
+
+    expect(result.current.onlineUserIds).toEqual(new Set())
+    expect(result.current.notifiedUserIds).toEqual(new Set())
   })
 })

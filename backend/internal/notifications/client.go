@@ -44,6 +44,10 @@ type Client struct {
 
 	// Callback for handling incoming messages
 	IncomingHandler func(*Client, []byte)
+
+	// OnActivity is invoked whenever client activity indicates the connection is alive
+	// (incoming message or pong heartbeat).
+	OnActivity func(userID uint)
 }
 
 // NewClient creates a new Client instance
@@ -65,7 +69,13 @@ func (c *Client) ReadPump() {
 
 	c.Conn.SetReadLimit(maxMessageSize)
 	_ = c.Conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.Conn.SetPongHandler(func(string) error { _ = c.Conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	c.Conn.SetPongHandler(func(string) error {
+		_ = c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+		if c.OnActivity != nil {
+			c.OnActivity(c.UserID)
+		}
+		return nil
+	})
 
 	for {
 		_, message, err := c.Conn.ReadMessage()
@@ -74,6 +84,10 @@ func (c *Client) ReadPump() {
 				log.Printf("ReadPump Error (User %d): %v", c.UserID, err)
 			}
 			break
+		}
+
+		if c.OnActivity != nil {
+			c.OnActivity(c.UserID)
 		}
 
 		if c.IncomingHandler != nil {

@@ -139,7 +139,7 @@ export default function Chat() {
     location.pathname === '/chat' ||
     location.pathname.startsWith('/chat/')
 
-  const currentUser = useMemo(() => getCurrentUser(), [])
+  const currentUser = getCurrentUser()
   const friendIds = useMemo(
     () => new Set((friendsLoaded ? friends : []).map(friend => friend.id)),
     [friends, friendsLoaded]

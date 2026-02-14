@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "bun --bun vite --host",
-    "build": "bun --bun vite build",
-    "preview": "bun --bun vite preview",
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview",
     "lint": "bun --bun biome check src",
     "lint:fix": "bun --bun biome check --write src",
     "format": "bun --bun biome format src",

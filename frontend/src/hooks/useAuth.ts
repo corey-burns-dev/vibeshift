@@ -4,8 +4,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/client'
 import type { LoginRequest, SignupRequest } from '../api/types'
+import { resetClientSessionState } from '../lib/session-reset'
 import { useAuthSessionStore } from '../stores/useAuthSessionStore'
-import { useChatDockStore } from '../stores/useChatDockStore'
+import { resetChatDockSession } from '../stores/useChatDockStore'
+import { clearCachedUser, getCurrentUser, userKeys } from './useUsers'
 
 export function useSignup() {
   const navigate = useNavigate()
@@ -16,9 +18,15 @@ export function useSignup() {
     onSuccess: data => {
       // Store user (token is handled by apiClient + AuthSessionStore)
       localStorage.setItem('user', JSON.stringify(data.user))
+      clearCachedUser()
+      resetChatDockSession({
+        nextUserID: data.user.id,
+        clearPersisted: false,
+      })
 
       // Invalidate any cached user data
-      queryClient.invalidateQueries({ queryKey: ['user', 'me'] })
+      queryClient.setQueryData(userKeys.me(), data.user)
+      queryClient.invalidateQueries({ queryKey: userKeys.me() })
 
       navigate('/onboarding/sanctums')
     },
@@ -34,9 +42,15 @@ export function useLogin() {
     onSuccess: data => {
       // Store user (token is handled by apiClient + AuthSessionStore)
       localStorage.setItem('user', JSON.stringify(data.user))
+      clearCachedUser()
+      resetChatDockSession({
+        nextUserID: data.user.id,
+        clearPersisted: false,
+      })
 
       // Invalidate any cached user data
-      queryClient.invalidateQueries({ queryKey: ['user', 'me'] })
+      queryClient.setQueryData(userKeys.me(), data.user)
+      queryClient.invalidateQueries({ queryKey: userKeys.me() })
 
       // Navigate to posts
       navigate('/posts')
@@ -49,17 +63,24 @@ export function useLogout() {
   const queryClient = useQueryClient()
 
   return async () => {
-    // Clear chat dock state
-    useChatDockStore.getState().clearOpenConversations()
+    const previousUserID = getCurrentUser()?.id ?? null
 
-    // Call backend logout (handles store + user cleanup in apiClient)
-    await apiClient.logout()
+    try {
+      // Call backend logout (handles store + user cleanup in apiClient)
+      await apiClient.logout()
+    } finally {
+      resetClientSessionState({
+        previousUserID,
+        nextUserID: null,
+        clearAuth: true,
+      })
 
-    // Clear all cached queries
-    queryClient.clear()
+      // Clear all cached queries
+      queryClient.clear()
 
-    // Navigate to login
-    navigate('/login')
+      // Navigate to login
+      navigate('/login')
+    }
   }
 }
 export function getAuthToken(): string | null {

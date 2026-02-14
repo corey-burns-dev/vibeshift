@@ -87,6 +87,7 @@ export function useUpdateMyProfile() {
         const merged = { ...previousUser, ...newData }
         localStorage.setItem('user', JSON.stringify(merged))
         cachedUser = merged as User
+        cachedUserRaw = localStorage.getItem('user')
       }
 
       return { previousUser }
@@ -97,6 +98,7 @@ export function useUpdateMyProfile() {
         queryClient.setQueryData(userKeys.me(), context.previousUser)
         localStorage.setItem('user', JSON.stringify(context.previousUser))
         cachedUser = context.previousUser
+        cachedUserRaw = localStorage.getItem('user')
       }
     },
     onSettled: () => {
@@ -108,22 +110,29 @@ export function useUpdateMyProfile() {
 
 // Cached current user to avoid repeated localStorage reads + JSON.parse
 let cachedUser: User | null = null
+let cachedUserRaw: string | null = null
 
-// Get current user from localStorage (synchronous)
-export function getCurrentUser(): User | null {
-  if (cachedUser) return cachedUser
-  const userStr = localStorage.getItem('user')
+function parseUser(userStr: string | null): User | null {
   if (!userStr) return null
   try {
-    cachedUser = JSON.parse(userStr)
-    return cachedUser
+    return JSON.parse(userStr) as User
   } catch {
     return null
   }
 }
 
+// Get current user from localStorage (synchronous)
+export function getCurrentUser(): User | null {
+  const userStr = localStorage.getItem('user')
+  if (userStr === cachedUserRaw) return cachedUser
+  cachedUserRaw = userStr
+  cachedUser = parseUser(userStr)
+  return cachedUser
+}
+
 export function clearCachedUser() {
   cachedUser = null
+  cachedUserRaw = null
 }
 
 // Check if user is authenticated (with basic token validation)
@@ -165,7 +174,7 @@ export function useValidateToken() {
           // Clear invalid session
           useAuthSessionStore.getState().clear()
           localStorage.removeItem('user')
-          cachedUser = null
+          clearCachedUser()
           return false
         }
         // If it's a different error (network, server), assume token is still valid

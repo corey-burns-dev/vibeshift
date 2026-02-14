@@ -11,10 +11,11 @@ import {
 } from 'react'
 import { apiClient } from '@/api/client'
 import type { Message, User } from '@/api/types'
+import { useManagedWebSocket } from '@/hooks/useManagedWebSocket'
 import { useMyBlocks } from '@/hooks/useModeration'
 import { useIsAuthenticated } from '@/hooks/useUsers'
 import { logger } from '@/lib/logger'
-import { createTicketedWS, getNextBackoff } from '@/lib/ws-utils'
+import { createTicketedWS } from '@/lib/ws-utils'
 
 interface ChatWebSocketMessage {
   type:
@@ -157,20 +158,15 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const isAuthenticated = useIsAuthenticated()
   const { data: myBlocks = [] } = useMyBlocks({ enabled: isAuthenticated })
   const queryClient = useQueryClient()
-  const [isConnected, setIsConnected] = useState(false)
   const [joinedRooms, setJoinedRooms] = useState<Set<number>>(new Set())
   const [unreadByConversation, setUnreadByConversation] = useState<
     Record<string, number>
   >({})
 
-  const wsRef = useRef<WebSocket | null>(null)
-  const reconnectTimeoutRef = useRef<number | undefined>(undefined)
-  const reconnectAttemptsRef = useRef(0)
   const currentUserRef = useRef<{ id: number; username: string } | null>(null)
   const joinedRoomsRef = useRef<Set<number>>(new Set())
   const unreadByConversationRef = useRef<Record<string, number>>({})
   const conversationsInvalidateTimerRef = useRef<number | null>(null)
-  const shouldReconnectRef = useRef(true)
 
   useEffect(() => {
     unreadByConversationRef.current = unreadByConversation
@@ -440,465 +436,383 @@ export function ChatProvider({ children }: ChatProviderProps) {
     }
   }, [])
 
-  const connect = useCallback(async () => {
-    if (!isAuthenticated) return
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return
-
-    // Get current user info from localStorage
-    const userStr = localStorage.getItem('user')
-    if (userStr) {
+  const handleSocketMessage = useCallback(
+    (event: MessageEvent) => {
       try {
-        const user = JSON.parse(userStr)
-        currentUserRef.current = { id: user.id, username: user.username }
-      } catch {}
-    }
-    await refreshBlockedUsers()
+        const data: ChatWebSocketMessage = JSON.parse(event.data)
 
-    // Close existing connection
-    if (wsRef.current) {
-      wsRef.current.close()
-    }
-
-    // Create WebSocket connection
-    try {
-      const ws = await createTicketedWS({
-        path: '/api/ws/chat',
-        onOpen: () => {
-          if (ws !== wsRef.current) return
-
-          setIsConnected(true)
-          reconnectAttemptsRef.current = 0
-          // allow reconnects; mark that reconnection should be attempted
-          shouldReconnectRef.current = true
-
-          // Re-join all rooms that were previously joined
-          const roomsToJoin = new Set(joinedRoomsRef.current)
-          for (const roomId of roomsToJoin) {
-            ws.send(JSON.stringify({ type: 'join', conversation_id: roomId }))
+        if (data.error) {
+          logger.error('WS Server Error:', data.error)
+          if (
+            data.error === 'invalid token' ||
+            data.error === 'Invalid or expired WebSocket ticket'
+          ) {
+            return
           }
-        },
-        onMessage: event => {
-          if (ws !== wsRef.current) return
+        }
 
-          try {
-            const data: ChatWebSocketMessage = JSON.parse(event.data)
+        const scheduleConversationsInvalidate = () => {
+          if (conversationsInvalidateTimerRef.current !== null) return
+          conversationsInvalidateTimerRef.current = window.setTimeout(() => {
+            conversationsInvalidateTimerRef.current = null
+            queryClient.invalidateQueries({
+              queryKey: ['chat', 'conversations'],
+            })
+            queryClient.invalidateQueries({
+              queryKey: ['chat', 'chatrooms'],
+            })
+          }, 300)
+        }
 
-            if (data.error) {
-              logger.error('WS Server Error:', data.error)
-              if (
-                data.error === 'invalid token' ||
-                data.error === 'Invalid or expired WebSocket ticket'
-              ) {
-                // We might need to refresh token or re-login if ticket/token fails
-                // But createTicketedWS handles ticket issuance.
-                return
-              }
-            }
+        const isKnownConversation = (conversationID: number) => {
+          if (joinedRoomsRef.current.has(conversationID)) return true
 
-            const scheduleConversationsInvalidate = () => {
-              if (conversationsInvalidateTimerRef.current !== null) return
-              conversationsInvalidateTimerRef.current = window.setTimeout(
-                () => {
-                  conversationsInvalidateTimerRef.current = null
-                  // Invalidate DMs list
-                  queryClient.invalidateQueries({
-                    queryKey: ['chat', 'conversations'],
-                  })
-                  // Invalidate Chatrooms lists
-                  queryClient.invalidateQueries({
-                    queryKey: ['chat', 'chatrooms'],
-                  })
-                },
-                300
+          const conversations = queryClient.getQueryData<Array<{ id: number }>>(
+            ['chat', 'conversations']
+          )
+          return Array.isArray(conversations)
+            ? conversations.some(
+                conversation => conversation.id === conversationID
               )
+            : false
+        }
+
+        switch (data.type) {
+          case 'connected':
+            break
+
+          case 'joined': {
+            const joinedId = data.conversation_id
+            if (joinedId) {
+              joinedRoomsRef.current.add(joinedId)
+              setJoinedRooms(new Set(joinedRoomsRef.current))
             }
-
-            const isKnownConversation = (conversationID: number) => {
-              if (joinedRoomsRef.current.has(conversationID)) return true
-
-              const conversations = queryClient.getQueryData<
-                Array<{ id: number }>
-              >(['chat', 'conversations'])
-              return Array.isArray(conversations)
-                ? conversations.some(
-                    conversation => conversation.id === conversationID
-                  )
-                : false
-            }
-
-            switch (data.type) {
-              case 'connected':
-                break
-
-              case 'joined': {
-                const joinedId = data.conversation_id
-                if (joinedId) {
-                  joinedRoomsRef.current.add(joinedId)
-                  setJoinedRooms(new Set(joinedRoomsRef.current))
-                }
-                break
-              }
-
-              case 'message': {
-                // Support payload either under `payload` or flat top-level keys
-                const payload = data.payload || data
-                const convId = payload.conversation_id || data.conversation_id
-                const message = payload as Message
-                if (!convId || !message || !message.id) break
-                if (
-                  typeof message.sender_id === 'number' &&
-                  blockedUserIDsRef.current.has(message.sender_id)
-                ) {
-                  break
-                }
-
-                // Dedupe by conversation + message.id using short TTL map
-                const key = `${convId}:${message.id}`
-                const now = Date.now()
-                const recent = recentMessageMapRef.current
-                // cleanup old entries when map grows
-                if (recent.size > 2000) {
-                  for (const [k, ts] of recent) {
-                    if (now - ts > 1000 * 60 * 5) recent.delete(k)
-                  }
-                }
-                if (recent.has(key)) break
-                recent.set(key, now)
-
-                // Update TanStack Query cache (avoid duplicates)
-                queryClient.setQueryData<Message[]>(
-                  ['chat', 'messages', convId],
-                  old => {
-                    if (!old) return [message]
-                    if (old.some(m => m.id === message.id)) return old
-
-                    // If this is our own message coming back via WebSocket, replace the optimistic one
-                    const tempId = (message.metadata as Record<string, unknown>)
-                      ?.tempId
-                    if (tempId) {
-                      const hasOptimistic = old.some(
-                        m =>
-                          (m.metadata as Record<string, unknown>)?.tempId ===
-                          tempId
-                      )
-                      if (hasOptimistic) {
-                        return old.map(m =>
-                          (m.metadata as Record<string, unknown>)?.tempId ===
-                          tempId
-                            ? message
-                            : m
-                        )
-                      }
-                    }
-
-                    return [...old, message]
-                  }
-                )
-
-                // Ensure conversation list reflects new last_message / ordering
-                scheduleConversationsInvalidate()
-
-                // Notify all subscribers
-                for (const cb of messageHandlersRef.current) {
-                  try {
-                    cb(message, convId)
-                  } catch (e) {
-                    logger.error('message handler failed', e)
-                  }
-                }
-                break
-              }
-              case 'room_message': {
-                const payload = data.payload || data
-                const convId = payload.conversation_id || data.conversation_id
-                const message = payload as Message
-                if (!convId || !message || !message.id) break
-                if (!isKnownConversation(convId)) break
-                if (
-                  typeof message.sender_id === 'number' &&
-                  blockedUserIDsRef.current.has(message.sender_id)
-                ) {
-                  break
-                }
-
-                const key = `${convId}:${message.id}`
-                const now = Date.now()
-                const recent = recentMessageMapRef.current
-                if (recent.size > 2000) {
-                  for (const [k, ts] of recent) {
-                    if (now - ts > 1000 * 60 * 5) recent.delete(k)
-                  }
-                }
-                if (recent.has(key)) break
-                recent.set(key, now)
-
-                queryClient.setQueryData<Message[]>(
-                  ['chat', 'messages', convId],
-                  old => {
-                    if (!old) return [message]
-                    if (old.some(m => m.id === message.id)) return old
-
-                    // If this is our own message coming back via WebSocket, replace the optimistic one
-                    const tempId = (message.metadata as Record<string, unknown>)
-                      ?.tempId
-                    if (tempId) {
-                      const hasOptimistic = old.some(
-                        m =>
-                          (m.metadata as Record<string, unknown>)?.tempId ===
-                          tempId
-                      )
-                      if (hasOptimistic) {
-                        return old.map(m =>
-                          (m.metadata as Record<string, unknown>)?.tempId ===
-                          tempId
-                            ? message
-                            : m
-                        )
-                      }
-                    }
-
-                    return [...old, message]
-                  }
-                )
-
-                scheduleConversationsInvalidate()
-
-                for (const cb of messageHandlersRef.current) {
-                  try {
-                    cb(message, convId)
-                  } catch (e) {
-                    logger.error('message handler failed', e)
-                  }
-                }
-                break
-              }
-
-              case 'typing': {
-                const payload = data.payload || data
-                const convId = payload.conversation_id || data.conversation_id
-                const userId = payload.user_id || payload.userId || data.user_id
-                const username = payload.username || data.username
-                const isTyping = payload.is_typing ?? payload.isTyping
-                const expiresInMsRaw = payload.expires_in_ms
-                const expiresInMs =
-                  typeof expiresInMsRaw === 'number' ? expiresInMsRaw : 5000
-                if (!convId) break
-                for (const cb of typingHandlersRef.current) {
-                  try {
-                    cb(convId, userId, username, !!isTyping, expiresInMs)
-                  } catch (e) {
-                    logger.error('typing handler failed', e)
-                  }
-                }
-                break
-              }
-
-              case 'presence':
-              case 'user_status': {
-                const payload = data.payload || data
-                const userId = payload.user_id || payload.userId || data.user_id
-                const username = payload.username || data.username
-                const status = payload.status
-                for (const cb of presenceHandlersRef.current) {
-                  try {
-                    cb(userId, username, status)
-                  } catch (e) {
-                    logger.error('presence handler failed', e)
-                  }
-                }
-                break
-              }
-
-              case 'connected_users': {
-                const payload = data.payload || data
-                const ids = payload.user_ids || payload.userIds
-                if (Array.isArray(ids)) {
-                  for (const cb of connectedUsersHandlersRef.current) {
-                    try {
-                      cb(ids)
-                    } catch (e) {
-                      logger.error('connected_users handler failed', e)
-                    }
-                  }
-                }
-                break
-              }
-
-              case 'participant_joined':
-              case 'participant_left': {
-                const payload = data.payload || data
-                const convId = payload.conversation_id || data.conversation_id
-                const participants = payload.participants
-                if (convId && Array.isArray(participants)) {
-                  for (const cb of participantsUpdateHandlersRef.current) {
-                    try {
-                      cb(convId, participants)
-                    } catch (e) {
-                      logger.error('participantsUpdate handler failed', e)
-                    }
-                  }
-                }
-                break
-              }
-
-              case 'chatroom_presence': {
-                const payload = data.payload || data
-                for (const cb of chatroomPresenceHandlersRef.current) {
-                  try {
-                    cb(payload)
-                  } catch (e) {
-                    logger.error('chatroomPresence handler failed', e)
-                  }
-                }
-                break
-              }
-
-              case 'message_reaction_updated': {
-                const payload = data.payload || data
-                const convId = payload.conversation_id || data.conversation_id
-                const messageID = payload.message_id
-                const reactions = payload.reactions
-                if (!convId || typeof messageID !== 'number') break
-                queryClient.setQueryData<Message[]>(
-                  ['chat', 'messages', convId],
-                  oldMessages =>
-                    oldMessages?.map(message =>
-                      message.id === messageID
-                        ? {
-                            ...message,
-                            reaction_summary: Array.isArray(reactions)
-                              ? reactions
-                              : [],
-                          }
-                        : message
-                    ) ?? oldMessages
-                )
-                break
-              }
-
-              case 'message_read':
-              case 'read': {
-                const payload = data.payload || data
-                const convId = payload.conversation_id || data.conversation_id
-                const readByUserID =
-                  payload.user_id || payload.userId || data.user_id
-                const readAt = payload.read_at
-                if (!convId) break
-
-                const currentUserID = currentUserRef.current?.id
-                if (
-                  typeof currentUserID === 'number' &&
-                  typeof readByUserID === 'number' &&
-                  readByUserID !== currentUserID
-                ) {
-                  queryClient.setQueryData<Message[]>(
-                    ['chat', 'messages', convId],
-                    oldMessages =>
-                      oldMessages?.map(message =>
-                        message.sender_id === currentUserID
-                          ? {
-                              ...message,
-                              is_read: true,
-                              read_at:
-                                typeof readAt === 'string'
-                                  ? readAt
-                                  : message.read_at,
-                            }
-                          : message
-                      ) ?? oldMessages
-                  )
-                } else {
-                  queryClient.invalidateQueries({
-                    queryKey: ['chat', 'messages', convId],
-                  })
-                }
-                break
-              }
-
-              case 'chat_mention':
-                queryClient.invalidateQueries({
-                  queryKey: ['moderation', 'mentions'],
-                })
-                break
-            }
-          } catch (error) {
-            logger.error('Failed to parse WebSocket message:', error)
+            break
           }
-        },
-        onError: error => {
-          if (ws !== wsRef.current) return
-          logger.error('WebSocket error:', error)
-        },
-        onClose: () => {
-          if (ws !== wsRef.current) return
 
-          wsRef.current = null
-          setIsConnected(false)
+          case 'message': {
+            const payload = data.payload || data
+            const convId = payload.conversation_id || data.conversation_id
+            const message = payload as Message
+            if (!convId || !message || !message.id) break
+            if (
+              typeof message.sender_id === 'number' &&
+              blockedUserIDsRef.current.has(message.sender_id)
+            ) {
+              break
+            }
 
-          // Only reconnect if still authenticated and not explicitly disabled
-          if (isAuthenticated && shouldReconnectRef.current) {
-            const delay = getNextBackoff(reconnectAttemptsRef.current++)
-            logger.debug(
-              `WebSocket disconnected. Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})`
+            const key = `${convId}:${message.id}`
+            const now = Date.now()
+            const recent = recentMessageMapRef.current
+            if (recent.size > 2000) {
+              for (const [k, ts] of recent) {
+                if (now - ts > 1000 * 60 * 5) recent.delete(k)
+              }
+            }
+            if (recent.has(key)) break
+            recent.set(key, now)
+
+            queryClient.setQueryData<Message[]>(
+              ['chat', 'messages', convId],
+              old => {
+                if (!old) return [message]
+                if (old.some(m => m.id === message.id)) return old
+
+                const tempId = (message.metadata as Record<string, unknown>)
+                  ?.tempId
+                if (tempId) {
+                  const hasOptimistic = old.some(
+                    m =>
+                      (m.metadata as Record<string, unknown>)?.tempId === tempId
+                  )
+                  if (hasOptimistic) {
+                    return old.map(m =>
+                      (m.metadata as Record<string, unknown>)?.tempId === tempId
+                        ? message
+                        : m
+                    )
+                  }
+                }
+
+                return [...old, message]
+              }
             )
-            reconnectTimeoutRef.current = window.setTimeout(() => {
-              connect()
-            }, delay)
+
+            scheduleConversationsInvalidate()
+
+            for (const cb of messageHandlersRef.current) {
+              try {
+                cb(message, convId)
+              } catch (e) {
+                logger.error('message handler failed', e)
+              }
+            }
+            break
           }
-        },
-      })
+          case 'room_message': {
+            const payload = data.payload || data
+            const convId = payload.conversation_id || data.conversation_id
+            const message = payload as Message
+            if (!convId || !message || !message.id) break
+            if (!isKnownConversation(convId)) break
+            if (
+              typeof message.sender_id === 'number' &&
+              blockedUserIDsRef.current.has(message.sender_id)
+            ) {
+              break
+            }
 
-      wsRef.current = ws
-    } catch (_err) {
-      if (isAuthenticated && shouldReconnectRef.current) {
-        const delay = getNextBackoff(reconnectAttemptsRef.current++)
-        reconnectTimeoutRef.current = window.setTimeout(connect, delay)
+            const key = `${convId}:${message.id}`
+            const now = Date.now()
+            const recent = recentMessageMapRef.current
+            if (recent.size > 2000) {
+              for (const [k, ts] of recent) {
+                if (now - ts > 1000 * 60 * 5) recent.delete(k)
+              }
+            }
+            if (recent.has(key)) break
+            recent.set(key, now)
+
+            queryClient.setQueryData<Message[]>(
+              ['chat', 'messages', convId],
+              old => {
+                if (!old) return [message]
+                if (old.some(m => m.id === message.id)) return old
+
+                const tempId = (message.metadata as Record<string, unknown>)
+                  ?.tempId
+                if (tempId) {
+                  const hasOptimistic = old.some(
+                    m =>
+                      (m.metadata as Record<string, unknown>)?.tempId === tempId
+                  )
+                  if (hasOptimistic) {
+                    return old.map(m =>
+                      (m.metadata as Record<string, unknown>)?.tempId === tempId
+                        ? message
+                        : m
+                    )
+                  }
+                }
+
+                return [...old, message]
+              }
+            )
+
+            scheduleConversationsInvalidate()
+
+            for (const cb of messageHandlersRef.current) {
+              try {
+                cb(message, convId)
+              } catch (e) {
+                logger.error('message handler failed', e)
+              }
+            }
+            break
+          }
+
+          case 'typing': {
+            const payload = data.payload || data
+            const convId = payload.conversation_id || data.conversation_id
+            const userId = payload.user_id || payload.userId || data.user_id
+            const username = payload.username || data.username
+            const isTyping = payload.is_typing ?? payload.isTyping
+            const expiresInMsRaw = payload.expires_in_ms
+            const expiresInMs =
+              typeof expiresInMsRaw === 'number' ? expiresInMsRaw : 5000
+            if (!convId) break
+            for (const cb of typingHandlersRef.current) {
+              try {
+                cb(convId, userId, username, !!isTyping, expiresInMs)
+              } catch (e) {
+                logger.error('typing handler failed', e)
+              }
+            }
+            break
+          }
+
+          case 'presence':
+          case 'user_status': {
+            const payload = data.payload || data
+            const userId = payload.user_id || payload.userId || data.user_id
+            const username = payload.username || data.username
+            const status = payload.status
+            for (const cb of presenceHandlersRef.current) {
+              try {
+                cb(userId, username, status)
+              } catch (e) {
+                logger.error('presence handler failed', e)
+              }
+            }
+            break
+          }
+
+          case 'connected_users': {
+            const payload = data.payload || data
+            const ids = payload.user_ids || payload.userIds
+            if (Array.isArray(ids)) {
+              for (const cb of connectedUsersHandlersRef.current) {
+                try {
+                  cb(ids)
+                } catch (e) {
+                  logger.error('connected_users handler failed', e)
+                }
+              }
+            }
+            break
+          }
+
+          case 'participant_joined':
+          case 'participant_left': {
+            const payload = data.payload || data
+            const convId = payload.conversation_id || data.conversation_id
+            const participants = payload.participants
+            if (convId && Array.isArray(participants)) {
+              for (const cb of participantsUpdateHandlersRef.current) {
+                try {
+                  cb(convId, participants)
+                } catch (e) {
+                  logger.error('participantsUpdate handler failed', e)
+                }
+              }
+            }
+            break
+          }
+
+          case 'chatroom_presence': {
+            const payload = data.payload || data
+            for (const cb of chatroomPresenceHandlersRef.current) {
+              try {
+                cb(payload)
+              } catch (e) {
+                logger.error('chatroomPresence handler failed', e)
+              }
+            }
+            break
+          }
+
+          case 'message_reaction_updated': {
+            const payload = data.payload || data
+            const convId = payload.conversation_id || data.conversation_id
+            const messageID = payload.message_id
+            const reactions = payload.reactions
+            if (!convId || typeof messageID !== 'number') break
+            queryClient.setQueryData<Message[]>(
+              ['chat', 'messages', convId],
+              oldMessages =>
+                oldMessages?.map(message =>
+                  message.id === messageID
+                    ? {
+                        ...message,
+                        reaction_summary: Array.isArray(reactions)
+                          ? reactions
+                          : [],
+                      }
+                    : message
+                ) ?? oldMessages
+            )
+            break
+          }
+
+          case 'message_read':
+          case 'read': {
+            const payload = data.payload || data
+            const convId = payload.conversation_id || data.conversation_id
+            const readByUserID =
+              payload.user_id || payload.userId || data.user_id
+            const readAt = payload.read_at
+            if (!convId) break
+
+            const currentUserID = currentUserRef.current?.id
+            if (
+              typeof currentUserID === 'number' &&
+              typeof readByUserID === 'number' &&
+              readByUserID !== currentUserID
+            ) {
+              queryClient.setQueryData<Message[]>(
+                ['chat', 'messages', convId],
+                oldMessages =>
+                  oldMessages?.map(message =>
+                    message.sender_id === currentUserID
+                      ? {
+                          ...message,
+                          is_read: true,
+                          read_at:
+                            typeof readAt === 'string'
+                              ? readAt
+                              : message.read_at,
+                        }
+                      : message
+                  ) ?? oldMessages
+              )
+            } else {
+              queryClient.invalidateQueries({
+                queryKey: ['chat', 'messages', convId],
+              })
+            }
+            break
+          }
+
+          case 'chat_mention':
+            queryClient.invalidateQueries({
+              queryKey: ['moderation', 'mentions'],
+            })
+            break
+        }
+      } catch (error) {
+        logger.error('Failed to parse WebSocket message:', error)
       }
-    }
-  }, [isAuthenticated, queryClient, refreshBlockedUsers])
+    },
+    [queryClient]
+  )
 
-  // Connect on mount / auth change
+  const { wsRef, connectionState } = useManagedWebSocket({
+    enabled: isAuthenticated,
+    createSocket: async () => {
+      const userStr = localStorage.getItem('user')
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr)
+          currentUserRef.current = { id: user.id, username: user.username }
+        } catch {}
+      }
+      await refreshBlockedUsers()
+      return createTicketedWS({ path: '/api/ws/chat' })
+    },
+    onOpen: ws => {
+      const roomsToJoin = new Set(joinedRoomsRef.current)
+      for (const roomId of roomsToJoin) {
+        ws.send(JSON.stringify({ type: 'join', conversation_id: roomId }))
+      }
+    },
+    onMessage: (_ws, event) => {
+      handleSocketMessage(event)
+    },
+    onError: (_ws, error, meta) => {
+      if (meta.planned) return
+      logger.error('WebSocket error:', error)
+    },
+    reconnectDelaysMs: [2000, 5000, 10000],
+  })
+
+  const isConnected = connectionState === 'connected'
+
   useEffect(() => {
     if (!isAuthenticated) {
-      // Close connection on logout
-      if (wsRef.current) {
-        shouldReconnectRef.current = false
-        wsRef.current.close()
-        wsRef.current = null
-      }
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current)
-      }
-      setIsConnected(false)
       joinedRoomsRef.current.clear()
       setJoinedRooms(new Set())
       unreadByConversationRef.current = {}
       setUnreadByConversation({})
       blockedUserIDsRef.current.clear()
-      return
     }
+  }, [isAuthenticated])
 
-    // Deferred connect to avoid React 19 StrictMode double-connect
-    const timer = window.setTimeout(connect, 0)
-
-    return () => {
-      window.clearTimeout(timer)
-    }
-  }, [isAuthenticated, connect])
-
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close()
-        wsRef.current = null
-      }
       if (conversationsInvalidateTimerRef.current !== null) {
         clearTimeout(conversationsInvalidateTimerRef.current)
         conversationsInvalidateTimerRef.current = null
-      }
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current)
       }
     }
   }, [])

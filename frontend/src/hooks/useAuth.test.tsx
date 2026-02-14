@@ -4,7 +4,14 @@ import type { ReactNode } from 'react'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiClient } from '@/api/client'
 import { getAuthToken, useLogin, useLogout, useSignup } from '@/hooks/useAuth'
+import { usePresenceStore } from '@/hooks/usePresence'
+import { useNotificationStore } from '@/hooks/useRealtimeNotifications'
+import { clearCachedUser, getCurrentUser } from '@/hooks/useUsers'
 import { useAuthSessionStore } from '@/stores/useAuthSessionStore'
+import {
+  getChatDockStorageKey,
+  useChatDockStore,
+} from '@/stores/useChatDockStore'
 
 const navigateMock = vi.fn()
 
@@ -65,9 +72,12 @@ describe('useSignup onboarding behavior', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    localStorage?.removeItem?.('token')
-    localStorage?.removeItem?.('user')
+    localStorage?.clear?.()
     useAuthSessionStore.getState().clear()
+    usePresenceStore.getState().reset()
+    useNotificationStore.getState().clear()
+    useChatDockStore.getState().resetSessionState()
+    clearCachedUser()
   })
 
   it('redirects to /onboarding/sanctums after successful signup', async () => {
@@ -108,9 +118,12 @@ describe('useSignup onboarding behavior', () => {
 describe('useLogin', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    localStorage?.removeItem?.('token')
-    localStorage?.removeItem?.('user')
+    localStorage?.clear?.()
     useAuthSessionStore.getState().clear()
+    usePresenceStore.getState().reset()
+    useNotificationStore.getState().clear()
+    useChatDockStore.getState().resetSessionState()
+    clearCachedUser()
   })
 
   it('stores token and user then navigates to /posts on success', async () => {
@@ -145,16 +158,88 @@ describe('useLogin', () => {
     expect(getAuthToken()).toBe('login-token')
     expect(navigateMock).toHaveBeenCalledWith('/posts')
   })
+
+  it('replaces stale cached user after login', async () => {
+    localStorage.setItem(
+      'user',
+      JSON.stringify({
+        id: 99,
+        username: 'old-user',
+        email: 'old@example.com',
+      })
+    )
+    expect(getCurrentUser()?.id).toBe(99)
+
+    vi.mocked(apiClient.login).mockImplementation(async () => {
+      const t = new Date().toISOString()
+      const data = {
+        token: 'new-login-token',
+        user: {
+          id: 2,
+          username: 'logintest',
+          email: 'login@example.com',
+          is_admin: false,
+          created_at: t,
+          updated_at: t,
+        },
+      }
+      useAuthSessionStore.getState().setAccessToken(data.token)
+      return data
+    })
+
+    const { result } = renderHook(() => useLogin(), {
+      wrapper: createWrapper(),
+    })
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        email: 'login@example.com',
+        password: 'Password123!',
+      })
+    })
+
+    expect(getCurrentUser()?.id).toBe(2)
+  })
 })
 
 describe('useLogout', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage?.clear?.()
     useAuthSessionStore.getState().setAccessToken('some-token')
-    localStorage?.setItem?.('user', JSON.stringify({ id: 1, username: 'u' }))
+    localStorage?.setItem?.(
+      'user',
+      JSON.stringify({ id: 1, username: 'u', email: 'u@example.com' })
+    )
+    localStorage?.setItem?.('chat_open_tabs:1', JSON.stringify([42]))
+    localStorage?.setItem?.('joined_rooms:1', JSON.stringify([42]))
+    localStorage?.setItem?.(
+      getChatDockStorageKey(1),
+      JSON.stringify({
+        state: {
+          activeConversationId: 42,
+          openConversationIds: [42],
+          unreadCounts: { 42: 3 },
+        },
+        version: 0,
+      })
+    )
+    usePresenceStore.getState().setInitialOnlineUsers([7, 8])
+    useNotificationStore.getState().add({
+      title: 'test',
+      description: 'test',
+      createdAt: new Date().toISOString(),
+    })
+    useChatDockStore.setState({
+      isOpen: true,
+      view: 'conversation',
+      activeConversationId: 42,
+      openConversationIds: [42],
+    })
+    clearCachedUser()
   })
 
-  it('clears token and user and navigates to /login', async () => {
+  it('clears token/user, resets stores, clears scoped storage, and navigates to /login', async () => {
     const { result } = renderHook(() => useLogout(), {
       wrapper: createWrapper(),
     })
@@ -165,6 +250,17 @@ describe('useLogout', () => {
 
     expect(getAuthToken()).toBeNull()
     expect(localStorage.getItem('user')).toBeNull()
+    expect(localStorage.getItem('chat_open_tabs:1')).toBeNull()
+    expect(localStorage.getItem('joined_rooms:1')).toBeNull()
+    expect(localStorage.getItem(getChatDockStorageKey(1))).toBeNull()
+    expect(usePresenceStore.getState().onlineUserIds.size).toBe(0)
+    expect(usePresenceStore.getState().notifiedUserIds.size).toBe(0)
+    expect(useNotificationStore.getState().items).toHaveLength(0)
+    expect(useChatDockStore.getState().activeConversationId).toBeNull()
+    expect(useChatDockStore.getState().openConversationIds).toEqual([])
+    expect(useChatDockStore.persist.getOptions().name).toBe(
+      getChatDockStorageKey(null)
+    )
     expect(navigateMock).toHaveBeenCalledWith('/login')
   })
 })

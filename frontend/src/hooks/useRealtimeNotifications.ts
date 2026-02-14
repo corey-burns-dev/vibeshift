@@ -2,10 +2,11 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { create } from 'zustand'
-import { ApiError, apiClient } from '@/api/client'
+import { apiClient } from '@/api/client'
+import { useManagedWebSocket } from '@/hooks/useManagedWebSocket'
 import { usePresenceStore } from '@/hooks/usePresence'
 import { logger } from '@/lib/logger'
-import { createTicketedWS, getNextBackoff } from '@/lib/ws-utils'
+import { createTicketedWS } from '@/lib/ws-utils'
 import { useAuthSessionStore } from '@/stores/useAuthSessionStore'
 
 type RealtimeEventType =
@@ -79,6 +80,7 @@ interface NotificationStore {
   markRead: (id: string) => void
   markAllRead: () => void
   unreadCount: () => number
+  clear: () => void
 }
 
 export const useNotificationStore = create<NotificationStore>((set, get) => ({
@@ -107,6 +109,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
       items: state.items.map(item => ({ ...item, read: true })),
     })),
   unreadCount: () => get().items.filter(item => !item.read).length,
+  clear: () => set(() => ({ items: [] })),
 }))
 
 function asNumber(v: unknown): number | null {
@@ -119,7 +122,7 @@ function asString(v: unknown): string | null {
 
 export function useRealtimeNotifications(enabled = true) {
   const queryClient = useQueryClient()
-  const reconnectTimeoutRef = useRef<number | null>(null)
+  const previousAccessTokenRef = useRef<string | null>(null)
   const addNotification = useNotificationStore(state => state.add)
   const setOnline = usePresenceStore(state => state.setOnline)
   const setOffline = usePresenceStore(state => state.setOffline)
@@ -139,400 +142,377 @@ export function useRealtimeNotifications(enabled = true) {
     }
   }, [])
 
-  useEffect(() => {
-    if (!enabled || !accessToken) return
-
-    let closedByEffect = false
-    let ws: WebSocket | null = null
-    let connectTimer: number | null = null
-    let reconnectAttempts = 0
-
-    const connect = async () => {
-      if (closedByEffect) return
-
+  const handleRealtimeMessage = useCallback(
+    (event: MessageEvent) => {
+      let data: RealtimeEvent
       try {
-        ws = await createTicketedWS({
-          path: '/api/ws',
-          onOpen: () => {
-            reconnectAttempts = 0
-            // Debug: log that notifications WS opened
-            logger.debug('[realtime] notifications websocket opened')
-          },
-          onMessage: event => {
-            let data: RealtimeEvent
-            try {
-              data = JSON.parse(event.data) as RealtimeEvent
-            } catch {
-              return
+        data = JSON.parse(event.data) as RealtimeEvent
+      } catch {
+        return
+      }
+
+      logger.debug('[realtime] event received', {
+        type: data.type,
+        payload: data.payload,
+      })
+
+      const payload = data.payload ?? {}
+      switch (data.type) {
+        case 'post_created':
+          void queryClient.invalidateQueries({ queryKey: ['posts'] })
+          break
+        case 'post_reaction_updated': {
+          const postID = asNumber(payload.post_id)
+          const likesCount = asNumber(payload.likes_count)
+          const commentsCount = asNumber(payload.comments_count)
+          if (!postID || likesCount === null) break
+
+          queryClient.setQueryData<
+            { likes_count?: number; comments_count?: number } | undefined
+          >(['posts', 'detail', postID], oldPost => {
+            if (!oldPost) return oldPost
+            return {
+              ...oldPost,
+              likes_count: likesCount,
+              comments_count:
+                commentsCount ?? (oldPost.comments_count as number | undefined),
             }
+          })
 
-            // Debug: log incoming realtime event types for visibility
-            logger.debug('[realtime] event received', {
-              type: data.type,
-              payload: data.payload,
-            })
-
-            const payload = data.payload ?? {}
-            switch (data.type) {
-              case 'post_created':
-                void queryClient.invalidateQueries({ queryKey: ['posts'] })
-                break
-              case 'post_reaction_updated': {
-                const postID = asNumber(payload.post_id)
-                const likesCount = asNumber(payload.likes_count)
-                const commentsCount = asNumber(payload.comments_count)
-                if (!postID || likesCount === null) break
-
-                queryClient.setQueryData<
-                  { likes_count?: number; comments_count?: number } | undefined
-                >(['posts', 'detail', postID], oldPost => {
-                  if (!oldPost) return oldPost
-                  return {
-                    ...oldPost,
-                    likes_count: likesCount,
-                    comments_count:
-                      commentsCount ??
-                      (oldPost.comments_count as number | undefined),
-                  }
-                })
-
-                const infiniteQueries = queryClient
-                  .getQueryCache()
-                  .findAll({ queryKey: ['posts', 'infinite'] })
-                for (const query of infiniteQueries) {
-                  queryClient.setQueryData<InfinitePostsData | undefined>(
-                    query.queryKey,
-                    oldData => {
-                      if (!oldData) return oldData
-                      return {
-                        ...oldData,
-                        pages: oldData.pages.map(page =>
-                          page.map(post =>
-                            post.id === postID
-                              ? {
-                                  ...post,
-                                  likes_count: likesCount,
-                                  comments_count:
-                                    commentsCount ??
-                                    (post.comments_count as number | undefined),
-                                }
-                              : post
-                          )
-                        ),
-                      }
-                    }
-                  )
+          const infiniteQueries = queryClient
+            .getQueryCache()
+            .findAll({ queryKey: ['posts', 'infinite'] })
+          for (const query of infiniteQueries) {
+            queryClient.setQueryData<InfinitePostsData | undefined>(
+              query.queryKey,
+              oldData => {
+                if (!oldData) return oldData
+                return {
+                  ...oldData,
+                  pages: oldData.pages.map(page =>
+                    page.map(post =>
+                      post.id === postID
+                        ? {
+                            ...post,
+                            likes_count: likesCount,
+                            comments_count:
+                              commentsCount ??
+                              (post.comments_count as number | undefined),
+                          }
+                        : post
+                    )
+                  ),
                 }
-                break
               }
-              case 'comment_created':
-              case 'comment_updated':
-              case 'comment_deleted': {
-                const postID = asNumber(payload.post_id)
-                if (!postID) break
-
-                const commentsCount = asNumber(payload.comments_count)
-                const commentID = asNumber(payload.comment_id)
-                const comment =
-                  (payload.comment as RealtimeComment | undefined) ?? null
-
-                queryClient.setQueryData<
-                  { likes_count?: number; comments_count?: number } | undefined
-                >(['posts', 'detail', postID], oldPost => {
-                  if (!oldPost || commentsCount === null) return oldPost
-                  return {
-                    ...oldPost,
-                    comments_count: commentsCount,
-                  }
-                })
-
-                const infiniteQueries = queryClient
-                  .getQueryCache()
-                  .findAll({ queryKey: ['posts', 'infinite'] })
-                for (const query of infiniteQueries) {
-                  queryClient.setQueryData<InfinitePostsData | undefined>(
-                    query.queryKey,
-                    oldData => {
-                      if (!oldData || commentsCount === null) return oldData
-                      return {
-                        ...oldData,
-                        pages: oldData.pages.map(page =>
-                          page.map(post =>
-                            post.id === postID
-                              ? {
-                                  ...post,
-                                  comments_count: commentsCount,
-                                }
-                              : post
-                          )
-                        ),
-                      }
-                    }
-                  )
-                }
-
-                queryClient.setQueryData<RealtimeComment[] | undefined>(
-                  ['comments', 'list', postID],
-                  oldComments => {
-                    if (!oldComments) return oldComments
-                    if (data.type === 'comment_created' && comment) {
-                      if (oldComments.some(c => c.id === comment.id)) {
-                        return oldComments
-                      }
-                      return [comment, ...oldComments]
-                    }
-                    if (data.type === 'comment_updated' && comment) {
-                      return oldComments.map(c =>
-                        c.id === comment.id ? { ...c, ...comment } : c
-                      )
-                    }
-                    if (data.type === 'comment_deleted') {
-                      const targetID = commentID ?? comment?.id
-                      if (!targetID) return oldComments
-                      return oldComments.filter(c => c.id !== targetID)
-                    }
-                    return oldComments
-                  }
-                )
-                break
-              }
-              case 'message_received': {
-                const isGroupMessage = payload.is_group === true
-                if (isGroupMessage) {
-                  break
-                }
-                void queryClient.invalidateQueries({
-                  queryKey: ['chat', 'conversations'],
-                })
-                const path = window.location.pathname
-                const inMessagingView =
-                  path === '/chat' || path.startsWith('/chat/')
-
-                if (inMessagingView) {
-                  break
-                }
-
-                const username = asString(
-                  (payload.from_user as Record<string, unknown>)?.username
-                )
-                const preview = asString(payload.preview)
-                if (username) {
-                  const desc = preview ? `"${preview}"` : 'New message'
-                  addNotification({
-                    title: `${username} sent a message`,
-                    description: desc,
-                    createdAt: new Date().toISOString(),
-                  })
-                }
-                break
-              }
-              case 'chat_mention': {
-                void queryClient.invalidateQueries({
-                  queryKey: ['moderation', 'mentions'],
-                })
-                const preview = asString(payload.preview)
-                const fromUserID = asNumber(payload.from_user_id)
-                addNotification({
-                  title: 'You were mentioned',
-                  description: preview
-                    ? `"${preview.slice(0, 120)}"`
-                    : 'A new mention in chat',
-                  createdAt: new Date().toISOString(),
-                  meta: {
-                    type: 'chat_mention',
-                    userId: fromUserID ?? undefined,
-                  },
-                })
-                break
-              }
-              case 'friend_request_received': {
-                void queryClient.invalidateQueries({ queryKey: ['friends'] })
-                const username = asString(
-                  (payload.from_user as Record<string, unknown>)?.username
-                )
-                const requestId = asNumber(payload.request_id ?? payload.id)
-                const fromUserId = asNumber(
-                  (payload.from_user as Record<string, unknown>)?.id
-                )
-                if (username) {
-                  toast.message('New friend request', {
-                    description: `${username} sent you a request`,
-                  })
-                  addNotification({
-                    title: 'New friend request',
-                    description: `${username} sent you a request`,
-                    createdAt: new Date().toISOString(),
-                    meta: {
-                      type: 'friend_request',
-                      requestId: requestId ?? undefined,
-                      userId: fromUserId ?? undefined,
-                    },
-                  })
-                }
-                break
-              }
-              case 'friend_request_accepted': {
-                void queryClient.invalidateQueries({ queryKey: ['friends'] })
-                const username = asString(
-                  (payload.friend_user as Record<string, unknown>)?.username
-                )
-                if (username) {
-                  toast.success(`${username} accepted your friend request`)
-                  addNotification({
-                    title: 'Friend request accepted',
-                    description: `${username} is now your friend`,
-                    createdAt: new Date().toISOString(),
-                  })
-                }
-                break
-              }
-              case 'friend_added':
-              case 'friend_removed':
-              case 'friend_request_sent':
-              case 'friend_request_rejected':
-              case 'friend_request_cancelled':
-                void queryClient.invalidateQueries({ queryKey: ['friends'] })
-                break
-              case 'friend_presence_changed': {
-                const friendID = asNumber(payload.user_id)
-                const status = asString(payload.status)
-                const username = asString(payload.username) ?? 'A friend'
-                if (!friendID || !status) break
-
-                if (status === 'online') {
-                  setOnline(friendID)
-                  toast.message(`${username} is online`, {
-                    id: `presence-${friendID}`,
-                    description: 'Tap to open chat',
-                    duration: 7000,
-                    className: 'border border-emerald-500/40',
-                    action: {
-                      label: 'Message',
-                      onClick: () => {
-                        void openDirectMessage(friendID)
-                      },
-                    },
-                  })
-                } else if (status === 'offline') {
-                  setOffline(friendID)
-                  toast.message(`${username} went offline`, {
-                    id: `presence-${friendID}`,
-                    description: 'They are currently offline',
-                    duration: 7000,
-                    className: 'border border-slate-500/40',
-                  })
-                }
-                break
-              }
-              case 'friends_online_snapshot': {
-                const userIDs = Array.isArray(payload.user_ids)
-                  ? (payload.user_ids as unknown[])
-                      .map(id => asNumber(id))
-                      .filter((id): id is number => id !== null)
-                  : []
-                // Always apply snapshot, even when empty, so stale online badges clear.
-                setInitialOnlineUsers(userIDs)
-                break
-              }
-              case 'sanctum_request_created': {
-                void queryClient.invalidateQueries({
-                  queryKey: ['sanctums', 'requests', 'admin', 'pending'],
-                })
-                const name = asString(payload.requested_name)
-                if (name) {
-                  toast.info('New Sanctum Request', {
-                    description: `A request for "${name}" has been submitted.`,
-                  })
-                }
-                break
-              }
-              case 'sanctum_request_reviewed': {
-                void queryClient.invalidateQueries({
-                  queryKey: ['sanctums', 'requests', 'admin'],
-                })
-                void queryClient.invalidateQueries({
-                  queryKey: ['sanctums', 'list'],
-                })
-
-                const status = asString(payload.status)
-                // If we have the current user stored, we can check if it's their request
-                const userStr = localStorage.getItem('user')
-                if (userStr) {
-                  try {
-                    const user = JSON.parse(userStr)
-                    if (user?.id) {
-                      // We don't have the requester ID in the reviewed payload reliably without more work,
-                      // but we can just invalidate myRequests and the user will see the update.
-                      void queryClient.invalidateQueries({
-                        queryKey: ['sanctums', 'requests', 'me'],
-                      })
-
-                      if (status === 'approved') {
-                        toast.success('Sanctum request approved!', {
-                          description:
-                            'Your request to create a sanctum was accepted.',
-                        })
-                      } else if (status === 'rejected') {
-                        toast.error('Sanctum request rejected', {
-                          description:
-                            'Your request to create a sanctum was denied.',
-                        })
-                      }
-                    }
-                  } catch (_e) {
-                    // ignore
-                  }
-                }
-                break
-              }
-            }
-          },
-          onClose: () => {
-            if (closedByEffect) return
-            const delay = getNextBackoff(reconnectAttempts++)
-            reconnectTimeoutRef.current = window.setTimeout(connect, delay)
-          },
-          onError: () => {
-            ws?.close()
-          },
-        })
-      } catch (err) {
-        if (closedByEffect) return
-
-        if (err instanceof ApiError && err.status === 401) {
-          // If auth failed, don't retry aggressively, might need re-login
-          return
+            )
+          }
+          break
         }
+        case 'comment_created':
+        case 'comment_updated':
+        case 'comment_deleted': {
+          const postID = asNumber(payload.post_id)
+          if (!postID) break
 
-        const delay = getNextBackoff(reconnectAttempts++)
-        reconnectTimeoutRef.current = window.setTimeout(connect, delay)
+          const commentsCount = asNumber(payload.comments_count)
+          const commentID = asNumber(payload.comment_id)
+          const comment =
+            (payload.comment as RealtimeComment | undefined) ?? null
+
+          queryClient.setQueryData<
+            { likes_count?: number; comments_count?: number } | undefined
+          >(['posts', 'detail', postID], oldPost => {
+            if (!oldPost || commentsCount === null) return oldPost
+            return {
+              ...oldPost,
+              comments_count: commentsCount,
+            }
+          })
+
+          const infiniteQueries = queryClient
+            .getQueryCache()
+            .findAll({ queryKey: ['posts', 'infinite'] })
+          for (const query of infiniteQueries) {
+            queryClient.setQueryData<InfinitePostsData | undefined>(
+              query.queryKey,
+              oldData => {
+                if (!oldData || commentsCount === null) return oldData
+                return {
+                  ...oldData,
+                  pages: oldData.pages.map(page =>
+                    page.map(post =>
+                      post.id === postID
+                        ? {
+                            ...post,
+                            comments_count: commentsCount,
+                          }
+                        : post
+                    )
+                  ),
+                }
+              }
+            )
+          }
+
+          queryClient.setQueryData<RealtimeComment[] | undefined>(
+            ['comments', 'list', postID],
+            oldComments => {
+              if (!oldComments) return oldComments
+              if (data.type === 'comment_created' && comment) {
+                if (oldComments.some(c => c.id === comment.id)) {
+                  return oldComments
+                }
+                return [comment, ...oldComments]
+              }
+              if (data.type === 'comment_updated' && comment) {
+                return oldComments.map(c =>
+                  c.id === comment.id ? { ...c, ...comment } : c
+                )
+              }
+              if (data.type === 'comment_deleted') {
+                const targetID = commentID ?? comment?.id
+                if (!targetID) return oldComments
+                return oldComments.filter(c => c.id !== targetID)
+              }
+              return oldComments
+            }
+          )
+          break
+        }
+        case 'message_received': {
+          const isGroupMessage = payload.is_group === true
+          if (isGroupMessage) {
+            break
+          }
+          void queryClient.invalidateQueries({
+            queryKey: ['chat', 'conversations'],
+          })
+          const path = window.location.pathname
+          const inMessagingView = path === '/chat' || path.startsWith('/chat/')
+
+          if (inMessagingView) {
+            break
+          }
+
+          const username = asString(
+            (payload.from_user as Record<string, unknown>)?.username
+          )
+          const preview = asString(payload.preview)
+          if (username) {
+            const desc = preview ? `"${preview}"` : 'New message'
+            addNotification({
+              title: `${username} sent a message`,
+              description: desc,
+              createdAt: new Date().toISOString(),
+            })
+          }
+          break
+        }
+        case 'chat_mention': {
+          void queryClient.invalidateQueries({
+            queryKey: ['moderation', 'mentions'],
+          })
+          const preview = asString(payload.preview)
+          const fromUserID = asNumber(payload.from_user_id)
+          addNotification({
+            title: 'You were mentioned',
+            description: preview
+              ? `"${preview.slice(0, 120)}"`
+              : 'A new mention in chat',
+            createdAt: new Date().toISOString(),
+            meta: {
+              type: 'chat_mention',
+              userId: fromUserID ?? undefined,
+            },
+          })
+          break
+        }
+        case 'friend_request_received': {
+          void queryClient.invalidateQueries({ queryKey: ['friends'] })
+          const username = asString(
+            (payload.from_user as Record<string, unknown>)?.username
+          )
+          const requestId = asNumber(payload.request_id ?? payload.id)
+          const fromUserId = asNumber(
+            (payload.from_user as Record<string, unknown>)?.id
+          )
+          if (username) {
+            toast.message('New friend request', {
+              description: `${username} sent you a request`,
+            })
+            addNotification({
+              title: 'New friend request',
+              description: `${username} sent you a request`,
+              createdAt: new Date().toISOString(),
+              meta: {
+                type: 'friend_request',
+                requestId: requestId ?? undefined,
+                userId: fromUserId ?? undefined,
+              },
+            })
+          }
+          break
+        }
+        case 'friend_request_accepted': {
+          void queryClient.invalidateQueries({ queryKey: ['friends'] })
+          const username = asString(
+            (payload.friend_user as Record<string, unknown>)?.username
+          )
+          if (username) {
+            toast.success(`${username} accepted your friend request`)
+            addNotification({
+              title: 'Friend request accepted',
+              description: `${username} is now your friend`,
+              createdAt: new Date().toISOString(),
+            })
+          }
+          break
+        }
+        case 'friend_added':
+        case 'friend_removed':
+        case 'friend_request_sent':
+        case 'friend_request_rejected':
+        case 'friend_request_cancelled':
+          void queryClient.invalidateQueries({ queryKey: ['friends'] })
+          break
+        case 'friend_presence_changed': {
+          const friendID = asNumber(payload.user_id)
+          const status = asString(payload.status)
+          const username = asString(payload.username) ?? 'A friend'
+          if (!friendID || !status) break
+
+          if (status === 'online') {
+            setOnline(friendID)
+            toast.message(`${username} is online`, {
+              id: `presence-${friendID}`,
+              description: 'Tap to open chat',
+              duration: 7000,
+              className: 'border border-emerald-500/40',
+              action: {
+                label: 'Message',
+                onClick: () => {
+                  void openDirectMessage(friendID)
+                },
+              },
+            })
+          } else if (status === 'offline') {
+            setOffline(friendID)
+            toast.message(`${username} went offline`, {
+              id: `presence-${friendID}`,
+              description: 'They are currently offline',
+              duration: 7000,
+              className: 'border border-slate-500/40',
+            })
+          }
+          break
+        }
+        case 'friends_online_snapshot': {
+          const userIDs = Array.isArray(payload.user_ids)
+            ? (payload.user_ids as unknown[])
+                .map(id => asNumber(id))
+                .filter((id): id is number => id !== null)
+            : []
+          setInitialOnlineUsers(userIDs)
+          break
+        }
+        case 'sanctum_request_created': {
+          void queryClient.invalidateQueries({
+            queryKey: ['sanctums', 'requests', 'admin', 'pending'],
+          })
+          const name = asString(payload.requested_name)
+          if (name) {
+            toast.info('New Sanctum Request', {
+              description: `A request for "${name}" has been submitted.`,
+            })
+          }
+          break
+        }
+        case 'sanctum_request_reviewed': {
+          void queryClient.invalidateQueries({
+            queryKey: ['sanctums', 'requests', 'admin'],
+          })
+          void queryClient.invalidateQueries({
+            queryKey: ['sanctums', 'list'],
+          })
+
+          const status = asString(payload.status)
+          const userStr = localStorage.getItem('user')
+          if (userStr) {
+            try {
+              const user = JSON.parse(userStr)
+              if (user?.id) {
+                void queryClient.invalidateQueries({
+                  queryKey: ['sanctums', 'requests', 'me'],
+                })
+
+                if (status === 'approved') {
+                  toast.success('Sanctum request approved!', {
+                    description:
+                      'Your request to create a sanctum was accepted.',
+                  })
+                } else if (status === 'rejected') {
+                  toast.error('Sanctum request rejected', {
+                    description: 'Your request to create a sanctum was denied.',
+                  })
+                }
+              }
+            } catch (_e) {
+              // ignore
+            }
+          }
+          break
+        }
       }
+    },
+    [
+      queryClient,
+      addNotification,
+      setOnline,
+      setOffline,
+      setInitialOnlineUsers,
+      openDirectMessage,
+    ]
+  )
+
+  const wsEnabled = enabled && !!accessToken
+
+  const { reconnect, setPlannedReconnect } = useManagedWebSocket({
+    enabled: wsEnabled,
+    createSocket: async () => createTicketedWS({ path: '/api/ws' }),
+    onOpen: () => {
+      logger.debug('[realtime] notifications websocket opened')
+    },
+    onMessage: (_ws, event) => {
+      handleRealtimeMessage(event)
+    },
+    onError: (_ws, error, meta) => {
+      if (meta.planned) {
+        return
+      }
+      logger.error('[realtime] websocket error', error)
+    },
+    reconnectDelaysMs: [2000, 5000, 10000],
+  })
+
+  useEffect(() => {
+    if (!wsEnabled) {
+      setInitialOnlineUsers([])
+    }
+  }, [wsEnabled, setInitialOnlineUsers])
+
+  useEffect(() => {
+    if (!wsEnabled) {
+      previousAccessTokenRef.current = accessToken
+      return
     }
 
-    // Small delay avoids the "closed before established" warning from
-    // React 19 StrictMode's double-invocation of effects in dev.
-    connectTimer = window.setTimeout(connect, 0)
-
-    return () => {
-      closedByEffect = true
-      if (connectTimer !== null) {
-        window.clearTimeout(connectTimer)
-        connectTimer = null
-      }
-      if (reconnectTimeoutRef.current !== null) {
-        window.clearTimeout(reconnectTimeoutRef.current)
-        reconnectTimeoutRef.current = null
-      }
-      ws?.close()
+    const previousToken = previousAccessTokenRef.current
+    previousAccessTokenRef.current = accessToken
+    if (!previousToken || !accessToken || previousToken === accessToken) {
+      return
     }
-  }, [
-    enabled,
-    accessToken,
-    queryClient,
-    addNotification,
-    setOnline,
-    setOffline,
-    setInitialOnlineUsers,
-    openDirectMessage,
-  ])
+
+    setPlannedReconnect(true)
+    reconnect(true)
+  }, [wsEnabled, accessToken, reconnect, setPlannedReconnect])
 }

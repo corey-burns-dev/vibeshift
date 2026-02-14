@@ -72,18 +72,13 @@ func (s *Server) WebsocketHandler() fiber.Handler {
 
 		defer s.hub.UnregisterClient(client)
 
-		// Presence logic
-		s.notifyFriendsPresence(uid, "online")
 		s.sendFriendsOnlineSnapshot(conn, uid)
 
 		// Start pumps
 		go client.WritePump()
 		client.ReadPump()
 
-		// After ReadPump returns, client is disconnected
-		if !s.hub.IsOnline(uid) {
-			s.notifyFriendsPresence(uid, "offline")
-		}
+		// Presence transitions are emitted by the hub's connection manager.
 	})
 }
 

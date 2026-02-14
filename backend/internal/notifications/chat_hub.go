@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/gofiber/websocket/v2"
+	"github.com/redis/go-redis/v9"
 )
 
 // ChatHub manages WebSocket connections for chat conversations.
@@ -24,6 +25,8 @@ type ChatHub struct {
 
 	// Map: userID -> set of active Clients (Multi-Device Support)
 	userConns map[uint]map[*Client]bool
+
+	presence *ConnectionManager
 }
 
 // Name returns a human-readable identifier for this hub.
@@ -40,12 +43,25 @@ type ChatMessage struct {
 }
 
 // NewChatHub creates a new ChatHub instance
-func NewChatHub() *ChatHub {
-	return &ChatHub{
+func NewChatHub(redisClients ...*redis.Client) *ChatHub {
+	var redisClient *redis.Client
+	if len(redisClients) > 0 {
+		redisClient = redisClients[0]
+	}
+
+	h := &ChatHub{
 		conversations:   make(map[uint]map[uint]*Client),
 		userActiveConvs: make(map[uint]map[uint]struct{}),
 		userConns:       make(map[uint]map[*Client]bool),
+		presence:        NewConnectionManager(redisClient, ConnectionManagerConfig{}),
 	}
+	if h.presence != nil {
+		h.presence.SetCallbacks(
+			func(userID uint) { h.handleUserOnline(userID) },
+			func(userID uint) { h.handleUserOffline(userID) },
+		)
+	}
+	return h
 }
 
 // Register registers a user's websocket connection. Returns Client or error if limits exceeded.
@@ -65,18 +81,22 @@ func (h *ChatHub) Register(userID uint, conn *websocket.Conn) (*Client, error) {
 
 	// Create new client
 	client := NewClient(h, conn, userID)
-	h.userConns[userID][client] = true
-
-	// Collect online users
-	onlineIDs := make([]uint, 0, len(h.userConns))
-	for id := range h.userConns {
-		if id != userID {
-			onlineIDs = append(onlineIDs, id)
+	client.OnActivity = func(uid uint) {
+		if h.presence != nil {
+			h.presence.Touch(context.Background(), uid)
 		}
 	}
+	h.userConns[userID][client] = true
+	activeClientCount := len(h.userConns[userID])
 	h.mu.Unlock()
 
-	log.Printf("ChatHub: Registered user %d (Active clients: %d)", userID, len(h.userConns[userID]))
+	if h.presence != nil {
+		h.presence.Register(context.Background(), userID)
+	}
+
+	onlineIDs := h.onlineUsersSnapshot(userID)
+
+	log.Printf("ChatHub: Registered user %d (Active clients: %d)", userID, activeClientCount)
 
 	// Send initial snapshot
 	if len(onlineIDs) > 0 {
@@ -89,7 +109,6 @@ func (h *ChatHub) Register(userID uint, conn *websocket.Conn) (*Client, error) {
 		}
 	}
 
-	h.BroadcastGlobalStatus(userID, "online")
 	return client, nil
 }
 
@@ -100,7 +119,16 @@ func (h *ChatHub) RegisterUser(client *Client) {
 		h.userConns[client.UserID] = make(map[*Client]bool)
 	}
 	h.userConns[client.UserID][client] = true
+	client.OnActivity = func(uid uint) {
+		if h.presence != nil {
+			h.presence.Touch(context.Background(), uid)
+		}
+	}
 	h.mu.Unlock()
+	if h.presence != nil {
+		h.presence.Register(context.Background(), client.UserID)
+		return
+	}
 	h.BroadcastGlobalStatus(client.UserID, "online")
 }
 
@@ -112,29 +140,41 @@ func (h *ChatHub) UnregisterUser(client *Client) {
 // UnregisterClient removes a user's websocket connection and cleans up all their conversation subscriptions
 func (h *ChatHub) UnregisterClient(client *Client) {
 	h.mu.Lock()
-
-	// Remove from connection set
-	if clients, ok := h.userConns[client.UserID]; ok {
-		delete(clients, client)
-		// If NO more connections for this user, then they are offline
-		if len(clients) == 0 {
-			delete(h.userConns, client.UserID)
-			// Proceed to cleanup conversation subscriptions
-		} else {
-			// User still has other connections, so just close this one and return
-			h.mu.Unlock()
-			log.Printf("ChatHub: Unregistered client for user %d (Remaining clients: %d)", client.UserID, len(clients))
-			return
-		}
-	} else {
-		// Client not found (already removed)
+	clients, ok := h.userConns[client.UserID]
+	if !ok {
+		h.mu.Unlock()
+		return
+	}
+	if _, exists := clients[client]; !exists {
 		h.mu.Unlock()
 		return
 	}
 
-	// Logic below only runs if ALL connections for this user are gone
+	delete(clients, client)
+	remaining := len(clients)
+	if remaining == 0 {
+		delete(h.userConns, client.UserID)
+	}
+	hasPresence := h.presence != nil
+	h.mu.Unlock()
+
+	if hasPresence {
+		h.presence.Unregister(context.Background(), client.UserID)
+		if remaining > 0 {
+			log.Printf("ChatHub: Unregistered client for user %d (Remaining clients: %d)", client.UserID, remaining)
+			return
+		}
+		log.Printf("ChatHub: Unregistered user %d (offline grace started)", client.UserID)
+		return
+	}
+
+	if remaining > 0 {
+		log.Printf("ChatHub: Unregistered client for user %d (Remaining clients: %d)", client.UserID, remaining)
+		return
+	}
 
 	// Remove from all conversations
+	h.mu.Lock()
 	if convs, ok := h.userActiveConvs[client.UserID]; ok {
 		for convID := range convs {
 			if users, ok := h.conversations[convID]; ok {
@@ -146,7 +186,6 @@ func (h *ChatHub) UnregisterClient(client *Client) {
 		}
 		delete(h.userActiveConvs, client.UserID)
 	}
-
 	h.mu.Unlock()
 
 	log.Printf("ChatHub: Unregistered user %d (All connections closed)", client.UserID)
@@ -157,6 +196,9 @@ func (h *ChatHub) UnregisterClient(client *Client) {
 
 // IsUserOnline returns true when the user has at least one active chat websocket client.
 func (h *ChatHub) IsUserOnline(userID uint) bool {
+	if h.presence != nil {
+		return h.presence.IsOnline(context.Background(), userID)
+	}
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
@@ -375,12 +417,19 @@ func (h *ChatHub) BroadcastGlobalStatus(userID uint, status string) {
 
 // Shutdown gracefully closes all websocket connections
 func (h *ChatHub) Shutdown(_ context.Context) error {
+	if h.presence != nil {
+		h.presence.Stop()
+	}
+
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
 	// Close all user connections
 	for userID, clients := range h.userConns {
 		for client := range clients {
+			if client.Conn == nil {
+				continue
+			}
 			if err := client.Conn.WriteMessage(1, // TextMessage
 				[]byte(`{"type":"server_shutdown","message":"Server is shutting down"}`)); err != nil {
 				log.Printf("failed to write shutdown message for user %d: %v", userID, err)
@@ -397,4 +446,53 @@ func (h *ChatHub) Shutdown(_ context.Context) error {
 	h.userConns = make(map[uint]map[*Client]bool)
 
 	return nil
+}
+
+func (h *ChatHub) handleUserOnline(userID uint) {
+	h.BroadcastGlobalStatus(userID, "online")
+}
+
+func (h *ChatHub) handleUserOffline(userID uint) {
+	h.mu.Lock()
+	if convs, ok := h.userActiveConvs[userID]; ok {
+		for convID := range convs {
+			if users, ok := h.conversations[convID]; ok {
+				delete(users, userID)
+				if len(users) == 0 {
+					delete(h.conversations, convID)
+				}
+			}
+		}
+		delete(h.userActiveConvs, userID)
+	}
+	h.mu.Unlock()
+
+	log.Printf("ChatHub: User %d marked offline after grace period", userID)
+	h.BroadcastGlobalStatus(userID, "offline")
+}
+
+func (h *ChatHub) onlineUsersSnapshot(excludeUserID uint) []uint {
+	onlineIDs := make([]uint, 0)
+	if h.presence != nil {
+		ids := h.presence.GetOnlineUserIDs(context.Background())
+		onlineIDs = make([]uint, 0, len(ids))
+		for _, id := range ids {
+			if id == excludeUserID {
+				continue
+			}
+			onlineIDs = append(onlineIDs, id)
+		}
+		return onlineIDs
+	}
+
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	onlineIDs = make([]uint, 0, len(h.userConns))
+	for id := range h.userConns {
+		if id == excludeUserID {
+			continue
+		}
+		onlineIDs = append(onlineIDs, id)
+	}
+	return onlineIDs
 }

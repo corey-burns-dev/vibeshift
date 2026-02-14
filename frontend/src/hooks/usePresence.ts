@@ -12,6 +12,7 @@ interface PresenceState {
   setOffline: (userId: number) => void
   setInitialOnlineUsers: (userIds: number[]) => void
   markNotified: (userId: number) => void
+  reset: () => void
 }
 
 export const usePresenceStore = create<PresenceState>(set => ({
@@ -45,6 +46,11 @@ export const usePresenceStore = create<PresenceState>(set => ({
       newNotified.add(userId)
       return { notifiedUserIds: newNotified }
     }),
+  reset: () =>
+    set(() => ({
+      onlineUserIds: new Set<number>(),
+      notifiedUserIds: new Set<number>(),
+    })),
 }))
 
 // Types for presence events

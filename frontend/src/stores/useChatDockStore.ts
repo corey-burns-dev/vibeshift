@@ -1,6 +1,48 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+const CHAT_DOCK_STORAGE_PREFIX = 'chat-dock-storage'
+const CHAT_DOCK_STORAGE_ANON = 'anon'
+
+type ChatDockStorageUserID = number | null | undefined
+
+function normalizeUserID(userID: ChatDockStorageUserID): number | null {
+  return typeof userID === 'number' && Number.isFinite(userID) ? userID : null
+}
+
+export function getChatDockStorageKey(userID?: ChatDockStorageUserID): string {
+  const normalized = normalizeUserID(userID)
+  return `${CHAT_DOCK_STORAGE_PREFIX}:${normalized ?? CHAT_DOCK_STORAGE_ANON}`
+}
+
+function getCurrentUserIDFromStorage(): number | null {
+  try {
+    if (typeof window === 'undefined') return null
+    const userStr = localStorage.getItem('user')
+    if (!userStr) return null
+    const parsed = JSON.parse(userStr)
+    return normalizeUserID(parsed?.id)
+  } catch {
+    return null
+  }
+}
+
+export function getCurrentChatDockStorageKey(): string {
+  return getChatDockStorageKey(getCurrentUserIDFromStorage())
+}
+
+const DEFAULT_CHAT_DOCK_STATE = {
+  isOpen: false,
+  minimized: false,
+  view: 'list' as const,
+  activeConversationId: null as number | null,
+  activePageConversationId: null as number | null,
+  openConversationIds: [] as number[],
+  drafts: {} as Record<number, string>,
+  unreadCounts: {} as Record<number, number>,
+  scrollPositions: {} as Record<number, number>,
+}
+
 interface ChatDockState {
   isOpen: boolean
   minimized: boolean
@@ -28,20 +70,13 @@ interface ChatDockState {
   incrementUnread: (conversationId: number) => void
   resetUnread: (conversationId: number) => void
   resetUnreadBulk: (conversationIds: number[]) => void
+  resetSessionState: () => void
 }
 
 export const useChatDockStore = create<ChatDockState>()(
   persist(
     (set, get) => ({
-      isOpen: false,
-      minimized: false,
-      view: 'list',
-      activeConversationId: null,
-      activePageConversationId: null,
-      openConversationIds: [],
-      drafts: {},
-      unreadCounts: {},
-      scrollPositions: {},
+      ...DEFAULT_CHAT_DOCK_STATE,
 
       toggle: () => {
         const { isOpen, minimized } = get()
@@ -154,20 +189,11 @@ export const useChatDockStore = create<ChatDockState>()(
           }
           return { unreadCounts: next }
         }),
+      resetSessionState: () => set({ ...DEFAULT_CHAT_DOCK_STATE }),
     }),
     {
-      // Namespace persisted key by current user id to avoid cross-account leaks
-      name: (() => {
-        try {
-          if (typeof window === 'undefined') return 'chat-dock-storage:anon'
-          const userStr = localStorage.getItem('user')
-          if (!userStr) return 'chat-dock-storage:anon'
-          const u = JSON.parse(userStr)
-          return `chat-dock-storage:${u?.id ?? 'anon'}`
-        } catch {
-          return 'chat-dock-storage:anon'
-        }
-      })(),
+      // Namespace persisted key by user id to avoid cross-account leaks.
+      name: getCurrentChatDockStorageKey(),
       partialize: state => ({
         activeConversationId: state.activeConversationId,
         openConversationIds: state.openConversationIds,
@@ -178,3 +204,31 @@ export const useChatDockStore = create<ChatDockState>()(
     }
   )
 )
+
+interface ResetChatDockSessionOptions {
+  previousUserID?: ChatDockStorageUserID
+  nextUserID?: ChatDockStorageUserID
+  clearPersisted?: boolean
+}
+
+export function resetChatDockSession(
+  options: ResetChatDockSessionOptions = {}
+) {
+  const previousUserID = normalizeUserID(options.previousUserID)
+  const nextUserID = normalizeUserID(options.nextUserID)
+  const clearPersisted = options.clearPersisted ?? true
+
+  const previousKey = getChatDockStorageKey(previousUserID)
+  const nextKey = getChatDockStorageKey(nextUserID)
+
+  if (clearPersisted && typeof window !== 'undefined') {
+    localStorage.removeItem(previousKey)
+    if (nextKey !== previousKey) {
+      localStorage.removeItem(nextKey)
+    }
+  }
+
+  useChatDockStore.persist.setOptions({ name: nextKey })
+  useChatDockStore.getState().resetSessionState()
+  void useChatDockStore.persist.rehydrate()
+}

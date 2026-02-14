@@ -84,6 +84,17 @@ describe('useUsers hooks', () => {
       expect(getCurrentUser()).toEqual(user)
     })
 
+    it('returns updated user when localStorage changes between sessions', () => {
+      const userA = { id: 1, username: 'user-a', email: 'a@example.com' }
+      const userB = { id: 2, username: 'user-b', email: 'b@example.com' }
+
+      localStorage.setItem('user', JSON.stringify(userA))
+      expect(getCurrentUser()).toEqual(userA)
+
+      localStorage.setItem('user', JSON.stringify(userB))
+      expect(getCurrentUser()).toEqual(userB)
+    })
+
     it('returns null when no user in localStorage', () => {
       expect(getCurrentUser()).toBeNull()
     })

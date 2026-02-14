@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
-import { ApiError, apiClient } from '@/api/client'
-import { createTicketedWS, getNextBackoff } from '@/lib/ws-utils'
+import { apiClient } from '@/api/client'
+import { useManagedWebSocket } from '@/hooks/useManagedWebSocket'
+import { createTicketedWS } from '@/lib/ws-utils'
 
 type RoomSession = {
   id: number
@@ -44,15 +45,12 @@ export function useGameRoomSession({
   joinPendingDescription = 'Joining the match as soon as the game socket is ready.',
   onAction,
 }: UseGameRoomSessionOptions) {
-  const [isSocketReady, setIsSocketReady] = useState(false)
-
-  const wsRef = useRef<WebSocket | null>(null)
+  const previousTokenRef = useRef<string | null>(null)
   const onActionRef = useRef(onAction)
   const shouldAutoJoinRef = useRef(false)
   const hasJoinedRef = useRef(false)
   const allowLeaveOnUnmountRef = useRef(false)
   const isParticipantRef = useRef(false)
-  const didSetConnectionErrorRef = useRef(false)
 
   useEffect(() => {
     onActionRef.current = onAction
@@ -74,6 +72,61 @@ export function useGameRoomSession({
       room.creator_id === currentUserId || room.opponent_id === currentUserId
   }, [room, currentUserId])
 
+  const wsEnabled = !!roomId && !!token
+
+  const { wsRef, connectionState, reconnect, setPlannedReconnect } =
+    useManagedWebSocket({
+      enabled: wsEnabled,
+      createSocket: async () => {
+        if (!roomId) {
+          throw new Error('missing game room id')
+        }
+        return createTicketedWS({
+          path: `/api/ws/game?room_id=${roomId}`,
+        })
+      },
+      onOpen: ws => {
+        // Recover join intent after reconnect — only if the join
+        // hasn't been sent yet. Re-sending after a successful join
+        // causes "Game already started" errors on every reconnect.
+        if (
+          roomId &&
+          shouldAutoJoinRef.current &&
+          !hasJoinedRef.current &&
+          ws.readyState === WebSocket.OPEN
+        ) {
+          ws.send(
+            JSON.stringify({
+              type: 'join_room',
+              room_id: roomId,
+            })
+          )
+          hasJoinedRef.current = true
+          shouldAutoJoinRef.current = false
+        }
+      },
+      onMessage: (_ws, event) => {
+        try {
+          const action = JSON.parse(event.data) as Record<string, unknown>
+          onActionRef.current?.(action)
+        } catch (error) {
+          console.error('Failed to parse game socket message:', error)
+        }
+      },
+      onError: ws => {
+        if (
+          ws.readyState === WebSocket.OPEN ||
+          ws.readyState === WebSocket.CONNECTING
+        ) {
+          ws.close()
+        }
+      },
+      reconnectDelaysMs: [2000, 5000, 10000],
+    })
+
+  const isSocketReady = connectionState === 'connected'
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mutable wsRef.current is read intentionally at call time
   const sendJoinNow = useCallback(() => {
     if (
       !roomId ||
@@ -94,6 +147,7 @@ export function useGameRoomSession({
     return true
   }, [roomId])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mutable wsRef.current is read intentionally at call time
   const sendAction = useCallback(
     (action: GameSocketAction, options?: SendActionOptions) => {
       const showConnectingToast = options?.showConnectingToast ?? true
@@ -121,6 +175,7 @@ export function useGameRoomSession({
     [roomId]
   )
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mutable wsRef.current is read intentionally at call time
   const joinRoom = useCallback(() => {
     if (!roomId) return false
 
@@ -146,6 +201,7 @@ export function useGameRoomSession({
     sendJoinNow,
   ])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mutable wsRef.current is read intentionally at call time
   useEffect(() => {
     if (!autoJoinPendingRoom || !room || !currentUserId) {
       shouldAutoJoinRef.current = false
@@ -168,98 +224,22 @@ export function useGameRoomSession({
   }, [autoJoinPendingRoom, room, currentUserId, sendJoinNow])
 
   useEffect(() => {
-    if (!roomId || !token) return
-
-    let closedByEffect = false
-    let reconnectAttempts = 0
-    const MAX_RECONNECT_ATTEMPTS = 8
-    let reconnectTimer: number | null = null
-
-    const connect = async () => {
-      if (closedByEffect) return
-
-      setIsSocketReady(false)
-      didSetConnectionErrorRef.current = false
-
-      try {
-        const ws = await createTicketedWS({
-          path: `/api/ws/game?room_id=${roomId}`,
-          onOpen: () => {
-            if (closedByEffect) return
-            setIsSocketReady(true)
-            reconnectAttempts = 0
-            didSetConnectionErrorRef.current = false
-            // Recover join intent after reconnect — only if the join
-            // hasn't been sent yet.  Re-sending after a successful join
-            // causes "Game already started" errors on every reconnect.
-            if (
-              shouldAutoJoinRef.current &&
-              !hasJoinedRef.current &&
-              ws.readyState === WebSocket.OPEN
-            ) {
-              sendJoinNow()
-            }
-          },
-          onMessage: event => {
-            if (closedByEffect) return
-            try {
-              const action = JSON.parse(event.data) as Record<string, unknown>
-              onActionRef.current?.(action)
-            } catch (error) {
-              console.error('Failed to parse game socket message:', error)
-            }
-          },
-          onError: () => {
-            if (closedByEffect) return
-            if (!didSetConnectionErrorRef.current) {
-              setIsSocketReady(false)
-              didSetConnectionErrorRef.current = true
-            }
-            ws.close()
-          },
-          onClose: () => {
-            if (closedByEffect) return
-            setIsSocketReady(false)
-
-            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-              const delay = getNextBackoff(reconnectAttempts++)
-              reconnectTimer = window.setTimeout(connect, delay)
-            } else {
-              toast.error('Connection lost', {
-                description:
-                  'Failed to reconnect to game server. Please refresh the page.',
-              })
-            }
-          },
-        })
-
-        wsRef.current = ws
-      } catch (err) {
-        if (closedByEffect) return
-
-        if (err instanceof ApiError && err.status === 401) {
-          return
-        }
-
-        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-          const delay = getNextBackoff(reconnectAttempts++)
-          reconnectTimer = window.setTimeout(connect, delay)
-        }
-      }
+    if (!wsEnabled) {
+      previousTokenRef.current = token ?? null
+      return
     }
 
-    connect()
+    const previousToken = previousTokenRef.current
+    const currentToken = token ?? null
+    previousTokenRef.current = currentToken
 
-    return () => {
-      closedByEffect = true
-      setIsSocketReady(false)
-      if (reconnectTimer !== null) {
-        window.clearTimeout(reconnectTimer)
-      }
-      wsRef.current?.close()
-      wsRef.current = null
+    if (!previousToken || !currentToken || previousToken === currentToken) {
+      return
     }
-  }, [roomId, token, sendJoinNow])
+
+    setPlannedReconnect(true)
+    reconnect(true)
+  }, [wsEnabled, token, reconnect, setPlannedReconnect])
 
   useEffect(() => {
     if (!roomId || !token) return

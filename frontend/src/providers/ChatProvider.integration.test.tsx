@@ -54,6 +54,7 @@ class MockWS {
   static instances: MockWS[] = []
   onopen: (() => void) | null = null
   onmessage: ((ev: { data: string }) => void) | null = null
+  onclose: ((ev: { code: number; reason: string }) => void) | null = null
   readyState = 0
   url: string
   sent: string[] = []
@@ -69,15 +70,31 @@ class MockWS {
     this.onopen?.()
   }
 
-  send(_data?: string) {}
-  close() {
+  flushClose(code = 1006, reason = 'server restart') {
     this.readyState = 3
+    this.onclose?.({ code, reason })
+  }
+
+  send(data?: string) {
+    if (!data) return
+    this.sent.push(data)
+  }
+  close() {
+    this.flushClose(1000, 'client close')
   }
 
   receive(obj: unknown) {
     const data = typeof obj === 'string' ? obj : JSON.stringify(obj)
     this.onmessage?.({ data })
   }
+}
+
+type SessionResetTestContext = {
+  joinRoom: (conversationId: number) => void
+  getUnread: (conversationId: number) => number
+  incrementUnread: (conversationId: number) => number
+  joinedRooms: Set<number>
+  unreadByConversation: Record<string, number>
 }
 
 describe('ChatProvider integration', () => {
@@ -446,5 +463,125 @@ describe('ChatProvider integration', () => {
     await act(async () => {})
 
     expect(mockPlayNewMessageSound).not.toHaveBeenCalled()
+  })
+
+  it('recovers from server close and reconnects with room rejoin intent', async () => {
+    vi.useFakeTimers()
+    let capturedCtx: ReturnType<typeof useChatContext> | null = null
+
+    const wrapper = ({ children }: { children?: React.ReactNode }) => (
+      <QueryClientProvider client={qc}>
+        <ChatProvider>{children}</ChatProvider>
+      </QueryClientProvider>
+    )
+
+    act(() => {
+      render(
+        <HookTest
+          cb={ctx => {
+            capturedCtx = ctx
+          }}
+        />,
+        { wrapper }
+      )
+    })
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+      const first = MockWS.instances[0]
+      if (first) first.flushOpen()
+    })
+
+    expect(capturedCtx).not.toBeNull()
+    act(() => {
+      capturedCtx?.joinRoom(321)
+    })
+    const first = MockWS.instances[0]
+
+    act(() => {
+      first.flushClose()
+    })
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1999)
+    })
+    expect(MockWS.instances.length).toBe(1)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+    })
+    expect(MockWS.instances.length).toBeGreaterThan(1)
+
+    const second = MockWS.instances[MockWS.instances.length - 1]
+    await act(async () => {
+      second.flushOpen()
+    })
+
+    expect(second.sent.some(msg => msg.includes('321'))).toBe(true)
+  })
+
+  it('clears joined rooms and unread state after auth loss before reconnecting', async () => {
+    vi.useFakeTimers()
+    let capturedCtx: SessionResetTestContext | null = null
+
+    const wrapper = ({ children }: { children?: React.ReactNode }) => (
+      <QueryClientProvider client={qc}>
+        <ChatProvider>{children}</ChatProvider>
+      </QueryClientProvider>
+    )
+
+    act(() => {
+      render(
+        <HookTest
+          cb={ctx => {
+            capturedCtx = ctx as unknown as SessionResetTestContext
+          }}
+        />,
+        { wrapper }
+      )
+    })
+    await act(async () => {})
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+      const w = MockWS.instances[0]
+      if (w) w.flushOpen()
+    })
+
+    expect(capturedCtx).not.toBeNull()
+    const getCtx = () => capturedCtx as unknown as SessionResetTestContext
+    let unreadAfterIncrement = 0
+    act(() => {
+      getCtx().joinRoom(123)
+      unreadAfterIncrement = getCtx().incrementUnread(123)
+    })
+
+    expect(getCtx().joinedRooms.has(123)).toBe(true)
+    expect(unreadAfterIncrement).toBe(1)
+
+    act(() => {
+      useAuthSessionStore.getState().clear()
+      localStorage.removeItem('user')
+    })
+    await act(async () => {})
+
+    expect(getCtx().joinedRooms.size).toBe(0)
+    expect(getCtx().getUnread(123)).toBe(0)
+
+    const jwt = { exp: Math.floor(Date.now() / 1000) + 3600 }
+    const base = btoa(JSON.stringify(jwt))
+    const token = `a.${base}.c`
+
+    act(() => {
+      localStorage.setItem('user', JSON.stringify({ id: 2, username: 'u2' }))
+      useAuthSessionStore.getState().setAccessToken(token)
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+      const w = MockWS.instances[MockWS.instances.length - 1]
+      if (w) w.flushOpen()
+    })
+
+    expect(getCtx().joinedRooms.size).toBe(0)
+    expect(getCtx().getUnread(123)).toBe(0)
   })
 })
