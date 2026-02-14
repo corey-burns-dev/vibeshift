@@ -31,7 +31,13 @@ describe('MessageItem', () => {
       sender: buildUser({ id: 1, username: 'me' }),
     })
 
-    render(<MessageItem message={message} isOwnMessage={true} />)
+    render(
+      <MessageItem
+        message={message}
+        isOwnMessage={true}
+        isDirectMessage={true}
+      />
+    )
 
     expect(screen.getByText('You')).toBeInTheDocument()
     expect(screen.getByText('My message')).toBeInTheDocument()

@@ -1,6 +1,4 @@
-Here’s my take on the plan: it’s directionally *very* strong, but it needs a couple of guardrails so it doesn’t accidentally turn into “a documentation system that eats documentation” 🐍📚.
-
-## What’s excellent (keep it)
+# What’s excellent (keep it)
 
 * **Single “always read” core file**: Consolidating to something like `CLAUDE-CORE.md` is the biggest guaranteed win, because it attacks the “discovery tax” head-on and removes redirect churn.
 * **Context layer + lessons layer**: Splitting “how we do things” (`docs/context/*`) from “what we learned from pain” (`docs/lessons/*`) is exactly right for agent work. It directly addresses the “no lessons-learned system” gap the plan calls out.

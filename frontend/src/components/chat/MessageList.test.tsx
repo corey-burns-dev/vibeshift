@@ -81,7 +81,12 @@ describe('MessageList', () => {
     ]
 
     render(
-      <MessageList messages={messages} isLoading={false} currentUserId={1} />,
+      <MessageList
+        messages={messages}
+        isLoading={false}
+        currentUserId={1}
+        isDirectMessage={true}
+      />,
       {
         wrapper: createWrapper(),
       }

@@ -27,6 +27,16 @@ export const MessageList = memo(function MessageList({
   showTimestamps = true,
   scrollElement,
 }: MessageListProps) {
+  const canVirtualize = Boolean(scrollElement) && messages.length > 100
+  const virtualizer = useVirtualizer({
+    count: messages.length,
+    getScrollElement: () => scrollElement ?? null,
+    estimateSize: () => (isIRCStyle ? 22 : 62),
+    overscan: 24,
+    enabled: canVirtualize,
+    getItemKey: index => messages[index]?.id ?? index,
+  })
+
   if (isLoading) {
     return (
       <div className='flex-1 flex items-center justify-center text-muted-foreground text-sm'>
@@ -42,16 +52,6 @@ export const MessageList = memo(function MessageList({
       </div>
     )
   }
-
-  const canVirtualize = Boolean(scrollElement) && messages.length > 100
-  const virtualizer = useVirtualizer({
-    count: messages.length,
-    getScrollElement: () => scrollElement ?? null,
-    estimateSize: () => (isIRCStyle ? 22 : 62),
-    overscan: 24,
-    enabled: canVirtualize,
-    getItemKey: index => messages[index]?.id ?? index,
-  })
 
   if (!canVirtualize) {
     return (

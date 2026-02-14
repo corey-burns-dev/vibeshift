@@ -156,7 +156,7 @@ export const MessageItem = memo(function MessageItem({
           )}
           style={{ color: getUserColor(message.sender_id) }}
         >
-          {isOwnMessage ? 'You' : sender.username}
+          {isOwnMessage && isDirectMessage ? 'You' : sender.username}
           {isIRCStyle ? ':' : ''}
         </span>
       </UserMenu>
