@@ -85,7 +85,15 @@ func ApplySchema(ctx context.Context, db *gorm.DB, cfg *config.Config) error {
 		}
 		middleware.Logger.Info("Running GORM AutoMigrate", slog.String("mode", mode), slog.String("env", cfg.Env))
 		if err := runAutoMigrate(db); err != nil {
-			return fmt.Errorf("auto-migrate: %w", err)
+			// Some versions of GORM/DB can attempt destructive changes that fail
+			// with "does not exist" when running AutoMigrate repeatedly. For
+			// hybrid mode we prefer to tolerate those idempotency-related errors
+			// rather than fail the entire schema application.
+			if strings.Contains(err.Error(), "does not exist") {
+				middleware.Logger.Warn("auto-migrate: non-fatal missing object", slog.String("err", err.Error()))
+			} else {
+				return fmt.Errorf("auto-migrate: %w", err)
+			}
 		}
 	}
 
