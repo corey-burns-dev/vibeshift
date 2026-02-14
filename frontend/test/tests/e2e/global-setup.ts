@@ -60,17 +60,17 @@ async function signup(
 
 async function promoteAdmin(userID: number) {
   const host = process.env.PGHOST || process.env.DB_HOST || 'localhost'
-  const port = Number(process.env.PGPORT || process.env.DB_PORT || '5433')
+  const port = Number(process.env.PGPORT || process.env.DB_PORT || '5432')
   const user =
     process.env.PGUSER ||
     process.env.DB_USER ||
     process.env.POSTGRES_USER ||
-    'sanctum_user'
+    'user'
   const password =
     process.env.PGPASSWORD ||
     process.env.DB_PASSWORD ||
     process.env.POSTGRES_PASSWORD ||
-    'sanctum_password'
+    'password'
   const configuredDatabase =
     process.env.PGDATABASE || process.env.DB_NAME || process.env.POSTGRES_DB
 
@@ -83,7 +83,7 @@ async function promoteAdmin(userID: number) {
     'postgres',
   ].filter((db): db is string => Boolean(db))
 
-  let lastError: unknown = null
+  const attemptErrors: string[] = []
 
   for (const database of candidates) {
     const client = new Client({ host, port, user, password, database })
@@ -99,14 +99,14 @@ async function promoteAdmin(userID: number) {
         return
       }
     } catch (error) {
-      lastError = error
+      attemptErrors.push(`${database}: ${String(error)}`)
     } finally {
       await client.end().catch(() => undefined)
     }
   }
 
   throw new Error(
-    `unable to promote e2e admin user ${userID} in candidate databases ${candidates.join(', ')}: ${String(lastError)}`
+    `unable to promote e2e admin user ${userID}; tried host=${host} port=${port} user=${user}; databases=${candidates.join(', ')}; errors=[${attemptErrors.join(' | ')}]`
   )
 }
 

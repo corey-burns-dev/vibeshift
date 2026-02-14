@@ -708,19 +708,64 @@ deps-freshness:
 	cd backend && $(GO) list -u -m -f '{{if .Update}}{{.Path}} {{.Version}} -> {{.Update.Version}}{{end}}' all
 	@echo "$(GREEN)✓ Freshness check complete$(NC)"
 # Perf targets (added by perf agent)
-.PHONY: perf-preview perf-harness perf-ws perf-e2e perf-e2e-local
+.PHONY: perf-preview perf-harness perf-ws perf-multi-ws build-chattest perf-e2e perf-e2e-local
 
 perf-preview:
-cd frontend && bun run build && bun run preview -- --host
+	@echo "Building frontend and starting preview on http://localhost:4173 (background). Logs -> /tmp/frontend-preview.log"
+	@cd frontend && bun run build > /tmp/frontend-preview.log 2>&1
+	@if [ -f /tmp/frontend-preview.pid ]; then \
+		OLD_PID=$$(cat /tmp/frontend-preview.pid); \
+		if ps -p $$OLD_PID >/dev/null 2>&1; then \
+			echo "Stopping existing preview process $$OLD_PID"; \
+			kill $$OLD_PID; \
+			wait $$OLD_PID 2>/dev/null || true; \
+		fi; \
+	fi
+	@PIDS_ON_PORT=$$(lsof -ti tcp:4173 2>/dev/null || true); \
+	if [ -n "$$PIDS_ON_PORT" ]; then \
+		echo "Stopping process(es) on port 4173: $$PIDS_ON_PORT"; \
+		kill $$PIDS_ON_PORT; \
+		sleep 1; \
+		REMAINING=$$(lsof -ti tcp:4173 2>/dev/null || true); \
+		if [ -n "$$REMAINING" ]; then \
+			echo "Force stopping remaining process(es) on 4173: $$REMAINING"; \
+			kill -9 $$REMAINING; \
+			sleep 1; \
+		fi; \
+	fi
+	@nohup sh -c 'cd frontend && exec bun run preview -- --host --strictPort --port 4173' > /tmp/frontend-preview.log 2>&1 & echo $$! > /tmp/frontend-preview.pid
 
 perf-harness:
-@echo "Open http://localhost:4173/perf/chat or http://localhost:4173/perf/chat?wsFeed=1"
+	@echo "Open http://localhost:4173/chat"
 
-perf-ws:
-node scripts/ws-simulate-simple.js
+perf-ws: perf-multi-ws
+
+perf-multi-ws: build-chattest
+	@bash scripts/ws-multi-sim.sh
+
+build-chattest:
+	@if [ -d backend ]; then \
+		echo "Building backend chattest binary..."; \
+		cd backend && mkdir -p bin && go build -o bin/chattest ./cmd/chattest && echo "Built backend/bin/chattest"; \
+	else \
+		echo "backend/ directory not found — cannot build chattest. If you want to run the simulator, ensure you have the backend source or a prebuilt backend/bin/chattest binary."; \
+		exit 0; \
+	fi
 
 perf-e2e:
-PERF_TEST_ONLY=true cd frontend && bun run test:e2e -- --grep "chat stress smoke"
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+	PLAYWRIGHT_BASE_URL=$${PLAYWRIGHT_BASE_URL:-http://localhost:5173} \
+	PLAYWRIGHT_API_URL=$${PLAYWRIGHT_API_URL:-http://localhost:8375/api} \
+	PGHOST=$${PGHOST:-localhost} \
+	PGPORT=$${PGPORT:-5432} \
+	PERF_TEST_ONLY=true \
+	cd frontend && bun run test:e2e -- --grep "@preprod"
 
 perf-e2e-local:
-PERF_TEST_ONLY=true cd frontend && bun run test:e2e -- --grep "chat stress smoke"
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+	PLAYWRIGHT_BASE_URL=$${PLAYWRIGHT_BASE_URL:-http://localhost:5173} \
+	PLAYWRIGHT_API_URL=$${PLAYWRIGHT_API_URL:-http://localhost:8375/api} \
+	PGHOST=$${PGHOST:-localhost} \
+	PGPORT=$${PGPORT:-5432} \
+	PERF_TEST_ONLY=true \
+	cd frontend && bun run test:e2e -- --grep "@preprod"

@@ -1734,6 +1734,7 @@ export default function Chat() {
                 conversationId={selectedChatId || undefined}
                 isIRCStyle={isCurrentConversationGroup}
                 showTimestamps={showTimestamps}
+                scrollElement={scrollAreaRef.current}
               />
             </div>
           </ScrollArea>
