@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test'
 import {
-    ADMIN_STATE_PATH,
-    readTokenFromStorageState,
-    USER_STATE_PATH,
+  ADMIN_STATE_PATH,
+  readTokenFromStorageState,
+  USER_STATE_PATH,
 } from './fixtures/auth'
 import { createSanctumRequest, uniqueSlug } from './utils/api'
 

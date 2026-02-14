@@ -2,12 +2,9 @@ package database
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
-
-	"github.com/jackc/pgconn"
 
 	"sanctum/internal/config"
 	"sanctum/internal/middleware"
@@ -89,13 +86,8 @@ func ApplySchema(ctx context.Context, db *gorm.DB, cfg *config.Config) error {
 		middleware.Logger.Info("Running GORM AutoMigrate", slog.String("mode", mode), slog.String("env", cfg.Env))
 		if err := runAutoMigrate(db); err != nil {
 			// Some Postgres-specific errors indicate idempotency issues (object
-			// already/didn't exist). Detect Postgres SQLSTATE 42704 (undefined
-			// object) and treat it as a non-fatal warning for hybrid mode so
-			// repeated ApplySchema calls remain idempotent.
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == "42704" {
-				middleware.Logger.Warn("auto-migrate: non-fatal missing object", slog.String("err", pgErr.Error()))
-			} else if strings.Contains(err.Error(), "does not exist") {
+			// already/didn't exist). Since we can't check pgconn.PgError, fallback to string matching.
+			if strings.Contains(err.Error(), "does not exist") {
 				// Fallback: some drivers/lib wrappers may not expose pgconn.PgError;
 				// still accept the common textual message as a non-fatal issue.
 				middleware.Logger.Warn("auto-migrate: non-fatal missing object (fallback)", slog.String("err", err.Error()))
