@@ -8,16 +8,13 @@ vi.mock('@/hooks/usePresence', () => ({
   usePresenceStore: () => new Set<number>(),
 }))
 
-vi.mock('@/stores/useChatDockStore', () => ({
-  useChatDockStore: () => ({ unreadCounts: {} as Record<number, number> }),
-}))
-
 describe('ChatDockConversationList', () => {
   it('renders empty state when no conversations', () => {
     render(
       <ChatDockConversationList
         conversations={[]}
         currentUserId={1}
+        unreadByConversation={{}}
         onSelect={vi.fn()}
       />
     )
@@ -44,6 +41,7 @@ describe('ChatDockConversationList', () => {
       <ChatDockConversationList
         conversations={conversations}
         currentUserId={1}
+        unreadByConversation={{}}
         onSelect={onSelect}
       />
     )

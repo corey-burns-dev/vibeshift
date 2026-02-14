@@ -2,15 +2,16 @@
  * Integration tests for ChatProvider: WebSocket connection, message flow,
  * and subscription behavior. Builds on unit tests in ChatProvider.spec.tsx.
  */
-import {
-    shouldPlayFriendOnlineSound,
-    shouldPlayNewMessageSoundForDM,
-} from '@/lib/chat-sounds'
-import { useAuthSessionStore } from '@/stores/useAuthSessionStore'
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, render } from '@testing-library/react'
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  shouldPlayFriendDMInMessagesView,
+  shouldPlayFriendOnlineSound,
+} from '@/lib/chat-sounds'
+import { useAuthSessionStore } from '@/stores/useAuthSessionStore'
 import { ChatProvider, useChatContext } from './ChatProvider'
 
 vi.mock('@/api/client', () => ({
@@ -68,7 +69,7 @@ class MockWS {
     this.onopen?.()
   }
 
-  send() {}
+  send(_data?: string) {}
   close() {
     this.readyState = 3
   }
@@ -192,7 +193,12 @@ describe('ChatProvider integration', () => {
     )
 
     const sent: string[] = []
-    const typingReceived: unknown[] = []
+    const typingReceived: {
+      convId: number
+      userId: number
+      username: string
+      isTyping: boolean
+    }[] = []
     let capturedCtx: ReturnType<typeof useChatContext> | null = null
 
     function TestHook() {
@@ -231,19 +237,22 @@ describe('ChatProvider integration', () => {
     const ws = MockWS.instances[0]
 
     // Patch send to record outgoing messages (mutate instance for test)
-    ws.send = (msg: string) => {
+    ws.send = (msg?: string) => {
+      if (!msg) return
       sent.push(msg)
       // also store on instance for visibility
-      // @ts-ignore - test helper mutation
       ws.sent = ws.sent || []
-      // @ts-ignore - test helper mutation
       ws.sent.push(msg)
     }
 
     // The provider should have recorded the join intent immediately
     expect(capturedCtx).not.toBeNull()
-    // Use `any` cast to avoid TS narrowing issues in test code
-    expect((capturedCtx as any)?.joinedRooms?.has(123)).toBe(true)
+    // Use `as unknown as { joinedRooms: Set<number> }` to access internal state for test
+    expect(
+      (capturedCtx as unknown as { joinedRooms: Set<number> }).joinedRooms.has(
+        123
+      )
+    ).toBe(true)
 
     // Now open the socket (this should trigger join messages to be sent)
     await act(async () => {
@@ -267,14 +276,18 @@ describe('ChatProvider integration', () => {
     await act(async () => {})
 
     expect(typingReceived.length).toBeGreaterThan(0)
-    expect((typingReceived[0] as any).username).toBe('bob')
+    expect(typingReceived[0].username).toBe('bob')
   })
 
-  it('sound helpers trigger playNewMessageSound and playFriendOnlineSound when conditions met', async () => {
+  it('plays DM sound only on /messages and only on unread 0->1 transitions', async () => {
     vi.useFakeTimers()
     const currentUserId = 1
     const friendIds = [2]
     const notifiedUserIds = new Set<number>()
+    const routePath = '/messages'
+    const isMessagesRoute = routePath.includes('/messages')
+    const conversation = { is_group: false, is_friend_dm: true }
+    let capturedCtx: ReturnType<typeof useChatContext> | null = null
 
     const wrapper = ({ children }: { children?: React.ReactNode }) => (
       <QueryClientProvider client={qc}>
@@ -286,13 +299,17 @@ describe('ChatProvider integration', () => {
       render(
         <HookTest
           cb={ctx => {
+            capturedCtx = ctx
             ctx.subscribeOnMessage(
-              (msg: { sender_id?: number }, _convId: number) => {
+              (msg: { sender_id?: number }, convId: number) => {
+                if ((msg.sender_id ?? 0) === currentUserId) return
+                const nextUnread = ctx.incrementUnread(convId)
+                const prevUnread = nextUnread - 1
                 if (
-                  shouldPlayNewMessageSoundForDM(
-                    false,
-                    msg.sender_id ?? 0,
-                    currentUserId
+                  shouldPlayFriendDMInMessagesView(
+                    conversation,
+                    isMessagesRoute,
+                    prevUnread
                   )
                 ) {
                   mockPlayNewMessageSound()
@@ -338,7 +355,31 @@ describe('ChatProvider integration', () => {
     })
     await act(async () => {})
 
-    expect(mockPlayNewMessageSound).toHaveBeenCalled()
+    act(() => {
+      ws.receive({
+        type: 'message',
+        conversation_id: 1,
+        payload: { id: 11, content: 'Hi again', sender_id: 2 },
+      })
+    })
+    await act(async () => {})
+
+    expect(mockPlayNewMessageSound).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      capturedCtx?.clearUnread(1)
+    })
+
+    act(() => {
+      ws.receive({
+        type: 'message',
+        conversation_id: 1,
+        payload: { id: 12, content: 'After open', sender_id: 2 },
+      })
+    })
+    await act(async () => {})
+
+    expect(mockPlayNewMessageSound).toHaveBeenCalledTimes(2)
 
     act(() => {
       ws.receive({
@@ -349,5 +390,61 @@ describe('ChatProvider integration', () => {
     await act(async () => {})
 
     expect(mockPlayFriendOnlineSound).toHaveBeenCalled()
+  })
+
+  it('does not play DM sound outside /messages', async () => {
+    vi.useFakeTimers()
+    const currentUserId = 1
+    const routePath = '/posts'
+    const isMessagesRoute = routePath.includes('/messages')
+    const conversation = { is_group: false, is_friend_dm: true }
+
+    const wrapper = ({ children }: { children?: React.ReactNode }) => (
+      <QueryClientProvider client={qc}>
+        <ChatProvider>{children}</ChatProvider>
+      </QueryClientProvider>
+    )
+
+    act(() => {
+      render(
+        <HookTest
+          cb={ctx => {
+            ctx.subscribeOnMessage((msg: { sender_id?: number }, convId) => {
+              if ((msg.sender_id ?? 0) === currentUserId) return
+              const nextUnread = ctx.incrementUnread(convId)
+              const prevUnread = nextUnread - 1
+              if (
+                shouldPlayFriendDMInMessagesView(
+                  conversation,
+                  isMessagesRoute,
+                  prevUnread
+                )
+              ) {
+                mockPlayNewMessageSound()
+              }
+            })
+          }}
+        />,
+        { wrapper }
+      )
+    })
+    await act(async () => {})
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+      const w = MockWS.instances[0]
+      if (w) w.flushOpen()
+    })
+
+    const ws = MockWS.instances[0]
+    act(() => {
+      ws.receive({
+        type: 'message',
+        conversation_id: 1,
+        payload: { id: 20, content: 'Off-route', sender_id: 2 },
+      })
+    })
+    await act(async () => {})
+
+    expect(mockPlayNewMessageSound).not.toHaveBeenCalled()
   })
 })

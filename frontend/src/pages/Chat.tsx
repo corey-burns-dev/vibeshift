@@ -16,7 +16,7 @@ import {
   X,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import type { Conversation, Message, User } from '@/api/types'
 import { MessageList } from '@/components/chat/MessageList'
@@ -43,8 +43,8 @@ import { useIsMobile } from '@/hooks/useMediaQuery'
 import { usePresenceStore } from '@/hooks/usePresence'
 import { getCurrentUser, useIsAuthenticated } from '@/hooks/useUsers'
 import {
+  shouldPlayFriendDMInMessagesView,
   shouldPlayFriendOnlineSound,
-  shouldPlayNewMessageSoundForDM,
 } from '@/lib/chat-sounds'
 import {
   deduplicateDMConversations,
@@ -60,6 +60,7 @@ const QUICK_EMOJI = ['😀', '😂', '😍', '👍', '🔥', '🎉', '😮', '�
 
 export default function Chat() {
   const { id: urlChatId } = useParams<{ id: string }>()
+  const location = useLocation()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const isAuthenticated = useIsAuthenticated()
@@ -130,9 +131,19 @@ export default function Chat() {
     state => state.setInitialOnlineUsers
   )
 
-  const { data: friends = [] } = useFriends({ enabled: isAuthenticated })
+  const { data: friends = [], isSuccess: friendsLoaded } = useFriends({
+    enabled: isAuthenticated,
+  })
+  const isMessagesRoute =
+    location.pathname.includes('/messages') ||
+    location.pathname === '/chat' ||
+    location.pathname.startsWith('/chat/')
 
   const currentUser = useMemo(() => getCurrentUser(), [])
+  const friendIds = useMemo(
+    () => new Set((friendsLoaded ? friends : []).map(friend => friend.id)),
+    [friends, friendsLoaded]
+  )
 
   const {
     data: allChatrooms = [],
@@ -159,6 +170,13 @@ export default function Chat() {
       ),
     [allConversations, currentUser?.id]
   )
+  const dmConversationById = useMemo(
+    () =>
+      new Map(
+        dmConversations.map(conversation => [conversation.id, conversation])
+      ),
+    [dmConversations]
+  )
 
   const lastScrolledChatIdRef = useRef<number | null>(null)
 
@@ -181,9 +199,9 @@ export default function Chat() {
     }
   }, [])
 
-  // Initialize unread counts from server data
+  // Initialize room unread counts from server data
   useEffect(() => {
-    if (joinedChatrooms.length > 0 || dmConversations.length > 0) {
+    if (joinedChatrooms.length > 0) {
       setUnreadByRoom(prev => {
         const next = { ...prev }
         let changed = false
@@ -193,16 +211,10 @@ export default function Chat() {
             changed = true
           }
         }
-        for (const dm of dmConversations) {
-          if (dm.unread_count && dm.unread_count > 0 && !next[dm.id]) {
-            next[dm.id] = dm.unread_count
-            changed = true
-          }
-        }
         return changed ? next : prev
       })
     }
-  }, [joinedChatrooms, dmConversations])
+  }, [joinedChatrooms])
 
   // Dynamic Page Size Calculation
   useEffect(() => {
@@ -525,24 +537,8 @@ export default function Chat() {
     onlineUserIds,
   ])
 
-  const { playFriendOnlineSound, playNewMessageSound } = useAudio()
-
-  const onMessage = useCallback(
-    (msg: Message) => {
-      if (
-        !shouldPlayNewMessageSoundForDM(
-          isCurrentConversationGroup,
-          msg.sender_id,
-          currentUser?.id
-        )
-      ) {
-        return
-      }
-      playNewMessageSound()
-      toast.info(`New message from ${msg.sender?.username ?? 'User'}`)
-    },
-    [isCurrentConversationGroup, currentUser?.id, playNewMessageSound]
-  )
+  const { playFriendOnlineSound, playNewMessageSound, playRoomAlertSound } =
+    useAudio()
 
   const onPresence = useCallback(
     (userId: number, username: string, status: string) => {
@@ -699,7 +695,7 @@ export default function Chat() {
 
       if (!roomAlertedRef.current.has(conversationId)) {
         roomAlertedRef.current.add(conversationId)
-        playNewMessageSound()
+        playRoomAlertSound()
         const roomName =
           activeRooms.find(r => r.id === conversationId)?.name || 'a room'
         toast.info(`New message in ${roomName}`)
@@ -714,7 +710,7 @@ export default function Chat() {
       queryClient,
       selectedChatId,
       currentUser?.id,
-      playNewMessageSound,
+      playRoomAlertSound,
       activeRooms,
     ]
   )
@@ -773,6 +769,9 @@ export default function Chat() {
   const {
     joinRoom,
     leaveRoom,
+    getUnread,
+    incrementUnread,
+    clearUnread,
     sendTyping: ctxSendTyping,
     joinedRooms,
     setOnMessage: _setOnMessage,
@@ -840,18 +839,37 @@ export default function Chat() {
         onRoomMessage(message, conversationId)
       } else {
         // Handle Direct Messages
-        if (conversationId === selectedChatId) {
-          if (message.sender_id !== currentUser?.id) {
-            onMessage(message)
+        if (message.sender_id !== currentUser?.id) {
+          if (conversationId === selectedChatId) {
+            clearUnread(conversationId)
+          } else {
+            const newUnreadCount = incrementUnread(conversationId)
+            const previousUnreadCount = newUnreadCount - 1
+            const conversation = dmConversationById.get(conversationId)
+            const otherUserId = conversation?.participants?.find(
+              participant => participant.id !== currentUser?.id
+            )?.id
+            const isFriendDM =
+              !!conversation &&
+              !conversation.is_group &&
+              friendsLoaded &&
+              typeof otherUserId === 'number' &&
+              friendIds.has(otherUserId)
+
+            if (
+              shouldPlayFriendDMInMessagesView(
+                conversation
+                  ? { ...conversation, is_friend_dm: isFriendDM }
+                  : undefined,
+                isMessagesRoute,
+                previousUnreadCount
+              )
+            ) {
+              playNewMessageSound()
+            }
+
+            toast.info(`New message from ${message.sender?.username ?? 'User'}`)
           }
-        } else if (message.sender_id !== currentUser?.id) {
-          // Track unread for DMs too
-          setUnreadByRoom(prev => ({
-            ...prev,
-            [conversationId]: (prev[conversationId] || 0) + 1,
-          }))
-          playNewMessageSound()
-          toast.info(`New message from ${message.sender?.username ?? 'User'}`)
         }
 
         // Update DM list cache so last_message is current
@@ -929,12 +947,17 @@ export default function Chat() {
     currentUser?.id,
     activeRooms,
     allChatrooms,
-    onMessage,
     onRoomMessage,
     onPresence,
     onConnectedUsers,
     onParticipantsUpdate,
     onChatroomPresence,
+    clearUnread,
+    dmConversationById,
+    friendIds,
+    friendsLoaded,
+    incrementUnread,
+    isMessagesRoute,
     playNewMessageSound,
     queryClient,
     subscribeOnChatroomPresence,
@@ -963,7 +986,8 @@ export default function Chat() {
           }
         : prev
     )
-  }, [selectedChatId, isCurrentConversationGroup])
+    clearUnread(selectedChatId)
+  }, [selectedChatId, isCurrentConversationGroup, clearUnread])
 
   useEffect(() => {
     if (!joinedChatroomsQuery.isSuccess) return
@@ -1526,7 +1550,7 @@ export default function Chat() {
                         ? onlineUserIds.has(otherUser.id)
                         : false
                       const isSelected = selectedChatId === conversation.id
-                      const hasUnread = (unreadByRoom[conversation.id] || 0) > 0
+                      const hasUnread = getUnread(conversation.id) > 0
 
                       return (
                         <button

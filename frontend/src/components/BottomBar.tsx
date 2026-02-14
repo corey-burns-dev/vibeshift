@@ -6,12 +6,14 @@ import { useConversations } from '@/hooks/useChat'
 import { useFriends } from '@/hooks/useFriends'
 import { useIsAuthenticated } from '@/hooks/useUsers'
 import { cn } from '@/lib/utils'
+import { useChatContext } from '@/providers/ChatProvider'
 import { useChatDockStore } from '@/stores/useChatDockStore'
 
 export function BottomBar() {
   const location = useLocation()
   const isAuthenticated = useIsAuthenticated()
-  const { toggle, unreadCounts, isOpen, minimized } = useChatDockStore()
+  const { toggle, isOpen, minimized } = useChatDockStore()
+  const { unreadByConversation } = useChatContext()
 
   const { data: conversations = [] } = useConversations()
   const { data: friends = [] } = useFriends()
@@ -23,8 +25,11 @@ export function BottomBar() {
       return c.participants?.some(p => friendIds.has(p.id))
     })
 
-    return friendConvs.reduce((acc, c) => acc + (unreadCounts[c.id] || 0), 0)
-  }, [friends, conversations, unreadCounts])
+    return friendConvs.reduce(
+      (acc, c) => acc + (unreadByConversation[String(c.id)] || 0),
+      0
+    )
+  }, [friends, conversations, unreadByConversation])
 
   if (!isAuthenticated) return null
 

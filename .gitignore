@@ -23,6 +23,7 @@ PR_BODY.md
 
 # Docker
 compose.override.yml
+compose.local.yml
 .env.local
 
 # Config
@@ -50,3 +51,14 @@ frontend/reports/playwright-report/
 *~
 sanctum
 backend/main
+
+# Security & Data
+secrets/
+data/
+backend/config.production.yml
+backend/config.staging.yml
+backend/config.stress.yml
+backend/config.test.yml
+*.local.yml
+.env*
+!.env.example

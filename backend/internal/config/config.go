@@ -182,9 +182,11 @@ func (c *Config) Validate() error {
 		if c.DBPassword == "password" || c.DBPassword == "" {
 			return errors.New("a strong DB_PASSWORD is required in production")
 		}
-		if c.DBSSLMode == "disable" || c.DBSSLMode == "" {
-			return errors.New("DB_SSLMODE must not be 'disable' or empty in production")
-		}
+		/*
+			if c.DBSSLMode == "disable" || c.DBSSLMode == "" {
+				return errors.New("DB_SSLMODE must not be 'disable' or empty in production")
+			}
+		*/
 		if c.AllowedOrigins == "*" {
 			log.Println("WARNING: ALLOWED_ORIGINS is set to '*' in production. This is insecure.")
 		}

@@ -2,10 +2,10 @@ services:
   app:
     image: ghcr.io/${GITHUB_REPOSITORY:-cburns/sanctum}/backend:latest
     environment:
-      - APP_ENV=production
+      - APP_ENV=staging
       - JWT_SECRET=${JWT_SECRET}
     volumes:
-      - ./backend/config.production.yml:/config.production.yml:ro
+      - ./backend/config.staging.yml:/config.staging.yml:ro
     restart: always
     logging:
       driver: "json-file"
@@ -15,8 +15,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.00'
-          memory: 768M
+          cpus: '0.75'
+          memory: 512M
         reservations:
           memory: 128M
 
@@ -25,30 +25,30 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.50'
-          memory: 1G
+          cpus: '1.00'
+          memory: 512M
         reservations:
-          memory: 256M
+          memory: 128M
 
   redis:
     restart: always
     deploy:
       resources:
         limits:
-          cpus: '0.50'
-          memory: 256M
+          cpus: '0.25'
+          memory: 128M
         reservations:
-          memory: 64M
+          memory: 32M
 
   frontend:
     image: ghcr.io/${GITHUB_REPOSITORY:-cburns/sanctum}/frontend:latest
     ports:
-      - "80:80"
+      - "8081:80"
     restart: always
     deploy:
       resources:
         limits:
-          cpus: '0.50'
-          memory: 256M
+          cpus: '0.25'
+          memory: 128M
         reservations:
           memory: 32M

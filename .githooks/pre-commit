@@ -1,63 +1,57 @@
 #!/bin/sh
-# Pre-commit hook: regenerate swagger and auto-add if changed
-set -e
-
-echo "[pre-commit] Running swagger generation"
-if command -v make >/dev/null 2>&1; then
-  # Try to generate swagger; ignore non-fatal failures so commits aren't blocked
-  if make swagger; then
-    if git status --porcelain | grep -q "backend/docs/swagger.yaml"; then
-      git add backend/docs/swagger.yaml
-      echo "[pre-commit] backend/docs/swagger.yaml updated and added to commit"
-    else
-      echo "[pre-commit] backend/docs/swagger.yaml unchanged"
-    fi
-  else
-    echo "[pre-commit] make swagger failed — continue without blocking commit"
-  fi
-else
-  echo "[pre-commit] make not found; skipping swagger generation"
-fi
-
-exit 0
-#!/bin/sh
 
 # Sanctum Pro-grade Pre-commit Hook
-# 1. Formats and Lints Backend (Go)
-# 2. Formats and Lints Frontend (Biome)
-# 3. Re-stages only modified files
+# 1. Regenerate swagger
+# 2. Formats and Lints Backend (Go)
+# 3. Formats and Lints Frontend (Biome)
+# 4. Re-stages only modified files
 
 echo "🚀 Running pre-commit quality checks..."
 
-# --- 1. Backend Quality ---
+# --- 1. Swagger Generation ---
+echo "📖 Regenerating swagger docs..."
+if command -v make >/dev/null 2>&1; then
+  if make swagger; then
+    if git status --porcelain | grep -q "backend/docs/swagger.yaml"; then
+      git add backend/docs/swagger.yaml
+      echo "[pre-commit] backend/docs/swagger.yaml updated"
+    fi
+  else
+    echo "⚠️ make swagger failed — continue"
+  fi
+fi
+
+# --- 2. Backend Quality ---
 echo "🎨 Formatting and 🔍 Linting Go code..."
-# Run formatting first
 make fmt
 if [ $? -ne 0 ]; then
     echo "❌ Go formatting failed."
     exit 1
 fi
 
-# Run linter
 make lint
 if [ $? -ne 0 ]; then
     echo "❌ Backend linting failed. Please fix errors before committing."
     exit 1
 fi
 
-# --- 2. Frontend Quality ---
+# --- 3. Frontend Quality ---
 echo "🎨 Formatting and 🔍 Linting frontend code (Biome)..."
-# 'make lint-frontend' runs 'biome check --write', which handles both
+# Now uses --write as updated in Makefile
 make lint-frontend
 if [ $? -ne 0 ]; then
     echo "❌ Frontend quality checks failed."
     exit 1
 fi
 
-# --- 3. Smart Re-staging ---
+# --- 4. Smart Re-staging ---
 # Only re-stage files that were already staged but modified by fmt/lint
 echo "📦 Re-staging formatted files..."
-git diff --name-only --cached | xargs git add
+# Get list of files that are both staged and modified in working directory
+MODIFIED_STAGED=$(git diff --name-only --cached)
+if [ -n "$MODIFIED_STAGED" ]; then
+    echo "$MODIFIED_STAGED" | xargs git add
+fi
 
 echo "✅ All checks passed! Proceeding with commit."
 exit 0

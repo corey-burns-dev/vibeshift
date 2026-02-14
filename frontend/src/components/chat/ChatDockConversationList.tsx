@@ -9,21 +9,21 @@ import {
   getDirectMessageName,
 } from '@/lib/chat-utils'
 import { cn } from '@/lib/utils'
-import { useChatDockStore } from '@/stores/useChatDockStore'
 
 interface ChatDockConversationListProps {
   conversations: Conversation[]
   currentUserId: number | undefined
+  unreadByConversation: Record<string, number>
   onSelect: (conversationId: number) => void
 }
 
 export function ChatDockConversationList({
   conversations,
   currentUserId,
+  unreadByConversation,
   onSelect,
 }: ChatDockConversationListProps) {
   const onlineUserIds = usePresenceStore(s => s.onlineUserIds)
-  const unreadCounts = useChatDockStore(s => s.unreadCounts)
 
   // Deduplicate and sort friend DMs by last message time
   const sorted = deduplicateDMConversations(conversations, currentUserId)
@@ -50,7 +50,7 @@ export function ChatDockConversationList({
           const avatar = getDirectMessageAvatar(conv, currentUserId)
           const otherUser = conv.participants?.find(p => p.id !== currentUserId)
           const isOnline = otherUser ? onlineUserIds.has(otherUser.id) : false
-          const unread = unreadCounts[conv.id] || 0
+          const unread = unreadByConversation[String(conv.id)] || 0
           const preview = conv.last_message?.content
           const time = conv.last_message?.created_at
 

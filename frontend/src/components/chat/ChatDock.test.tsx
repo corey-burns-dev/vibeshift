@@ -8,7 +8,8 @@ const toastMessageMock = vi.fn()
 let onMessageSubscription:
   | ((message: Message, conversationId: number) => void)
   | null = null
-const incrementUnreadMock = vi.fn()
+const incrementUnreadMock = vi.fn(() => 1)
+const clearUnreadMock = vi.fn()
 const chatDockState = {
   isOpen: false,
   minimized: false,
@@ -24,7 +25,6 @@ const chatDockState = {
   setActiveConversation: vi.fn(),
   removeOpenConversation: vi.fn(),
   clearOpenConversations: vi.fn(),
-  incrementUnread: incrementUnreadMock,
 }
 
 vi.mock('sonner', () => ({
@@ -38,7 +38,10 @@ vi.mock('@/hooks/useMediaQuery', () => ({
 }))
 
 vi.mock('@/hooks/useFriends', () => ({
-  useFriends: () => ({ data: [{ id: 2, username: 'friend' }] }),
+  useFriends: () => ({
+    data: [{ id: 2, username: 'friend' }],
+    isSuccess: true,
+  }),
 }))
 
 vi.mock('@/hooks/useChat', () => ({
@@ -61,6 +64,9 @@ vi.mock('@/providers/ChatProvider', () => ({
     joinRoom: vi.fn(),
     leaveRoom: vi.fn(),
     sendTyping: vi.fn(),
+    unreadByConversation: {},
+    incrementUnread: incrementUnreadMock,
+    clearUnread: clearUnreadMock,
     subscribeOnTyping: () => () => {},
     subscribeOnMessage: (
       cb: (message: Message, conversationId: number) => void
@@ -83,6 +89,16 @@ vi.mock('@/hooks/useUsers', () => ({
   getCurrentUser: () => ({ id: 1, username: 'me' }),
 }))
 
+vi.mock('@/hooks/useAudio', () => ({
+  useAudio: () => ({
+    playNewMessageSound: vi.fn(),
+    playFriendOnlineSound: vi.fn(),
+    playDirectMessageSound: vi.fn(),
+    playRoomAlertSound: vi.fn(),
+    playDropPieceSound: vi.fn(),
+  }),
+}))
+
 function minimalUser(username: string): User {
   const t = new Date().toISOString()
   return {
@@ -98,6 +114,7 @@ describe('ChatDock', () => {
   afterEach(() => {
     onMessageSubscription = null
     incrementUnreadMock.mockReset()
+    clearUnreadMock.mockReset()
     toastMessageMock.mockReset()
   })
 

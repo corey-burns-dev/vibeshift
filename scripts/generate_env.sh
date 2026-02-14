@@ -48,4 +48,10 @@ IMAGE_UPLOAD_DIR=/var/sanctum/uploads/images
 IMAGE_MAX_UPLOAD_SIZE_MB=10
 EOF
 
+if [ -f "infra/versions.env" ]; then
+  echo "" >> .env
+  echo "# Version catalog (sourced from infra/versions.env)" >> .env
+  cat infra/versions.env >> .env
+fi
+
 echo "✓ .env generated (edit .env if needed)"

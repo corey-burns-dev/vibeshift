@@ -1,9 +1,3 @@
-import { apiClient } from '@/api/client'
-import type { Message, User } from '@/api/types'
-import { useMyBlocks } from '@/hooks/useModeration'
-import { useIsAuthenticated } from '@/hooks/useUsers'
-import { logger } from '@/lib/logger'
-import { createTicketedWS, getNextBackoff } from '@/lib/ws-utils'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   createContext,
@@ -15,6 +9,12 @@ import {
   useRef,
   useState,
 } from 'react'
+import { apiClient } from '@/api/client'
+import type { Message, User } from '@/api/types'
+import { useMyBlocks } from '@/hooks/useModeration'
+import { useIsAuthenticated } from '@/hooks/useUsers'
+import { logger } from '@/lib/logger'
+import { createTicketedWS, getNextBackoff } from '@/lib/ws-utils'
 
 interface ChatWebSocketMessage {
   type:
@@ -44,8 +44,12 @@ interface ChatWebSocketMessage {
 interface ChatContextValue {
   isConnected: boolean
   joinedRooms: Set<number>
+  unreadByConversation: Record<string, number>
   joinRoom: (conversationId: number) => void
   leaveRoom: (conversationId: number) => void
+  getUnread: (conversationId: number) => number
+  incrementUnread: (conversationId: number) => number
+  clearUnread: (conversationId: number) => void
   sendTyping: (conversationId: number, isTyping: boolean) => void
   sendMessage: (conversationId: number, content: string) => void
   markAsRead: (conversationId: number) => void
@@ -155,14 +159,22 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const queryClient = useQueryClient()
   const [isConnected, setIsConnected] = useState(false)
   const [joinedRooms, setJoinedRooms] = useState<Set<number>>(new Set())
+  const [unreadByConversation, setUnreadByConversation] = useState<
+    Record<string, number>
+  >({})
 
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<number | undefined>(undefined)
   const reconnectAttemptsRef = useRef(0)
   const currentUserRef = useRef<{ id: number; username: string } | null>(null)
   const joinedRoomsRef = useRef<Set<number>>(new Set())
+  const unreadByConversationRef = useRef<Record<string, number>>({})
   const conversationsInvalidateTimerRef = useRef<number | null>(null)
   const shouldReconnectRef = useRef(true)
+
+  useEffect(() => {
+    unreadByConversationRef.current = unreadByConversation
+  }, [unreadByConversation])
 
   // Load joined rooms from localStorage on mount
   useEffect(() => {
@@ -387,6 +399,35 @@ export function ChatProvider({ children }: ChatProviderProps) {
     },
     []
   )
+
+  const getUnread = useCallback((conversationId: number) => {
+    const key = String(conversationId)
+    return unreadByConversationRef.current[key] ?? 0
+  }, [])
+
+  const incrementUnread = useCallback((conversationId: number) => {
+    const key = String(conversationId)
+    const prev = unreadByConversationRef.current[key] ?? 0
+    const nextCount = prev + 1
+    const nextUnread = {
+      ...unreadByConversationRef.current,
+      [key]: nextCount,
+    }
+    unreadByConversationRef.current = nextUnread
+    setUnreadByConversation(nextUnread)
+    return nextCount
+  }, [])
+
+  const clearUnread = useCallback((conversationId: number) => {
+    const key = String(conversationId)
+    if ((unreadByConversationRef.current[key] ?? 0) === 0) return
+    const nextUnread = {
+      ...unreadByConversationRef.current,
+      [key]: 0,
+    }
+    unreadByConversationRef.current = nextUnread
+    setUnreadByConversation(nextUnread)
+  }, [])
 
   const refreshBlockedUsers = useCallback(async () => {
     try {
@@ -831,6 +872,8 @@ export function ChatProvider({ children }: ChatProviderProps) {
       setIsConnected(false)
       joinedRoomsRef.current.clear()
       setJoinedRooms(new Set())
+      unreadByConversationRef.current = {}
+      setUnreadByConversation({})
       blockedUserIDsRef.current.clear()
       return
     }
@@ -935,8 +978,12 @@ export function ChatProvider({ children }: ChatProviderProps) {
     () => ({
       isConnected,
       joinedRooms,
+      unreadByConversation,
       joinRoom,
       leaveRoom,
+      getUnread,
+      incrementUnread,
+      clearUnread,
       sendTyping,
       sendMessage,
       markAsRead,
@@ -962,8 +1009,12 @@ export function ChatProvider({ children }: ChatProviderProps) {
     [
       isConnected,
       joinedRooms,
+      unreadByConversation,
       joinRoom,
       leaveRoom,
+      getUnread,
+      incrementUnread,
+      clearUnread,
       sendTyping,
       sendMessage,
       markAsRead,

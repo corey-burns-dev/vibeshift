@@ -1,15 +1,18 @@
 import { MessageCircle, Minus, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import type { Conversation, Message } from '@/api/types'
 import { ChatDockConversationList } from '@/components/chat/ChatDockConversationList'
 import { ChatDockConversationView } from '@/components/chat/ChatDockConversationView'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { useAudio } from '@/hooks/useAudio'
 import { useConversation, useConversations } from '@/hooks/useChat'
 import { useFriends } from '@/hooks/useFriends'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { getCurrentUser } from '@/hooks/useUsers'
+import { shouldPlayFriendDMInMessagesView } from '@/lib/chat-sounds'
 import { getDirectMessageName } from '@/lib/chat-utils'
 import { cn } from '@/lib/utils'
 import { useChatContext } from '@/providers/ChatProvider'
@@ -26,10 +29,11 @@ interface ChatDockPanelContentProps {
   typingUsers: string[]
   onMinimize: () => void
   onClose: () => void
-  onSelectConversation: (id: number) => void
+  onSelectConversation: (id: number | null) => void
   onRemoveConversation: (id: number) => void
   onClearAll: () => void
   sendTyping: (isTyping: boolean) => void
+  unreadByConversation: Record<string, number>
 }
 
 function ChatDockPanelContent({
@@ -47,6 +51,7 @@ function ChatDockPanelContent({
   onRemoveConversation,
   onClearAll,
   sendTyping,
+  unreadByConversation,
 }: ChatDockPanelContentProps) {
   return (
     <div className='flex flex-1 flex-col overflow-hidden'>
@@ -87,7 +92,7 @@ function ChatDockPanelContent({
                 'h-7 shrink-0 px-2.5 text-[11px] font-medium',
                 view === 'list' && 'bg-background shadow-sm'
               )}
-              onClick={() => onSelectConversation(null as unknown as number)}
+              onClick={() => onSelectConversation(null)}
             >
               All
             </Button>
@@ -148,6 +153,7 @@ function ChatDockPanelContent({
         <ChatDockConversationList
           conversations={conversations}
           currentUserId={currentUserId}
+          unreadByConversation={unreadByConversation}
           onSelect={onSelectConversation}
         />
       ) : activeConversationId ? (
@@ -166,9 +172,11 @@ function ChatDockPanelContent({
 export function ChatDock() {
   const currentUser = getCurrentUser()
   const isMobile = useIsMobile()
+  const location = useLocation()
   const [typingState, setTypingState] = useState<
     Record<number, Record<number, { username: string; expires: number }>>
   >({})
+  const { playNewMessageSound } = useAudio()
 
   const {
     isOpen,
@@ -176,22 +184,24 @@ export function ChatDock() {
     view,
     activeConversationId,
     openConversationIds,
-    unreadCounts,
     toggle,
     minimize,
     close,
     setActiveConversation,
     removeOpenConversation,
     clearOpenConversations,
-    incrementUnread,
   } = useChatDockStore()
 
   const { data: conversations = [] } = useConversations()
-  const { data: friends = [] } = useFriends()
+  const { data: friends = [], isSuccess: friendsLoaded } = useFriends()
   const { data: activeConversation } = useConversation(
     activeConversationId || 0,
     { enabled: activeConversationId !== null && activeConversationId > 0 }
   )
+  const isMessagesRoute =
+    location.pathname.includes('/messages') ||
+    location.pathname === '/chat' ||
+    location.pathname.startsWith('/chat/')
 
   const friendUserIds = useMemo(
     () => new Set(friends.map((f: { id: number }) => f.id)),
@@ -217,6 +227,9 @@ export function ChatDock() {
     joinRoom,
     leaveRoom,
     sendTyping: ctxSendTyping,
+    unreadByConversation,
+    incrementUnread,
+    clearUnread,
     subscribeOnMessage,
     subscribeOnTyping,
   } = useChatContext()
@@ -248,6 +261,12 @@ export function ChatDock() {
     }
     prevOpenIdsRef.current = openConversationIds
   }, [openConversationIds, leaveRoom])
+
+  useEffect(() => {
+    if (!activeConversationId) return
+    if (!isOpen || minimized) return
+    clearUnread(activeConversationId)
+  }, [activeConversationId, isOpen, minimized, clearUnread])
 
   // Typing indicators subscription
   useEffect(() => {
@@ -320,6 +339,8 @@ export function ChatDock() {
 
       // Only track/notify for friend 1-on-1 DMs
       if (!friendDMConversationIds.has(conversationId)) return
+      // Chat.tsx owns unread transitions while user is in Messages view.
+      if (isMessagesRoute) return
 
       const state = useChatDockStore.getState()
 
@@ -332,8 +353,21 @@ export function ChatDock() {
         state.isOpen &&
         !state.minimized
 
+      let newUnreadCount = 0
       if (!isCurrentActive) {
-        incrementUnread(conversationId)
+        newUnreadCount = incrementUnread(conversationId)
+
+        const conv = friendDMConversations.find(c => c.id === conversationId)
+        if (
+          newUnreadCount === 1 &&
+          shouldPlayFriendDMInMessagesView(
+            conv ? { ...conv, is_friend_dm: friendsLoaded } : undefined,
+            isMessagesRoute,
+            newUnreadCount - 1
+          )
+        ) {
+          playNewMessageSound()
+        }
       }
 
       // Show toast if dock is closed, minimized, or viewing a different conversation
@@ -372,7 +406,10 @@ export function ChatDock() {
     currentUser?.id,
     friendDMConversations,
     friendDMConversationIds,
+    friendsLoaded,
     incrementUnread,
+    isMessagesRoute,
+    playNewMessageSound,
     subscribeOnMessage,
   ])
 
@@ -414,10 +451,20 @@ export function ChatDock() {
   const totalUnread = useMemo(() => {
     let count = 0
     for (const conv of friendDMConversations) {
-      count += unreadCounts[conv.id] || 0
+      count += unreadByConversation[String(conv.id)] || 0
     }
     return count
-  }, [friendDMConversations, unreadCounts])
+  }, [friendDMConversations, unreadByConversation])
+
+  const handleSelectConversation = useCallback(
+    (id: number | null) => {
+      setActiveConversation(id)
+      if (id !== null) {
+        clearUnread(id)
+      }
+    },
+    [clearUnread, setActiveConversation]
+  )
 
   const conversationName = activeConversation
     ? (() => {
@@ -482,10 +529,11 @@ export function ChatDock() {
                 typingUsers={activeTypingUsers}
                 onMinimize={minimize}
                 onClose={close}
-                onSelectConversation={setActiveConversation}
+                onSelectConversation={handleSelectConversation}
                 onRemoveConversation={removeOpenConversation}
                 onClearAll={clearOpenConversations}
                 sendTyping={sendTyping}
+                unreadByConversation={unreadByConversation}
               />
             </DialogContent>
           </Dialog>
@@ -506,10 +554,11 @@ export function ChatDock() {
               typingUsers={activeTypingUsers}
               onMinimize={minimize}
               onClose={close}
-              onSelectConversation={setActiveConversation}
+              onSelectConversation={handleSelectConversation}
               onRemoveConversation={removeOpenConversation}
               onClearAll={clearOpenConversations}
               sendTyping={sendTyping}
+              unreadByConversation={unreadByConversation}
             />
           </div>
         ))}

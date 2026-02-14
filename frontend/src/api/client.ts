@@ -1,47 +1,47 @@
 import { logger } from '../lib/logger'
 import { useAuthSessionStore } from '../stores/useAuthSessionStore'
 import type {
-    AdminBanRequest,
-    AdminSanctumRequestActionResponse,
-    AdminSanctumRequestStatus,
-    AdminUserDetailResponse,
-    AuthResponse,
-    BanUserRequest,
-    BulkSanctumMembershipsInput,
-    ChatroomModerator,
-    ChatroomMute,
-    Comment,
-    Conversation,
-    CreateCommentRequest,
-    CreateConversationRequest,
-    CreatePostRequest,
-    CreateSanctumRequestInput,
-    FriendRequest,
-    FriendshipStatus,
-    GameRoom,
-    LoginRequest,
-    Message,
-    MessageMention,
-    MessageReactionResponse,
-    ModerationReport,
-    MuteChatroomUserRequest,
-    PaginationParams,
-    Post,
-    ReportRequest,
-    ResolveModerationReportRequest,
-    SanctumAdmin,
-    SanctumDTO,
-    SanctumMembership,
-    SanctumRequest,
-    SearchParams,
-    SendMessageRequest,
-    SignupRequest,
-    UpdateCommentRequest,
-    UpdatePostRequest,
-    UpdateProfileRequest,
-    UploadedImage,
-    User,
-    UserBlock,
+  AdminBanRequest,
+  AdminSanctumRequestActionResponse,
+  AdminSanctumRequestStatus,
+  AdminUserDetailResponse,
+  AuthResponse,
+  BanUserRequest,
+  BulkSanctumMembershipsInput,
+  ChatroomModerator,
+  ChatroomMute,
+  Comment,
+  Conversation,
+  CreateCommentRequest,
+  CreateConversationRequest,
+  CreatePostRequest,
+  CreateSanctumRequestInput,
+  FriendRequest,
+  FriendshipStatus,
+  GameRoom,
+  LoginRequest,
+  Message,
+  MessageMention,
+  MessageReactionResponse,
+  ModerationReport,
+  MuteChatroomUserRequest,
+  PaginationParams,
+  Post,
+  ReportRequest,
+  ResolveModerationReportRequest,
+  SanctumAdmin,
+  SanctumDTO,
+  SanctumMembership,
+  SanctumRequest,
+  SearchParams,
+  SendMessageRequest,
+  SignupRequest,
+  UpdateCommentRequest,
+  UpdatePostRequest,
+  UpdateProfileRequest,
+  UploadedImage,
+  User,
+  UserBlock,
 } from './types'
 
 // Add a custom error type that includes request ID
@@ -79,12 +79,11 @@ class ApiClient {
     // relative path (e.g. '/api') some runtimes (node fetch) require an
     // absolute URL. Prefer `baseUrl` when absolute, otherwise build from
     // `window.location.origin` so tests and SSR-like environments work.
-    const url =
-      this.baseUrl && this.baseUrl.startsWith('http')
-        ? `${this.baseUrl}${endpoint}`
-        : (typeof window !== 'undefined' && window.location?.origin
-            ? `${window.location.origin}${this.baseUrl}${endpoint}`
-            : `${this.baseUrl}${endpoint}`)
+    const url = this.baseUrl?.startsWith('http')
+      ? `${this.baseUrl}${endpoint}`
+      : typeof window !== 'undefined' && window.location?.origin
+        ? `${window.location.origin}${this.baseUrl}${endpoint}`
+        : `${this.baseUrl}${endpoint}`
     const token = this.getAuthToken()
     const method = options.method || 'GET'
     const isFormDataBody = options.body instanceof FormData
@@ -202,12 +201,11 @@ class ApiClient {
 
     this.refreshPromise = (async () => {
       try {
-        const refreshUrl =
-          this.baseUrl && this.baseUrl.startsWith('http')
-            ? `${this.baseUrl}/auth/refresh`
-            : (typeof window !== 'undefined' && window.location?.origin
-                ? `${window.location.origin}${this.baseUrl}/auth/refresh`
-                : `${this.baseUrl}/auth/refresh`)
+        const refreshUrl = this.baseUrl?.startsWith('http')
+          ? `${this.baseUrl}/auth/refresh`
+          : typeof window !== 'undefined' && window.location?.origin
+            ? `${window.location.origin}${this.baseUrl}/auth/refresh`
+            : `${this.baseUrl}/auth/refresh`
 
         const refreshResponse = await fetch(refreshUrl, {
           method: 'POST',

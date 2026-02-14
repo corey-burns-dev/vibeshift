@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  shouldPlayFriendDMInMessagesView,
   shouldPlayFriendOnlineSound,
   shouldPlayNewMessageSoundForDM,
 } from './chat-sounds'
@@ -66,5 +67,54 @@ describe('shouldPlayFriendOnlineSound', () => {
     expect(shouldPlayFriendOnlineSound(2, 'away', 1, new Set(), [2])).toBe(
       false
     )
+  })
+})
+
+describe('shouldPlayFriendDMInMessagesView', () => {
+  it('returns true for friend DM on messages route with 0 unread before increment', () => {
+    expect(
+      shouldPlayFriendDMInMessagesView(
+        { is_group: false, is_friend_dm: true },
+        true,
+        0
+      )
+    ).toBe(true)
+  })
+
+  it('returns false when not in messages view', () => {
+    expect(
+      shouldPlayFriendDMInMessagesView(
+        { is_group: false, is_friend_dm: true },
+        false,
+        0
+      )
+    ).toBe(false)
+  })
+
+  it('returns false for non-friend or group conversation', () => {
+    expect(
+      shouldPlayFriendDMInMessagesView(
+        { is_group: false, is_friend_dm: false },
+        true,
+        0
+      )
+    ).toBe(false)
+    expect(
+      shouldPlayFriendDMInMessagesView(
+        { is_group: true, is_friend_dm: true },
+        true,
+        0
+      )
+    ).toBe(false)
+  })
+
+  it('returns false when unread was already non-zero', () => {
+    expect(
+      shouldPlayFriendDMInMessagesView(
+        { is_group: false, is_friend_dm: true },
+        true,
+        1
+      )
+    ).toBe(false)
   })
 })
