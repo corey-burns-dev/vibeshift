@@ -168,7 +168,7 @@ func GetReadDB() *gorm.DB {
 
 // TruncateAllTables clears all data from application tables.
 func TruncateAllTables(db *gorm.DB) error {
-	sql := `TRUNCATE TABLE poll_votes, poll_options, polls, images, comments, likes, posts, conversation_participants, messages, conversations, sanctum_memberships, sanctum_requests, sanctums, users, friendships, game_rooms, game_moves, game_stats RESTART IDENTITY CASCADE;`
+	sql := `TRUNCATE TABLE poll_votes, poll_options, polls, images, comments, likes, posts, conversation_participants, messages, conversations, sanctum_memberships, sanctum_requests, sanctums, stream_messages, streams, users, friendships, game_rooms, game_moves, game_stats RESTART IDENTITY CASCADE;`
 	return db.Exec(sql).Error
 }
 

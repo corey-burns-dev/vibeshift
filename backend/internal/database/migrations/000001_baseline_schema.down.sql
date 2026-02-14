@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS stream_messages;
+DROP TABLE IF EXISTS streams;
 DROP TABLE IF EXISTS game_stats;
 DROP TABLE IF EXISTS game_moves;
 DROP TABLE IF EXISTS game_rooms;

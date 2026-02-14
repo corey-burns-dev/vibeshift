@@ -119,6 +119,8 @@ func TestMigrationsApplyFreshDB(t *testing.T) {
 		"sanctum_requests",
 		"sanctum_memberships",
 		"chatroom_moderators",
+		"streams",
+		"stream_messages",
 	}
 	for _, table := range tables {
 		var exists bool
