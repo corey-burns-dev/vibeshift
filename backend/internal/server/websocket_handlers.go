@@ -23,7 +23,12 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 		middleware.ActiveWebSockets.Inc()
 		defer middleware.ActiveWebSockets.Dec()
 
-		ctx := context.Background()
+		// Use the server shutdown context as parent so all DB operations
+		// are bounded by the server lifecycle and have timeouts.
+		ctx := s.shutdownCtx
+		if ctx == nil {
+			ctx = context.Background()
+		}
 
 		// Get userID from context locals (set by AuthRequired middleware)
 		userIDVal := conn.Locals("userID")
@@ -39,7 +44,9 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 		s.consumeWSTicket(ctx, conn.Locals("wsTicket"))
 
 		// Get user info for username
-		user, err := s.userRepo.GetByID(ctx, userID)
+		opCtx, opCancel := context.WithTimeout(ctx, 5*time.Second)
+		user, err := s.userRepo.GetByID(opCtx, userID)
+		opCancel()
 		if err != nil {
 			log.Printf("WebSocket Chat: Failed to get user %d: %v", userID, err)
 			_ = conn.Close()
@@ -118,7 +125,10 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 					if s.notifier != nil && s.isUserParticipant(ctx, userID, convID) {
 						// Rate limit typing indicators
 						id := fmt.Sprintf("user:%d", userID)
-						allowed, _ := middleware.CheckRateLimit(ctx, s.redis, "typing", id, 10, 10*time.Second)
+						allowed, err := middleware.CheckRateLimit(ctx, s.redis, s.config.Env, "typing", id, 10, 10*time.Second)
+						if err != nil {
+							log.Printf("rate limit check error: %v", err)
+						}
 						if !allowed {
 							return // Silently drop spammy typing indicators
 						}
@@ -138,7 +148,10 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 					if content != "" && s.isUserParticipant(ctx, userID, convID) {
 						// Rate limit messages - same as HTTP (15 per minute)
 						id := fmt.Sprintf("user:%d", userID)
-						allowed, _ := middleware.CheckRateLimit(ctx, s.redis, "send_chat", id, 15, time.Minute)
+						allowed, err := middleware.CheckRateLimit(ctx, s.redis, s.config.Env, "send_chat", id, 15, time.Minute)
+						if err != nil {
+							log.Printf("rate limit check error: %v", err)
+						}
 						if !allowed {
 							response := notifications.ChatMessage{
 								Type: "error",
@@ -280,17 +293,12 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 
 // isUserParticipant checks if a user is a participant in a conversation
 func (s *Server) isUserParticipant(ctx context.Context, userID, conversationID uint) bool {
-	conv, err := s.chatRepo.GetConversation(ctx, conversationID)
+	ok, err := s.chatRepo.IsUserParticipant(ctx, conversationID, userID)
 	if err != nil {
+		log.Printf("isUserParticipant: error checking participation: %v", err)
 		return false
 	}
-
-	for _, participant := range conv.Participants {
-		if participant.ID == userID {
-			return true
-		}
-	}
-	return false
+	return ok
 }
 
 func (s *Server) isGroupConversation(ctx context.Context, conversationID uint) bool {
@@ -330,7 +338,8 @@ func (s *Server) broadcastChatroomPresenceSnapshot(
 		}
 	}
 
-	s.chatHub.BroadcastToAllUsers(notifications.ChatMessage{
+	// Scope presence broadcasts to conversation participants only, not all users.
+	s.chatHub.BroadcastToConversation(conversationID, notifications.ChatMessage{
 		Type:           "chatroom_presence",
 		ConversationID: conversationID,
 		UserID:         userID,

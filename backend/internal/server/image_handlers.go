@@ -102,6 +102,12 @@ func (s *Server) ServeImage(c *fiber.Ctx) error {
 	if hash == "" {
 		return models.RespondWithError(c, fiber.StatusBadRequest, models.NewValidationError("Invalid image hash"))
 	}
+	// Validate the hash is strictly hex to prevent path traversal
+	for _, ch := range hash {
+		if !((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f')) {
+			return models.RespondWithError(c, fiber.StatusBadRequest, models.NewValidationError("Invalid image hash"))
+		}
+	}
 	return c.Redirect(s.imageSvc().BuildMasterImageURL(hash), fiber.StatusMovedPermanently)
 }
 
@@ -121,8 +127,5 @@ func toImageUploadResponse(imageSvc *service.ImageService, image *models.Image) 
 }
 
 func (s *Server) imageSvc() *service.ImageService {
-	if s.imageService == nil {
-		s.imageService = service.NewImageService(s.imageRepo, s.config)
-	}
 	return s.imageService
 }

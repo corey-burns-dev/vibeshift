@@ -178,8 +178,5 @@ func (s *Server) DeleteComment(c *fiber.Ctx) error {
 }
 
 func (s *Server) commentSvc() *service.CommentService {
-	if s.commentService == nil {
-		s.commentService = service.NewCommentService(s.commentRepo, s.postRepo, s.isAdminByUserID)
-	}
 	return s.commentService
 }

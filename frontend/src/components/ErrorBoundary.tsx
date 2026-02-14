@@ -1,6 +1,7 @@
 import React from 'react'
 import { ApiError } from '@/api/client'
 import { Button } from '@/components/ui/button'
+import { logger } from '@/lib/logger'
 
 interface ErrorBoundaryState {
   hasError: boolean
@@ -31,7 +32,7 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo)
+    logger.error('Error caught by boundary:', { error, errorInfo })
   }
 
   resetError = () => {

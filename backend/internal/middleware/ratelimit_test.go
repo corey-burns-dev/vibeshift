@@ -60,33 +60,35 @@ func TestCheckRateLimit(t *testing.T) {
 			env:           "stress",
 		},
 		{
-			name:          "Nil Redis Fail-Open",
+			name:          "Nil Redis returns error in production",
 			resource:      "test",
 			id:            "1",
 			limit:         1,
 			window:        time.Minute,
-			expectedAllow: true,
+			env:           "production",
+			expectedAllow: false,
 		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			env := tt.env
+			if env == "" {
+				env = "production"
+			}
 			if tt.env != "" {
 				t.Setenv("APP_ENV", tt.env)
 			} else {
 				t.Setenv("APP_ENV", "production")
 			}
 
-			allowed, err := CheckRateLimit(context.Background(), nil, tt.resource, tt.id, tt.limit, tt.window)
-			// In our new implementation, CheckRateLimit returns error if rdb is nil
-			if tt.name == "Nil Redis Fail-Open" {
-				assert.Error(t, err)
+			allowed, err := CheckRateLimit(context.Background(), nil, env, tt.resource, tt.id, tt.limit, tt.window)
+			if err != nil {
 				assert.False(t, allowed)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedAllow, allowed)
+				return
 			}
+			assert.Equal(t, tt.expectedAllow, allowed)
 		})
 	}
 }
@@ -95,7 +97,7 @@ func TestRateLimitMiddleware(t *testing.T) {
 	t.Run("Bypass in test mode", func(t *testing.T) {
 		app := fiber.New()
 		t.Setenv("APP_ENV", "test")
-		app.Get("/test", RateLimit(nil, 1, time.Minute), func(c *fiber.Ctx) error {
+		app.Get("/test", RateLimit(nil, "test", 1, time.Minute), func(c *fiber.Ctx) error {
 			return c.SendStatus(fiber.StatusOK)
 		})
 
@@ -109,7 +111,7 @@ func TestRateLimitMiddleware(t *testing.T) {
 	t.Run("Bypass in stress mode", func(t *testing.T) {
 		app := fiber.New()
 		t.Setenv("APP_ENV", "stress")
-		app.Get("/test", RateLimit(nil, 1, time.Minute), func(c *fiber.Ctx) error {
+		app.Get("/test", RateLimit(nil, "stress", 1, time.Minute), func(c *fiber.Ctx) error {
 			return c.SendStatus(fiber.StatusOK)
 		})
 
@@ -123,7 +125,7 @@ func TestRateLimitMiddleware(t *testing.T) {
 	t.Run("FailOpen with nil redis in production", func(t *testing.T) {
 		app := fiber.New()
 		t.Setenv("APP_ENV", "production")
-		app.Get("/test", RateLimit(nil, 1, time.Minute), func(c *fiber.Ctx) error {
+		app.Get("/test", RateLimit(nil, "production", 1, time.Minute), func(c *fiber.Ctx) error {
 			return c.SendStatus(fiber.StatusOK)
 		})
 
@@ -137,7 +139,7 @@ func TestRateLimitMiddleware(t *testing.T) {
 	t.Run("FailClosed with nil redis in production", func(t *testing.T) {
 		app := fiber.New()
 		t.Setenv("APP_ENV", "production")
-		app.Get("/sensitive", RateLimitWithPolicy(nil, 1, time.Minute, FailClosed), func(c *fiber.Ctx) error {
+		app.Get("/sensitive", RateLimitWithPolicy(nil, "production", 1, time.Minute, FailClosed), func(c *fiber.Ctx) error {
 			return c.SendStatus(fiber.StatusOK)
 		})
 

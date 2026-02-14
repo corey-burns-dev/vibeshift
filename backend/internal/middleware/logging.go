@@ -43,14 +43,19 @@ func (h *ctxHandler) Handle(ctx context.Context, r slog.Record) error {
 }
 
 func init() {
-	// Initialize a structured logger based on environment
+	// Initialize with a default text handler until InitLogger is called explicitly
+	InitLogger("development")
+}
+
+// InitLogger initializes the global structured logger instance based on the provided environment.
+func InitLogger(env string) {
 	var handler slog.Handler
 	level := slog.LevelInfo
 
-	if os.Getenv("APP_ENV") == "production" {
+	if env == "production" {
 		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
 	} else {
-		// Pretty text output for local development
+		// Pretty text output for local development/test
 		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level})
 	}
 

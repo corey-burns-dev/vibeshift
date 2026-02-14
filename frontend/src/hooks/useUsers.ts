@@ -27,10 +27,14 @@ export function useMyProfile() {
     queryFn: () => apiClient.getMyProfile(),
     retry: (failureCount, error) => {
       // Don't retry on auth errors
+      if (
+        error instanceof ApiError &&
+        (error.status === 401 || error.status === 403)
+      ) {
+        return false
+      }
       const err = error as Error
       const isAuthError =
-        err?.message?.includes('401') ||
-        err?.message?.includes('403') ||
         err?.message?.includes('Unauthorized') ||
         err?.message?.includes('Forbidden')
       return !isAuthError && failureCount < 2
@@ -79,14 +83,10 @@ export function useUpdateMyProfile() {
           ...newData,
         })
 
-        // Also update localStorage
-        localStorage.setItem(
-          'user',
-          JSON.stringify({
-            ...previousUser,
-            ...newData,
-          })
-        )
+        // Also update localStorage + cache
+        const merged = { ...previousUser, ...newData }
+        localStorage.setItem('user', JSON.stringify(merged))
+        cachedUser = merged as User
       }
 
       return { previousUser }
@@ -96,6 +96,7 @@ export function useUpdateMyProfile() {
       if (context?.previousUser) {
         queryClient.setQueryData(userKeys.me(), context.previousUser)
         localStorage.setItem('user', JSON.stringify(context.previousUser))
+        cachedUser = context.previousUser
       }
     },
     onSettled: () => {
@@ -105,15 +106,24 @@ export function useUpdateMyProfile() {
   })
 }
 
+// Cached current user to avoid repeated localStorage reads + JSON.parse
+let cachedUser: User | null = null
+
 // Get current user from localStorage (synchronous)
 export function getCurrentUser(): User | null {
+  if (cachedUser) return cachedUser
   const userStr = localStorage.getItem('user')
   if (!userStr) return null
   try {
-    return JSON.parse(userStr)
+    cachedUser = JSON.parse(userStr)
+    return cachedUser
   } catch {
     return null
   }
+}
+
+export function clearCachedUser() {
+  cachedUser = null
 }
 
 // Check if user is authenticated (with basic token validation)
@@ -122,8 +132,10 @@ export function useIsAuthenticated(): boolean {
   if (!token) return false
 
   try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return false
     // Basic JWT validation - check if token is not expired
-    const payload = JSON.parse(atob(token.split('.')[1]))
+    const payload = JSON.parse(atob(parts[1]))
     const currentTime = Date.now() / 1000
     return payload.exp > currentTime
   } catch {
@@ -137,7 +149,7 @@ export function useValidateToken() {
   const token = useAuthSessionStore(state => state.accessToken)
 
   return useQuery({
-    queryKey: ['auth', 'validate'],
+    queryKey: ['auth', 'validate', token?.slice(-8)],
     queryFn: async () => {
       try {
         await apiClient.getCurrentUser()
@@ -147,14 +159,13 @@ export function useValidateToken() {
           (error instanceof ApiError &&
             (error.status === 401 || error.status === 403)) ||
           (error instanceof Error &&
-            (error.message.includes('401') ||
-              error.message.includes('403') ||
-              error.message.includes('Unauthorized') ||
+            (error.message.includes('Unauthorized') ||
               error.message.includes('Forbidden')))
         if (isAuthError) {
           // Clear invalid session
           useAuthSessionStore.getState().clear()
           localStorage.removeItem('user')
+          cachedUser = null
           return false
         }
         // If it's a different error (network, server), assume token is still valid
@@ -162,7 +173,7 @@ export function useValidateToken() {
       }
     },
     enabled: !!token,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 60 * 1000, // 1 minute
     gcTime: 10 * 60 * 1000, // 10 minutes
   })
 }

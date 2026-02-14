@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"sanctum/internal/middleware"
 	"sanctum/internal/models"
 	"sanctum/internal/notifications"
 
@@ -39,12 +40,14 @@ func (s *Server) maybeSendWelcomeSignupDM(ctx context.Context, userID uint) {
 		return
 	}
 
-	_ = s.db.WithContext(ctx).Create(&models.Message{
+	if err := s.db.WithContext(ctx).Create(&models.Message{
 		ConversationID: conversationID,
 		SenderID:       bot.ID,
 		Content:        "Welcome to Sanctum. Use @mentions, reactions, and reports to keep conversations healthy.",
 		MessageType:    "text",
-	}).Error
+	}).Error; err != nil {
+		middleware.Logger.ErrorContext(ctx, "welcome bot: failed to send signup DM", "error", err, "user_id", userID)
+	}
 }
 
 func (s *Server) maybeSendWelcomeRoomJoinMessage(ctx context.Context, userID, conversationID uint) {
@@ -67,10 +70,13 @@ func (s *Server) maybeSendWelcomeRoomJoinMessage(ctx context.Context, userID, co
 		return
 	}
 
-	_ = s.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&models.ConversationParticipant{
+	if err := s.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&models.ConversationParticipant{
 		ConversationID: conversationID,
 		UserID:         bot.ID,
-	}).Error
+	}).Error; err != nil {
+		middleware.Logger.ErrorContext(ctx, "welcome bot: failed to join room", "error", err, "room_id", conversationID)
+		return
+	}
 
 	welcomeMsg := &models.Message{
 		ConversationID: conversationID,
@@ -79,7 +85,10 @@ func (s *Server) maybeSendWelcomeRoomJoinMessage(ctx context.Context, userID, co
 		MessageType:    "text",
 		Sender:         bot,
 	}
-	_ = s.db.WithContext(ctx).Create(welcomeMsg).Error
+	if err := s.db.WithContext(ctx).Create(welcomeMsg).Error; err != nil {
+		middleware.Logger.ErrorContext(ctx, "welcome bot: failed to send room welcome message", "error", err, "room_id", conversationID, "user_id", userID)
+		return
+	}
 
 	// Broadcast the welcome message so the user sees it immediately
 	if s.chatHub != nil {
@@ -93,9 +102,11 @@ func (s *Server) maybeSendWelcomeRoomJoinMessage(ctx context.Context, userID, co
 	}
 
 	// IMMEDIATELY leave so the bot isn't a persistent (and confusingly offline) member
-	_ = s.db.WithContext(ctx).
+	if err := s.db.WithContext(ctx).
 		Where("conversation_id = ? AND user_id = ?", conversationID, bot.ID).
-		Delete(&models.ConversationParticipant{}).Error
+		Delete(&models.ConversationParticipant{}).Error; err != nil {
+		middleware.Logger.ErrorContext(ctx, "welcome bot: failed to leave room", "error", err, "room_id", conversationID)
+	}
 
 	// Broadcast presence update so the member count in the UI reflects the bot leaving
 	s.broadcastChatroomPresenceSnapshot(ctx, conversationID, bot.ID, bot.Username, "left_room")

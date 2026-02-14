@@ -53,16 +53,24 @@ func (n *Notifier) StartPatternSubscriber(
 	ch := sub.Channel()
 
 	go func() {
-		for msg := range ch {
-			// Example channel: notifications:user:123
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						log.Printf("PANIC in PatternSubscriber: %v\n%s", r, debug.Stack())
-					}
+		defer sub.Close()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg, ok := <-ch:
+				if !ok {
+					return
+				}
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							log.Printf("PANIC in PatternSubscriber: %v\n%s", r, debug.Stack())
+						}
+					}()
+					onMessage(msg.Channel, msg.Payload)
 				}()
-				onMessage(msg.Channel, msg.Payload)
-			}()
+			}
 		}
 	}()
 
@@ -94,7 +102,10 @@ func (n *Notifier) PublishTypingIndicator(
 		"is_typing":     isTyping,
 		"expires_in_ms": 5000,
 	}
-	payloadJSON, _ := json.Marshal(payload)
+	payloadJSON, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("marshal payload: %w", err)
+	}
 	return n.rdb.Publish(ctx, channel, string(payloadJSON)).Err()
 }
 
@@ -111,7 +122,10 @@ func (n *Notifier) PublishPresence(
 		"username": username,
 		"status":   status, // "online", "offline", "away"
 	}
-	payloadJSON, _ := json.Marshal(payload)
+	payloadJSON, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("marshal payload: %w", err)
+	}
 	return n.rdb.Publish(ctx, channel, string(payloadJSON)).Err()
 }
 
@@ -127,15 +141,24 @@ func (n *Notifier) StartChatSubscriber(
 	ch := sub.Channel()
 
 	go func() {
-		for msg := range ch {
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						log.Printf("PANIC in ChatSubscriber: %v\n%s", r, debug.Stack())
-					}
+		defer sub.Close()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg, ok := <-ch:
+				if !ok {
+					return
+				}
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							log.Printf("PANIC in ChatSubscriber: %v\n%s", r, debug.Stack())
+						}
+					}()
+					onMessage(msg.Channel, msg.Payload)
 				}()
-				onMessage(msg.Channel, msg.Payload)
-			}()
+			}
 		}
 	}()
 
@@ -164,15 +187,24 @@ func (n *Notifier) StartGameSubscriber(
 	ch := sub.Channel()
 
 	go func() {
-		for msg := range ch {
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						log.Printf("PANIC in GameSubscriber: %v\n%s", r, debug.Stack())
-					}
+		defer sub.Close()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg, ok := <-ch:
+				if !ok {
+					return
+				}
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							log.Printf("PANIC in GameSubscriber: %v\n%s", r, debug.Stack())
+						}
+					}()
+					onMessage(msg.Channel, msg.Payload)
 				}()
-				onMessage(msg.Channel, msg.Payload)
-			}()
+			}
 		}
 	}()
 

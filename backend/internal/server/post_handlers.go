@@ -306,8 +306,5 @@ func (s *Server) VotePoll(c *fiber.Ctx) error {
 }
 
 func (s *Server) postSvc() *service.PostService {
-	if s.postService == nil {
-		s.postService = service.NewPostService(s.postRepo, s.pollRepo, s.isAdminByUserID)
-	}
 	return s.postService
 }

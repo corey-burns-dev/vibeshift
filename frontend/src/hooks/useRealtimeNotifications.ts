@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { create } from 'zustand'
 import { ApiError, apiClient } from '@/api/client'
 import { usePresenceStore } from '@/hooks/usePresence'
+import { logger } from '@/lib/logger'
 import { createTicketedWS, getNextBackoff } from '@/lib/ws-utils'
 import { useAuthSessionStore } from '@/stores/useAuthSessionStore'
 
@@ -155,10 +156,7 @@ export function useRealtimeNotifications(enabled = true) {
           onOpen: () => {
             reconnectAttempts = 0
             // Debug: log that notifications WS opened
-            try {
-              // eslint-disable-next-line no-console
-              console.debug('[realtime] notifications websocket opened')
-            } catch {}
+            logger.debug('[realtime] notifications websocket opened')
           },
           onMessage: event => {
             let data: RealtimeEvent
@@ -169,14 +167,10 @@ export function useRealtimeNotifications(enabled = true) {
             }
 
             // Debug: log incoming realtime event types for visibility
-            try {
-              // eslint-disable-next-line no-console
-              console.debug(
-                '[realtime] event received',
-                data.type,
-                data.payload
-              )
-            } catch {}
+            logger.debug('[realtime] event received', {
+              type: data.type,
+              payload: data.payload,
+            })
 
             const payload = data.payload ?? {}
             switch (data.type) {
@@ -408,6 +402,7 @@ export function useRealtimeNotifications(enabled = true) {
                 if (status === 'online') {
                   setOnline(friendID)
                   toast.message(`${username} is online`, {
+                    id: `presence-${friendID}`,
                     description: 'Tap to open chat',
                     duration: 7000,
                     className: 'border border-emerald-500/40',
@@ -421,6 +416,7 @@ export function useRealtimeNotifications(enabled = true) {
                 } else if (status === 'offline') {
                   setOffline(friendID)
                   toast.message(`${username} went offline`, {
+                    id: `presence-${friendID}`,
                     description: 'They are currently offline',
                     duration: 7000,
                     className: 'border border-slate-500/40',

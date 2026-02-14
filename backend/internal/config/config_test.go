@@ -35,6 +35,7 @@ func TestConfig_ValidateSSLMode(t *testing.T) {
 				Port:                     "8080",
 				ImageMaxUploadSizeMB:     10,
 				DBConnMaxLifetimeMinutes: 1,
+				RedisURL:                 "redis://localhost:6379",
 			}
 
 			err := c.Validate()

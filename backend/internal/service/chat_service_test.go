@@ -51,6 +51,9 @@ func (s *chatRepoStub) MarkMessageRead(ctx context.Context, msgID uint) error {
 func (s *chatRepoStub) UpdateLastRead(ctx context.Context, convID, userID uint) error {
 	return s.updateLastReadFn(ctx, convID, userID)
 }
+func (s *chatRepoStub) IsUserParticipant(_ context.Context, _, _ uint) (bool, error) {
+	return true, nil
+}
 
 func noopChatRepo() *chatRepoStub {
 	return &chatRepoStub{

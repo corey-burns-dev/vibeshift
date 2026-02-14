@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useSignup } from '@/hooks'
+import { logger } from '@/lib/logger'
 import { type SignupFormData, signupSchema } from '@/lib/validations'
 
 export default function Signup() {
@@ -35,7 +36,7 @@ export default function Signup() {
       })
       toast.success('Account created successfully!')
     } catch (error) {
-      console.error('Signup error:', error)
+      logger.error('Signup error:', error)
       const message =
         error instanceof Error ? error.message : 'Failed to create account'
       toast.error(message)
@@ -98,6 +99,7 @@ export default function Signup() {
               size='sm'
               className='absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent'
               onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? (
                 <EyeOff className='h-4 w-4' />
@@ -126,6 +128,9 @@ export default function Signup() {
               size='sm'
               className='absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent'
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              aria-label={
+                showConfirmPassword ? 'Hide password' : 'Show password'
+              }
             >
               {showConfirmPassword ? (
                 <EyeOff className='h-4 w-4' />

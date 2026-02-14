@@ -12,6 +12,7 @@ import {
 } from 'vitest'
 import { apiClient } from '@/api/client'
 import {
+  clearCachedUser,
   getCurrentUser,
   useAllUsers,
   useUserProfile,
@@ -66,12 +67,14 @@ describe('useUsers hooks', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     useAuthSessionStore.getState().clear()
+    clearCachedUser()
   })
 
   afterEach(() => {
     localStorage.removeItem('user')
     localStorage.removeItem('token')
     useAuthSessionStore.getState().clear()
+    clearCachedUser()
   })
 
   describe('getCurrentUser', () => {

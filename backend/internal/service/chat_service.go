@@ -145,9 +145,14 @@ func (s *ChatService) GetConversationForUser(ctx context.Context, convID, userID
 	return conv, nil
 }
 
+const maxMessageContentLen = 10000 // 10K characters
+
 func (s *ChatService) SendMessage(ctx context.Context, in SendMessageInput) (*models.Message, *models.Conversation, error) {
 	if in.Content == "" {
 		return nil, nil, models.NewValidationError("Message content is required")
+	}
+	if len(in.Content) > maxMessageContentLen {
+		return nil, nil, models.NewValidationError("Message content too long (max 10000 characters)")
 	}
 	if in.MessageType == "" {
 		in.MessageType = "text"

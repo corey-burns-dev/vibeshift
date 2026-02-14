@@ -19,7 +19,11 @@ func main() {
 	}
 
 	fmt.Println("Nuking database...")
-	db.Exec("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
-	db.Exec("GRANT ALL ON SCHEMA public TO public;")
+	if err := db.Exec("DROP SCHEMA public CASCADE; CREATE SCHEMA public;").Error; err != nil {
+		log.Fatalf("failed to nuke schema: %v", err)
+	}
+	if err := db.Exec("GRANT ALL ON SCHEMA public TO public;").Error; err != nil {
+		log.Fatalf("failed to grant schema permissions: %v", err)
+	}
 	fmt.Println("Database nuked.")
 }

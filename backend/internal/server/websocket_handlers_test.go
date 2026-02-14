@@ -4,8 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"sanctum/internal/models"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -26,9 +24,7 @@ func TestIsUserParticipant(t *testing.T) {
 			userID: 1,
 			convID: 10,
 			mockSetup: func() {
-				mockChatRepo.On("GetConversation", mock.Anything, uint(10)).Return(&models.Conversation{
-					Participants: []models.User{{ID: 1}},
-				}, nil)
+				mockChatRepo.On("IsUserParticipant", mock.Anything, uint(10), uint(1)).Return(true, nil)
 			},
 			expectedResult: true,
 		},
@@ -37,9 +33,7 @@ func TestIsUserParticipant(t *testing.T) {
 			userID: 2,
 			convID: 10,
 			mockSetup: func() {
-				mockChatRepo.On("GetConversation", mock.Anything, uint(10)).Return(&models.Conversation{
-					Participants: []models.User{{ID: 1}},
-				}, nil)
+				mockChatRepo.On("IsUserParticipant", mock.Anything, uint(10), uint(2)).Return(false, nil)
 			},
 			expectedResult: false,
 		},

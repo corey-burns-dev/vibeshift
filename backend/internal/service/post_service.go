@@ -96,8 +96,17 @@ func (s *PostService) CreatePost(ctx context.Context, in CreatePostInput) (*mode
 		return nil, models.NewValidationError("Invalid post_type")
 	}
 
+	const maxTitleLen = 300
+	const maxContentLen = 50000 // 50K characters
+
 	if in.Title == "" {
 		return nil, models.NewValidationError("Title is required")
+	}
+	if len(in.Title) > maxTitleLen {
+		return nil, models.NewValidationError("Title too long (max 300 characters)")
+	}
+	if len(in.Content) > maxContentLen {
+		return nil, models.NewValidationError("Content too long (max 50000 characters)")
 	}
 	// Content required for text posts.
 	if postType == models.PostTypeText {
@@ -131,6 +140,9 @@ func (s *PostService) CreatePost(ctx context.Context, in CreatePostInput) (*mode
 		}
 		if len(in.Poll.Options) < 2 {
 			return nil, models.NewValidationError("Poll must have at least two options")
+		}
+		if len(in.Poll.Options) > 20 {
+			return nil, models.NewValidationError("Poll cannot have more than 20 options")
 		}
 		// trim empty options
 		var opts []string
@@ -190,12 +202,22 @@ func (s *PostService) ListPosts(ctx context.Context, in ListPostsInput) ([]*mode
 		}
 
 		// Re-enrich with current user's liked status if they are logged in
-		if in.CurrentUserID != 0 {
+		if in.CurrentUserID != 0 && len(posts) > 0 {
 			// We need to work on a shallow copy of the slice to avoid modifying cached objects if they are shared
 			// Although Aside/Unmarshal should provide fresh objects.
-			for _, p := range posts {
-				if liked, err := s.postRepo.IsLiked(ctx, in.CurrentUserID, p.ID); err == nil {
-					p.Liked = liked
+			postIDs := make([]uint, len(posts))
+			for i, p := range posts {
+				postIDs[i] = p.ID
+			}
+
+			likedIDs, err := s.postRepo.GetLikedPostIDs(ctx, in.CurrentUserID, postIDs)
+			if err == nil {
+				likedMap := make(map[uint]bool, len(likedIDs))
+				for _, id := range likedIDs {
+					likedMap[id] = true
+				}
+				for _, p := range posts {
+					p.Liked = likedMap[p.ID]
 				}
 			}
 		}

@@ -1,5 +1,6 @@
 import { ApiError, apiClient } from '@/api/client'
 import { getWsBaseUrl } from './chat-utils'
+import { logger } from './logger'
 
 /**
  * Options for creating a ticketed WebSocket connection
@@ -22,39 +23,22 @@ export async function createTicketedWS(
   let ticketResp: { ticket: string; expires_in: number }
   try {
     ticketResp = await apiClient.issueWSTicket()
-    if (import.meta.env.DEV) {
-      try {
-        // eslint-disable-next-line no-console
-        console.debug(
-          '[ws] ticket issued (not logged) expires_in=',
-          ticketResp.expires_in
-        )
-      } catch {}
-    }
+    logger.debug(
+      '[ws] ticket issued (not logged) expires_in=',
+      ticketResp.expires_in
+    )
   } catch (err) {
-    if (import.meta.env.DEV) {
-      try {
-        if (err instanceof ApiError) {
-          // eslint-disable-next-line no-console
-          console.error('[ws] ticket issuance failed', {
-            status: err.status,
-            code: err.code,
-            message: err.message,
-          })
-          try {
-            // Suggest a retry delay for developers (non-authoritative)
-            // eslint-disable-next-line no-console
-            console.debug('[ws] suggested retry in', getNextBackoff(0), 'ms')
-          } catch {}
-        } else {
-          // eslint-disable-next-line no-console
-          console.error('[ws] ticket issuance unexpected error', err)
-          try {
-            // eslint-disable-next-line no-console
-            console.debug('[ws] suggested retry in', getNextBackoff(0), 'ms')
-          } catch {}
-        }
-      } catch {}
+    if (err instanceof ApiError) {
+      logger.error('[ws] ticket issuance failed', {
+        status: err.status,
+        code: err.code,
+        message: err.message,
+      })
+      // Suggest a retry delay for developers (non-authoritative)
+      logger.debug('[ws] suggested retry in', getNextBackoff(0), 'ms')
+    } else {
+      logger.error('[ws] ticket issuance unexpected error', err)
+      logger.debug('[ws] suggested retry in', getNextBackoff(0), 'ms')
     }
     throw err
   }
@@ -65,28 +49,14 @@ export async function createTicketedWS(
 
   const wsUrlNoTicket = `${baseUrl}${options.path}`
 
-  if (import.meta.env.DEV) {
-    try {
-      // Log the base WS endpoint (do not log the ticket)
-      // eslint-disable-next-line no-console
-      console.debug('[ws] connecting to', wsUrlNoTicket, '(ticket appended)')
-    } catch {}
-  }
+  // Log the base WS endpoint (do not log the ticket)
+  logger.debug('[ws] connecting to', wsUrlNoTicket, '(ticket appended)')
 
   let ws: WebSocket
   try {
     ws = new WebSocket(wsUrl)
   } catch (err) {
-    if (import.meta.env.DEV) {
-      try {
-        // eslint-disable-next-line no-console
-        console.error(
-          '[ws] WebSocket constructor failed for',
-          wsUrlNoTicket,
-          err
-        )
-      } catch {}
-    }
+    logger.error('[ws] WebSocket constructor failed for', wsUrlNoTicket, err)
     throw err
   }
 

@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import { Loader2, Send } from 'lucide-react'
 import { memo, useCallback, useState } from 'react'
+import { toast } from 'sonner'
 import { apiClient } from '@/api/client'
 import { UserMenu } from '@/components/UserMenu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -14,6 +15,7 @@ import {
 } from '@/hooks/useComments'
 import { getCurrentUser } from '@/hooks/useUsers'
 import { getAvatarUrl } from '@/lib/chat-utils'
+import { logger } from '@/lib/logger'
 
 export const PostComments = memo(function PostComments({
   postId,
@@ -28,6 +30,7 @@ export const PostComments = memo(function PostComments({
   const deleteCommentMutation = useDeleteComment(postId)
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null)
   const [editingCommentText, setEditingCommentText] = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
 
   const handleCreateComment = useCallback(() => {
     if (!newComment.trim()) return
@@ -38,7 +41,8 @@ export const PostComments = memo(function PostComments({
           setNewComment('')
         },
         onError: error => {
-          console.error('Failed to create comment:', error)
+          logger.error('Failed to create comment:', error)
+          toast.error('Failed to post comment. Please try again.')
         },
       }
     )
@@ -65,13 +69,20 @@ export const PostComments = memo(function PostComments({
       })
       cancelEditComment()
     } catch (err) {
-      console.error('Failed to update comment:', err)
+      logger.error('Failed to update comment:', err)
+      toast.error('Failed to update comment. Please try again.')
     }
   }
 
   const removeComment = (commentId: number) => {
     deleteCommentMutation.mutate(commentId, {
-      onError: err => console.error('Failed to delete comment:', err),
+      onSuccess: () => {
+        setConfirmDeleteId(null)
+      },
+      onError: err => {
+        logger.error('Failed to delete comment:', err)
+        toast.error('Failed to delete comment. Please try again.')
+      },
     })
   }
 
@@ -150,22 +161,50 @@ export const PostComments = memo(function PostComments({
 
                 {currentUser && currentUser.id === comment.user_id && (
                   <div className='flex gap-2 mt-2 text-sm'>
-                    <button
-                      type='button'
-                      className='text-blue-500'
-                      onClick={() =>
-                        startEditComment(comment.id, comment.content)
-                      }
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type='button'
-                      className='text-red-500'
-                      onClick={() => removeComment(comment.id)}
-                    >
-                      Delete
-                    </button>
+                    {confirmDeleteId === comment.id ? (
+                      <>
+                        <span className='text-muted-foreground text-xs self-center'>
+                          Delete this comment?
+                        </span>
+                        <Button
+                          variant='link'
+                          size='sm'
+                          className='h-auto p-0 text-destructive'
+                          onClick={() => removeComment(comment.id)}
+                        >
+                          Confirm
+                        </Button>
+                        <Button
+                          variant='link'
+                          size='sm'
+                          className='h-auto p-0'
+                          onClick={() => setConfirmDeleteId(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant='link'
+                          size='sm'
+                          className='h-auto p-0'
+                          onClick={() =>
+                            startEditComment(comment.id, comment.content)
+                          }
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant='link'
+                          size='sm'
+                          className='h-auto p-0 text-destructive'
+                          onClick={() => setConfirmDeleteId(comment.id)}
+                        >
+                          Delete
+                        </Button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

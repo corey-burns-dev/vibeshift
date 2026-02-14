@@ -88,7 +88,11 @@ func (s *Server) Signup(c *fiber.Ctx) error {
 	}
 
 	if createErr := s.userRepo.Create(c.Context(), user); createErr != nil {
-		return models.RespondWithError(c, fiber.StatusInternalServerError, createErr)
+		status := fiber.StatusInternalServerError
+		if appErr, ok := createErr.(*models.AppError); ok && appErr.Code == "VALIDATION_ERROR" {
+			status = fiber.StatusConflict
+		}
+		return models.RespondWithError(c, status, createErr)
 	}
 	s.maybeSendWelcomeSignupDM(c.Context(), user.ID)
 
@@ -204,7 +208,12 @@ func (s *Server) Refresh(c *fiber.Ctx) error {
 		RefreshToken string `json:"refresh_token"`
 	}
 	if err := c.BodyParser(&req); err != nil {
-		// Ignore parser error if it's just an empty body, we'll check cookie
+		// Only ignore parse error when the body is empty (Content-Length 0 or missing).
+		// Malformed JSON with a body present is a client error.
+		if len(c.Body()) > 0 {
+			return models.RespondWithError(c, fiber.StatusBadRequest,
+				models.NewValidationError("Invalid request body"))
+		}
 	}
 
 	refreshTokenString := req.RefreshToken
@@ -275,8 +284,13 @@ func (s *Server) Refresh(c *fiber.Ctx) error {
 				models.NewUnauthorizedError("Refresh token revoked or already used"))
 		}
 
-		// Refresh token rotation: Revoke current one
-		s.redis.Del(c.Context(), redisKey)
+		// Refresh token rotation: Revoke current one. If deletion fails,
+		// reject the request to prevent issuing new tokens while the old
+		// refresh token remains valid.
+		if err := s.redis.Del(c.Context(), redisKey).Err(); err != nil {
+			return models.RespondWithError(c, fiber.StatusInternalServerError,
+				models.NewInternalError(fmt.Errorf("failed to revoke refresh token: %w", err)))
+		}
 	}
 
 	// Get user to ensure they still exist and get username

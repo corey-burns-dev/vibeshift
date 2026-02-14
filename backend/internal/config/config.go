@@ -188,6 +188,9 @@ func (c *Config) Validate() error {
 		if c.AllowedOrigins == "*" {
 			log.Println("WARNING: ALLOWED_ORIGINS is set to '*' in production. This is insecure.")
 		}
+		if c.RedisURL == "" {
+			return errors.New("REDIS_URL is required in production (auth, rate limiting, and WebSocket features depend on it)")
+		}
 	} else {
 		// Development/Test warnings
 		if len(c.JWTSecret) < 32 {

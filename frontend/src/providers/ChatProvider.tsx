@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -179,7 +180,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
           setJoinedRooms(new Set(joinedRoomsRef.current))
         }
       } catch (e) {
-        console.error('Failed to load joined rooms', e)
+        logger.error('Failed to load joined rooms', e)
       }
     }
   }, [])
@@ -250,8 +251,9 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const setOnMessage = useCallback(
     // Deprecated compatibility helper — prefer subscribeOnMessage
     (callback?: (message: Message, conversationId: number) => void) => {
-      if (!callback) return
+      if (!callback) return () => {}
       messageHandlersRef.current.add(callback)
+      return () => messageHandlersRef.current.delete(callback)
     },
     []
   )
@@ -266,32 +268,36 @@ export function ChatProvider({ children }: ChatProviderProps) {
         expiresInMs?: number
       ) => void
     ) => {
-      if (!callback) return
+      if (!callback) return () => {}
       typingHandlersRef.current.add(callback)
+      return () => typingHandlersRef.current.delete(callback)
     },
     []
   )
 
   const setOnPresence = useCallback(
     (callback?: (userId: number, username: string, status: string) => void) => {
-      if (!callback) return
+      if (!callback) return () => {}
       presenceHandlersRef.current.add(callback)
+      return () => presenceHandlersRef.current.delete(callback)
     },
     []
   )
 
   const setOnConnectedUsers = useCallback(
     (callback?: (userIds: number[]) => void) => {
-      if (!callback) return
+      if (!callback) return () => {}
       connectedUsersHandlersRef.current.add(callback)
+      return () => connectedUsersHandlersRef.current.delete(callback)
     },
     []
   )
 
   const setOnParticipantsUpdate = useCallback(
     (callback?: (conversationId: number, participants: User[]) => void) => {
-      if (!callback) return
+      if (!callback) return () => {}
       participantsUpdateHandlersRef.current.add(callback)
+      return () => participantsUpdateHandlersRef.current.delete(callback)
     },
     []
   )
@@ -308,8 +314,9 @@ export function ChatProvider({ children }: ChatProviderProps) {
         online_user_ids?: number[]
       }) => void
     ) => {
-      if (!callback) return
+      if (!callback) return () => {}
       chatroomPresenceHandlersRef.current.add(callback)
+      return () => chatroomPresenceHandlersRef.current.delete(callback)
     },
     []
   )
@@ -436,7 +443,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
             const data: ChatWebSocketMessage = JSON.parse(event.data)
 
             if (data.error) {
-              console.error('WS Server Error:', data.error)
+              logger.error('WS Server Error:', data.error)
               if (
                 data.error === 'invalid token' ||
                 data.error === 'Invalid or expired WebSocket ticket'
@@ -452,11 +459,16 @@ export function ChatProvider({ children }: ChatProviderProps) {
               conversationsInvalidateTimerRef.current = window.setTimeout(
                 () => {
                   conversationsInvalidateTimerRef.current = null
+                  // Invalidate DMs list
                   queryClient.invalidateQueries({
                     queryKey: ['chat', 'conversations'],
                   })
+                  // Invalidate Chatrooms lists
+                  queryClient.invalidateQueries({
+                    queryKey: ['chat', 'chatrooms'],
+                  })
                 },
-                250
+                300
               )
             }
 
@@ -543,16 +555,14 @@ export function ChatProvider({ children }: ChatProviderProps) {
                 )
 
                 // Ensure conversation list reflects new last_message / ordering
-                queryClient.invalidateQueries({
-                  queryKey: ['chat', 'conversations'],
-                })
+                scheduleConversationsInvalidate()
 
                 // Notify all subscribers
                 for (const cb of messageHandlersRef.current) {
                   try {
                     cb(message, convId)
                   } catch (e) {
-                    console.error('message handler failed', e)
+                    logger.error('message handler failed', e)
                   }
                 }
                 break
@@ -616,7 +626,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
                   try {
                     cb(message, convId)
                   } catch (e) {
-                    console.error('message handler failed', e)
+                    logger.error('message handler failed', e)
                   }
                 }
                 break
@@ -636,7 +646,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
                   try {
                     cb(convId, userId, username, !!isTyping, expiresInMs)
                   } catch (e) {
-                    console.error('typing handler failed', e)
+                    logger.error('typing handler failed', e)
                   }
                 }
                 break
@@ -652,7 +662,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
                   try {
                     cb(userId, username, status)
                   } catch (e) {
-                    console.error('presence handler failed', e)
+                    logger.error('presence handler failed', e)
                   }
                 }
                 break
@@ -660,14 +670,13 @@ export function ChatProvider({ children }: ChatProviderProps) {
 
               case 'connected_users': {
                 const payload = data.payload || data
-                const ids =
-                  payload.user_ids || payload.userIds || payload.userIds
+                const ids = payload.user_ids || payload.userIds
                 if (Array.isArray(ids)) {
                   for (const cb of connectedUsersHandlersRef.current) {
                     try {
                       cb(ids)
                     } catch (e) {
-                      console.error('connected_users handler failed', e)
+                      logger.error('connected_users handler failed', e)
                     }
                   }
                 }
@@ -684,7 +693,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
                     try {
                       cb(convId, participants)
                     } catch (e) {
-                      console.error('participantsUpdate handler failed', e)
+                      logger.error('participantsUpdate handler failed', e)
                     }
                   }
                 }
@@ -697,7 +706,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
                   try {
                     cb(payload)
                   } catch (e) {
-                    console.error('chatroomPresence handler failed', e)
+                    logger.error('chatroomPresence handler failed', e)
                   }
                 }
                 break
@@ -772,7 +781,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
                 break
             }
           } catch (error) {
-            console.error('Failed to parse WebSocket message:', error)
+            logger.error('Failed to parse WebSocket message:', error)
           }
         },
         onError: error => {
@@ -916,33 +925,56 @@ export function ChatProvider({ children }: ChatProviderProps) {
     )
   }, [])
 
-  const value: ChatContextValue = {
-    isConnected,
-    joinedRooms,
-    joinRoom,
-    leaveRoom,
-    sendTyping,
-    sendMessage,
-    markAsRead,
-    onMessage: undefined,
-    onTyping: undefined,
-    onPresence: undefined,
-    onConnectedUsers: undefined,
-    onParticipantsUpdate: undefined,
-    onChatroomPresence: undefined,
-    setOnMessage,
-    setOnTyping,
-    setOnPresence,
-    setOnConnectedUsers,
-    setOnParticipantsUpdate,
-    setOnChatroomPresence,
-    subscribeOnMessage,
-    subscribeOnTyping,
-    subscribeOnPresence,
-    subscribeOnConnectedUsers,
-    subscribeOnParticipantsUpdate,
-    subscribeOnChatroomPresence,
-  }
+  const value = useMemo<ChatContextValue>(
+    () => ({
+      isConnected,
+      joinedRooms,
+      joinRoom,
+      leaveRoom,
+      sendTyping,
+      sendMessage,
+      markAsRead,
+      onMessage: undefined,
+      onTyping: undefined,
+      onPresence: undefined,
+      onConnectedUsers: undefined,
+      onParticipantsUpdate: undefined,
+      onChatroomPresence: undefined,
+      setOnMessage,
+      setOnTyping,
+      setOnPresence,
+      setOnConnectedUsers,
+      setOnParticipantsUpdate,
+      setOnChatroomPresence,
+      subscribeOnMessage,
+      subscribeOnTyping,
+      subscribeOnPresence,
+      subscribeOnConnectedUsers,
+      subscribeOnParticipantsUpdate,
+      subscribeOnChatroomPresence,
+    }),
+    [
+      isConnected,
+      joinedRooms,
+      joinRoom,
+      leaveRoom,
+      sendTyping,
+      sendMessage,
+      markAsRead,
+      setOnMessage,
+      setOnTyping,
+      setOnPresence,
+      setOnConnectedUsers,
+      setOnParticipantsUpdate,
+      setOnChatroomPresence,
+      subscribeOnMessage,
+      subscribeOnTyping,
+      subscribeOnPresence,
+      subscribeOnConnectedUsers,
+      subscribeOnParticipantsUpdate,
+      subscribeOnChatroomPresence,
+    ]
+  )
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>
 }

@@ -10,6 +10,7 @@ import (
 	"image"
 	"image/draw"
 	"image/jpeg"
+	"log"
 	"mime"
 	"net/http"
 	"os"
@@ -240,9 +241,23 @@ func (s *ImageService) BuildImageURL(hash, size string) string {
 	return fmt.Sprintf("%s?size=%s", url, variant)
 }
 
+// isValidImageHash checks that the hash is strictly lowercase hex (SHA-256 style).
+// This prevents path traversal attacks via crafted hash parameters.
+func isValidImageHash(hash string) bool {
+	if len(hash) == 0 || len(hash) > 128 {
+		return false
+	}
+	for _, c := range hash {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+			return false
+		}
+	}
+	return true
+}
+
 // ResolveForServing is retained for compatibility and resolves to the master image on disk.
 func (s *ImageService) ResolveForServing(_ context.Context, hash string, _ string) (*models.Image, string, error) {
-	if strings.TrimSpace(hash) == "" {
+	if !isValidImageHash(hash) {
 		return nil, "", models.NewValidationError("Invalid image hash")
 	}
 	img, err := s.repo.GetByHash(context.Background(), hash)
@@ -310,7 +325,9 @@ func (s *ImageService) workerLoop(ctx context.Context) {
 		}
 
 		if err := s.processQueuedImage(ctx, img); err != nil {
-			_ = s.repo.MarkFailed(ctx, img.ID, err.Error())
+			if ferr := s.repo.MarkFailed(ctx, img.ID, err.Error()); ferr != nil {
+				log.Printf("ERROR: failed to mark image %d as failed: %v (original error: %v)", img.ID, ferr, err)
+			}
 		}
 	}
 }

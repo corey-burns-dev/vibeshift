@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"sanctum/internal/cache"
 	"sanctum/internal/database"
@@ -112,9 +113,24 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (*m
 
 func (r *userRepository) Create(ctx context.Context, user *models.User) error {
 	if err := r.db.WithContext(ctx).Create(user).Error; err != nil {
+		if isUniqueConstraintError(err) {
+			return models.NewValidationError("User already exists")
+		}
 		return models.NewInternalError(err)
 	}
 	return nil
+}
+
+// isUniqueConstraintError checks if a DB error is a unique constraint violation.
+func isUniqueConstraintError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	// PostgreSQL unique violation SQLSTATE 23505
+	return strings.Contains(msg, "duplicate key") ||
+		strings.Contains(msg, "unique constraint") ||
+		strings.Contains(msg, "23505")
 }
 
 func (r *userRepository) Update(ctx context.Context, user *models.User) error {

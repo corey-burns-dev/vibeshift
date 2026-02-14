@@ -24,6 +24,7 @@ type ChatRepository interface {
 	GetMessages(ctx context.Context, convID uint, limit, offset int) ([]*models.Message, error)
 	MarkMessageRead(ctx context.Context, msgID uint) error
 	UpdateLastRead(ctx context.Context, convID, userID uint) error
+	IsUserParticipant(ctx context.Context, conversationID, userID uint) (bool, error)
 }
 
 // chatRepository implements ChatRepository
@@ -257,4 +258,24 @@ func (r *chatRepository) UpdateLastRead(ctx context.Context, convID, userID uint
 	cache.InvalidateUser(ctx, userID)
 	r.logger.LogUpdate(ctx, map[string]interface{}{"conversation_id": convID, "user_id": userID})
 	return nil
+}
+
+// IsUserParticipant performs a lightweight existence check instead of loading
+// the full conversation with all participants.
+func (r *chatRepository) IsUserParticipant(ctx context.Context, conversationID, userID uint) (bool, error) {
+	start := time.Now()
+	defer func() {
+		observability.DatabaseQueryLatency.WithLabelValues("select", "conversation_participants").Observe(time.Since(start).Seconds())
+	}()
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&models.ConversationParticipant{}).
+		Where("conversation_id = ? AND user_id = ?", conversationID, userID).
+		Limit(1).
+		Count(&count).Error
+	if err != nil {
+		r.logger.LogError(ctx, err, "is_user_participant")
+		return false, err
+	}
+	return count > 0, nil
 }

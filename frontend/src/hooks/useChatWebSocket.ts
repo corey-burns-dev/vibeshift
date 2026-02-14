@@ -81,6 +81,8 @@ export function useChatWebSocket({
   const wsRef = useRef<WebSocket | null>(null)
   const queryClient = useQueryClient()
   const reconnectTimeoutRef = useRef<number | undefined>(undefined)
+  const connectionGenerationRef = useRef(0)
+  const activeGenerationRef = useRef(0)
   const currentUserRef = useRef<{ id: number; username: string } | null>(null)
   const autoJoinConversationRef = useRef(autoJoinConversation)
   const conversationIdRef = useRef(conversationId)
@@ -142,10 +144,11 @@ export function useChatWebSocket({
 
     // Create WebSocket connection
     try {
+      const gen = ++connectionGenerationRef.current
       const ws = await createTicketedWS({
         path: '/api/ws/chat',
         onOpen: () => {
-          if (ws !== wsRef.current) return
+          if (activeGenerationRef.current !== gen) return
 
           setIsConnected(true)
 
@@ -169,7 +172,7 @@ export function useChatWebSocket({
           }
         },
         onMessage: event => {
-          if (ws !== wsRef.current) return
+          if (activeGenerationRef.current !== gen) return
 
           try {
             // Raw message received
@@ -341,8 +344,7 @@ export function useChatWebSocket({
           }
         },
         onClose: event => {
-          // Only reconnect if this is the ACTIVE socket
-          if (ws !== wsRef.current) return
+          if (activeGenerationRef.current !== gen) return
 
           logger.debug('WebSocket disconnected:', {
             code: event.code,
@@ -362,10 +364,11 @@ export function useChatWebSocket({
           }
         },
         onError: error => {
-          if (ws !== wsRef.current) return
+          if (activeGenerationRef.current !== gen) return
           logger.error('WebSocket error:', error)
         },
       })
+      activeGenerationRef.current = gen
       wsRef.current = ws
     } catch (_err) {
       if (enabled) {

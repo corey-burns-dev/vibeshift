@@ -18,8 +18,8 @@ describe('normalizeImageURL', () => {
     ).toBe('/api/images/hash123?size=medium')
   })
 
-  it('leaves non-api image URLs unchanged', () => {
+  it('rejects non-api image URLs', () => {
     const external = 'https://cdn.example.com/photos/pic.png'
-    expect(normalizeImageURL(external)).toBe(external)
+    expect(normalizeImageURL(external)).toBeUndefined()
   })
 })

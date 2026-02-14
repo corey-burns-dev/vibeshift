@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -24,9 +23,8 @@ const (
 
 // CheckRateLimit checks if a resource has exceeded its rate limit.
 // Returns true if allowed, false if limit exceeded.
-// Rate limiting is disabled when APP_ENV is "test", "development" or "stress" so dev and load test workflows are not throttled.
-func CheckRateLimit(ctx context.Context, rdb *redis.Client, resource, id string, limit int, window time.Duration) (bool, error) {
-	env := os.Getenv("APP_ENV")
+// Rate limiting is disabled when env is "test", "development" or "stress" so dev and load test workflows are not throttled.
+func CheckRateLimit(ctx context.Context, rdb *redis.Client, env, resource, id string, limit int, window time.Duration) (bool, error) {
 	if env == "" {
 		env = "development"
 	}
@@ -42,13 +40,11 @@ func CheckRateLimit(ctx context.Context, rdb *redis.Client, resource, id string,
 
 	key := fmt.Sprintf("rl:%s:%s", resource, id)
 
-	// INCR and set EXPIRE if new
-	cnt, err := rdb.Incr(ctx, key).Result()
+	// Atomic INCR+EXPIRE via Lua script to prevent race window where
+	// EXPIRE fails after INCR, permanently rate-limiting the user.
+	cnt, err := rateLimitScript.Run(ctx, rdb, []string{key}, int(window.Seconds())).Int64()
 	if err != nil {
 		return false, err
-	}
-	if cnt == 1 {
-		rdb.Expire(ctx, key, window)
 	}
 	if cnt > int64(limit) {
 		return false, nil
@@ -56,15 +52,24 @@ func CheckRateLimit(ctx context.Context, rdb *redis.Client, resource, id string,
 	return true, nil
 }
 
+// rateLimitScript atomically increments and sets expiry on first use.
+var rateLimitScript = redis.NewScript(`
+	local cnt = redis.call('INCR', KEYS[1])
+	if cnt == 1 then
+		redis.call('EXPIRE', KEYS[1], ARGV[1])
+	end
+	return cnt
+`)
+
 // RateLimit returns a Fiber middleware enforcing `limit` requests per `window`.
 // It keys by authenticated userID (if set in c.Locals("userID")) otherwise by remote IP.
 // It defaults to FailOpen policy.
-func RateLimit(rdb *redis.Client, limit int, window time.Duration, name ...string) fiber.Handler {
-	return RateLimitWithPolicy(rdb, limit, window, FailOpen, name...)
+func RateLimit(rdb *redis.Client, env string, limit int, window time.Duration, name ...string) fiber.Handler {
+	return RateLimitWithPolicy(rdb, env, limit, window, FailOpen, name...)
 }
 
 // RateLimitWithPolicy returns a Fiber middleware enforcing `limit` requests per `window` with a specific failure policy.
-func RateLimitWithPolicy(rdb *redis.Client, limit int, window time.Duration, policy FailPolicy, name ...string) fiber.Handler {
+func RateLimitWithPolicy(rdb *redis.Client, env string, limit int, window time.Duration, policy FailPolicy, name ...string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx := context.Background()
 
@@ -81,7 +86,7 @@ func RateLimitWithPolicy(rdb *redis.Client, limit int, window time.Duration, pol
 			resource = name[0]
 		}
 
-		allowed, err := CheckRateLimit(ctx, rdb, resource, id, limit, window)
+		allowed, err := CheckRateLimit(ctx, rdb, env, resource, id, limit, window)
 		if err != nil {
 			if policy == FailClosed {
 				log.Printf("WARNING: Rate limit fail-closed for route %s (resource: %s, policy: FailClosed): %v", c.Path(), resource, err)

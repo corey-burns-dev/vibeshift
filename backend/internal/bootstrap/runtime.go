@@ -65,7 +65,7 @@ func ensureDevRootAdmin(cfg *config.Config, db *gorm.DB) error {
 	}
 	password := cfg.DevRootPassword
 	if password == "" {
-		password = "DevRoot123!"
+		return fmt.Errorf("DEV_ROOT_PASSWORD must be set when DEV_BOOTSTRAP_ROOT is enabled")
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -105,13 +105,15 @@ func ensureDevRootAdmin(cfg *config.Config, db *gorm.DB) error {
 		// Ensure users ID sequence is not behind explicit ID insertion.
 		// This is PostgreSQL-specific.
 		if tx.Dialector.Name() == "postgres" {
-			_ = tx.Exec(`
+			if err := tx.Exec(`
 				SELECT setval(
 					pg_get_serial_sequence('users', 'id'),
 					GREATEST((SELECT COALESCE(MAX(id), 1) FROM users), 1),
 					true
 				)
-			`).Error
+			`).Error; err != nil {
+				return fmt.Errorf("failed to reset users sequence: %w", err)
+			}
 		}
 
 		return nil

@@ -36,10 +36,19 @@ func (s *UserService) UpdateProfile(ctx context.Context, in UpdateProfileInput) 
 		return nil, err
 	}
 
+	const maxBioLen = 500
+	const maxUsernameLen = 30
+
 	if in.Username != "" {
+		if len(in.Username) > maxUsernameLen {
+			return nil, models.NewValidationError("Username too long (max 30 characters)")
+		}
 		user.Username = in.Username
 	}
 	if in.Bio != "" {
+		if len(in.Bio) > maxBioLen {
+			return nil, models.NewValidationError("Bio too long (max 500 characters)")
+		}
 		user.Bio = in.Bio
 	}
 	if in.Avatar != "" {

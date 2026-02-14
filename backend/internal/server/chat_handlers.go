@@ -262,24 +262,28 @@ func (s *Server) MarkConversationRead(c *fiber.Ctx) error {
 	}
 
 	now := time.Now().UTC()
-	if err := s.db.WithContext(ctx).
-		Model(&models.ConversationParticipant{}).
-		Where("conversation_id = ? AND user_id = ?", convID, userID).
-		Updates(map[string]interface{}{
-			"last_read_at": now,
-			"unread_count": 0,
-		}).Error; err != nil {
-		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
-	}
+	txErr := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&models.ConversationParticipant{}).
+			Where("conversation_id = ? AND user_id = ?", convID, userID).
+			Updates(map[string]interface{}{
+				"last_read_at": now,
+				"unread_count": 0,
+			}).Error; err != nil {
+			return err
+		}
 
-	if err := s.db.WithContext(ctx).
-		Model(&models.Message{}).
-		Where("conversation_id = ? AND sender_id <> ? AND is_read = ?", convID, userID, false).
-		Updates(map[string]interface{}{
-			"is_read": true,
-			"read_at": now,
-		}).Error; err != nil {
-		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+		if err := tx.Model(&models.Message{}).
+			Where("conversation_id = ? AND sender_id <> ? AND is_read = ?", convID, userID, false).
+			Updates(map[string]interface{}{
+				"is_read": true,
+				"read_at": now,
+			}).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+	if txErr != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, txErr)
 	}
 
 	if s.chatHub != nil {
@@ -364,15 +368,6 @@ func (s *Server) LeaveConversation(c *fiber.Ctx) error {
 }
 
 func (s *Server) chatSvc() *service.ChatService {
-	if s.chatService == nil {
-		s.chatService = service.NewChatService(
-			s.chatRepo,
-			s.userRepo,
-			s.db,
-			s.isAdminByUserID,
-			s.canModerateChatroomByUserID,
-		)
-	}
 	return s.chatService
 }
 

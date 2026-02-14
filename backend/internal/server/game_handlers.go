@@ -146,8 +146,12 @@ func (s *Server) WebSocketGameHandler() fiber.Handler {
 		}
 		userID := userIDVal.(uint)
 
-		// Consume ticket if present
-		s.consumeWSTicket(context.Background(), c.Locals("wsTicket"))
+		// Consume ticket if present; use shutdown context for bounded lifecycle.
+		wsCtx := s.shutdownCtx
+		if wsCtx == nil {
+			wsCtx = context.Background()
+		}
+		s.consumeWSTicket(wsCtx, c.Locals("wsTicket"))
 
 		roomIDStr := c.Query("room_id")
 		if roomIDStr == "" {
@@ -201,5 +205,5 @@ func (s *Server) WebSocketGameHandler() fiber.Handler {
 }
 
 func (s *Server) gameSvc() *service.GameService {
-	return service.NewGameService(s.gameRepo)
+	return s.gameService
 }

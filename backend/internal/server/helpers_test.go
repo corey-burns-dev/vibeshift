@@ -215,8 +215,8 @@ func TestParseID_Zero(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
 
-	// 0 is a valid non-negative int; returns 200
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	// 0 is rejected as an invalid ID (sentinel value) -- returns 400
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
 // --- isAdmin ---

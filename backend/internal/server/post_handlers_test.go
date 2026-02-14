@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"sanctum/internal/models"
+	"sanctum/internal/service"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
@@ -68,6 +69,14 @@ func (m *MockPostRepository) IsLiked(ctx context.Context, userID, postID uint) (
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *MockPostRepository) GetLikedPostIDs(ctx context.Context, userID uint, postIDs []uint) ([]uint, error) {
+	args := m.Called(ctx, userID, postIDs)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]uint), args.Error(1)
+}
+
 func (m *MockPostRepository) Like(ctx context.Context, userID, postID uint) error {
 	args := m.Called(ctx, userID, postID)
 	return args.Error(0)
@@ -104,7 +113,8 @@ func (m *MockPollRepository) EnrichWithResults(ctx context.Context, poll *models
 func TestCreatePost(t *testing.T) {
 	app := fiber.New()
 	mockRepo := new(MockPostRepository)
-	s := &Server{postRepo: mockRepo}
+	postService := service.NewPostService(mockRepo, nil, nil)
+	s := &Server{postRepo: mockRepo, postService: postService}
 
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("userID", uint(1))

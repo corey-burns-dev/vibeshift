@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"sanctum/internal/models"
+	"sanctum/internal/service"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
@@ -68,10 +69,16 @@ func (m *MockChatRepository) UpdateLastRead(ctx context.Context, convID, userID 
 	return args.Error(0)
 }
 
+func (m *MockChatRepository) IsUserParticipant(ctx context.Context, conversationID, userID uint) (bool, error) {
+	args := m.Called(ctx, conversationID, userID)
+	return args.Bool(0), args.Error(1)
+}
+
 func TestCreateConversation(t *testing.T) {
 	app := fiber.New()
 	mockChatRepo := new(MockChatRepository)
-	s := &Server{chatRepo: mockChatRepo}
+	chatService := service.NewChatService(mockChatRepo, nil, nil, nil, nil)
+	s := &Server{chatRepo: mockChatRepo, chatService: chatService}
 
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("userID", uint(1))

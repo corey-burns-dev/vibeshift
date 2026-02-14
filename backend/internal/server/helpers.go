@@ -57,7 +57,7 @@ func parsePagination(c *fiber.Ctx, defaultLimit int) Pagination {
 // "userId" -> "Invalid user ID", "commentId" -> "Invalid comment ID").
 func (s *Server) parseID(c *fiber.Ctx, param string) (uint, error) {
 	id, err := c.ParamsInt(param)
-	if err != nil || id < 0 {
+	if err != nil || id <= 0 {
 		_ = models.RespondWithError(c, fiber.StatusBadRequest,
 			models.NewValidationError("Invalid "+humanizeParam(param)))
 		return 0, errResponseWritten

@@ -13,8 +13,9 @@ import {
   Type,
   Video,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { apiClient } from '@/api/client'
 // Types
 import type { Post, PostType, UpdatePostRequest } from '@/api/types'
@@ -49,6 +50,7 @@ import {
 import { getCurrentUser, useIsAuthenticated } from '@/hooks/useUsers'
 import { getAvatarUrl } from '@/lib/chat-utils'
 import { handleAuthOrFKError } from '@/lib/handleAuthOrFKError'
+import { logger } from '@/lib/logger'
 import { normalizeImageURL } from '@/lib/mediaUrl'
 import { cn } from '@/lib/utils'
 
@@ -65,17 +67,15 @@ type PollOptionDraft = {
   value: string
 }
 
-let pollOptionSeed = 0
-
-function createPollOption(value = ''): PollOptionDraft {
-  pollOptionSeed += 1
-  return {
-    id: `poll-option-${pollOptionSeed}`,
-    value,
-  }
-}
-
 export default function Posts() {
+  const pollOptionSeedRef = useRef(0)
+  const createPollOption = useCallback((value = ''): PollOptionDraft => {
+    pollOptionSeedRef.current += 1
+    return {
+      id: `poll-option-${pollOptionSeedRef.current}`,
+      value,
+    }
+  }, [])
   const [newPostType, setNewPostType] = useState<PostType>('text')
   const [newPostTitle, setNewPostTitle] = useState('')
   const [newPostContent, setNewPostContent] = useState('')
@@ -105,9 +105,20 @@ export default function Posts() {
   const [editingPostTitle, setEditingPostTitle] = useState('')
   const [editingPostContent, setEditingPostContent] = useState('')
   const [openMenuPostId, setOpenMenuPostId] = useState<number | null>(null)
+  const [reportingPostId, setReportingPostId] = useState<number | null>(null)
+  const [reportReason, setReportReason] = useState('')
+  const [reportDetails, setReportDetails] = useState('')
   const queryClient = useQueryClient()
   const debounceRef = useRef<number | null>(null)
   const [likingPostId, setLikingPostId] = useState<number | null>(null)
+
+  // Close post action menu on click outside (H5)
+  useEffect(() => {
+    if (openMenuPostId === null) return
+    const handleClickOutside = () => setOpenMenuPostId(null)
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [openMenuPostId])
 
   // Flatten pages into single array of posts
   const posts = data?.pages.flat() ?? []
@@ -188,7 +199,7 @@ export default function Posts() {
       } catch (error) {
         setIsUploadingImage(false)
         if (!handleAuthOrFKError(error)) {
-          console.error('Failed to upload image:', error)
+          logger.error('Failed to upload image:', error)
         }
         return
       }
@@ -233,7 +244,8 @@ export default function Posts() {
       queryClient.invalidateQueries({ queryKey: ['posts'] })
     } catch (error) {
       if (!handleAuthOrFKError(error)) {
-        console.error('Failed to create post:', error)
+        logger.error('Failed to create post:', error)
+        toast.error('Failed to create post. Please try again.')
       }
     }
   }
@@ -249,7 +261,7 @@ export default function Posts() {
       },
       onError: error => {
         setLikingPostId(null)
-        console.error('Failed to toggle like:', error)
+        logger.error('Failed to toggle like:', error)
       },
     })
   }
@@ -272,7 +284,7 @@ export default function Posts() {
       await queryClient.invalidateQueries({ queryKey: ['posts'] })
       cancelEditPost()
     } catch (err) {
-      console.error('Failed to update post:', err)
+      logger.error('Failed to update post:', err)
     }
   }
 
@@ -595,17 +607,9 @@ export default function Posts() {
                     className='h-8 w-8 p-0 text-muted-foreground hover:text-destructive'
                     onClick={event => {
                       event.stopPropagation()
-                      const reason = window
-                        .prompt('Reason for reporting this post?')
-                        ?.trim()
-                      if (!reason) return
-                      const details = window
-                        .prompt('Additional details (optional)')
-                        ?.trim()
-                      reportPostMutation.mutate({
-                        postId: post.id,
-                        payload: { reason, details },
-                      })
+                      setReportingPostId(post.id)
+                      setReportReason('')
+                      setReportDetails('')
                     }}
                     title='Report post'
                   >
@@ -875,11 +879,66 @@ export default function Posts() {
                       await deletePostMutation.mutateAsync(deletingPostId)
                       setDeletingPostId(null)
                     } catch (err) {
-                      console.error('Failed to delete post:', err)
+                      logger.error('Failed to delete post:', err)
                     }
                   }}
                 >
                   Delete
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Report post dialog */}
+          <Dialog
+            open={!!reportingPostId}
+            onOpenChange={open => {
+              if (!open) setReportingPostId(null)
+            }}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Report post</DialogTitle>
+                <DialogDescription>
+                  Please provide a reason for reporting this post.
+                </DialogDescription>
+              </DialogHeader>
+              <div className='space-y-3'>
+                <Textarea
+                  placeholder='Reason for reporting (required)...'
+                  value={reportReason}
+                  onChange={e => setReportReason(e.target.value)}
+                  rows={2}
+                />
+                <Textarea
+                  placeholder='Additional details (optional)...'
+                  value={reportDetails}
+                  onChange={e => setReportDetails(e.target.value)}
+                  rows={2}
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  variant='ghost'
+                  onClick={() => setReportingPostId(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  disabled={!reportReason.trim()}
+                  onClick={() => {
+                    if (!reportingPostId || !reportReason.trim()) return
+                    reportPostMutation.mutate({
+                      postId: reportingPostId,
+                      payload: {
+                        reason: reportReason.trim(),
+                        details: reportDetails.trim() || undefined,
+                      },
+                    })
+                    setReportingPostId(null)
+                  }}
+                >
+                  Submit Report
                 </Button>
               </DialogFooter>
             </DialogContent>

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useLogin } from '@/hooks'
+import { logger } from '@/lib/logger'
 import { type LoginFormData, loginSchema } from '@/lib/validations'
 
 export default function Login() {
@@ -30,7 +31,7 @@ export default function Login() {
       await loginMutation.mutateAsync(data)
       toast.success('Successfully logged in!')
     } catch (error) {
-      console.error('Login error:', error)
+      logger.error('Login error:', error)
       const message =
         error instanceof Error ? error.message : 'Invalid email or password'
       toast.error(message)
@@ -80,6 +81,7 @@ export default function Login() {
               size='sm'
               className='absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent'
               onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? (
                 <EyeOff className='h-4 w-4' />
@@ -116,7 +118,12 @@ export default function Login() {
       </div>
 
       <div className='mt-4 text-center'>
-        <Button variant='link' className='text-sm text-muted-foreground'>
+        <Button
+          variant='link'
+          className='text-sm text-muted-foreground'
+          disabled
+          title='Coming soon'
+        >
           Forgot your password?
         </Button>
       </div>

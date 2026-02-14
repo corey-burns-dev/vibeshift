@@ -130,8 +130,17 @@ func (c *Client) TrySend(message []byte) {
 	select {
 	case c.Send <- message:
 	default:
-		// Buffer full, drop message
+		// Buffer full, drop message and notify client so it can re-fetch
 		observability.WebSocketBackpressureDrops.WithLabelValues(c.Hub.Name(), "full").Inc()
 		log.Printf("Client %d (%s): Buffer full, dropped message", c.UserID, c.Hub.Name())
+
+		// Best-effort notification to the client that messages were dropped.
+		// This allows the frontend to detect the gap and re-fetch.
+		dropNotice := []byte(`{"type":"messages_dropped","payload":{"reason":"buffer_full"}}`)
+		select {
+		case c.Send <- dropNotice:
+		default:
+			// Can't even send the notification -- client is truly overwhelmed
+		}
 	}
 }

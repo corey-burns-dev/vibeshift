@@ -7,6 +7,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	_ "sanctum/docs" // swagger docs
@@ -42,6 +43,15 @@ type wireableHub interface {
 	Shutdown(ctx context.Context) error
 }
 
+// consumedTicketEntry is an in-process cache entry for consumed WebSocket tickets.
+// Fiber's websocket upgrade may call AuthRequired twice during the multi-pass
+// handshake, so we cache the consumed ticket briefly to allow the second pass
+// without weakening the atomic GETDEL security guarantees.
+type consumedTicketEntry struct {
+	userID    uint
+	consumeAt time.Time
+}
+
 // Server holds all dependencies and provides handlers
 type Server struct {
 	config            *config.Config
@@ -71,6 +81,13 @@ type Server struct {
 	chatService       *service.ChatService
 	userService       *service.UserService
 	moderationService *service.ModerationService
+	gameService       *service.GameService
+
+	// consumedTickets is a short-lived in-process cache allowing the WS upgrade
+	// multi-pass handshake to succeed after GETDEL has atomically consumed the
+	// ticket from Redis.
+	consumedTicketsMu sync.Mutex
+	consumedTickets   map[string]consumedTicketEntry
 }
 
 // NewServer creates a new server instance with all dependencies
@@ -98,20 +115,24 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	// Initialize Prometheus metrics
 	prom := middleware.InitMetrics("sanctum-api")
 
+	// Initialize Logger with correct env
+	middleware.InitLogger(cfg.Env)
+
 	server := &Server{
-		config:         cfg,
-		db:             db,
-		redis:          redisClient,
-		promMiddleware: prom,
-		userRepo:       userRepo,
-		postRepo:       postRepo,
-		pollRepo:       pollRepo,
-		imageRepo:      imageRepo,
-		commentRepo:    commentRepo,
-		chatRepo:       chatRepo,
-		friendRepo:     friendRepo,
-		gameRepo:       gameRepo,
-		featureFlags:   featureflags.NewManager(cfg.FeatureFlags),
+		config:          cfg,
+		db:              db,
+		redis:           redisClient,
+		promMiddleware:  prom,
+		userRepo:        userRepo,
+		postRepo:        postRepo,
+		pollRepo:        pollRepo,
+		imageRepo:       imageRepo,
+		commentRepo:     commentRepo,
+		chatRepo:        chatRepo,
+		friendRepo:      friendRepo,
+		gameRepo:        gameRepo,
+		featureFlags:    featureflags.NewManager(cfg.FeatureFlags),
+		consumedTickets: make(map[string]consumedTicketEntry),
 	}
 	server.postService = service.NewPostService(server.postRepo, server.pollRepo, server.isAdminByUserID)
 	server.imageService = service.NewImageService(server.imageRepo, cfg)
@@ -125,6 +146,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	)
 	server.userService = service.NewUserService(server.userRepo)
 	server.moderationService = service.NewModerationService(server.db)
+	server.gameService = service.NewGameService(server.gameRepo)
 	// NOTE: built-in sanctum seeding is intentionally NOT performed here.
 	// Seeding should be explicit during runtime bootstrap (cmd) or test setup.
 
@@ -157,20 +179,24 @@ func NewServerWithDeps(cfg *config.Config, db *gorm.DB, redisClient *redis.Clien
 	// Initialize Prometheus metrics
 	prom := middleware.InitMetrics("sanctum-api")
 
+	// Initialize Logger with correct env
+	middleware.InitLogger(cfg.Env)
+
 	server := &Server{
-		config:         cfg,
-		db:             db,
-		redis:          redisClient,
-		promMiddleware: prom,
-		userRepo:       userRepo,
-		postRepo:       postRepo,
-		pollRepo:       pollRepo,
-		imageRepo:      imageRepo,
-		commentRepo:    commentRepo,
-		chatRepo:       chatRepo,
-		friendRepo:     friendRepo,
-		gameRepo:       gameRepo,
-		featureFlags:   featureflags.NewManager(cfg.FeatureFlags),
+		config:          cfg,
+		db:              db,
+		redis:           redisClient,
+		promMiddleware:  prom,
+		userRepo:        userRepo,
+		postRepo:        postRepo,
+		pollRepo:        pollRepo,
+		imageRepo:       imageRepo,
+		commentRepo:     commentRepo,
+		chatRepo:        chatRepo,
+		friendRepo:      friendRepo,
+		gameRepo:        gameRepo,
+		featureFlags:    featureflags.NewManager(cfg.FeatureFlags),
+		consumedTickets: make(map[string]consumedTicketEntry),
 	}
 
 	server.postService = service.NewPostService(server.postRepo, server.pollRepo, server.isAdminByUserID)
@@ -185,6 +211,7 @@ func NewServerWithDeps(cfg *config.Config, db *gorm.DB, redisClient *redis.Clien
 	)
 	server.userService = service.NewUserService(server.userRepo)
 	server.moderationService = service.NewModerationService(server.db)
+	server.gameService = service.NewGameService(server.gameRepo)
 
 	// Initialize notifier and hub if Redis is available
 	if redisClient != nil {
@@ -200,6 +227,12 @@ func NewServerWithDeps(cfg *config.Config, db *gorm.DB, redisClient *redis.Clien
 
 // SetupMiddleware configures middleware for the Fiber app
 func (s *Server) SetupMiddleware(app *fiber.App) {
+	// Store environment in locals for use in utility functions (like error responses)
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("env", s.config.Env)
+		return c.Next()
+	})
+
 	// Panic recovery
 	app.Use(recover.New())
 
@@ -286,17 +319,17 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	// Auth routes
 	auth := api.Group("/auth")
 	auth.Post("/signup", middleware.RateLimitWithPolicy(
-		s.redis, 3, 10*time.Minute, middleware.FailClosed, "signup"), s.Signup)
+		s.redis, s.config.Env, 3, 10*time.Minute, middleware.FailClosed, "signup"), s.Signup)
 	auth.Post("/login", middleware.RateLimitWithPolicy(
-		s.redis, 10, 5*time.Minute, middleware.FailClosed, "login"), s.Login)
+		s.redis, s.config.Env, 10, 5*time.Minute, middleware.FailClosed, "login"), s.Login)
 	auth.Post("/refresh", s.Refresh)
-	auth.Post("/logout", s.Logout)
+	auth.Post("/logout", s.AuthRequired(), s.Logout)
 
 	// Public post routes (browse/search)
 	publicPosts := api.Group("/posts")
 	publicPosts.Get("/", s.GetPosts)
 	publicPosts.Get("/search", middleware.RateLimit(
-		s.redis, 10, time.Minute, "search"), s.SearchPosts)
+		s.redis, s.config.Env, 10, time.Minute, "search"), s.SearchPosts)
 	publicPosts.Get("/:id/comments", s.GetComments)
 	publicPosts.Get("/:id", s.GetPost)
 	images := api.Group("/images")
@@ -342,7 +375,7 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	users.Post("/:id/demote-admin", s.AdminRequired(), s.DemoteFromAdmin)
 	users.Post("/:id/block", s.BlockUser)
 	users.Delete("/:id/block", s.UnblockUser)
-	users.Post("/:id/report", middleware.RateLimitWithPolicy(s.redis, 5, 10*time.Minute, middleware.FailClosed, "report"), s.ReportUser)
+	users.Post("/:id/report", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 5, 10*time.Minute, middleware.FailClosed, "report"), s.ReportUser)
 	users.Get("/:id", s.GetUserProfile)
 
 	// Friend routes
@@ -350,7 +383,7 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	friends.Get("/", s.GetFriends)
 	// Specific /requests routes before generic /:userId
 	friends.Post("/requests/:userId", middleware.RateLimit(
-		s.redis, 5, 5*time.Minute, "friend_request"), s.SendFriendRequest)
+		s.redis, s.config.Env, 5, 5*time.Minute, "friend_request"), s.SendFriendRequest)
 	friends.Get("/requests", s.GetPendingRequests)
 	friends.Get("/requests/sent", s.GetSentRequests)
 	friends.Post("/requests/:requestId/accept", s.AcceptFriendRequest)
@@ -363,15 +396,15 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	// Protected post routes
 	posts := protected.Group("/posts")
 	posts.Post("/", middleware.RateLimit(
-		s.redis, 10, 5*time.Minute, "create_post"), s.CreatePost)
+		s.redis, s.config.Env, 10, 5*time.Minute, "create_post"), s.CreatePost)
 	// Define specific /:id/:resource routes BEFORE generic /:id route
 	posts.Post("/:id/like", s.LikePost)
 	posts.Delete("/:id/like", s.UnlikePost)
 	posts.Post("/:id/comments", middleware.RateLimit(
-		s.redis, 1, time.Minute, "create_comment"), s.CreateComment)
+		s.redis, s.config.Env, 1, time.Minute, "create_comment"), s.CreateComment)
 	posts.Put("/:id/comments/:commentId", s.UpdateComment)
 	posts.Delete("/:id/comments/:commentId", s.DeleteComment)
-	posts.Post("/:id/report", middleware.RateLimitWithPolicy(s.redis, 5, 10*time.Minute, middleware.FailClosed, "report"), s.ReportPost)
+	posts.Post("/:id/report", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 5, 10*time.Minute, middleware.FailClosed, "report"), s.ReportPost)
 	posts.Post("/:id/poll/vote", s.VotePoll)
 	// Generic /:id routes (for item detail, update, delete)
 	posts.Put("/:id", s.UpdatePost)
@@ -384,11 +417,11 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	// Define specific /:id/:resource routes BEFORE generic /:id route
 	conversations.Get("/:id/messages", s.GetMessages)
 	conversations.Post("/:id/messages", middleware.RateLimit(
-		s.redis, 15, time.Minute, "send_chat"), s.SendMessage)
+		s.redis, s.config.Env, 15, time.Minute, "send_chat"), s.SendMessage)
 	conversations.Post("/:id/read", s.MarkConversationRead)
 	conversations.Post("/:id/messages/:messageId/reactions", s.AddMessageReaction)
 	conversations.Delete("/:id/messages/:messageId/reactions", s.RemoveMessageReaction)
-	conversations.Post("/:id/messages/:messageId/report", middleware.RateLimitWithPolicy(s.redis, 5, 10*time.Minute, middleware.FailClosed, "report"), s.ReportMessage)
+	conversations.Post("/:id/messages/:messageId/report", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 5, 10*time.Minute, middleware.FailClosed, "report"), s.ReportMessage)
 	conversations.Post("/:id/participants", s.AddParticipant)
 	conversations.Delete("/:id", s.LeaveConversation)
 	// Generic /:id route must be last
@@ -423,18 +456,18 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 
 	// Admin routes
 	admin := protected.Group("/admin", s.AdminRequired())
-	admin.Get("/feature-flags", middleware.RateLimitWithPolicy(s.redis, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetFeatureFlags)
-	admin.Get("/reports", middleware.RateLimitWithPolicy(s.redis, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminReports)
-	admin.Post("/reports/:id/resolve", middleware.RateLimitWithPolicy(s.redis, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.ResolveAdminReport)
-	admin.Get("/ban-requests", middleware.RateLimitWithPolicy(s.redis, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminBanRequests)
-	admin.Get("/users", middleware.RateLimitWithPolicy(s.redis, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminUsers)
-	admin.Get("/users/:id", middleware.RateLimitWithPolicy(s.redis, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminUserDetail)
-	admin.Post("/users/:id/ban", middleware.RateLimitWithPolicy(s.redis, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.BanUser)
-	admin.Post("/users/:id/unban", middleware.RateLimitWithPolicy(s.redis, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.UnbanUser)
+	admin.Get("/feature-flags", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetFeatureFlags)
+	admin.Get("/reports", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminReports)
+	admin.Post("/reports/:id/resolve", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.ResolveAdminReport)
+	admin.Get("/ban-requests", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminBanRequests)
+	admin.Get("/users", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminUsers)
+	admin.Get("/users/:id", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminUserDetail)
+	admin.Post("/users/:id/ban", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.BanUser)
+	admin.Post("/users/:id/unban", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.UnbanUser)
 	adminSanctumRequests := admin.Group("/sanctum-requests")
-	adminSanctumRequests.Get("/", middleware.RateLimitWithPolicy(s.redis, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminSanctumRequests)
-	adminSanctumRequests.Post("/:id/approve", middleware.RateLimitWithPolicy(s.redis, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.ApproveSanctumRequest)
-	adminSanctumRequests.Post("/:id/reject", middleware.RateLimitWithPolicy(s.redis, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.RejectSanctumRequest)
+	adminSanctumRequests.Get("/", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminSanctumRequests)
+	adminSanctumRequests.Post("/:id/approve", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.ApproveSanctumRequest)
+	adminSanctumRequests.Post("/:id/reject", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.RejectSanctumRequest)
 }
 
 // HealthCheck is a legacy/simple alias for ReadinessCheck
@@ -522,38 +555,48 @@ func (s *Server) AuthRequired() fiber.Handler {
 		if ticket != "" && s.redis != nil {
 			key := fmt.Sprintf("ws_ticket:%s", ticket)
 
-			var userIDStr string
-			var err error
+			var userID uint
+			var ticketValid bool
 
-			if isWSPath {
-				// For WS paths, we use GET and let the handler consume it to avoid 401 loops
-				// during multi-pass handshake evaluation.
-				userIDStr, err = s.redis.Get(c.Context(), key).Result()
-			} else {
-				// For non-WS paths (if any use tickets), keep atomic GETDEL
-				userIDStr, err = s.redis.GetDel(c.Context(), key).Result()
+			// Always use atomic GETDEL to prevent replay attacks.
+			userIDStr, err := s.redis.GetDel(c.Context(), key).Result()
+			if err == nil {
+				parsed, parseErr := strconv.ParseUint(userIDStr, 10, 32)
+				if parseErr == nil {
+					userID = uint(parsed)
+					ticketValid = true
+				// Cache the consumed ticket in-process for 10s to allow
+				// Fiber's websocket upgrade multi-pass handshake to succeed.
+				s.consumedTicketsMu.Lock()
+				if s.consumedTickets != nil {
+					s.consumedTickets[ticket] = consumedTicketEntry{userID: userID, consumeAt: time.Now()}
+				}
+				s.consumedTicketsMu.Unlock()
+				}
+			} else if s.consumedTickets != nil {
+				// Ticket not in Redis -- check in-process cache for multi-pass handshake
+				s.consumedTicketsMu.Lock()
+				if entry, ok := s.consumedTickets[ticket]; ok && time.Since(entry.consumeAt) < 10*time.Second {
+					userID = entry.userID
+					ticketValid = true
+				}
+				s.consumedTicketsMu.Unlock()
 			}
 
-			if err == nil {
-				// Valid ticket!
-				userID, parseErr := strconv.ParseUint(userIDStr, 10, 32)
-				if parseErr == nil {
-					// Store user ID and ticket in context
-					c.Locals("userID", uint(userID))
-					c.Locals("wsTicket", ticket)
-					// Sync to UserContext for logging and downstream services
-					ctx := context.WithValue(c.UserContext(), middleware.UserIDKey, uint(userID))
-					c.SetUserContext(ctx)
-					banned, berr := s.isBannedByUserID(c.UserContext(), uint(userID))
-					if berr != nil {
-						return models.RespondWithError(c, fiber.StatusInternalServerError, berr)
-					}
-					if banned {
-						return models.RespondWithError(c, fiber.StatusForbidden,
-							models.NewForbiddenError("Account is banned"))
-					}
-					return c.Next()
+			if ticketValid {
+				c.Locals("userID", userID)
+				c.Locals("wsTicket", ticket)
+				ctx := context.WithValue(c.UserContext(), middleware.UserIDKey, userID)
+				c.SetUserContext(ctx)
+				banned, berr := s.isBannedByUserID(c.UserContext(), userID)
+				if berr != nil {
+					return models.RespondWithError(c, fiber.StatusInternalServerError, berr)
 				}
+				if banned {
+					return models.RespondWithError(c, fiber.StatusForbidden,
+						models.NewForbiddenError("Account is banned"))
+				}
+				return c.Next()
 			}
 			// If ticket was provided but invalid/expired, we fail if it's a WS path
 			if isWSPath {
@@ -655,18 +698,41 @@ func (s *Server) AuthRequired() fiber.Handler {
 	}
 }
 
-// consumeWSTicket deletes the WebSocket ticket from Redis best-effort.
-func (s *Server) consumeWSTicket(ctx context.Context, ticketVal any) {
-	if ticketVal == nil || s.redis == nil {
+// consumeWSTicket removes the ticket from the in-process cache after the
+// WebSocket connection is fully established. The ticket was already atomically
+// removed from Redis by GETDEL during auth.
+func (s *Server) consumeWSTicket(_ context.Context, ticketVal any) {
+	if ticketVal == nil {
 		return
 	}
 	ticket, ok := ticketVal.(string)
 	if !ok || ticket == "" {
 		return
 	}
-	key := fmt.Sprintf("ws_ticket:%s", ticket)
-	if err := s.redis.Del(ctx, key).Err(); err != nil {
-		log.Printf("WS: failed to consume ticket %s: %v", ticket, err)
+	s.consumedTicketsMu.Lock()
+	delete(s.consumedTickets, ticket)
+	s.consumedTicketsMu.Unlock()
+}
+
+// cleanupConsumedTickets periodically removes stale entries from the in-process
+// consumed ticket cache. Called from Start().
+func (s *Server) cleanupConsumedTickets(ctx context.Context) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			s.consumedTicketsMu.Lock()
+			now := time.Now()
+			for k, v := range s.consumedTickets {
+				if now.Sub(v.consumeAt) > 15*time.Second {
+					delete(s.consumedTickets, k)
+				}
+			}
+			s.consumedTicketsMu.Unlock()
+		}
 	}
 }
 
@@ -729,6 +795,9 @@ func (s *Server) Start() error {
 	s.SetupMiddleware(app)
 	s.SetupRoutes(app)
 	s.imageSvc().StartBackgroundWorker(s.shutdownCtx)
+
+	// Start consumed ticket cache cleanup
+	go s.cleanupConsumedTickets(s.shutdownCtx)
 
 	// Wire all hubs to Redis subscriber if available
 	if s.notifier != nil {

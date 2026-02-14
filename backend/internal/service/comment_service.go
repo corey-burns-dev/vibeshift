@@ -46,8 +46,13 @@ func (s *CommentService) CreateComment(ctx context.Context, in CreateCommentInpu
 	if _, err := s.postRepo.GetByID(ctx, in.PostID, 0); err != nil {
 		return nil, err
 	}
+	const maxCommentLen = 10000
+
 	if in.Content == "" {
 		return nil, models.NewValidationError("Content is required")
+	}
+	if len(in.Content) > maxCommentLen {
+		return nil, models.NewValidationError("Comment too long (max 10000 characters)")
 	}
 
 	comment := &models.Comment{

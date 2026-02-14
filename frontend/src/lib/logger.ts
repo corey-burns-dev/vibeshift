@@ -7,7 +7,8 @@ class Logger {
   private isDev = import.meta.env.DEV
 
   private log(level: LogLevel, message: string, data?: unknown) {
-    if (!this.isDev && level === 'debug') return
+    // In production, only show warn and error logs
+    if (!this.isDev && (level === 'debug' || level === 'info')) return
 
     const timestamp = new Date().toISOString()
     const formattedMsg = `[${timestamp}] [${level.toUpperCase()}] ${message}`

@@ -4,7 +4,6 @@ package models
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -86,7 +85,8 @@ func RespondWithError(c *fiber.Ctx, status int, err error) error {
 		rid = fmt.Sprintf("%v", val)
 	}
 
-	isDev := os.Getenv("APP_ENV") == "development" || os.Getenv("APP_ENV") == ""
+	env, _ := c.Locals("env").(string)
+	isDev := env == "development" || env == ""
 
 	if errors.As(err, &appErr) {
 		response = ErrorResponse{

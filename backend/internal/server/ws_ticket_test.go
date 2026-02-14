@@ -30,10 +30,11 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 		Addr: mr.Addr(),
 	})
 
-	// Setup Server
+	// Setup Server with in-process ticket cache
 	s := &Server{
-		config: &config.Config{JWTSecret: "test-secret"},
-		redis:  rdb,
+		config:          &config.Config{JWTSecret: "test-secret"},
+		redis:           rdb,
+		consumedTickets: make(map[string]consumedTicketEntry),
 	}
 
 	app := fiber.New()
@@ -59,7 +60,7 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 
 	ctx := context.Background()
 
-	t.Run("WS Path - Ticket should NOT be consumed by middleware", func(t *testing.T) {
+	t.Run("WS Path - Ticket consumed from Redis but cached in-process", func(t *testing.T) {
 		ticket := "ws-test-ticket-1"
 		userID := "123"
 		key := fmt.Sprintf("ws_ticket:%s", ticket)
@@ -74,10 +75,16 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-		// Verify ticket STILL EXISTS in Redis
+		// Ticket is NOW consumed from Redis (GETDEL used atomically)
 		exists, err := rdb.Exists(ctx, key).Result()
 		assert.NoError(t, err)
-		assert.Equal(t, int64(1), exists, "Ticket should still exist for WS path after middleware")
+		assert.Equal(t, int64(0), exists, "Ticket should be consumed from Redis via GETDEL")
+
+		// But it's cached in-process for multi-pass handshake
+		s.consumedTicketsMu.Lock()
+		_, inCache := s.consumedTickets[ticket]
+		s.consumedTicketsMu.Unlock()
+		assert.True(t, inCache, "Ticket should be cached in-process after GETDEL")
 
 		// Verify locals
 		var body map[string]interface{}
@@ -85,6 +92,34 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 		assert.Equal(t, float64(123), body["userID"])
 		assert.Equal(t, ticket, body["wsTicket"])
 		_ = resp.Body.Close()
+	})
+
+	t.Run("WS Path - Second pass uses in-process cache", func(t *testing.T) {
+		ticket := "ws-test-ticket-2"
+		userID := "789"
+		key := fmt.Sprintf("ws_ticket:%s", ticket)
+
+		// Set ticket in Redis
+		err := rdb.Set(ctx, key, userID, time.Minute).Err()
+		assert.NoError(t, err)
+
+		// First pass -- consumes from Redis
+		req := httptest.NewRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
+		resp, err := app.Test(req)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		_ = resp.Body.Close()
+
+		// Second pass -- ticket is gone from Redis but in-process cache should work
+		req2 := httptest.NewRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
+		resp2, err := app.Test(req2)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp2.StatusCode, "Second pass should succeed via in-process cache")
+
+		var body map[string]interface{}
+		_ = json.NewDecoder(resp2.Body).Decode(&body)
+		assert.Equal(t, float64(789), body["userID"])
+		_ = resp2.Body.Close()
 	})
 
 	t.Run("Non-WS Path - Ticket SHOULD be consumed by middleware", func(t *testing.T) {
@@ -119,21 +154,24 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 }
 
 func TestServer_ConsumeWSTicket(t *testing.T) {
-	mr, _ := miniredis.Run()
-	defer mr.Close()
-	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	s := &Server{redis: rdb}
+	s := &Server{
+		consumedTickets: make(map[string]consumedTicketEntry),
+	}
 	ctx := context.Background()
 
-	t.Run("Consume valid ticket", func(t *testing.T) {
+	t.Run("Consume valid ticket removes from in-process cache", func(t *testing.T) {
 		ticket := "consume-me"
-		key := "ws_ticket:" + ticket
-		rdb.Set(ctx, key, "123", time.Minute)
+		// Pre-populate the in-process cache (simulating what GETDEL + cache does)
+		s.consumedTicketsMu.Lock()
+		s.consumedTickets[ticket] = consumedTicketEntry{userID: 123, consumeAt: time.Now()}
+		s.consumedTicketsMu.Unlock()
 
 		s.consumeWSTicket(ctx, ticket)
 
-		exists, _ := rdb.Exists(ctx, key).Result()
-		assert.Equal(t, int64(0), exists)
+		s.consumedTicketsMu.Lock()
+		_, exists := s.consumedTickets[ticket]
+		s.consumedTicketsMu.Unlock()
+		assert.False(t, exists, "Ticket should be removed from in-process cache")
 	})
 
 	t.Run("Consume nil ticket - noop", func(t *testing.T) {

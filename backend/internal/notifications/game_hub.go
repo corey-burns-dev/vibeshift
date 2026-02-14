@@ -10,6 +10,7 @@ import (
 	"sanctum/internal/models"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -89,14 +90,21 @@ func (h *GameHub) RegisterClient(roomID uint, client *Client) error {
 	return nil
 }
 
+// pendingRoomCancel is a deferred DB operation collected under the lock.
+type pendingRoomCancel struct {
+	roomID uint
+	userID uint
+}
+
 // UnregisterClient removes a user's client from all rooms
 func (h *GameHub) UnregisterClient(client *Client) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
+	var toCancel []pendingRoomCancel
 
+	h.mu.Lock()
 	userID := client.UserID
 	rooms, ok := h.userRooms[userID]
 	if !ok {
+		h.mu.Unlock()
 		return
 	}
 
@@ -115,15 +123,8 @@ func (h *GameHub) UnregisterClient(client *Client) {
 				// Also remove the room from the user's tracked set
 				delete(h.userRooms[userID], roomID)
 
-				// Database cleanup: If the creator leaves a pending room, cancel it
-				var gRoom models.GameRoom
-				if err := h.db.First(&gRoom, roomID).Error; err == nil {
-					if gRoom.Status == models.GamePending && gRoom.CreatorID != nil && *gRoom.CreatorID == userID {
-						gRoom.Status = models.GameCancelled
-						h.db.Save(&gRoom)
-						log.Printf("GameHub: Pending room %d cancelled because creator (User %d) disconnected", roomID, userID)
-					}
-				}
+				// Collect room IDs for deferred DB cleanup
+				toCancel = append(toCancel, pendingRoomCancel{roomID: roomID, userID: userID})
 			}
 		}
 	}
@@ -131,6 +132,22 @@ func (h *GameHub) UnregisterClient(client *Client) {
 	// If the user has no remaining tracked rooms, remove the entry entirely
 	if len(h.userRooms[userID]) == 0 {
 		delete(h.userRooms, userID)
+	}
+	h.mu.Unlock()
+
+	// Database cleanup OUTSIDE the lock: If the creator leaves a pending room, cancel it
+	for _, pc := range toCancel {
+		var gRoom models.GameRoom
+		if err := h.db.First(&gRoom, pc.roomID).Error; err == nil {
+			if gRoom.Status == models.GamePending && gRoom.CreatorID != nil && *gRoom.CreatorID == pc.userID {
+				gRoom.Status = models.GameCancelled
+				if err := h.db.Save(&gRoom).Error; err != nil {
+					log.Printf("GameHub: failed to cancel pending room %d: %v", pc.roomID, err)
+				} else {
+					log.Printf("GameHub: Pending room %d cancelled because creator (User %d) disconnected", pc.roomID, pc.userID)
+				}
+			}
+		}
 	}
 }
 
@@ -297,13 +314,20 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 		room.SetState(c4Board)
 	}
 
+	// Determine move number by counting existing moves for this room
+	var moveCount int64
+	h.db.Model(&models.GameMove{}).Where("game_room_id = ?", room.ID).Count(&moveCount)
+
 	// Persist move
 	moveRecord := models.GameMove{
 		GameRoomID: room.ID,
 		UserID:     userID,
 		MoveData:   string(moveBytes),
+		MoveNumber: int(moveCount) + 1,
 	}
-	h.db.Create(&moveRecord)
+	if err := h.db.Create(&moveRecord).Error; err != nil {
+		log.Printf("GameHub: failed to persist move for room %d: %v", room.ID, err)
+	}
 
 	// Check for win/draw
 	winnerSym, finished := room.CheckWin()
@@ -316,16 +340,23 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 			}
 			room.WinnerID = winID
 
-			// Award points if winner still exists
+			// Award points if winner still exists (upsert to handle missing rows)
 			if winID != nil {
 				points := 10
 				if room.Type == models.ConnectFour {
 					points = 15
 				}
-				h.db.Model(&models.GameStats{}).Where("user_id = ? AND game_type = ?", *winID, room.Type).
-					Update("points", gorm.Expr("points + ?", points)).
-					Update("wins", gorm.Expr("wins + ?", 1)).
-					Update("total_games", gorm.Expr("total_games + ?", 1))
+				winStats := models.GameStats{UserID: *winID, GameType: room.Type, Wins: 1, TotalGames: 1, Points: points}
+				if err := h.db.Clauses(clause.OnConflict{
+					Columns: []clause.Column{{Name: "user_id"}, {Name: "game_type"}},
+					DoUpdates: clause.Assignments(map[string]interface{}{
+						"points":      gorm.Expr("game_stats.points + ?", points),
+						"wins":        gorm.Expr("game_stats.wins + ?", 1),
+						"total_games": gorm.Expr("game_stats.total_games + ?", 1),
+					}),
+				}).Create(&winStats).Error; err != nil {
+					log.Printf("GameHub: failed to award points to winner %d: %v", *winID, err)
+				}
 			}
 
 			var lossID *uint = room.CreatorID
@@ -334,9 +365,16 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 			}
 
 			if lossID != nil {
-				h.db.Model(&models.GameStats{}).Where("user_id = ? AND game_type = ?", *lossID, room.Type).
-					Update("losses", gorm.Expr("losses + ?", 1)).
-					Update("total_games", gorm.Expr("total_games + ?", 1))
+				lossStats := models.GameStats{UserID: *lossID, GameType: room.Type, Losses: 1, TotalGames: 1}
+				if err := h.db.Clauses(clause.OnConflict{
+					Columns: []clause.Column{{Name: "user_id"}, {Name: "game_type"}},
+					DoUpdates: clause.Assignments(map[string]interface{}{
+						"losses":      gorm.Expr("game_stats.losses + ?", 1),
+						"total_games": gorm.Expr("game_stats.total_games + ?", 1),
+					}),
+				}).Create(&lossStats).Error; err != nil {
+					log.Printf("GameHub: failed to update stats for loser %d: %v", *lossID, err)
+				}
 			}
 		} else {
 			room.IsDraw = true
@@ -348,10 +386,17 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 				userIDs = append(userIDs, *room.OpponentID)
 			}
 
-			if len(userIDs) > 0 {
-				h.db.Model(&models.GameStats{}).Where("user_id IN ? AND game_type = ?", userIDs, room.Type).
-					Update("draws", gorm.Expr("draws + ?", 1)).
-					Update("total_games", gorm.Expr("total_games + ?", 1))
+			for _, uid := range userIDs {
+				drawStats := models.GameStats{UserID: uid, GameType: room.Type, Draws: 1, TotalGames: 1}
+				if err := h.db.Clauses(clause.OnConflict{
+					Columns: []clause.Column{{Name: "user_id"}, {Name: "game_type"}},
+					DoUpdates: clause.Assignments(map[string]interface{}{
+						"draws":       gorm.Expr("game_stats.draws + ?", 1),
+						"total_games": gorm.Expr("game_stats.total_games + ?", 1),
+					}),
+				}).Create(&drawStats).Error; err != nil {
+					log.Printf("GameHub: failed to update stats for draw for user %d: %v", uid, err)
+				}
 			}
 		}
 	} else {
@@ -369,7 +414,9 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 		}
 	}
 
-	h.db.Save(&room)
+	if err := h.db.Save(&room).Error; err != nil {
+		log.Printf("GameHub: failed to save room state for room %d: %v", room.ID, err)
+	}
 
 	// Broadcast update
 	action.Type = "game_state"

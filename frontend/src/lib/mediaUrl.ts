@@ -2,7 +2,7 @@ export function normalizeImageURL(url?: string): string | undefined {
   if (!url) return url
 
   const trimmed = url.trim()
-  if (!trimmed) return trimmed
+  if (!trimmed) return undefined
 
   if (trimmed.startsWith('/api/images/') || trimmed.startsWith('/media/i/')) {
     return trimmed
@@ -17,8 +17,8 @@ export function normalizeImageURL(url?: string): string | undefined {
       return `${parsed.pathname}${parsed.search}`
     }
   } catch {
-    return trimmed
+    // Invalid URL — fall through to reject
   }
 
-  return trimmed
+  return undefined
 }
