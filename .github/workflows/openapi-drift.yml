@@ -20,7 +20,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.25"
+          go-version: "1.26"
 
       - name: Regenerate swagger
         run: make swagger
@@ -51,7 +51,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.25"
+          go-version: "1.26"
 
       - name: Regenerate swagger
         run: make swagger
@@ -63,4 +63,4 @@ jobs:
         run: git show "${{ github.base_ref }}:backend/docs/swagger.yaml" > /tmp/base-swagger.yaml
 
       - name: Check backward compatibility
-        run: go run ./backend/cmd/openapi-compat -base /tmp/base-swagger.yaml -revision backend/docs/swagger.yaml
+        run: cd backend && go run ./cmd/openapi-compat -base /tmp/base-swagger.yaml -revision ./docs/swagger.yaml

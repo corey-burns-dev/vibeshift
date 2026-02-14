@@ -13,7 +13,7 @@ source "$VERSIONS_FILE"
 assert_contains() {
   local file="$1"
   local expected="$2"
-  if ! rg -Fq "$expected" "$file"; then
+  if ! grep -Fq "$expected" "$file"; then
     echo "Expected '$expected' in $file"
     exit 1
   fi
@@ -22,9 +22,9 @@ assert_contains() {
 assert_not_contains() {
   local pattern="$1"
   shift
-  if rg -n "$pattern" "$@" >/dev/null 2>&1; then
+  if grep -n "$pattern" "$@" >/dev/null 2>&1; then
     echo "Found disallowed hardcoded version pattern: $pattern"
-    rg -n "$pattern" "$@" || true
+    grep -n "$pattern" "$@" || true
     exit 1
   fi
 }
@@ -39,7 +39,7 @@ assert_contains ".github/workflows/nightly-race.yml" "image: redis:${REDIS_VERSI
 
 # Dockerfiles must have ARG defaults matching catalog
 assert_contains "Dockerfile" "ARG GO_VERSION=${GO_VERSION}"
-assert_contains "Dockerfile" "ARG DISTROLESS_IMAGE=${DISTROLESS_IMAGE}"
+assert_contains "Dockerfile" "ARG ALPINE_VERSION=${ALPINE_VERSION}"
 assert_contains "Dockerfile.dev" "ARG GO_VERSION=${GO_VERSION}"
 assert_contains "Dockerfile.test" "ARG GO_VERSION=${GO_VERSION}"
 assert_contains "frontend/Dockerfile" "ARG BUN_ALPINE_TAG=${BUN_ALPINE_TAG}"

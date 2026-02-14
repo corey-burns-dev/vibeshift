@@ -1,3 +1,4 @@
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { memo } from 'react'
 import type { Message } from '@/api/types'
 import { MessageItem } from '@/components/chat/MessageItem'
@@ -12,6 +13,7 @@ interface MessageListProps {
   conversationId?: number
   isIRCStyle?: boolean
   showTimestamps?: boolean
+  scrollElement?: HTMLDivElement | null
 }
 
 export const MessageList = memo(function MessageList({
@@ -23,6 +25,7 @@ export const MessageList = memo(function MessageList({
   conversationId,
   isIRCStyle = false,
   showTimestamps = true,
+  scrollElement,
 }: MessageListProps) {
   if (isLoading) {
     return (
@@ -40,23 +43,72 @@ export const MessageList = memo(function MessageList({
     )
   }
 
+  const canVirtualize = Boolean(scrollElement) && messages.length > 100
+  const virtualizer = useVirtualizer({
+    count: messages.length,
+    getScrollElement: () => scrollElement ?? null,
+    estimateSize: () => (isIRCStyle ? 22 : 62),
+    overscan: 24,
+    enabled: canVirtualize,
+    getItemKey: index => messages[index]?.id ?? index,
+  })
+
+  if (!canVirtualize) {
+    return (
+      <div
+        className={cn('flex flex-col', isIRCStyle ? 'space-y-0' : 'space-y-1')}
+      >
+        {messages.map(msg => (
+          <MessageItem
+            key={msg.id}
+            message={msg}
+            isOwnMessage={msg.sender_id === currentUserId}
+            currentUserId={currentUserId}
+            isDirectMessage={isDirectMessage}
+            showReadReceipt={showReadReceipts}
+            conversationId={conversationId}
+            isIRCStyle={isIRCStyle}
+            showTimestamps={showTimestamps}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  const virtualItems = virtualizer.getVirtualItems()
+
   return (
     <div
-      className={cn('flex flex-col', isIRCStyle ? 'space-y-0' : 'space-y-1')}
+      className={cn('relative w-full', isIRCStyle ? '' : 'pt-1')}
+      style={{ height: `${virtualizer.getTotalSize()}px` }}
     >
-      {messages.map(msg => (
-        <MessageItem
-          key={msg.id}
-          message={msg}
-          isOwnMessage={msg.sender_id === currentUserId}
-          currentUserId={currentUserId}
-          isDirectMessage={isDirectMessage}
-          showReadReceipt={showReadReceipts}
-          conversationId={conversationId}
-          isIRCStyle={isIRCStyle}
-          showTimestamps={showTimestamps}
-        />
-      ))}
+      {virtualItems.map(virtualItem => {
+        const msg = messages[virtualItem.index]
+        if (!msg) return null
+
+        return (
+          <div
+            key={virtualItem.key}
+            data-index={virtualItem.index}
+            ref={node => {
+              if (node) virtualizer.measureElement(node)
+            }}
+            className='absolute left-0 top-0 w-full'
+            style={{ transform: `translateY(${virtualItem.start}px)` }}
+          >
+            <MessageItem
+              message={msg}
+              isOwnMessage={msg.sender_id === currentUserId}
+              currentUserId={currentUserId}
+              isDirectMessage={isDirectMessage}
+              showReadReceipt={showReadReceipts}
+              conversationId={conversationId}
+              isIRCStyle={isIRCStyle}
+              showTimestamps={showTimestamps}
+            />
+          </div>
+        )
+      })}
     </div>
   )
 })
