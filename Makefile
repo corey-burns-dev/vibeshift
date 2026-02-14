@@ -105,6 +105,7 @@ help:
 	@echo "  make db-migrate-auto    - 🧭 Run AutoMigrate mode (explicit)"
 	@echo "  make db-schema-status   - 🧭 Show schema mode and migration status (Docker)"
 	@echo "  make db-reset-dev       - 🧹 Reset dev DB volumes and reapply migrations"
+	@echo "  make prod-admin email=.. - 🛡️  Promote production user to admin"
 	@echo ""
 	@echo "$(GREEN)Utilities:$(NC)"
 	@echo "  make env                - ⚙️  Initialize .env file"
@@ -666,6 +667,13 @@ db-reset-dev:
 	$(DOCKER_COMPOSE) $(COMPOSE_FILES) up -d postgres redis
 	$(MAKE) db-migrate
 	@echo "$(GREEN)✓ Dev DB reset complete$(NC)"
+
+prod-admin:
+	@if [ -z "$(email)" ]; then echo "Usage: make prod-admin email=user@example.com"; exit 1; fi
+	@echo "$(BLUE)Promoting $(email) to admin in production...$(NC)"
+	@$(DOCKER_COMPOSE) -f compose.yml -f compose.prod.yml exec -T postgres psql -U postgres -d sanctum_db -c "UPDATE users SET is_admin = TRUE WHERE email = '$(email)';"
+	@echo "$(GREEN)✓ User promoted. Current production admins:$(NC)"
+	@$(DOCKER_COMPOSE) -f compose.yml -f compose.prod.yml exec -T postgres psql -U postgres -d sanctum_db -c "SELECT id, username, email, is_admin FROM users WHERE is_admin = TRUE ORDER BY id;"
 
 # Dependency Management
 deps-install-backend:
