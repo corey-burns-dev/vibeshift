@@ -1,6 +1,6 @@
+import { request as playwrightRequest } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
-import { request as playwrightRequest } from '@playwright/test'
 import { Client } from 'pg'
 import { ADMIN_STATE_PATH, AUTH_DIR, USER_STATE_PATH } from './fixtures/auth'
 
@@ -43,19 +43,44 @@ async function signup(
   const username = `${prefix}${suffix}`.slice(0, 20)
   const email = `${prefix}-${suffix}@example.com`
 
-  const res = await api.post('auth/signup', {
-    data: {
-      username,
-      email,
-      password: 'TestPass123!@#',
-    },
-  })
+  // Retry signup a few times in case the API is still starting up or transient
+  const maxAttempts = 8
+  const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-  if (!res.ok()) {
-    throw new Error(`signup failed (${res.status()}): ${await res.text()}`)
+  let lastError: unknown = null
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const res = await api.post('auth/signup', {
+        data: {
+          username,
+          email,
+          password: 'TestPass123!@#',
+        },
+      })
+
+      if (!res.ok()) {
+        throw new Error(`signup failed (${res.status()}): ${await res.text()}`)
+      }
+
+      return (await res.json()) as SignupResponse
+    } catch (err) {
+      lastError = err
+      if (attempt < maxAttempts) {
+        // exponential backoff with jitter
+        const wait = Math.min(2000 * attempt, 10000) + Math.floor(Math.random() * 200)
+        // eslint-disable-next-line no-console
+        console.warn(`signup attempt ${attempt} failed, retrying in ${wait}ms:`, String(err))
+        // small delay before retrying
+        // eslint-disable-next-line no-await-in-loop
+        await delay(wait)
+        continue
+      }
+      break
+    }
   }
 
-  return (await res.json()) as SignupResponse
+  const hint = `Ensure the API server at ${API_BASE} is running and reachable. Try starting the backend (e.g. run \`make dev\` from repo root or bring up the compose stack) and re-run tests.`
+  throw new Error(`signup failed after ${maxAttempts} attempts: ${String(lastError)}\n${hint}`)
 }
 
 async function promoteAdmin(userID: number) {

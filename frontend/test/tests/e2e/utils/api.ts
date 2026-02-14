@@ -6,9 +6,26 @@ export interface SanctumRequestPayload {
   reason: string
 }
 
+interface SanctumRequestResponse {
+  id: number
+  requested_slug: string
+}
+
 const API_BASE = (
   process.env.PLAYWRIGHT_API_URL || 'http://localhost:8375/api'
 ).replace(/\/$/, '')
+
+async function responseBodyOrPlaceholder(res: ResponseLike): Promise<string> {
+  try {
+    return await res.text()
+  } catch (e) {
+    return `<unable to read body: ${String(e)}>`
+  }
+}
+
+interface ResponseLike {
+  text(): Promise<string>
+}
 
 export function uniqueSlug(prefix: string): string {
   // Produce a slug that matches server validation: 3-24 chars,
@@ -54,18 +71,42 @@ export async function createSanctumRequest(
   })
 
   if (!res.ok()) {
-    let body: string
-    try {
-      body = await res.text()
-    } catch (e) {
-      body = `<unable to read body: ${String(e)}>`
-    }
+    const body = await responseBodyOrPlaceholder(res)
     throw new Error(
       `createSanctumRequest failed: status=${res.status()} body=${body}`
     )
   }
 
   return res
+}
+
+export async function listMySanctumRequests(
+  request: APIRequestContext,
+  token: string
+): Promise<SanctumRequestResponse[]> {
+  const res = await request.get(`${API_BASE}/sanctums/requests/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!res.ok()) {
+    const body = await responseBodyOrPlaceholder(res)
+    throw new Error(
+      `listMySanctumRequests failed: status=${res.status()} body=${body}`
+    )
+  }
+
+  return (await res.json()) as SanctumRequestResponse[]
+}
+
+export async function hasMySanctumRequestBySlug(
+  request: APIRequestContext,
+  token: string,
+  slug: string
+): Promise<boolean> {
+  const requests = await listMySanctumRequests(request, token)
+  return requests.some((item) => item.requested_slug === slug)
 }
 
 export async function listAdminRequests(
