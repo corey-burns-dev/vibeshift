@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Conversation } from '@/api/types'
 import { MessageItem } from '@/components/chat/MessageItem'
-import { TypingIndicator } from '@/components/chat/TypingIndicator'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -54,6 +53,7 @@ export function ChatDockConversationView({
   const markAsReadRef = useRef(markAsRead)
   markAsReadRef.current = markAsRead
   const lastMarkedReadRef = useRef<number | null>(null)
+  const lastMessageCountRef = useRef<Record<number, number>>({})
 
   const scrollToBottom = useCallback((smooth = true) => {
     const el = scrollRef.current
@@ -70,19 +70,23 @@ export function ChatDockConversationView({
     const savedScroll =
       useChatDockStore.getState().scrollPositions[conversationId]
     const el = scrollRef.current
+    const lastMessageCount = lastMessageCountRef.current[conversationId] || 0
+    const hasNewMessages = messages.length > lastMessageCount
+
     if (el) {
-      if (savedScroll !== undefined) {
-        el.scrollTop = savedScroll
-      } else {
-        // Small timeout to ensure messages have rendered
+      // If there are new messages since last view, scroll to bottom
+      // Otherwise restore saved position or scroll to bottom if no saved position
+      if (hasNewMessages || savedScroll === undefined) {
         const timer = setTimeout(() => {
           scrollToBottom(false)
         }, 50)
         return () => clearTimeout(timer)
+      } else {
+        el.scrollTop = savedScroll
       }
     }
     setInputValue(useChatDockStore.getState().drafts[conversationId] || '')
-  }, [conversationId, scrollToBottom])
+  }, [conversationId, scrollToBottom, messages.length])
 
   // Handle scroll events
   const handleScroll = useCallback(() => {
@@ -90,8 +94,10 @@ export function ChatDockConversationView({
     const el = scrollRef.current
     if (el) {
       updateScrollPosition(conversationId, el.scrollTop)
+      // Track message count when user manually scrolls
+      lastMessageCountRef.current[conversationId] = messages.length
     }
-  }, [conversationId, updateScrollPosition])
+  }, [conversationId, updateScrollPosition, messages.length])
 
   // Auto-scroll to bottom on new messages if near bottom
   useEffect(() => {
@@ -208,10 +214,15 @@ export function ChatDockConversationView({
           <ArrowLeft className='h-4 w-4' />
         </Button>
         <div className='min-w-0 flex-1'>
-          <div className='flex items-center gap-1.5'>
+          <div className='flex items-center gap-2'>
             <span className='truncate text-sm font-medium'>{name}</span>
             {isDM && isOnline && (
               <span className='h-2 w-2 shrink-0 rounded-full bg-green-500' />
+            )}
+            {typingUsers.length > 0 && (
+              <span className='text-[11px] text-muted-foreground italic animate-pulse'>
+                typing...
+              </span>
             )}
           </div>
         </div>
@@ -250,7 +261,6 @@ export function ChatDockConversationView({
 
       {/* Input */}
       <div className='flex flex-col border-t border-border/50 bg-card/25 px-3 py-2'>
-        <TypingIndicator typingUsers={typingUsers} className='mb-1.5' />
         <div className='flex items-center gap-2'>
           <div className='relative flex-1'>
             <Input

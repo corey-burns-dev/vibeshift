@@ -75,6 +75,9 @@ interface ChatContextValue {
     action?: string
     online_user_ids?: number[]
   }) => void
+  // Global presence helpers
+  isUserOnline: (userId: number) => boolean
+  onlineUserIds: number[]
   setOnMessage: (
     callback?: (message: Message, conversationId: number) => void
   ) => void
@@ -245,6 +248,10 @@ export function ChatProvider({ children }: ChatProviderProps) {
       }) => void
     >
   >(new Set())
+
+  // Global presence state: keep a deduplicated set of online user IDs
+  const onlineUserIDsRef = useRef<Set<number>>(new Set())
+  const [onlineUserIds, setOnlineUserIds] = useState<number[]>([])
 
   // Recent-message dedupe cache: key = `${convId}:${messageId}` -> timestamp
   const recentMessageMapRef = useRef<Map<string, number>>(new Map())
@@ -638,6 +645,15 @@ export function ChatProvider({ children }: ChatProviderProps) {
             const userId = payload.user_id || payload.userId || data.user_id
             const username = payload.username || data.username
             const status = payload.status
+            // Update global presence set
+            if (typeof userId === 'number') {
+              if (status === 'online') {
+                onlineUserIDsRef.current.add(userId)
+              } else if (status === 'offline') {
+                onlineUserIDsRef.current.delete(userId)
+              }
+              setOnlineUserIds(Array.from(onlineUserIDsRef.current))
+            }
             for (const cb of presenceHandlersRef.current) {
               try {
                 cb(userId, username, status)
@@ -652,6 +668,11 @@ export function ChatProvider({ children }: ChatProviderProps) {
             const payload = data.payload || data
             const ids = payload.user_ids || payload.userIds
             if (Array.isArray(ids)) {
+              // Replace global set with provided connected users
+              onlineUserIDsRef.current = new Set(
+                ids.filter(id => typeof id === 'number')
+              )
+              setOnlineUserIds(Array.from(onlineUserIDsRef.current))
               for (const cb of connectedUsersHandlersRef.current) {
                 try {
                   cb(ids)
@@ -775,12 +796,25 @@ export function ChatProvider({ children }: ChatProviderProps) {
         try {
           const user = JSON.parse(userStr)
           currentUserRef.current = { id: user.id, username: user.username }
+          logger.debug('[ChatProvider] Creating chat WebSocket for user', {
+            userId: user.id,
+            username: user.username,
+          })
         } catch {}
+      } else {
+        logger.warn(
+          '[ChatProvider] No user in localStorage when creating chat WebSocket'
+        )
       }
       await refreshBlockedUsers()
+      logger.debug('[ChatProvider] Calling createTicketedWS for /api/ws/chat')
       return createTicketedWS({ path: '/api/ws/chat' })
     },
     onOpen: ws => {
+      logger.debug('[ChatProvider] Chat WebSocket opened', {
+        userId: currentUserRef.current?.id,
+        username: currentUserRef.current?.username,
+      })
       const roomsToJoin = new Set(joinedRoomsRef.current)
       for (const roomId of roomsToJoin) {
         ws.send(JSON.stringify({ type: 'join', conversation_id: roomId }))
@@ -797,6 +831,14 @@ export function ChatProvider({ children }: ChatProviderProps) {
   })
 
   const isConnected = connectionState === 'connected'
+
+  useEffect(() => {
+    logger.debug('[ChatProvider] Connection state changed', {
+      connectionState,
+      isConnected,
+      userId: currentUserRef.current?.id,
+    })
+  }, [connectionState, isConnected])
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -817,35 +859,43 @@ export function ChatProvider({ children }: ChatProviderProps) {
     }
   }, [])
 
-  const joinRoom = useCallback((conversationId: number) => {
-    // Always record the intent to join this room so we can re-join when
-    // the WebSocket connects. If the socket is open, send the join.
-    if (!joinedRoomsRef.current.has(conversationId)) {
-      joinedRoomsRef.current.add(conversationId)
-      setJoinedRooms(new Set(joinedRoomsRef.current))
-    }
+  const joinRoom = useCallback(
+    (conversationId: number) => {
+      // Always record the intent to join this room so we can re-join when
+      // the WebSocket connects. If the socket is open, send the join.
+      if (!joinedRoomsRef.current.has(conversationId)) {
+        joinedRoomsRef.current.add(conversationId)
+        setJoinedRooms(new Set(joinedRoomsRef.current))
+      }
 
-    const ws = wsRef.current
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'join', conversation_id: conversationId }))
-    }
-  }, [])
+      const ws = wsRef.current
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(
+          JSON.stringify({ type: 'join', conversation_id: conversationId })
+        )
+      }
+    },
+    [wsRef.current]
+  )
 
-  const leaveRoom = useCallback((conversationId: number) => {
-    // Always remove from requested joins immediately. If the socket is open,
-    // also send the leave message to the server.
-    if (joinedRoomsRef.current.has(conversationId)) {
-      joinedRoomsRef.current.delete(conversationId)
-      setJoinedRooms(new Set(joinedRoomsRef.current))
-    }
+  const leaveRoom = useCallback(
+    (conversationId: number) => {
+      // Always remove from requested joins immediately. If the socket is open,
+      // also send the leave message to the server.
+      if (joinedRoomsRef.current.has(conversationId)) {
+        joinedRoomsRef.current.delete(conversationId)
+        setJoinedRooms(new Set(joinedRoomsRef.current))
+      }
 
-    const ws = wsRef.current
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(
-        JSON.stringify({ type: 'leave', conversation_id: conversationId })
-      )
-    }
-  }, [])
+      const ws = wsRef.current
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(
+          JSON.stringify({ type: 'leave', conversation_id: conversationId })
+        )
+      }
+    },
+    [wsRef.current]
+  )
 
   const sendTyping = useCallback(
     (conversationId: number, isTyping: boolean) => {
@@ -860,33 +910,39 @@ export function ChatProvider({ children }: ChatProviderProps) {
         })
       )
     },
-    []
+    [wsRef.current]
   )
 
-  const sendMessage = useCallback((conversationId: number, content: string) => {
-    const ws = wsRef.current
-    if (!ws || ws.readyState !== WebSocket.OPEN) return
+  const sendMessage = useCallback(
+    (conversationId: number, content: string) => {
+      const ws = wsRef.current
+      if (!ws || ws.readyState !== WebSocket.OPEN) return
 
-    ws.send(
-      JSON.stringify({
-        type: 'message',
-        conversation_id: conversationId,
-        content,
-      })
-    )
-  }, [])
+      ws.send(
+        JSON.stringify({
+          type: 'message',
+          conversation_id: conversationId,
+          content,
+        })
+      )
+    },
+    [wsRef.current]
+  )
 
-  const markAsRead = useCallback((conversationId: number) => {
-    const ws = wsRef.current
-    if (!ws || ws.readyState !== WebSocket.OPEN) return
+  const markAsRead = useCallback(
+    (conversationId: number) => {
+      const ws = wsRef.current
+      if (!ws || ws.readyState !== WebSocket.OPEN) return
 
-    ws.send(
-      JSON.stringify({
-        type: 'read',
-        conversation_id: conversationId,
-      })
-    )
-  }, [])
+      ws.send(
+        JSON.stringify({
+          type: 'read',
+          conversation_id: conversationId,
+        })
+      )
+    },
+    [wsRef.current]
+  )
 
   const value = useMemo<ChatContextValue>(
     () => ({
@@ -919,6 +975,9 @@ export function ChatProvider({ children }: ChatProviderProps) {
       subscribeOnConnectedUsers,
       subscribeOnParticipantsUpdate,
       subscribeOnChatroomPresence,
+      // Global presence helpers
+      isUserOnline: (userId: number) => onlineUserIDsRef.current.has(userId),
+      onlineUserIds,
     }),
     [
       isConnected,
@@ -944,6 +1003,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
       subscribeOnConnectedUsers,
       subscribeOnParticipantsUpdate,
       subscribeOnChatroomPresence,
+      onlineUserIds,
     ]
   )
 

@@ -119,7 +119,7 @@ export async function getMySanctumRequestBySlug(
   slug: string
 ): Promise<MySanctumRequest | null> {
   const requests = await listMySanctumRequests(request, token)
-  return requests.find((r) => r.requested_slug === slug) || null
+  return requests.find(r => r.requested_slug === slug) || null
 }
 
 export async function hasMySanctumRequestBySlug(
@@ -128,7 +128,7 @@ export async function hasMySanctumRequestBySlug(
   slug: string
 ): Promise<boolean> {
   const requests = await listMySanctumRequests(request, token)
-  return requests.some((item) => item.requested_slug === slug)
+  return requests.some(item => item.requested_slug === slug)
 }
 
 export interface AdminSanctumRequest {
@@ -175,7 +175,7 @@ export async function getAdminRequestBySlug(
   status: 'pending' | 'approved' | 'rejected'
 ): Promise<AdminSanctumRequest | null> {
   const requests = await listAdminRequests(request, token, status)
-  return requests.find((r) => r.requested_slug === slug) || null
+  return requests.find(r => r.requested_slug === slug) || null
 }
 
 export async function approveSanctumRequest(
@@ -206,11 +206,14 @@ export async function deleteSanctumRequest(
   token: string,
   requestId: number
 ): Promise<boolean> {
-  const res = await request.delete(`${API_BASE}/sanctums/requests/${requestId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
+  const res = await request.delete(
+    `${API_BASE}/sanctums/requests/${requestId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  )
 
   if (res.status() === 404) {
     return false // Already deleted or never existed

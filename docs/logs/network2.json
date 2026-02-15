@@ -1,0 +1,2652 @@
+{
+  "log": {
+    "creator": {
+      "name": "WebInspector",
+      "version": "537.36"
+    },
+    "entries": [
+      {
+        "_initiator": {
+          "stack": {
+            "callFrames": [
+              {
+                "columnNumber": 9,
+                "functionName": "createTicketedWS",
+                "lineNumber": 32,
+                "scriptId": "658",
+                "url": "http://localhost:5173/src/lib/ws-utils.ts"
+              }
+            ],
+            "parent": {
+              "callFrames": [
+                {
+                  "columnNumber": 25,
+                  "functionName": "createSocket",
+                  "lineNumber": 360,
+                  "scriptId": "613",
+                  "url": "http://localhost:5173/src/hooks/useRealtimeNotifications.ts"
+                },
+                {
+                  "columnNumber": 35,
+                  "functionName": "",
+                  "lineNumber": 138,
+                  "scriptId": "652",
+                  "url": "http://localhost:5173/src/hooks/useManagedWebSocket.ts"
+                },
+                {
+                  "columnNumber": 6,
+                  "functionName": "",
+                  "lineNumber": 183,
+                  "scriptId": "652",
+                  "url": "http://localhost:5173/src/hooks/useManagedWebSocket.ts"
+                },
+                {
+                  "columnNumber": 15,
+                  "functionName": "",
+                  "lineNumber": 209,
+                  "scriptId": "652",
+                  "url": "http://localhost:5173/src/hooks/useManagedWebSocket.ts"
+                },
+                {
+                  "columnNumber": 19,
+                  "functionName": "react_stack_bottom_frame",
+                  "lineNumber": 18566,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 71,
+                  "functionName": "runWithFiberInDEV",
+                  "lineNumber": 996,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 162,
+                  "functionName": "commitHookEffectListMount",
+                  "lineNumber": 9410,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 59,
+                  "functionName": "commitHookPassiveMountEffects",
+                  "lineNumber": 9464,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 28,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11039,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11200,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11032,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11200,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11200,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11032,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11032,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11032,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11200,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11032,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11200,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11032,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11032,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11032,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11054,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11200,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11065,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 10,
+                  "functionName": "flushPassiveEffects",
+                  "lineNumber": 13149,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 15,
+                  "functionName": "flushPendingEffects",
+                  "lineNumber": 13087,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "performSyncWorkOnRoot",
+                  "lineNumber": 13513,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 121,
+                  "functionName": "flushSyncWorkAcrossRoots_impl",
+                  "lineNumber": 13413,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 10,
+                  "functionName": "flushSpawnedWork",
+                  "lineNumber": 13066,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 10,
+                  "functionName": "commitRoot",
+                  "lineNumber": 12803,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 8,
+                  "functionName": "commitRootWhenReady",
+                  "lineNumber": 12015,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 16,
+                  "functionName": "performWorkOnRoot",
+                  "lineNumber": 11949,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 8,
+                  "functionName": "performWorkOnRootViaSchedulerTask",
+                  "lineNumber": 13504,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 49,
+                  "functionName": "performWorkUntilDeadline",
+                  "lineNumber": 35,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                }
+              ],
+              "description": "await",
+              "parent": {
+                "callFrames": [
+                  {
+                    "columnNumber": 29,
+                    "functionName": "exports.jsxDEV",
+                    "lineNumber": 246,
+                    "scriptId": "576",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 20,
+                    "functionName": "App",
+                    "lineNumber": 1336,
+                    "scriptId": "591",
+                    "url": "http://localhost:5173/src/App.tsx"
+                  },
+                  {
+                    "columnNumber": 19,
+                    "functionName": "react_stack_bottom_frame",
+                    "lineNumber": 18508,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 21,
+                    "functionName": "renderWithHooksAgain",
+                    "lineNumber": 5728,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 23,
+                    "functionName": "renderWithHooks",
+                    "lineNumber": 5664,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 20,
+                    "functionName": "updateFunctionComponent",
+                    "lineNumber": 7474,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 19,
+                    "functionName": "beginWork",
+                    "lineNumber": 8524,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 71,
+                    "functionName": "runWithFiberInDEV",
+                    "lineNumber": 996,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 97,
+                    "functionName": "performUnitOfWork",
+                    "lineNumber": 12560,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 42,
+                    "functionName": "workLoopSync",
+                    "lineNumber": 12423,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "renderRootSync",
+                    "lineNumber": 12407,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 188,
+                    "functionName": "performWorkOnRoot",
+                    "lineNumber": 11765,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 8,
+                    "functionName": "performWorkOnRootViaSchedulerTask",
+                    "lineNumber": 13504,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 49,
+                    "functionName": "performWorkUntilDeadline",
+                    "lineNumber": 35,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  }
+                ],
+                "description": "<MainLayout>",
+                "parent": {
+                  "callFrames": [
+                    {
+                      "columnNumber": 29,
+                      "functionName": "exports.jsxDEV",
+                      "lineNumber": 246,
+                      "scriptId": "576",
+                      "url": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f2143481"
+                    },
+                    {
+                      "columnNumber": 24,
+                      "functionName": "",
+                      "lineNumber": 41,
+                      "scriptId": "575",
+                      "url": "http://localhost:5173/src/main.tsx"
+                    }
+                  ],
+                  "description": "<App>"
+                }
+              }
+            }
+          },
+          "type": "script"
+        },
+        "_priority": null,
+        "_resourceType": "websocket",
+        "_webSocketMessages": [
+          {
+            "data": "WebSocket is closed before the connection is established.",
+            "opcode": -1,
+            "time": 3038.823547,
+            "type": "error"
+          }
+        ],
+        "cache": {},
+        "pageref": "page_3",
+        "request": {
+          "bodySize": 0,
+          "cookies": [],
+          "headers": [],
+          "headersSize": -1,
+          "httpVersion": "",
+          "method": "",
+          "queryString": [
+            {
+              "name": "ticket",
+              "value": "51046d338f54eb297d482f8b21d257f01244b2225fde81b3c0934198f1fbc1e9"
+            }
+          ],
+          "url": "ws://localhost:8375/api/ws?ticket=51046d338f54eb297d482f8b21d257f01244b2225fde81b3c0934198f1fbc1e9"
+        },
+        "response": {
+          "_error": null,
+          "_fetchedViaServiceWorker": false,
+          "_transferSize": 0,
+          "bodySize": -1,
+          "content": {
+            "mimeType": "x-unknown",
+            "size": 0
+          },
+          "cookies": [],
+          "headers": [],
+          "headersSize": -1,
+          "httpVersion": "",
+          "redirectURL": "",
+          "status": 0,
+          "statusText": ""
+        },
+        "serverIPAddress": "",
+        "startedDateTime": "1969-12-31T23:59:59.000Z",
+        "time": 3039837.802,
+        "timings": {
+          "_blocked_queueing": -1,
+          "blocked": -1,
+          "connect": -1,
+          "dns": -1,
+          "receive": 14.255000000353903,
+          "send": 0,
+          "ssl": -1,
+          "wait": 3039823.547
+        }
+      },
+      {
+        "_initiator": {
+          "stack": {
+            "callFrames": [
+              {
+                "columnNumber": 9,
+                "functionName": "createTicketedWS",
+                "lineNumber": 32,
+                "scriptId": "658",
+                "url": "http://localhost:5173/src/lib/ws-utils.ts"
+              }
+            ],
+            "parent": {
+              "callFrames": [
+                {
+                  "columnNumber": 13,
+                  "functionName": "createSocket",
+                  "lineNumber": 513,
+                  "scriptId": "619",
+                  "url": "http://localhost:5173/src/providers/ChatProvider.tsx"
+                }
+              ],
+              "description": "await",
+              "parent": {
+                "callFrames": [
+                  {
+                    "columnNumber": 35,
+                    "functionName": "",
+                    "lineNumber": 138,
+                    "scriptId": "652",
+                    "url": "http://localhost:5173/src/hooks/useManagedWebSocket.ts"
+                  },
+                  {
+                    "columnNumber": 6,
+                    "functionName": "",
+                    "lineNumber": 183,
+                    "scriptId": "652",
+                    "url": "http://localhost:5173/src/hooks/useManagedWebSocket.ts"
+                  },
+                  {
+                    "columnNumber": 15,
+                    "functionName": "",
+                    "lineNumber": 209,
+                    "scriptId": "652",
+                    "url": "http://localhost:5173/src/hooks/useManagedWebSocket.ts"
+                  },
+                  {
+                    "columnNumber": 19,
+                    "functionName": "react_stack_bottom_frame",
+                    "lineNumber": 18566,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 71,
+                    "functionName": "runWithFiberInDEV",
+                    "lineNumber": 996,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 162,
+                    "functionName": "commitHookEffectListMount",
+                    "lineNumber": 9410,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 59,
+                    "functionName": "commitHookPassiveMountEffects",
+                    "lineNumber": 9464,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 28,
+                    "functionName": "commitPassiveMountOnFiber",
+                    "lineNumber": 11039,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "recursivelyTraversePassiveMountEffects",
+                    "lineNumber": 11009,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "commitPassiveMountOnFiber",
+                    "lineNumber": 11200,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "recursivelyTraversePassiveMountEffects",
+                    "lineNumber": 11009,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "commitPassiveMountOnFiber",
+                    "lineNumber": 11200,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "recursivelyTraversePassiveMountEffects",
+                    "lineNumber": 11009,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "commitPassiveMountOnFiber",
+                    "lineNumber": 11032,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "recursivelyTraversePassiveMountEffects",
+                    "lineNumber": 11009,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "commitPassiveMountOnFiber",
+                    "lineNumber": 11032,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "recursivelyTraversePassiveMountEffects",
+                    "lineNumber": 11009,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "commitPassiveMountOnFiber",
+                    "lineNumber": 11032,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "recursivelyTraversePassiveMountEffects",
+                    "lineNumber": 11009,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "commitPassiveMountOnFiber",
+                    "lineNumber": 11200,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "recursivelyTraversePassiveMountEffects",
+                    "lineNumber": 11009,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "commitPassiveMountOnFiber",
+                    "lineNumber": 11032,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "recursivelyTraversePassiveMountEffects",
+                    "lineNumber": 11009,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "commitPassiveMountOnFiber",
+                    "lineNumber": 11200,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "recursivelyTraversePassiveMountEffects",
+                    "lineNumber": 11009,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "commitPassiveMountOnFiber",
+                    "lineNumber": 11032,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "recursivelyTraversePassiveMountEffects",
+                    "lineNumber": 11009,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "commitPassiveMountOnFiber",
+                    "lineNumber": 11032,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "recursivelyTraversePassiveMountEffects",
+                    "lineNumber": 11009,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "commitPassiveMountOnFiber",
+                    "lineNumber": 11032,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "recursivelyTraversePassiveMountEffects",
+                    "lineNumber": 11009,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "commitPassiveMountOnFiber",
+                    "lineNumber": 11054,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "recursivelyTraversePassiveMountEffects",
+                    "lineNumber": 11009,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "commitPassiveMountOnFiber",
+                    "lineNumber": 11200,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "recursivelyTraversePassiveMountEffects",
+                    "lineNumber": 11009,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "commitPassiveMountOnFiber",
+                    "lineNumber": 11065,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 10,
+                    "functionName": "flushPassiveEffects",
+                    "lineNumber": 13149,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 15,
+                    "functionName": "flushPendingEffects",
+                    "lineNumber": 13087,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "performSyncWorkOnRoot",
+                    "lineNumber": 13513,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 121,
+                    "functionName": "flushSyncWorkAcrossRoots_impl",
+                    "lineNumber": 13413,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 10,
+                    "functionName": "flushSpawnedWork",
+                    "lineNumber": 13066,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 10,
+                    "functionName": "commitRoot",
+                    "lineNumber": 12803,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 8,
+                    "functionName": "commitRootWhenReady",
+                    "lineNumber": 12015,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 16,
+                    "functionName": "performWorkOnRoot",
+                    "lineNumber": 11949,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 8,
+                    "functionName": "performWorkOnRootViaSchedulerTask",
+                    "lineNumber": 13504,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 49,
+                    "functionName": "performWorkUntilDeadline",
+                    "lineNumber": 35,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  }
+                ],
+                "description": "await",
+                "parent": {
+                  "callFrames": [
+                    {
+                      "columnNumber": 29,
+                      "functionName": "exports.jsxDEV",
+                      "lineNumber": 246,
+                      "scriptId": "576",
+                      "url": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f2143481"
+                    },
+                    {
+                      "columnNumber": 68,
+                      "functionName": "App",
+                      "lineNumber": 1335,
+                      "scriptId": "591",
+                      "url": "http://localhost:5173/src/App.tsx"
+                    },
+                    {
+                      "columnNumber": 19,
+                      "functionName": "react_stack_bottom_frame",
+                      "lineNumber": 18508,
+                      "scriptId": "580",
+                      "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                    },
+                    {
+                      "columnNumber": 21,
+                      "functionName": "renderWithHooksAgain",
+                      "lineNumber": 5728,
+                      "scriptId": "580",
+                      "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                    },
+                    {
+                      "columnNumber": 23,
+                      "functionName": "renderWithHooks",
+                      "lineNumber": 5664,
+                      "scriptId": "580",
+                      "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                    },
+                    {
+                      "columnNumber": 20,
+                      "functionName": "updateFunctionComponent",
+                      "lineNumber": 7474,
+                      "scriptId": "580",
+                      "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                    },
+                    {
+                      "columnNumber": 19,
+                      "functionName": "beginWork",
+                      "lineNumber": 8524,
+                      "scriptId": "580",
+                      "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                    },
+                    {
+                      "columnNumber": 71,
+                      "functionName": "runWithFiberInDEV",
+                      "lineNumber": 996,
+                      "scriptId": "580",
+                      "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                    },
+                    {
+                      "columnNumber": 97,
+                      "functionName": "performUnitOfWork",
+                      "lineNumber": 12560,
+                      "scriptId": "580",
+                      "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                    },
+                    {
+                      "columnNumber": 42,
+                      "functionName": "workLoopSync",
+                      "lineNumber": 12423,
+                      "scriptId": "580",
+                      "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                    },
+                    {
+                      "columnNumber": 12,
+                      "functionName": "renderRootSync",
+                      "lineNumber": 12407,
+                      "scriptId": "580",
+                      "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                    },
+                    {
+                      "columnNumber": 188,
+                      "functionName": "performWorkOnRoot",
+                      "lineNumber": 11765,
+                      "scriptId": "580",
+                      "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                    },
+                    {
+                      "columnNumber": 8,
+                      "functionName": "performWorkOnRootViaSchedulerTask",
+                      "lineNumber": 13504,
+                      "scriptId": "580",
+                      "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                    },
+                    {
+                      "columnNumber": 49,
+                      "functionName": "performWorkUntilDeadline",
+                      "lineNumber": 35,
+                      "scriptId": "580",
+                      "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                    }
+                  ],
+                  "description": "<ChatProvider>",
+                  "parent": {
+                    "callFrames": [
+                      {
+                        "columnNumber": 29,
+                        "functionName": "exports.jsxDEV",
+                        "lineNumber": 246,
+                        "scriptId": "576",
+                        "url": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f2143481"
+                      },
+                      {
+                        "columnNumber": 24,
+                        "functionName": "",
+                        "lineNumber": 41,
+                        "scriptId": "575",
+                        "url": "http://localhost:5173/src/main.tsx"
+                      }
+                    ],
+                    "description": "<App>"
+                  }
+                }
+              }
+            }
+          },
+          "type": "script"
+        },
+        "_priority": null,
+        "_resourceType": "websocket",
+        "_webSocketMessages": [
+          {
+            "data": "WebSocket is closed before the connection is established.",
+            "opcode": -1,
+            "time": 3038.841805,
+            "type": "error"
+          }
+        ],
+        "cache": {},
+        "pageref": "page_3",
+        "request": {
+          "bodySize": 0,
+          "cookies": [],
+          "headers": [],
+          "headersSize": -1,
+          "httpVersion": "",
+          "method": "",
+          "queryString": [
+            {
+              "name": "ticket",
+              "value": "26377f458a6890d601a4de2dde242c3dcec9134bb0e02aa30f30bca941ee61ca"
+            }
+          ],
+          "url": "ws://localhost:8375/api/ws/chat?ticket=26377f458a6890d601a4de2dde242c3dcec9134bb0e02aa30f30bca941ee61ca"
+        },
+        "response": {
+          "_error": null,
+          "_fetchedViaServiceWorker": false,
+          "_transferSize": 0,
+          "bodySize": -1,
+          "content": {
+            "mimeType": "x-unknown",
+            "size": 0
+          },
+          "cookies": [],
+          "headers": [],
+          "headersSize": -1,
+          "httpVersion": "",
+          "redirectURL": "",
+          "status": 0,
+          "statusText": ""
+        },
+        "serverIPAddress": "",
+        "startedDateTime": "1969-12-31T23:59:59.000Z",
+        "time": 3039842.577,
+        "timings": {
+          "_blocked_queueing": -1,
+          "blocked": -1,
+          "connect": -1,
+          "dns": -1,
+          "receive": 0.7719999998807907,
+          "send": 0,
+          "ssl": -1,
+          "wait": 3039841.805
+        }
+      },
+      {
+        "_connectionId": "23365",
+        "_initiator": {
+          "lineNumber": 8,
+          "type": "script",
+          "url": "http://localhost:5173/src/hooks/useRealtimeNotifications.ts"
+        },
+        "_priority": "High",
+        "_resourceType": "script",
+        "cache": {},
+        "connection": "5173",
+        "pageref": "page_3",
+        "request": {
+          "bodySize": 0,
+          "cookies": [],
+          "headers": [
+            {
+              "name": "Accept",
+              "value": "*/*"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "gzip, deflate, br, zstd"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Host",
+              "value": "localhost:5173"
+            },
+            {
+              "name": "If-None-Match",
+              "value": "W/\"6bb-auijRhcLrkx8usCGz+s8dsl01JQ\""
+            },
+            {
+              "name": "Origin",
+              "value": "http://localhost:5173"
+            },
+            {
+              "name": "Referer",
+              "value": "http://localhost:5173/src/hooks/useRealtimeNotifications.ts"
+            },
+            {
+              "name": "Sec-Fetch-Dest",
+              "value": "script"
+            },
+            {
+              "name": "Sec-Fetch-Mode",
+              "value": "cors"
+            },
+            {
+              "name": "Sec-Fetch-Site",
+              "value": "same-origin"
+            },
+            {
+              "name": "Sec-GPC",
+              "value": "1"
+            },
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "sec-ch-ua",
+              "value": "\"Not:A-Brand\";v=\"99\", \"Brave\";v=\"145\", \"Chromium\";v=\"145\""
+            },
+            {
+              "name": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "name": "sec-ch-ua-platform",
+              "value": "\"Linux\""
+            }
+          ],
+          "headersSize": 750,
+          "httpVersion": "HTTP/1.1",
+          "method": "GET",
+          "queryString": [],
+          "url": "http://localhost:5173/src/lib/ws-utils.ts"
+        },
+        "response": {
+          "_error": null,
+          "_fetchedViaServiceWorker": false,
+          "_transferSize": 151,
+          "bodySize": 0,
+          "content": {
+            "mimeType": "text/javascript",
+            "size": 6682,
+            "text": "import { ApiError, apiClient } from \"/src/api/client.ts\";\nimport { getWsBaseUrl } from \"/src/lib/chat-utils.ts\";\nimport { logger } from \"/src/lib/logger.ts\";\nexport async function createTicketedWS(options) {\n  let ticketResp;\n  try {\n    ticketResp = await apiClient.issueWSTicket();\n    logger.debug(\n      \"[ws] ticket issued (not logged) expires_in=\",\n      ticketResp.expires_in\n    );\n  } catch (err) {\n    if (err instanceof ApiError) {\n      logger.error(\"[ws] ticket issuance failed\", {\n        status: err.status,\n        code: err.code,\n        message: err.message\n      });\n      logger.debug(`[ws] suggested retry in ${getNextBackoff(0)} ms`);\n    } else {\n      logger.error(\"[ws] ticket issuance unexpected error\", err);\n      logger.debug(`[ws] suggested retry in ${getNextBackoff(0)} ms`);\n    }\n    throw err;\n  }\n  const baseUrl = getWsBaseUrl();\n  const separator = options.path.includes(\"?\") ? \"&\" : \"?\";\n  const wsUrl = `${baseUrl}${options.path}${separator}ticket=${ticketResp.ticket}`;\n  const wsUrlNoTicket = `${baseUrl}${options.path}`;\n  logger.debug(`[ws] connecting to ${wsUrlNoTicket} (ticket appended)`);\n  let ws;\n  try {\n    ws = new WebSocket(wsUrl);\n  } catch (err) {\n    logger.error(`[ws] WebSocket constructor failed for ${wsUrlNoTicket}`, err);\n    throw err;\n  }\n  if (options.onOpen) ws.onopen = options.onOpen;\n  if (options.onMessage) ws.onmessage = options.onMessage;\n  if (options.onClose) ws.onclose = options.onClose;\n  if (options.onError) ws.onerror = options.onError;\n  return ws;\n}\nexport function getNextBackoff(attempt, base = 1e3, cap = 3e4) {\n  const delay = Math.min(cap, base * 2 ** attempt);\n  const jitter = delay * 0.1 * Math.random();\n  return delay + jitter;\n}\n\n//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIndzLXV0aWxzLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IEFwaUVycm9yLCBhcGlDbGllbnQgfSBmcm9tICdAL2FwaS9jbGllbnQnXG5pbXBvcnQgeyBnZXRXc0Jhc2VVcmwgfSBmcm9tICcuL2NoYXQtdXRpbHMnXG5pbXBvcnQgeyBsb2dnZXIgfSBmcm9tICcuL2xvZ2dlcidcblxuLyoqXG4gKiBPcHRpb25zIGZvciBjcmVhdGluZyBhIHRpY2tldGVkIFdlYlNvY2tldCBjb25uZWN0aW9uXG4gKi9cbmV4cG9ydCBpbnRlcmZhY2UgVGlja2V0ZWRXU09wdGlvbnMge1xuICBwYXRoOiBzdHJpbmdcbiAgb25NZXNzYWdlPzogKGV2ZW50OiBNZXNzYWdlRXZlbnQpID0+IHZvaWRcbiAgb25PcGVuPzogKGV2ZW50OiBFdmVudCkgPT4gdm9pZFxuICBvbkNsb3NlPzogKGV2ZW50OiBDbG9zZUV2ZW50KSA9PiB2b2lkXG4gIG9uRXJyb3I/OiAoZXZlbnQ6IEV2ZW50KSA9PiB2b2lkXG59XG5cbi8qKlxuICogQ3JlYXRlcyBhIFdlYlNvY2tldCBjb25uZWN0aW9uIHVzaW5nIGEgZnJlc2ggYXV0aGVudGljYXRpb24gdGlja2V0LlxuICogVGhlIHRpY2tldCBpcyByZXF1ZXN0ZWQgdmlhIEFQSSBhbmQgYXBwZW5kZWQgdG8gdGhlIFdlYlNvY2tldCBVUkwuXG4gKi9cbmV4cG9ydCBhc3luYyBmdW5jdGlvbiBjcmVhdGVUaWNrZXRlZFdTKFxuICBvcHRpb25zOiBUaWNrZXRlZFdTT3B0aW9uc1xuKTogUHJvbWlzZTxXZWJTb2NrZXQ+IHtcbiAgbGV0IHRpY2tldFJlc3A6IHsgdGlja2V0OiBzdHJpbmc7IGV4cGlyZXNfaW46IG51bWJlciB9XG4gIHRyeSB7XG4gICAgdGlja2V0UmVzcCA9IGF3YWl0IGFwaUNsaWVudC5pc3N1ZVdTVGlja2V0KClcbiAgICBsb2dnZXIuZGVidWcoXG4gICAgICAnW3dzXSB0aWNrZXQgaXNzdWVkIChub3QgbG9nZ2VkKSBleHBpcmVzX2luPScsXG4gICAgICB0aWNrZXRSZXNwLmV4cGlyZXNfaW5cbiAgICApXG4gIH0gY2F0Y2ggKGVycikge1xuICAgIGlmIChlcnIgaW5zdGFuY2VvZiBBcGlFcnJvcikge1xuICAgICAgbG9nZ2VyLmVycm9yKCdbd3NdIHRpY2tldCBpc3N1YW5jZSBmYWlsZWQnLCB7XG4gICAgICAgIHN0YXR1czogZXJyLnN0YXR1cyxcbiAgICAgICAgY29kZTogZXJyLmNvZGUsXG4gICAgICAgIG1lc3NhZ2U6IGVyci5tZXNzYWdlLFxuICAgICAgfSlcbiAgICAgIC8vIFN1Z2dlc3QgYSByZXRyeSBkZWxheSBmb3IgZGV2ZWxvcGVycyAobm9uLWF1dGhvcml0YXRpdmUpXG4gICAgICBsb2dnZXIuZGVidWcoYFt3c10gc3VnZ2VzdGVkIHJldHJ5IGluICR7Z2V0TmV4dEJhY2tvZmYoMCl9IG1zYClcbiAgICB9IGVsc2Uge1xuICAgICAgbG9nZ2VyLmVycm9yKCdbd3NdIHRpY2tldCBpc3N1YW5jZSB1bmV4cGVjdGVkIGVycm9yJywgZXJyKVxuICAgICAgbG9nZ2VyLmRlYnVnKGBbd3NdIHN1Z2dlc3RlZCByZXRyeSBpbiAke2dldE5leHRCYWNrb2ZmKDApfSBtc2ApXG4gICAgfVxuICAgIHRocm93IGVyclxuICB9XG5cbiAgY29uc3QgYmFzZVVybCA9IGdldFdzQmFzZVVybCgpXG4gIGNvbnN0IHNlcGFyYXRvciA9IG9wdGlvbnMucGF0aC5pbmNsdWRlcygnPycpID8gJyYnIDogJz8nXG4gIGNvbnN0IHdzVXJsID0gYCR7YmFzZVVybH0ke29wdGlvbnMucGF0aH0ke3NlcGFyYXRvcn10aWNrZXQ9JHt0aWNrZXRSZXNwLnRpY2tldH1gXG5cbiAgY29uc3Qgd3NVcmxOb1RpY2tldCA9IGAke2Jhc2VVcmx9JHtvcHRpb25zLnBhdGh9YFxuXG4gIC8vIExvZyB0aGUgYmFzZSBXUyBlbmRwb2ludCAoZG8gbm90IGxvZyB0aGUgdGlja2V0KVxuICBsb2dnZXIuZGVidWcoYFt3c10gY29ubmVjdGluZyB0byAke3dzVXJsTm9UaWNrZXR9ICh0aWNrZXQgYXBwZW5kZWQpYClcblxuICBsZXQgd3M6IFdlYlNvY2tldFxuICB0cnkge1xuICAgIHdzID0gbmV3IFdlYlNvY2tldCh3c1VybClcbiAgfSBjYXRjaCAoZXJyKSB7XG4gICAgbG9nZ2VyLmVycm9yKGBbd3NdIFdlYlNvY2tldCBjb25zdHJ1Y3RvciBmYWlsZWQgZm9yICR7d3NVcmxOb1RpY2tldH1gLCBlcnIpXG4gICAgdGhyb3cgZXJyXG4gIH1cblxuICBpZiAob3B0aW9ucy5vbk9wZW4pIHdzLm9ub3BlbiA9IG9wdGlvbnMub25PcGVuXG4gIGlmIChvcHRpb25zLm9uTWVzc2FnZSkgd3Mub25tZXNzYWdlID0gb3B0aW9ucy5vbk1lc3NhZ2VcbiAgaWYgKG9wdGlvbnMub25DbG9zZSkgd3Mub25jbG9zZSA9IG9wdGlvbnMub25DbG9zZVxuICBpZiAob3B0aW9ucy5vbkVycm9yKSB3cy5vbmVycm9yID0gb3B0aW9ucy5vbkVycm9yXG5cbiAgcmV0dXJuIHdzXG59XG5cbi8qKlxuICogU2hhcmVkIGxvZ2ljIGZvciBleHBvbmVudGlhbCBiYWNrb2ZmIHdpdGggaml0dGVyXG4gKi9cbmV4cG9ydCBmdW5jdGlvbiBnZXROZXh0QmFja29mZihcbiAgYXR0ZW1wdDogbnVtYmVyLFxuICBiYXNlID0gMTAwMCxcbiAgY2FwID0gMzAwMDBcbik6IG51bWJlciB7XG4gIGNvbnN0IGRlbGF5ID0gTWF0aC5taW4oY2FwLCBiYXNlICogMiAqKiBhdHRlbXB0KVxuICBjb25zdCBqaXR0ZXIgPSBkZWxheSAqIDAuMSAqIE1hdGgucmFuZG9tKClcbiAgcmV0dXJuIGRlbGF5ICsgaml0dGVyXG59XG4iXSwibWFwcGluZ3MiOiJBQUFBLFNBQVMsVUFBVSxpQkFBaUI7QUFDcEMsU0FBUyxvQkFBb0I7QUFDN0IsU0FBUyxjQUFjO0FBaUJ2QixzQkFBc0IsaUJBQ3BCLFNBQ29CO0FBQ3BCLE1BQUk7QUFDSixNQUFJO0FBQ0YsaUJBQWEsTUFBTSxVQUFVLGNBQWM7QUFDM0MsV0FBTztBQUFBLE1BQ0w7QUFBQSxNQUNBLFdBQVc7QUFBQSxJQUNiO0FBQUEsRUFDRixTQUFTLEtBQUs7QUFDWixRQUFJLGVBQWUsVUFBVTtBQUMzQixhQUFPLE1BQU0sK0JBQStCO0FBQUEsUUFDMUMsUUFBUSxJQUFJO0FBQUEsUUFDWixNQUFNLElBQUk7QUFBQSxRQUNWLFNBQVMsSUFBSTtBQUFBLE1BQ2YsQ0FBQztBQUVELGFBQU8sTUFBTSwyQkFBMkIsZUFBZSxDQUFDLENBQUMsS0FBSztBQUFBLElBQ2hFLE9BQU87QUFDTCxhQUFPLE1BQU0seUNBQXlDLEdBQUc7QUFDekQsYUFBTyxNQUFNLDJCQUEyQixlQUFlLENBQUMsQ0FBQyxLQUFLO0FBQUEsSUFDaEU7QUFDQSxVQUFNO0FBQUEsRUFDUjtBQUVBLFFBQU0sVUFBVSxhQUFhO0FBQzdCLFFBQU0sWUFBWSxRQUFRLEtBQUssU0FBUyxHQUFHLElBQUksTUFBTTtBQUNyRCxRQUFNLFFBQVEsR0FBRyxPQUFPLEdBQUcsUUFBUSxJQUFJLEdBQUcsU0FBUyxVQUFVLFdBQVcsTUFBTTtBQUU5RSxRQUFNLGdCQUFnQixHQUFHLE9BQU8sR0FBRyxRQUFRLElBQUk7QUFHL0MsU0FBTyxNQUFNLHNCQUFzQixhQUFhLG9CQUFvQjtBQUVwRSxNQUFJO0FBQ0osTUFBSTtBQUNGLFNBQUssSUFBSSxVQUFVLEtBQUs7QUFBQSxFQUMxQixTQUFTLEtBQUs7QUFDWixXQUFPLE1BQU0seUNBQXlDLGFBQWEsSUFBSSxHQUFHO0FBQzFFLFVBQU07QUFBQSxFQUNSO0FBRUEsTUFBSSxRQUFRLE9BQVEsSUFBRyxTQUFTLFFBQVE7QUFDeEMsTUFBSSxRQUFRLFVBQVcsSUFBRyxZQUFZLFFBQVE7QUFDOUMsTUFBSSxRQUFRLFFBQVMsSUFBRyxVQUFVLFFBQVE7QUFDMUMsTUFBSSxRQUFRLFFBQVMsSUFBRyxVQUFVLFFBQVE7QUFFMUMsU0FBTztBQUNUO0FBS08sZ0JBQVMsZUFDZCxTQUNBLE9BQU8sS0FDUCxNQUFNLEtBQ0U7QUFDUixRQUFNLFFBQVEsS0FBSyxJQUFJLEtBQUssT0FBTyxLQUFLLE9BQU87QUFDL0MsUUFBTSxTQUFTLFFBQVEsTUFBTSxLQUFLLE9BQU87QUFDekMsU0FBTyxRQUFRO0FBQ2pCOyIsIm5hbWVzIjpbXX0="
+          },
+          "cookies": [],
+          "headers": [
+            {
+              "name": "Access-Control-Allow-Origin",
+              "value": "http://localhost:5173"
+            },
+            {
+              "name": "Content-Length",
+              "value": "0"
+            },
+            {
+              "name": "Date",
+              "value": "Sun, 15 Feb 2026 15:49:08 GMT"
+            },
+            {
+              "name": "Vary",
+              "value": "Origin"
+            }
+          ],
+          "headersSize": 151,
+          "httpVersion": "HTTP/1.1",
+          "redirectURL": "",
+          "status": 304,
+          "statusText": "Not Modified"
+        },
+        "serverIPAddress": "[::1]",
+        "startedDateTime": "2026-02-15T15:49:08.631Z",
+        "time": 22.35000000018772,
+        "timings": {
+          "_blocked_queueing": 0.8760000000620494,
+          "_workerFetchStart": -1,
+          "_workerReady": -1,
+          "_workerRespondWithSettled": -1,
+          "_workerStart": -1,
+          "blocked": 17.04600000006205,
+          "connect": -1,
+          "dns": -1,
+          "receive": 3.7839999999960128,
+          "send": 0.023999999999997357,
+          "ssl": -1,
+          "wait": 1.4960000001296585
+        }
+      },
+      {
+        "_connectionId": "23816",
+        "_initiator": {
+          "stack": {
+            "callFrames": [
+              {
+                "columnNumber": 29,
+                "functionName": "request",
+                "lineNumber": 44,
+                "scriptId": "593",
+                "url": "http://localhost:5173/src/api/client.ts"
+              },
+              {
+                "columnNumber": 16,
+                "functionName": "issueWSTicket",
+                "lineNumber": 592,
+                "scriptId": "593",
+                "url": "http://localhost:5173/src/api/client.ts"
+              },
+              {
+                "columnNumber": 33,
+                "functionName": "createTicketedWS",
+                "lineNumber": 6,
+                "scriptId": "658",
+                "url": "http://localhost:5173/src/lib/ws-utils.ts"
+              },
+              {
+                "columnNumber": 25,
+                "functionName": "createSocket",
+                "lineNumber": 360,
+                "scriptId": "613",
+                "url": "http://localhost:5173/src/hooks/useRealtimeNotifications.ts"
+              },
+              {
+                "columnNumber": 35,
+                "functionName": "",
+                "lineNumber": 138,
+                "scriptId": "652",
+                "url": "http://localhost:5173/src/hooks/useManagedWebSocket.ts"
+              },
+              {
+                "columnNumber": 6,
+                "functionName": "",
+                "lineNumber": 183,
+                "scriptId": "652",
+                "url": "http://localhost:5173/src/hooks/useManagedWebSocket.ts"
+              },
+              {
+                "columnNumber": 15,
+                "functionName": "",
+                "lineNumber": 209,
+                "scriptId": "652",
+                "url": "http://localhost:5173/src/hooks/useManagedWebSocket.ts"
+              },
+              {
+                "columnNumber": 19,
+                "functionName": "react_stack_bottom_frame",
+                "lineNumber": 18566,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 71,
+                "functionName": "runWithFiberInDEV",
+                "lineNumber": 996,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 162,
+                "functionName": "commitHookEffectListMount",
+                "lineNumber": 9410,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 59,
+                "functionName": "commitHookPassiveMountEffects",
+                "lineNumber": 9464,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 28,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11039,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "recursivelyTraversePassiveMountEffects",
+                "lineNumber": 11009,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11200,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "recursivelyTraversePassiveMountEffects",
+                "lineNumber": 11009,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11032,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "recursivelyTraversePassiveMountEffects",
+                "lineNumber": 11009,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11200,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "recursivelyTraversePassiveMountEffects",
+                "lineNumber": 11009,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11200,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "recursivelyTraversePassiveMountEffects",
+                "lineNumber": 11009,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11032,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "recursivelyTraversePassiveMountEffects",
+                "lineNumber": 11009,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11032,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "recursivelyTraversePassiveMountEffects",
+                "lineNumber": 11009,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11032,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "recursivelyTraversePassiveMountEffects",
+                "lineNumber": 11009,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11200,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "recursivelyTraversePassiveMountEffects",
+                "lineNumber": 11009,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11032,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "recursivelyTraversePassiveMountEffects",
+                "lineNumber": 11009,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11200,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "recursivelyTraversePassiveMountEffects",
+                "lineNumber": 11009,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11032,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "recursivelyTraversePassiveMountEffects",
+                "lineNumber": 11009,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11032,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "recursivelyTraversePassiveMountEffects",
+                "lineNumber": 11009,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11032,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "recursivelyTraversePassiveMountEffects",
+                "lineNumber": 11009,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11054,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "recursivelyTraversePassiveMountEffects",
+                "lineNumber": 11009,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11200,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "recursivelyTraversePassiveMountEffects",
+                "lineNumber": 11009,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "commitPassiveMountOnFiber",
+                "lineNumber": 11065,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 10,
+                "functionName": "flushPassiveEffects",
+                "lineNumber": 13149,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 15,
+                "functionName": "flushPendingEffects",
+                "lineNumber": 13087,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 12,
+                "functionName": "performSyncWorkOnRoot",
+                "lineNumber": 13513,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 121,
+                "functionName": "flushSyncWorkAcrossRoots_impl",
+                "lineNumber": 13413,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 10,
+                "functionName": "flushSpawnedWork",
+                "lineNumber": 13066,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 10,
+                "functionName": "commitRoot",
+                "lineNumber": 12803,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 8,
+                "functionName": "commitRootWhenReady",
+                "lineNumber": 12015,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 16,
+                "functionName": "performWorkOnRoot",
+                "lineNumber": 11949,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 8,
+                "functionName": "performWorkOnRootViaSchedulerTask",
+                "lineNumber": 13504,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              },
+              {
+                "columnNumber": 49,
+                "functionName": "performWorkUntilDeadline",
+                "lineNumber": 35,
+                "scriptId": "580",
+                "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+              }
+            ],
+            "parent": {
+              "callFrames": [
+                {
+                  "columnNumber": 29,
+                  "functionName": "exports.jsxDEV",
+                  "lineNumber": 246,
+                  "scriptId": "576",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 20,
+                  "functionName": "App",
+                  "lineNumber": 1336,
+                  "scriptId": "591",
+                  "url": "http://localhost:5173/src/App.tsx"
+                },
+                {
+                  "columnNumber": 19,
+                  "functionName": "react_stack_bottom_frame",
+                  "lineNumber": 18508,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 21,
+                  "functionName": "renderWithHooksAgain",
+                  "lineNumber": 5728,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 23,
+                  "functionName": "renderWithHooks",
+                  "lineNumber": 5664,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 20,
+                  "functionName": "updateFunctionComponent",
+                  "lineNumber": 7474,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 19,
+                  "functionName": "beginWork",
+                  "lineNumber": 8524,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 71,
+                  "functionName": "runWithFiberInDEV",
+                  "lineNumber": 996,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 97,
+                  "functionName": "performUnitOfWork",
+                  "lineNumber": 12560,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 42,
+                  "functionName": "workLoopSync",
+                  "lineNumber": 12423,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "renderRootSync",
+                  "lineNumber": 12407,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 188,
+                  "functionName": "performWorkOnRoot",
+                  "lineNumber": 11765,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 8,
+                  "functionName": "performWorkOnRootViaSchedulerTask",
+                  "lineNumber": 13504,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 49,
+                  "functionName": "performWorkUntilDeadline",
+                  "lineNumber": 35,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                }
+              ],
+              "description": "<MainLayout>",
+              "parent": {
+                "callFrames": [
+                  {
+                    "columnNumber": 29,
+                    "functionName": "exports.jsxDEV",
+                    "lineNumber": 246,
+                    "scriptId": "576",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 24,
+                    "functionName": "",
+                    "lineNumber": 41,
+                    "scriptId": "575",
+                    "url": "http://localhost:5173/src/main.tsx"
+                  }
+                ],
+                "description": "<App>"
+              }
+            }
+          },
+          "type": "script"
+        },
+        "_priority": "High",
+        "_resourceType": "fetch",
+        "cache": {},
+        "connection": "8375",
+        "pageref": "page_3",
+        "request": {
+          "bodySize": 0,
+          "cookies": [],
+          "headers": [
+            {
+              "name": "Accept",
+              "value": "*/*"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "gzip, deflate, br, zstd"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Content-Length",
+              "value": "0"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Host",
+              "value": "localhost:8375"
+            },
+            {
+              "name": "Origin",
+              "value": "http://localhost:5173"
+            },
+            {
+              "name": "Referer",
+              "value": "http://localhost:5173/"
+            },
+            {
+              "name": "Sec-Fetch-Dest",
+              "value": "empty"
+            },
+            {
+              "name": "Sec-Fetch-Mode",
+              "value": "cors"
+            },
+            {
+              "name": "Sec-Fetch-Site",
+              "value": "same-site"
+            },
+            {
+              "name": "Sec-GPC",
+              "value": "1"
+            },
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "sec-ch-ua",
+              "value": "\"Not:A-Brand\";v=\"99\", \"Brave\";v=\"145\", \"Chromium\";v=\"145\""
+            },
+            {
+              "name": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "name": "sec-ch-ua-platform",
+              "value": "\"Linux\""
+            }
+          ],
+          "headersSize": 1015,
+          "httpVersion": "HTTP/1.1",
+          "method": "POST",
+          "queryString": [],
+          "url": "http://localhost:8375/api/ws/ticket"
+        },
+        "response": {
+          "_error": null,
+          "_fetchedViaServiceWorker": false,
+          "_transferSize": 801,
+          "bodySize": 93,
+          "content": {
+            "compression": 0,
+            "mimeType": "application/json",
+            "size": 93,
+            "text": "{\"expires_in\":60,\"ticket\":\"51046d338f54eb297d482f8b21d257f01244b2225fde81b3c0934198f1fbc1e9\"}"
+          },
+          "cookies": [],
+          "headers": [
+            {
+              "name": "Access-Control-Allow-Credentials",
+              "value": "true"
+            },
+            {
+              "name": "Access-Control-Allow-Origin",
+              "value": "http://localhost:5173"
+            },
+            {
+              "name": "Access-Control-Max-Age",
+              "value": "86400"
+            },
+            {
+              "name": "Content-Length",
+              "value": "93"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Cross-Origin-Embedder-Policy",
+              "value": "require-corp"
+            },
+            {
+              "name": "Cross-Origin-Opener-Policy",
+              "value": "same-origin"
+            },
+            {
+              "name": "Cross-Origin-Resource-Policy",
+              "value": "same-origin"
+            },
+            {
+              "name": "Date",
+              "value": "Sun, 15 Feb 2026 15:49:08 GMT"
+            },
+            {
+              "name": "Origin-Agent-Cluster",
+              "value": "?1"
+            },
+            {
+              "name": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "name": "Vary",
+              "value": "Origin"
+            },
+            {
+              "name": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "name": "X-Dns-Prefetch-Control",
+              "value": "off"
+            },
+            {
+              "name": "X-Download-Options",
+              "value": "noopen"
+            },
+            {
+              "name": "X-Frame-Options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "name": "X-Permitted-Cross-Domain-Policies",
+              "value": "none"
+            },
+            {
+              "name": "X-Request-Id",
+              "value": "f5f2457c-8cba-4bfb-bf1e-19740ab2088e"
+            },
+            {
+              "name": "X-Trace-Id",
+              "value": "00000000000000000000000000000000"
+            },
+            {
+              "name": "X-Xss-Protection",
+              "value": "0"
+            }
+          ],
+          "headersSize": 708,
+          "httpVersion": "HTTP/1.1",
+          "redirectURL": "",
+          "status": 200,
+          "statusText": "OK"
+        },
+        "serverIPAddress": "[::1]",
+        "startedDateTime": "2026-02-15T15:49:08.798Z",
+        "time": 3.6540000000968575,
+        "timings": {
+          "_blocked_queueing": 1.077999999779422,
+          "_workerFetchStart": -1,
+          "_workerReady": -1,
+          "_workerRespondWithSettled": -1,
+          "_workerStart": -1,
+          "blocked": 1.3009999997794222,
+          "connect": -1,
+          "dns": -1,
+          "receive": 1.4960000003156892,
+          "send": 0.05000000000000002,
+          "ssl": -1,
+          "wait": 0.8070000000017462
+        }
+      },
+      {
+        "_connectionId": "23809",
+        "_initiator": {
+          "stack": {
+            "callFrames": [
+              {
+                "columnNumber": 29,
+                "functionName": "request",
+                "lineNumber": 44,
+                "scriptId": "593",
+                "url": "http://localhost:5173/src/api/client.ts"
+              },
+              {
+                "columnNumber": 16,
+                "functionName": "issueWSTicket",
+                "lineNumber": 592,
+                "scriptId": "593",
+                "url": "http://localhost:5173/src/api/client.ts"
+              },
+              {
+                "columnNumber": 33,
+                "functionName": "createTicketedWS",
+                "lineNumber": 6,
+                "scriptId": "658",
+                "url": "http://localhost:5173/src/lib/ws-utils.ts"
+              },
+              {
+                "columnNumber": 13,
+                "functionName": "createSocket",
+                "lineNumber": 513,
+                "scriptId": "619",
+                "url": "http://localhost:5173/src/providers/ChatProvider.tsx"
+              }
+            ],
+            "parent": {
+              "callFrames": [
+                {
+                  "columnNumber": 35,
+                  "functionName": "",
+                  "lineNumber": 138,
+                  "scriptId": "652",
+                  "url": "http://localhost:5173/src/hooks/useManagedWebSocket.ts"
+                },
+                {
+                  "columnNumber": 6,
+                  "functionName": "",
+                  "lineNumber": 183,
+                  "scriptId": "652",
+                  "url": "http://localhost:5173/src/hooks/useManagedWebSocket.ts"
+                },
+                {
+                  "columnNumber": 15,
+                  "functionName": "",
+                  "lineNumber": 209,
+                  "scriptId": "652",
+                  "url": "http://localhost:5173/src/hooks/useManagedWebSocket.ts"
+                },
+                {
+                  "columnNumber": 19,
+                  "functionName": "react_stack_bottom_frame",
+                  "lineNumber": 18566,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 71,
+                  "functionName": "runWithFiberInDEV",
+                  "lineNumber": 996,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 162,
+                  "functionName": "commitHookEffectListMount",
+                  "lineNumber": 9410,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 59,
+                  "functionName": "commitHookPassiveMountEffects",
+                  "lineNumber": 9464,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 28,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11039,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11200,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11200,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11032,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11032,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11032,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11200,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11032,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11200,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11032,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11032,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11032,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11054,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11200,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "recursivelyTraversePassiveMountEffects",
+                  "lineNumber": 11009,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "commitPassiveMountOnFiber",
+                  "lineNumber": 11065,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 10,
+                  "functionName": "flushPassiveEffects",
+                  "lineNumber": 13149,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 15,
+                  "functionName": "flushPendingEffects",
+                  "lineNumber": 13087,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 12,
+                  "functionName": "performSyncWorkOnRoot",
+                  "lineNumber": 13513,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 121,
+                  "functionName": "flushSyncWorkAcrossRoots_impl",
+                  "lineNumber": 13413,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 10,
+                  "functionName": "flushSpawnedWork",
+                  "lineNumber": 13066,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 10,
+                  "functionName": "commitRoot",
+                  "lineNumber": 12803,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 8,
+                  "functionName": "commitRootWhenReady",
+                  "lineNumber": 12015,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 16,
+                  "functionName": "performWorkOnRoot",
+                  "lineNumber": 11949,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 8,
+                  "functionName": "performWorkOnRootViaSchedulerTask",
+                  "lineNumber": 13504,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                },
+                {
+                  "columnNumber": 49,
+                  "functionName": "performWorkUntilDeadline",
+                  "lineNumber": 35,
+                  "scriptId": "580",
+                  "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                }
+              ],
+              "description": "await",
+              "parent": {
+                "callFrames": [
+                  {
+                    "columnNumber": 29,
+                    "functionName": "exports.jsxDEV",
+                    "lineNumber": 246,
+                    "scriptId": "576",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 68,
+                    "functionName": "App",
+                    "lineNumber": 1335,
+                    "scriptId": "591",
+                    "url": "http://localhost:5173/src/App.tsx"
+                  },
+                  {
+                    "columnNumber": 19,
+                    "functionName": "react_stack_bottom_frame",
+                    "lineNumber": 18508,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 21,
+                    "functionName": "renderWithHooksAgain",
+                    "lineNumber": 5728,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 23,
+                    "functionName": "renderWithHooks",
+                    "lineNumber": 5664,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 20,
+                    "functionName": "updateFunctionComponent",
+                    "lineNumber": 7474,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 19,
+                    "functionName": "beginWork",
+                    "lineNumber": 8524,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 71,
+                    "functionName": "runWithFiberInDEV",
+                    "lineNumber": 996,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 97,
+                    "functionName": "performUnitOfWork",
+                    "lineNumber": 12560,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 42,
+                    "functionName": "workLoopSync",
+                    "lineNumber": 12423,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 12,
+                    "functionName": "renderRootSync",
+                    "lineNumber": 12407,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 188,
+                    "functionName": "performWorkOnRoot",
+                    "lineNumber": 11765,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 8,
+                    "functionName": "performWorkOnRootViaSchedulerTask",
+                    "lineNumber": 13504,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  },
+                  {
+                    "columnNumber": 49,
+                    "functionName": "performWorkUntilDeadline",
+                    "lineNumber": 35,
+                    "scriptId": "580",
+                    "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=f2143481"
+                  }
+                ],
+                "description": "<ChatProvider>",
+                "parent": {
+                  "callFrames": [
+                    {
+                      "columnNumber": 29,
+                      "functionName": "exports.jsxDEV",
+                      "lineNumber": 246,
+                      "scriptId": "576",
+                      "url": "http://localhost:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f2143481"
+                    },
+                    {
+                      "columnNumber": 24,
+                      "functionName": "",
+                      "lineNumber": 41,
+                      "scriptId": "575",
+                      "url": "http://localhost:5173/src/main.tsx"
+                    }
+                  ],
+                  "description": "<App>"
+                }
+              }
+            }
+          },
+          "type": "script"
+        },
+        "_priority": "High",
+        "_resourceType": "fetch",
+        "cache": {},
+        "connection": "8375",
+        "pageref": "page_3",
+        "request": {
+          "bodySize": 0,
+          "cookies": [],
+          "headers": [
+            {
+              "name": "Accept",
+              "value": "*/*"
+            },
+            {
+              "name": "Accept-Encoding",
+              "value": "gzip, deflate, br, zstd"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Content-Length",
+              "value": "0"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Host",
+              "value": "localhost:8375"
+            },
+            {
+              "name": "Origin",
+              "value": "http://localhost:5173"
+            },
+            {
+              "name": "Referer",
+              "value": "http://localhost:5173/"
+            },
+            {
+              "name": "Sec-Fetch-Dest",
+              "value": "empty"
+            },
+            {
+              "name": "Sec-Fetch-Mode",
+              "value": "cors"
+            },
+            {
+              "name": "Sec-Fetch-Site",
+              "value": "same-site"
+            },
+            {
+              "name": "Sec-GPC",
+              "value": "1"
+            },
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "sec-ch-ua",
+              "value": "\"Not:A-Brand\";v=\"99\", \"Brave\";v=\"145\", \"Chromium\";v=\"145\""
+            },
+            {
+              "name": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "name": "sec-ch-ua-platform",
+              "value": "\"Linux\""
+            }
+          ],
+          "headersSize": 1015,
+          "httpVersion": "HTTP/1.1",
+          "method": "POST",
+          "queryString": [],
+          "url": "http://localhost:8375/api/ws/ticket"
+        },
+        "response": {
+          "_error": null,
+          "_fetchedViaServiceWorker": false,
+          "_transferSize": 801,
+          "bodySize": 93,
+          "content": {
+            "compression": 0,
+            "mimeType": "application/json",
+            "size": 93,
+            "text": "{\"expires_in\":60,\"ticket\":\"26377f458a6890d601a4de2dde242c3dcec9134bb0e02aa30f30bca941ee61ca\"}"
+          },
+          "cookies": [],
+          "headers": [
+            {
+              "name": "Access-Control-Allow-Credentials",
+              "value": "true"
+            },
+            {
+              "name": "Access-Control-Allow-Origin",
+              "value": "http://localhost:5173"
+            },
+            {
+              "name": "Access-Control-Max-Age",
+              "value": "86400"
+            },
+            {
+              "name": "Content-Length",
+              "value": "93"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Cross-Origin-Embedder-Policy",
+              "value": "require-corp"
+            },
+            {
+              "name": "Cross-Origin-Opener-Policy",
+              "value": "same-origin"
+            },
+            {
+              "name": "Cross-Origin-Resource-Policy",
+              "value": "same-origin"
+            },
+            {
+              "name": "Date",
+              "value": "Sun, 15 Feb 2026 15:49:08 GMT"
+            },
+            {
+              "name": "Origin-Agent-Cluster",
+              "value": "?1"
+            },
+            {
+              "name": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "name": "Vary",
+              "value": "Origin"
+            },
+            {
+              "name": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "name": "X-Dns-Prefetch-Control",
+              "value": "off"
+            },
+            {
+              "name": "X-Download-Options",
+              "value": "noopen"
+            },
+            {
+              "name": "X-Frame-Options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "name": "X-Permitted-Cross-Domain-Policies",
+              "value": "none"
+            },
+            {
+              "name": "X-Request-Id",
+              "value": "f9f2457c-8cba-4bfb-bf1e-19740ab2088e"
+            },
+            {
+              "name": "X-Trace-Id",
+              "value": "00000000000000000000000000000000"
+            },
+            {
+              "name": "X-Xss-Protection",
+              "value": "0"
+            }
+          ],
+          "headersSize": 708,
+          "httpVersion": "HTTP/1.1",
+          "redirectURL": "",
+          "status": 200,
+          "statusText": "OK"
+        },
+        "serverIPAddress": "[::1]",
+        "startedDateTime": "2026-02-15T15:49:08.897Z",
+        "time": 2.595000000383152,
+        "timings": {
+          "_blocked_queueing": 0.5220000002736924,
+          "_workerFetchStart": -1,
+          "_workerReady": -1,
+          "_workerRespondWithSettled": -1,
+          "_workerStart": -1,
+          "blocked": 0.6920000002736925,
+          "connect": -1,
+          "dns": -1,
+          "receive": 0.8700000003045716,
+          "send": 0.056999999999999995,
+          "ssl": -1,
+          "wait": 0.9759999998048879
+        }
+      }
+    ],
+    "pages": [
+      {
+        "id": "page_3",
+        "pageTimings": {
+          "onContentLoad": 174.05399999961446,
+          "onLoad": 294.88199999968856
+        },
+        "startedDateTime": "1970-01-01T00:50:38.466Z",
+        "title": "http://localhost:5173/chat/23"
+      }
+    ],
+    "version": "1.2"
+  }
+}

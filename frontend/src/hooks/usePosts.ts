@@ -154,18 +154,17 @@ function updatePostInCache(
 
   // Update each infinite query cache
   for (const query of infiniteQueries) {
-    queryClient.setQueryData<{ pages: Post[][] } | undefined>(
-      query.queryKey,
-      oldData => {
-        if (!oldData) return oldData
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page: Post[]) =>
-            page.map(post => (post.id === postId ? updateFn(post) : post))
-          ),
-        }
+    queryClient.setQueryData<
+      { pages: Post[][]; pageParams: unknown[] } | undefined
+    >(query.queryKey, oldData => {
+      if (!oldData) return oldData
+      return {
+        ...oldData,
+        pages: oldData.pages.map((page: Post[]) =>
+          page.map(post => (post.id === postId ? updateFn(post) : post))
+        ),
       }
-    )
+    })
   }
 
   // Also update the detail cache
@@ -181,15 +180,14 @@ export function useLikePost() {
   return useMutation({
     mutationFn: (postId: number) => apiClient.likePost(postId),
     onSuccess: updatedPost => {
-      // Update cache with server response, merging with existing data
-      updatePostInCache(queryClient, updatedPost.id, oldPost => {
-        return {
-          ...oldPost,
-          ...updatedPost,
-        }
-      })
-      // Force refetch to ensure UI is in sync
-      queryClient.invalidateQueries({ queryKey: ['posts', 'infinite'] })
+      // Update cache with server response
+      updatePostInCache(queryClient, updatedPost.id, () => updatedPost)
+
+      // Also update the detail cache if it exists
+      queryClient.setQueryData<Post>(
+        postKeys.detail(updatedPost.id),
+        () => updatedPost
+      )
     },
     onError: error => {
       handleAuthOrFKError(error)

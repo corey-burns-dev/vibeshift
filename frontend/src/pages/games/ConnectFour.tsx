@@ -525,7 +525,7 @@ export default function ConnectFour() {
         </div>
       )}
 
-      <div className='mx-auto grid h-full w-full max-w-[1200px] gap-3 px-3 py-2 lg:grid-cols-12 lg:gap-4'>
+      <div className='mx-auto grid h-full w-full max-w-300 gap-3 px-3 py-2 lg:grid-cols-12 lg:gap-4'>
         {/* Game Area */}
         <div className='min-h-0 overflow-hidden lg:col-span-9'>
           <Card className='flex h-full flex-col border-2 border-blue-500/20 bg-blue-900/10 shadow-xl'>
@@ -598,7 +598,7 @@ export default function ConnectFour() {
             <CardContent className='flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden px-3 py-2'>
               {gameState.status === 'active' && (
                 <div
-                  className={`mb-2 flex w-full max-w-[600px] items-center justify-center rounded-xl border px-3 py-2 text-center text-xl font-black uppercase tracking-wide ${
+                  className={`mb-2 flex w-full max-w-150 items-center justify-center rounded-xl border px-3 py-2 text-center text-xl font-black uppercase tracking-wide ${
                     isMyTurn
                       ? 'border-emerald-300/60 bg-emerald-500/20 text-emerald-100 shadow-[0_0_24px_rgba(16,185,129,0.35)]'
                       : 'border-amber-300/60 bg-amber-500/20 text-amber-100 shadow-[0_0_24px_rgba(245,158,11,0.35)]'
@@ -611,7 +611,7 @@ export default function ConnectFour() {
               )}
 
               {/* Column Selection indicators */}
-              <div className='mb-2 grid w-full max-w-[600px] grid-cols-7 gap-2 px-2'>
+              <div className='mb-2 grid w-full max-w-150 grid-cols-7 gap-2 px-2'>
                 {[...Array(7)].map((_, i) => {
                   const colId = `indicator-${i}`
                   return (

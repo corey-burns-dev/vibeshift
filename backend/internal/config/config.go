@@ -60,6 +60,15 @@ func LoadConfig() (*Config, error) {
 	viper.SetConfigType("yml")
 	viper.AutomaticEnv()
 
+	// Bind env vars so they override config file (required for Docker/deployment).
+	// Without this, config file values can take precedence over REDIS_URL etc.
+	_ = viper.BindEnv("REDIS_URL", "REDIS_URL")
+	_ = viper.BindEnv("DB_HOST", "DB_HOST")
+	_ = viper.BindEnv("DB_PORT", "DB_PORT")
+	_ = viper.BindEnv("DB_USER", "DB_USER")
+	_ = viper.BindEnv("DB_PASSWORD", "DB_PASSWORD")
+	_ = viper.BindEnv("DB_NAME", "DB_NAME")
+
 	// Initial read to get APP_ENV if set in base config
 	// We intentionally ignore this error as the config file may not exist yet
 	_ = viper.ReadInConfig()

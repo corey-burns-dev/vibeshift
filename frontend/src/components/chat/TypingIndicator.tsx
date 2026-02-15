@@ -35,21 +35,21 @@ export function TypingIndicator({
   return (
     <div
       className={cn(
-        'flex items-center gap-1 text-[11px] text-muted-foreground animate-in fade-in slide-in-from-bottom-1 duration-200',
+        'flex items-center gap-2 text-xs text-primary/90 font-medium animate-in fade-in slide-in-from-bottom-1 duration-200 bg-primary/5 rounded-md px-2.5 py-1.5 border border-primary/10',
         className
       )}
     >
       <div className='flex gap-0.5'>
         <span
-          className='h-1 w-1 rounded-full bg-muted-foreground/40 animate-bounce'
+          className='h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce'
           style={{ animationDelay: '0ms' }}
         />
         <span
-          className='h-1 w-1 rounded-full bg-muted-foreground/40 animate-bounce'
+          className='h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce'
           style={{ animationDelay: '150ms' }}
         />
         <span
-          className='h-1 w-1 rounded-full bg-muted-foreground/40 animate-bounce'
+          className='h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce'
           style={{ animationDelay: '300ms' }}
         />
       </div>

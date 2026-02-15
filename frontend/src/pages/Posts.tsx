@@ -251,15 +251,30 @@ export default function Posts() {
   }
 
   const handleLikeToggle = (post: Post) => {
-    if (likingPostId === post.id) return // Prevent double-clicks
+    console.log(
+      'handleLikeToggle called for post:',
+      post.id,
+      'isAuthenticated:',
+      isAuthenticated,
+      'likingPostId:',
+      likingPostId
+    )
+
+    if (likingPostId === post.id) {
+      console.log('Already liking this post, returning')
+      return // Prevent double-clicks
+    }
 
     setLikingPostId(post.id)
+    console.log('Calling likePostMutation.mutate for post:', post.id)
     // Backend now handles toggle logic automatically
     likePostMutation.mutate(post.id, {
-      onSuccess: () => {
+      onSuccess: data => {
+        console.log('Like toggle success:', data)
         setLikingPostId(null)
       },
       onError: error => {
+        console.error('Like toggle error:', error)
         setLikingPostId(null)
         logger.error('Failed to toggle like:', error)
       },

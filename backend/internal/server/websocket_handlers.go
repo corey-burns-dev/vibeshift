@@ -203,15 +203,9 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 							}
 						}
 
-						if s.chatHub != nil && s.isGroupConversation(ctx, convID) {
-							s.chatHub.BroadcastToConversation(convID, notifications.ChatMessage{
-								Type:           "room_message",
-								ConversationID: convID,
-								UserID:         userID,
-								Username:       username,
-								Payload:        message,
-							})
-						}
+						// NOTE: Direct BroadcastToConversation is intentionally NOT called here.
+						// The Redis pub/sub path (PublishChatMessage above) already delivers
+						// the message to conversation viewers via ChatHub.StartWiring.
 
 						if !conv.IsGroup {
 							for _, participant := range conv.Participants {

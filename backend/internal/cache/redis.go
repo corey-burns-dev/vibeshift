@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"strings"
 	"time"
 
 	"sanctum/internal/middleware"
@@ -42,9 +43,20 @@ func (h metricsHook) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.P
 
 // InitRedis initializes the Redis client with the given address.
 func InitRedis(addr string) {
-	client = redis.NewClient(&redis.Options{
-		Addr: addr,
-	})
+	var opts *redis.Options
+	if strings.Contains(addr, "://") {
+		parsed, err := redis.ParseURL(addr)
+		if err != nil {
+			log.Printf("Redis connection warning: invalid REDIS_URL %q: %v (continuing without cache)", addr, err)
+			client = nil
+			return
+		}
+		opts = parsed
+	} else {
+		opts = &redis.Options{Addr: addr}
+	}
+
+	client = redis.NewClient(opts)
 	client.AddHook(metricsHook{})
 
 	// Test connection

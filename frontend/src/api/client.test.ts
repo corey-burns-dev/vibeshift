@@ -75,4 +75,30 @@ describe('apiClient uploadImage', () => {
     const headers = new Headers(init?.headers as HeadersInit)
     expect(headers.get('Content-Type')).toBe('application/json')
   })
+
+  it('logout sends empty JSON body and Content-Type header', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(okJson({ message: 'Logged out successfully' }))
+
+    await apiClient.logout()
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    const [, init] = fetchSpy.mock.calls[0]
+    expect(init?.method).toBe('POST')
+    expect(init?.credentials).toBe('include')
+    const headers = new Headers(init?.headers as HeadersInit)
+    expect(headers.get('Content-Type')).toBe('application/json')
+    // Body should be explicit empty JSON object
+    const bodyText = init?.body
+    // In fetch init, body may be a string; convert if necessary
+    if (typeof bodyText === 'string') {
+      expect(bodyText).toBe(JSON.stringify({}))
+    } else if (bodyText instanceof ArrayBuffer) {
+      const text = new TextDecoder().decode(new Uint8Array(bodyText))
+      expect(text).toBe(JSON.stringify({}))
+    } else {
+      expect(bodyText).not.toBeUndefined()
+    }
+  })
 })

@@ -44,10 +44,10 @@ test.describe('Sanctum request user flow', () => {
 
     // Assertion: Verify request exists in API
     await expect
-      .poll(
-        () => hasMySanctumRequestBySlug(request, userToken, slug),
-        { timeout: TEST_TIMEOUTS.POLL, intervals: [TEST_TIMEOUTS.POLL_INTERVAL] }
-      )
+      .poll(() => hasMySanctumRequestBySlug(request, userToken, slug), {
+        timeout: TEST_TIMEOUTS.POLL,
+        intervals: [TEST_TIMEOUTS.POLL_INTERVAL],
+      })
       .toBe(true)
 
     // Assertion: Verify request has "pending" status
@@ -69,7 +69,9 @@ test.describe('Sanctum request user flow', () => {
       timeout: TEST_TIMEOUTS.POLL,
     })
     // Fail fast with a clear message if the list failed to load
-    await expect(page.getByText('Failed to load your requests.')).not.toBeVisible()
+    await expect(
+      page.getByText('Failed to load your requests.')
+    ).not.toBeVisible()
 
     // Assertion: Wait for list to show our request (slug shown as /slug in UI)
     await expect(

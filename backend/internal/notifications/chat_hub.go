@@ -56,12 +56,32 @@ func NewChatHub(redisClients ...*redis.Client) *ChatHub {
 		presence:        NewConnectionManager(redisClient, ConnectionManagerConfig{}),
 	}
 	if h.presence != nil {
-		h.presence.SetCallbacks(
+		// Register internal handlers as listeners to the manager so multiple
+		// hubs can share the same ConnectionManager without clobbering callbacks.
+		h.presence.AddListener(
 			func(userID uint) { h.handleUserOnline(userID) },
 			func(userID uint) { h.handleUserOffline(userID) },
 		)
 	}
 	return h
+}
+
+// SetPresenceManager replaces the chat hub's ConnectionManager and registers
+// the hub's internal handlers with it. If a previous manager existed it will
+// be stopped.
+func (h *ChatHub) SetPresenceManager(m *ConnectionManager) {
+	if m == nil {
+		return
+	}
+	h.mu.Lock()
+	old := h.presence
+	h.presence = m
+	h.mu.Unlock()
+	if old != nil && old != m {
+		old.Stop()
+	}
+	// Register the hub's own handlers as listeners on the shared manager.
+	m.AddListener(func(userID uint) { h.handleUserOnline(userID) }, func(userID uint) { h.handleUserOffline(userID) })
 }
 
 // Register registers a user's websocket connection. Returns Client or error if limits exceeded.
@@ -278,7 +298,8 @@ func (h *ChatHub) BroadcastToConversation(conversationID uint, message ChatMessa
 
 	users, ok := h.conversations[conversationID]
 	if !ok {
-		log.Printf("ChatHub: No active users in conversation %d", conversationID)
+		// Expected when no users are actively viewing this conversation.
+		// Messages for DMs are still delivered via the notification hub.
 		return
 	}
 

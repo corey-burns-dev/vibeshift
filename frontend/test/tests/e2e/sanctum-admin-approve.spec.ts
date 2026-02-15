@@ -75,7 +75,10 @@ test.describe('Sanctum admin approve flow', () => {
           const req = await getMySanctumRequestBySlug(request, userToken, slug)
           return req?.status
         },
-        { timeout: TEST_TIMEOUTS.POLL, intervals: [TEST_TIMEOUTS.POLL_INTERVAL] }
+        {
+          timeout: TEST_TIMEOUTS.POLL,
+          intervals: [TEST_TIMEOUTS.POLL_INTERVAL],
+        }
       )
       .toBe('pending')
 
@@ -108,10 +111,18 @@ test.describe('Sanctum admin approve flow', () => {
     await expect
       .poll(
         async () => {
-          const req = await getAdminRequestBySlug(request, adminToken, slug, 'approved')
+          const req = await getAdminRequestBySlug(
+            request,
+            adminToken,
+            slug,
+            'approved'
+          )
           return req?.status
         },
-        { timeout: TEST_TIMEOUTS.POLL, intervals: [TEST_TIMEOUTS.POLL_INTERVAL] }
+        {
+          timeout: TEST_TIMEOUTS.POLL,
+          intervals: [TEST_TIMEOUTS.POLL_INTERVAL],
+        }
       )
       .toBe('approved')
 

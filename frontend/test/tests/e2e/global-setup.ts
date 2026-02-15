@@ -46,7 +46,7 @@ async function signup(
 
   // Retry signup a few times in case the API is still starting up or transient
   const maxAttempts = 8
-  const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
+  const delay = (ms: number) => new Promise(r => setTimeout(r, ms))
 
   let lastError: unknown = null
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -68,9 +68,16 @@ async function signup(
       lastError = err
       if (attempt < maxAttempts) {
         // exponential backoff with jitter
-        const wait = Math.min(TEST_TIMEOUTS.RETRY_BASE * attempt, TEST_TIMEOUTS.RETRY_MAX) + Math.floor(Math.random() * 200)
+        const wait =
+          Math.min(
+            TEST_TIMEOUTS.RETRY_BASE * attempt,
+            TEST_TIMEOUTS.RETRY_MAX
+          ) + Math.floor(Math.random() * 200)
         // eslint-disable-next-line no-console
-        console.warn(`signup attempt ${attempt} failed, retrying in ${wait}ms:`, String(err))
+        console.warn(
+          `signup attempt ${attempt} failed, retrying in ${wait}ms:`,
+          String(err)
+        )
         // small delay before retrying
         // eslint-disable-next-line no-await-in-loop
         await delay(wait)
@@ -81,7 +88,9 @@ async function signup(
   }
 
   const hint = `Ensure the API server at ${API_BASE} is running and reachable. Try starting the backend (e.g. run \`make dev\` from repo root or bring up the compose stack) and re-run tests.`
-  throw new Error(`signup failed after ${maxAttempts} attempts: ${String(lastError)}\n${hint}`)
+  throw new Error(
+    `signup failed after ${maxAttempts} attempts: ${String(lastError)}\n${hint}`
+  )
 }
 
 async function promoteAdmin(userID: number) {
@@ -122,11 +131,15 @@ async function promoteAdmin(userID: number) {
       )
       if ((result.rowCount ?? 0) > 0) {
         // Warn if we're using a fallback database instead of configured one
-        if (!warnedAboutFallback && database !== configuredDatabase && configuredDatabase) {
+        if (
+          !warnedAboutFallback &&
+          database !== configuredDatabase &&
+          configuredDatabase
+        ) {
           // eslint-disable-next-line no-console
           console.warn(
             `⚠️  Using fallback database '${database}' instead of configured '${configuredDatabase}'. ` +
-            `Consider setting PGDATABASE=${database} to avoid this warning.`
+              `Consider setting PGDATABASE=${database} to avoid this warning.`
           )
         }
         await client.end()
@@ -141,10 +154,10 @@ async function promoteAdmin(userID: number) {
 
   throw new Error(
     `Failed to promote e2e admin user ${userID}. ` +
-    `Tried connecting to databases: ${candidates.join(', ')} ` +
-    `at ${host}:${port} with user=${user}.\n` +
-    `Errors:\n${attemptErrors.map(e => `  - ${e}`).join('\n')}\n\n` +
-    `Hint: Ensure PostgreSQL is running and PGDATABASE environment variable is set correctly.`
+      `Tried connecting to databases: ${candidates.join(', ')} ` +
+      `at ${host}:${port} with user=${user}.\n` +
+      `Errors:\n${attemptErrors.map(e => `  - ${e}`).join('\n')}\n\n` +
+      `Hint: Ensure PostgreSQL is running and PGDATABASE environment variable is set correctly.`
   )
 }
 

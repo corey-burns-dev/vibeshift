@@ -696,9 +696,6 @@ export default function Chat() {
       if (!roomAlertedRef.current.has(conversationId)) {
         roomAlertedRef.current.add(conversationId)
         playRoomAlertSound()
-        const roomName =
-          activeRooms.find(r => r.id === conversationId)?.name || 'a room'
-        toast.info(`New message in ${roomName}`)
       }
 
       setUnreadByRoom(prev => ({
@@ -867,8 +864,6 @@ export default function Chat() {
             ) {
               playNewMessageSound()
             }
-
-            toast.info(`New message from ${message.sender?.username ?? 'User'}`)
           }
         }
 

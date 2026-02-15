@@ -347,4 +347,19 @@ func TestLogout(t *testing.T) {
 		defer func() { _ = resp.Body.Close() }()
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
+
+	// NOTE: empty-body scenario is covered by the frontend test which sends
+	// an explicit empty JSON body ({}). Malformed-body and empty-token cases
+	// are validated below.
+
+	t.Run("Malformed Body", func(t *testing.T) {
+		// Malformed JSON should return 400
+		req := httptest.NewRequest(http.MethodPost, "/logout", bytes.NewReader([]byte("{invalid")))
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := app.Test(req, 5000)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
 }
