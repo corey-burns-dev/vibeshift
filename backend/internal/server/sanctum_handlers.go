@@ -666,3 +666,104 @@ func (s *Server) RejectSanctumRequest(c *fiber.Ctx) error {
 
 	return c.JSON(request)
 }
+
+// DeleteSanctumRequest handles DELETE /api/sanctums/requests/:id
+// @Summary Delete sanctum request
+// @Description Delete a sanctum request (requester or admin only).
+// @Tags sanctums
+// @Param id path int true "Request ID"
+// @Success 204 "No Content"
+// @Failure 403 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Security BearerAuth
+// @Router /sanctums/requests/{id} [delete]
+func (s *Server) DeleteSanctumRequest(c *fiber.Ctx) error {
+	ctx := c.Context()
+	userID := c.Locals("userID").(uint)
+	requestID, err := s.parseID(c, "id")
+	if err != nil {
+		return nil
+	}
+
+	var request models.SanctumRequest
+	if err := s.db.WithContext(ctx).First(&request, requestID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.RespondWithError(c, fiber.StatusNotFound,
+				models.NewNotFoundError("Sanctum request", requestID))
+		}
+		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	}
+
+	isAdmin, err := s.isAdmin(c, userID)
+	if err != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	}
+
+	if request.RequestedByUserID != userID && !isAdmin {
+		return models.RespondWithError(c, fiber.StatusForbidden,
+			models.NewUnauthorizedError("Not authorized to delete this request"))
+	}
+
+	if err := s.db.WithContext(ctx).Delete(&request).Error; err != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// DeleteSanctum handles DELETE /api/admin/sanctums/:slug
+// @Summary Delete sanctum (admin only)
+// @Description Delete a sanctum and its related data (memberships, chat room).
+// @Tags sanctums-admin
+// @Param slug path string true "Sanctum slug"
+// @Success 204 "No Content"
+// @Failure 404 {object} models.ErrorResponse
+// @Security BearerAuth
+// @Router /admin/sanctums/{slug} [delete]
+func (s *Server) DeleteSanctum(c *fiber.Ctx) error {
+	ctx := c.Context()
+	slug := strings.TrimSpace(c.Params("slug"))
+	if slug == "" {
+		return models.RespondWithError(c, fiber.StatusBadRequest,
+			models.NewValidationError("slug is required"))
+	}
+
+	var sanctum models.Sanctum
+	if err := s.db.WithContext(ctx).Where("slug = ?", slug).First(&sanctum).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.RespondWithError(c, fiber.StatusNotFound,
+				models.NewNotFoundError("Sanctum", slug))
+		}
+		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	}
+
+	// Delete related data in a transaction
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Delete memberships
+		if err := tx.Where("sanctum_id = ?", sanctum.ID).Delete(&models.SanctumMembership{}).Error; err != nil {
+			return err
+		}
+
+		// Delete related conversations (chat rooms)
+		if err := tx.Where("sanctum_id = ?", sanctum.ID).Delete(&models.Conversation{}).Error; err != nil {
+			return err
+		}
+
+		// Nullify SanctumID in posts instead of deleting posts
+		if err := tx.Model(&models.Post{}).Where("sanctum_id = ?", sanctum.ID).Update("sanctum_id", nil).Error; err != nil {
+			return err
+		}
+
+		// Finally delete the sanctum
+		if err := tx.Delete(&sanctum).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}

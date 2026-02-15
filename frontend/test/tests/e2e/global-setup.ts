@@ -26,7 +26,11 @@ const AUTH_SESSION_STORAGE_KEY = 'auth-session-storage'
 
 function buildStorageState(token: string, user: SignupResponse['user']) {
   const authSessionStorageValue = JSON.stringify({
-    state: { accessToken: token },
+    state: {
+      accessToken: token,
+      _hasHydrated: true,
+    },
+    version: 0,
   })
   return {
     cookies: [],

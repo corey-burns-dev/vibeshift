@@ -12,6 +12,14 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
+  webServer: {
+    command: 'bun run dev',
+    url: 'http://localhost:5173',
+    reuseExistingServer: !process.env.CI,
+    stdout: 'pipe',
+    stderr: 'pipe',
+    timeout: 120_000,
+  },
   reporter: [
     ['list'],
     ['html', { open: 'never', outputFolder: 'reports/playwright-report' }],

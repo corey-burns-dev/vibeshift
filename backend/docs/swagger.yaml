@@ -664,6 +664,27 @@ paths:
       summary: Reject sanctum request
       tags:
       - sanctums-admin
+  /admin/sanctums/{slug}:
+    delete:
+      description: Delete a sanctum and its related data (memberships, chat room).
+      parameters:
+      - description: Sanctum slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete sanctum (admin only)
+      tags:
+      - sanctums-admin
   /admin/users:
     get:
       description: List users with search and pagination.
@@ -1203,6 +1224,31 @@ paths:
       security:
       - BearerAuth: []
       summary: Create sanctum request
+      tags:
+      - sanctums
+  /sanctums/requests/{id}:
+    delete:
+      description: Delete a sanctum request (requester or admin only).
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete sanctum request
       tags:
       - sanctums
   /sanctums/requests/me:

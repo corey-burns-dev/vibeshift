@@ -37,6 +37,8 @@ PGDATABASE=${PGDATABASE:-sanctum_test}
 # export DB vars for Playwright/global-setup to consume
 export PGHOST PGPORT PGUSER PGPASSWORD PGDATABASE
 export DB_HOST="$PGHOST" DB_PORT="$PGPORT" DB_USER="$PGUSER" DB_PASSWORD="$PGPASSWORD" DB_NAME="$PGDATABASE"
+# Ensure frontend dev server uses the correct API URL on the host
+export VITE_API_URL="http://localhost:8375/api"
 
 if command -v psql >/dev/null 2>&1; then
   if ! PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -c '\q' >/dev/null 2>&1; then

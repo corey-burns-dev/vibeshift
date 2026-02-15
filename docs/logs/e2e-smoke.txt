@@ -1,36 +1,28 @@
- ✘  4 [chromium] › test/tests/e2e/sanctum-admin-approve.spec.ts:53:7 › Sanctum admin approve flow › admin approves request and sanctum appears in list/detail @smoke (6.4s)
-  ✘  2 [chromium] › test/tests/e2e/friends-workflow.spec.ts:8:7 › Friends workflow › friends page loads and shows find people or list @smoke (17.1s)
-  ✘  5 [chromium] › test/tests/e2e/sanctum-admin-approve.spec.ts:53:7 › Sanctum admin approve flow › admin approves request and sanctum appears in list/detail @smoke (retry #1) (6.5s)
-  ✘  6 [chromium] › test/tests/e2e/friends-workflow.spec.ts:8:7 › Friends workflow › friends page loads and shows find people or list @smoke (retry #1) (16.8s)
-  ✘  7 [chromium] › test/tests/e2e/sanctum-open-chat.spec.ts:7:7 › Sanctum open chat › open chat uses default_chat_room_id navigation @smoke (48.0s)
-  ✘  8 [chromium] › test/tests/e2e/sanctum-user-request.spec.ts:24:7 › Sanctum request user flow › auth user submits request and sees it in My requests @smoke (47.7s)
-  ✘  9 [chromium] › test/tests/e2e/sanctum-open-chat.spec.ts:7:7 › Sanctum open chat › open chat uses default_chat_room_id navigation @smoke (retry #1) (48.0s)
-  ✘  11 [chromium] › test/tests/e2e/stress-journeys.spec.ts:19:7 › Stress Journeys › User can create a post from feed @smoke (6.3s)
-  ✘  12 [chromium] › test/tests/e2e/stress-journeys.spec.ts:19:7 › Stress Journeys › User can create a post from feed @smoke (retry #1) (6.5s)
-  ✘  10 [chromium] › test/tests/e2e/sanctum-user-request.spec.ts:24:7 › Sanctum request user flow › auth user submits request and sees it in My requests @smoke (retry #1) (47.9s)
-
+playwright test --grep @smoke
+Running 7 tests using 2 workers
+  ✓  2 [chromium] › test/tests/e2e/auth-flows.spec.ts:4:7 › Auth flows › signup redirects to onboarding @smoke (2.2s)
+  ✓  3 [chromium] › test/tests/e2e/navigation.spec.ts:8:7 › Navigation › navigates to sanctums and back @smoke (1.9s)
+  ✘  4 [chromium] › test/tests/e2e/sanctum-admin-approve.spec.ts:53:7 › Sanctum admin approve flow › admin approves request and sanctum appears in list/detail @smoke (6.8s)
+  ✘  1 [chromium] › test/tests/e2e/friends-workflow.spec.ts:8:7 › Friends workflow › friends page loads and shows find people or list @smoke (16.7s)
+  ✘  5 [chromium] › test/tests/e2e/sanctum-admin-approve.spec.ts:53:7 › Sanctum admin approve flow › admin approves request and sanctum appears in list/detail @smoke (retry #1) (6.7s)
+  ✓  7 [chromium] › test/tests/e2e/sanctum-open-chat.spec.ts:7:7 › Sanctum open chat › open chat uses default_chat_room_id navigation @smoke (1.9s)
+  ✘  6 [chromium] › test/tests/e2e/friends-workflow.spec.ts:8:7 › Friends workflow › friends page loads and shows find people or list @smoke (retry #1) (16.6s)
+🧹 Cleaned up 1 post(s)
+  ✓  9 [chromium] › test/tests/e2e/stress-journeys.spec.ts:19:7 › Stress Journeys › User can create a post from feed @smoke (2.3s)
+  ✘  8 [chromium] › test/tests/e2e/sanctum-user-request.spec.ts:24:7 › Sanctum request user flow › auth user submits request and sees it in My requests @smoke (45.8s)
+  ✘  10 [chromium] › test/tests/e2e/sanctum-user-request.spec.ts:24:7 › Sanctum request user flow › auth user submits request and sees it in My requests @smoke (retry #1) (45.9s)
 🧹 Global teardown starting...
 💡 Tip: Set E2E_CLEANUP_USERS=true or E2E_CLEANUP_AUTH=true to clean up test data
 🧹 Global teardown complete
-
-
-
   1) [chromium] › test/tests/e2e/friends-workflow.spec.ts:8:7 › Friends workflow › friends page loads and shows find people or list @smoke 
-
     Error: expect(locator).toBeVisible() failed
-
     Locator: getByRole('heading', { name: 'Friends', level: 1 })
     Expected: visible
     Timeout: 15000ms
     Error: element(s) not found
-
     Call log:
       - Expect "toBeVisible" with timeout 15000ms
       - waiting for getByRole('heading', { name: 'Friends', level: 1 })
-        - waiting for" http://localhost:5173/login" navigation to finish...
-        - navigated to "http://localhost:5173/login"
-
-
       12 |     await expect(
       13 |       page.getByRole('heading', { name: 'Friends', level: 1 })
     > 14 |     ).toBeVisible({ timeout: TEST_TIMEOUTS.POLL })
@@ -39,41 +31,27 @@
       16 | })
       17 |
         at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/friends-workflow.spec.ts:14:7
-
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results/friends-workflow-Friends-w-33136-s-find-people-or-list-smoke-chromium/test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
     attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
     test-results/friends-workflow-Friends-w-33136-s-find-people-or-list-smoke-chromium/video.webm
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
     Error Context: test-results/friends-workflow-Friends-w-33136-s-find-people-or-list-smoke-chromium/error-context.md
-
     attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
     test-results/friends-workflow-Friends-w-33136-s-find-people-or-list-smoke-chromium/trace.zip
     Usage:
-
         npx playwright show-trace test-results/friends-workflow-Friends-w-33136-s-find-people-or-list-smoke-chromium/trace.zip
-
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
     Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
-
     Error: expect(locator).toBeVisible() failed
-
     Locator: getByRole('heading', { name: 'Friends', level: 1 })
     Expected: visible
     Timeout: 15000ms
     Error: element(s) not found
-
     Call log:
       - Expect "toBeVisible" with timeout 15000ms
       - waiting for getByRole('heading', { name: 'Friends', level: 1 })
-        - waiting for" http://localhost:5173/login" navigation to finish...
-        - navigated to "http://localhost:5173/login"
-
-
       12 |     await expect(
       13 |       page.getByRole('heading', { name: 'Friends', level: 1 })
     > 14 |     ).toBeVisible({ timeout: TEST_TIMEOUTS.POLL })
@@ -82,39 +60,27 @@
       16 | })
       17 |
         at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/friends-workflow.spec.ts:14:7
-
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results/friends-workflow-Friends-w-33136-s-find-people-or-list-smoke-chromium-retry1/test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
     attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
     test-results/friends-workflow-Friends-w-33136-s-find-people-or-list-smoke-chromium-retry1/video.webm
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
     Error Context: test-results/friends-workflow-Friends-w-33136-s-find-people-or-list-smoke-chromium-retry1/error-context.md
-
     attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
     test-results/friends-workflow-Friends-w-33136-s-find-people-or-list-smoke-chromium-retry1/trace.zip
     Usage:
-
         npx playwright show-trace test-results/friends-workflow-Friends-w-33136-s-find-people-or-list-smoke-chromium-retry1/trace.zip
-
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
   2) [chromium] › test/tests/e2e/sanctum-admin-approve.spec.ts:53:7 › Sanctum admin approve flow › admin approves request and sanctum appears in list/detail @smoke 
-
     Error: expect(locator).toBeVisible() failed
-
-    Locator: locator('article').filter({ hasText: '/e2e-approve-zq2kpk' }).first()
+    Locator: locator('article').filter({ hasText: '/e2e-approve-lwf9x3' }).first()
     Expected: visible
     Timeout: 5000ms
     Error: element(s) not found
-
     Call log:
       - Expect "toBeVisible" with timeout 5000ms
-      - waiting for locator('article').filter({ hasText: '/e2e-approve-zq2kpk' }).first()
-
-
+      - waiting for locator('article').filter({ hasText: '/e2e-approve-lwf9x3' }).first()
       101 |       .filter({ hasText: `/${slug}` })
       102 |       .first()
     > 103 |     await expect(row).toBeVisible()
@@ -123,39 +89,27 @@
       105 |     // Assertion: Verify "pending" status badge is visible before approval
       106 |     await expect(row.getByText(/pending/i)).toBeVisible()
         at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/sanctum-admin-approve.spec.ts:103:23
-
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results/sanctum-admin-approve-Sanc-14e20-ppears-in-list-detail-smoke-chromium/test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
     attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
     test-results/sanctum-admin-approve-Sanc-14e20-ppears-in-list-detail-smoke-chromium/video.webm
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
     Error Context: test-results/sanctum-admin-approve-Sanc-14e20-ppears-in-list-detail-smoke-chromium/error-context.md
-
     attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
     test-results/sanctum-admin-approve-Sanc-14e20-ppears-in-list-detail-smoke-chromium/trace.zip
     Usage:
-
         npx playwright show-trace test-results/sanctum-admin-approve-Sanc-14e20-ppears-in-list-detail-smoke-chromium/trace.zip
-
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
     Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
-
     Error: expect(locator).toBeVisible() failed
-
-    Locator: locator('article').filter({ hasText: '/e2e-approve-uqmeao' }).first()
+    Locator: locator('article').filter({ hasText: '/e2e-approve-3ga6x9' }).first()
     Expected: visible
     Timeout: 5000ms
     Error: element(s) not found
-
     Call log:
       - Expect "toBeVisible" with timeout 5000ms
-      - waiting for locator('article').filter({ hasText: '/e2e-approve-uqmeao' }).first()
-
-
+      - waiting for locator('article').filter({ hasText: '/e2e-approve-3ga6x9' }).first()
       101 |       .filter({ hasText: `/${slug}` })
       102 |       .first()
     > 103 |     await expect(row).toBeVisible()
@@ -164,106 +118,23 @@
       105 |     // Assertion: Verify "pending" status badge is visible before approval
       106 |     await expect(row.getByText(/pending/i)).toBeVisible()
         at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/sanctum-admin-approve.spec.ts:103:23
-
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results/sanctum-admin-approve-Sanc-14e20-ppears-in-list-detail-smoke-chromium-retry1/test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
     attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
     test-results/sanctum-admin-approve-Sanc-14e20-ppears-in-list-detail-smoke-chromium-retry1/video.webm
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
     Error Context: test-results/sanctum-admin-approve-Sanc-14e20-ppears-in-list-detail-smoke-chromium-retry1/error-context.md
-
     attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
     test-results/sanctum-admin-approve-Sanc-14e20-ppears-in-list-detail-smoke-chromium-retry1/trace.zip
     Usage:
-
         npx playwright show-trace test-results/sanctum-admin-approve-Sanc-14e20-ppears-in-list-detail-smoke-chromium-retry1/trace.zip
-
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
-  3) [chromium] › test/tests/e2e/sanctum-open-chat.spec.ts:7:7 › Sanctum open chat › open chat uses default_chat_room_id navigation @smoke 
-
+  3) [chromium] › test/tests/e2e/sanctum-user-request.spec.ts:24:7 › Sanctum request user flow › auth user submits request and sees it in My requests @smoke 
     Test timeout of 45000ms exceeded.
-
-    Error: locator.click: Test timeout of 45000ms exceeded.
-    Call log:
-      - waiting for getByRole('button', { name: 'Open Chat' })
-
-
-       9 |   }) => {
-      10 |     await page.goto('/s/atrium')
-    > 11 |     await page.getByRole('button', { name: 'Open Chat' }).click()
-         |                                                           ^
-      12 |     await expect(page).toHaveURL(/\/chat\/\d+$/)
-      13 |   })
-      14 | })
-        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/sanctum-open-chat.spec.ts:11:59
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium/error-context.md
-
-    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
-    test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium/trace.zip
-    Usage:
-
-        npx playwright show-trace test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium/trace.zip
-
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
-
-    Test timeout of 45000ms exceeded.
-
-    Error: locator.click: Test timeout of 45000ms exceeded.
-    Call log:
-      - waiting for getByRole('button', { name: 'Open Chat' })
-
-
-       9 |   }) => {
-      10 |     await page.goto('/s/atrium')
-    > 11 |     await page.getByRole('button', { name: 'Open Chat' }).click()
-         |                                                           ^
-      12 |     await expect(page).toHaveURL(/\/chat\/\d+$/)
-      13 |   })
-      14 | })
-        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/sanctum-open-chat.spec.ts:11:59
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium-retry1/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium-retry1/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium-retry1/error-context.md
-
-    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
-    test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium-retry1/trace.zip
-    Usage:
-
-        npx playwright show-trace test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium-retry1/trace.zip
-
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-  4) [chromium] › test/tests/e2e/sanctum-user-request.spec.ts:24:7 › Sanctum request user flow › auth user submits request and sees it in My requests @smoke 
-
-    Test timeout of 45000ms exceeded.
-
     Error: locator.fill: Test timeout of 45000ms exceeded.
     Call log:
       - waiting for getByLabel('Requested Name')
-
-
       33 |     await page.goto('/sanctums/request')
       34 |
     > 35 |     await page.getByLabel('Requested Name').fill(name)
@@ -272,34 +143,23 @@
       37 |     await page.getByLabel('Reason').fill('E2E verification')
       38 |
         at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/sanctum-user-request.spec.ts:35:45
-
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results/sanctum-user-request-Sanct-05034-ees-it-in-My-requests-smoke-chromium/test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
     attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
     test-results/sanctum-user-request-Sanct-05034-ees-it-in-My-requests-smoke-chromium/video.webm
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
     Error Context: test-results/sanctum-user-request-Sanct-05034-ees-it-in-My-requests-smoke-chromium/error-context.md
-
     attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
     test-results/sanctum-user-request-Sanct-05034-ees-it-in-My-requests-smoke-chromium/trace.zip
     Usage:
-
         npx playwright show-trace test-results/sanctum-user-request-Sanct-05034-ees-it-in-My-requests-smoke-chromium/trace.zip
-
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
     Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
-
     Test timeout of 45000ms exceeded.
-
     Error: locator.fill: Test timeout of 45000ms exceeded.
     Call log:
       - waiting for getByLabel('Requested Name')
-
-
       33 |     await page.goto('/sanctums/request')
       34 |
     > 35 |     await page.getByLabel('Requested Name').fill(name)
@@ -308,113 +168,22 @@
       37 |     await page.getByLabel('Reason').fill('E2E verification')
       38 |
         at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/sanctum-user-request.spec.ts:35:45
-
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results/sanctum-user-request-Sanct-05034-ees-it-in-My-requests-smoke-chromium-retry1/test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
     attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
     test-results/sanctum-user-request-Sanct-05034-ees-it-in-My-requests-smoke-chromium-retry1/video.webm
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
     Error Context: test-results/sanctum-user-request-Sanct-05034-ees-it-in-My-requests-smoke-chromium-retry1/error-context.md
-
     attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
     test-results/sanctum-user-request-Sanct-05034-ees-it-in-My-requests-smoke-chromium-retry1/trace.zip
     Usage:
-
         npx playwright show-trace test-results/sanctum-user-request-Sanct-05034-ees-it-in-My-requests-smoke-chromium-retry1/trace.zip
-
     ────────────────────────────────────────────────────────────────────────────────────────────────
-
-  5) [chromium] › test/tests/e2e/stress-journeys.spec.ts:19:7 › Stress Journeys › User can create a post from feed @smoke 
-
-    Error: expect(locator).toBeVisible() failed
-
-    Locator: getByRole('button', { name: /what's on your mind/i }).first()
-    Expected: visible
-    Timeout: 5000ms
-    Error: element(s) not found
-
-    Call log:
-      - Expect "toBeVisible" with timeout 5000ms
-      - waiting for getByRole('button', { name: /what's on your mind/i }).first()
-
-
-      25 |       .getByRole('button', { name: /what's on your mind/i })
-      26 |       .first()
-    > 27 |     await expect(composerToggle).toBeVisible()
-         |                                  ^
-      28 |     await composerToggle.click()
-      29 |     await expect(
-      30 |       page.locator('textarea[placeholder*="Write your post"]')
-        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/stress-journeys.spec.ts:27:34
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium/error-context.md
-
-    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
-    test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium/trace.zip
-    Usage:
-
-        npx playwright show-trace test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium/trace.zip
-
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
-
-    Error: expect(locator).toBeVisible() failed
-
-    Locator: getByRole('button', { name: /what's on your mind/i }).first()
-    Expected: visible
-    Timeout: 5000ms
-    Error: element(s) not found
-
-    Call log:
-      - Expect "toBeVisible" with timeout 5000ms
-      - waiting for getByRole('button', { name: /what's on your mind/i }).first()
-
-
-      25 |       .getByRole('button', { name: /what's on your mind/i })
-      26 |       .first()
-    > 27 |     await expect(composerToggle).toBeVisible()
-         |                                  ^
-      28 |     await composerToggle.click()
-      29 |     await expect(
-      30 |       page.locator('textarea[placeholder*="Write your post"]')
-        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/stress-journeys.spec.ts:27:34
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium-retry1/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium-retry1/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium-retry1/error-context.md
-
-    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
-    test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium-retry1/trace.zip
-    Usage:
-
-        npx playwright show-trace test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium-retry1/trace.zip
-
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-  5 failed
+  3 failed
     [chromium] › test/tests/e2e/friends-workflow.spec.ts:8:7 › Friends workflow › friends page loads and shows find people or list @smoke 
     [chromium] › test/tests/e2e/sanctum-admin-approve.spec.ts:53:7 › Sanctum admin approve flow › admin approves request and sanctum appears in list/detail @smoke 
-    [chromium] › test/tests/e2e/sanctum-open-chat.spec.ts:7:7 › Sanctum open chat › open chat uses default_chat_room_id navigation @smoke 
     [chromium] › test/tests/e2e/sanctum-user-request.spec.ts:24:7 › Sanctum request user flow › auth user submits request and sees it in My requests @smoke 
-    [chromium] › test/tests/e2e/stress-journeys.spec.ts:19:7 › Stress Journeys › User can create a post from feed @smoke 
-  2 passed (2.3m)
+  4 passed (2.0m)
 error: script "test:e2e:smoke" exited with code 1
 Error: Process completed with exit code 1.

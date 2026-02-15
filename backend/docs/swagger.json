@@ -349,6 +349,40 @@
                 }
             }
         },
+        "/admin/sanctums/{slug}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a sanctum and its related data (memberships, chat room).",
+                "tags": [
+                    "sanctums-admin"
+                ],
+                "summary": "Delete sanctum (admin only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Sanctum slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/users": {
             "get": {
                 "security": [
@@ -1015,6 +1049,46 @@
                             "items": {
                                 "$ref": "#/definitions/models.SanctumRequest"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/sanctums/requests/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a sanctum request (requester or admin only).",
+                "tags": [
+                    "sanctums"
+                ],
+                "summary": "Delete sanctum request",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }

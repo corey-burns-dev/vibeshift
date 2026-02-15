@@ -13,6 +13,7 @@ services:
       - DB_NAME=${POSTGRES_DB:-sanctum}
       - IMAGE_UPLOAD_DIR=/var/sanctum/uploads/images
     volumes:
+      - .:/app
       - uploads_data:/var/sanctum/uploads
     depends_on:
       redis:
@@ -63,6 +64,8 @@ services:
         BUN_ALPINE_TAG: ${BUN_ALPINE_TAG}
         NGINX_VERSION: ${NGINX_VERSION}
     volumes:
+      - ./frontend:/app
+      - /app/node_modules
       - uploads_data:/var/sanctum/uploads:ro
     depends_on:
       - app

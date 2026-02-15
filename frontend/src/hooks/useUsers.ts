@@ -184,5 +184,6 @@ export function useValidateToken() {
     enabled: !!token,
     staleTime: 60 * 1000, // 1 minute
     gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: false,
   })
 }

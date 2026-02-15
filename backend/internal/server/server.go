@@ -379,6 +379,7 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	sanctumRequests := protected.Group("/sanctums/requests")
 	sanctumRequests.Post("/", s.CreateSanctumRequest)
 	sanctumRequests.Get("/me", s.GetMySanctumRequests)
+	sanctumRequests.Delete("/:id", s.DeleteSanctumRequest)
 	sanctumAdmins := protected.Group("/sanctums/:slug/admins")
 	sanctumAdmins.Get("/", s.GetSanctumAdmins)
 	sanctumAdmins.Post("/:userId", s.PromoteSanctumAdmin)
@@ -487,6 +488,7 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 
 	// Admin routes
 	admin := protected.Group("/admin", s.AdminRequired())
+	admin.Delete("/sanctums/:slug", s.DeleteSanctum)
 	admin.Get("/feature-flags", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetFeatureFlags)
 	admin.Get("/reports", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminReports)
 	admin.Post("/reports/:id/resolve", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.ResolveAdminReport)
