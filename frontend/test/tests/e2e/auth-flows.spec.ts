@@ -9,8 +9,8 @@ test.describe('Auth flows', () => {
     await page.goto('/signup')
     await page.getByLabel('Username').fill(username)
     await page.getByLabel('Email').fill(email)
-    await page.getByLabel('Password').fill('TestPass123!@#')
-    await page.getByLabel('Confirm Password').fill('TestPass123!@#')
+    await page.getByRole('textbox', { name: 'Password', exact: true }).fill('TestPass123!@#')
+    await page.getByRole('textbox', { name: 'Confirm Password' }).fill('TestPass123!@#')
     await page.getByRole('button', { name: 'Create Account' }).click()
 
     await expect(page).toHaveURL(/\/onboarding\/sanctums/)

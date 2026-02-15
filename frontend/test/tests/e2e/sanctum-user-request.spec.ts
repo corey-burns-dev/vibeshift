@@ -64,10 +64,10 @@ test.describe('Sanctum request user flow', () => {
     // Step 3: Navigate to My Requests page
     await page.goto('/sanctums/requests', { waitUntil: 'networkidle' })
 
-    // Assertion: Verify request appears in the list with correct details
-    await expect(page.getByText(`/${slug}`)).toBeVisible({
-      timeout: TEST_TIMEOUTS.POLL,
-    })
+    // Assertion: Wait for list to load then verify request appears (slug shown as /slug in UI)
+    await expect(
+      page.locator('article').filter({ hasText: slug }).first()
+    ).toBeVisible({ timeout: TEST_TIMEOUTS.POLL })
     await expect(page.getByText(name)).toBeVisible({
       timeout: TEST_TIMEOUTS.POLL,
     })

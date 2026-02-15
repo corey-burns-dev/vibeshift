@@ -279,13 +279,35 @@ export async function deletePost(
 }
 
 /**
- * Get user's own posts
+ * Get current user profile (id, username, etc.) from GET /api/users/me
+ */
+export async function getMyProfile(
+  request: APIRequestContext,
+  token: string
+): Promise<{ id: number }> {
+  const res = await request.get(`${API_BASE}/users/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!res.ok()) {
+    const body = await responseBodyOrPlaceholder(res)
+    throw new Error(`getMyProfile failed: status=${res.status()} body=${body}`)
+  }
+
+  return (await res.json()) as { id: number }
+}
+
+/**
+ * Get user's own posts via GET /api/users/:id/posts (backend has no /posts/me)
  */
 export async function getMyPosts(
   request: APIRequestContext,
   token: string
 ): Promise<Array<{ id: number; content: string }>> {
-  const res = await request.get(`${API_BASE}/posts/me`, {
+  const profile = await getMyProfile(request, token)
+  const res = await request.get(`${API_BASE}/users/${profile.id}/posts`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
