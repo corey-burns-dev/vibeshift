@@ -13,9 +13,13 @@ import (
 const (
 	defaultPresenceOnlineSetKey  = "ws:online_users"
 	defaultPresenceLastSeenKeyNS = "ws:last_seen:"
-	defaultPresenceTTL           = 90 * time.Second
-	defaultOfflineGrace          = 5 * time.Second
-	defaultReaperInterval        = 60 * time.Second
+	// Shorter TTL for last-seen to avoid long-lived ghost presence in Redis.
+	// Keep slightly above `PongWait` so normal heartbeat activity refreshes the key.
+	defaultPresenceTTL = 12 * time.Second
+	// Small grace to avoid transient flaps but remain responsive.
+	defaultOfflineGrace = 2 * time.Second
+	// Frequent reaper to clean stale Redis keys quickly and surface offline events.
+	defaultReaperInterval = 3 * time.Second
 )
 
 // ConnectionManagerConfig controls Redis presence and cleanup behavior.
@@ -47,6 +51,11 @@ type ConnectionManager struct {
 
 	onUserOnline  func(userID uint)
 	onUserOffline func(userID uint)
+
+	listeners []struct {
+		onOnline  func(userID uint)
+		onOffline func(userID uint)
+	}
 
 	stopOnce sync.Once
 	stopCh   chan struct{}
@@ -96,6 +105,17 @@ func (m *ConnectionManager) SetCallbacks(onOnline, onOffline func(userID uint)) 
 	m.mu.Lock()
 	m.onUserOnline = onOnline
 	m.onUserOffline = onOffline
+	m.mu.Unlock()
+}
+
+// AddListener registers an additional online/offline listener. Callbacks are
+// invoked in registration order for each transition.
+func (m *ConnectionManager) AddListener(onOnline, onOffline func(userID uint)) {
+	m.mu.Lock()
+	m.listeners = append(m.listeners, struct {
+		onOnline  func(userID uint)
+		onOffline func(userID uint)
+	}{onOnline, onOffline})
 	m.mu.Unlock()
 }
 
@@ -332,9 +352,19 @@ func (m *ConnectionManager) emitOnline(userID uint) {
 	m.mu.Lock()
 	m.offlineNotified[userID] = false
 	cb := m.onUserOnline
+	listeners := make([]struct {
+		onOnline  func(userID uint)
+		onOffline func(userID uint)
+	}, len(m.listeners))
+	copy(listeners, m.listeners)
 	m.mu.Unlock()
 	if cb != nil {
 		cb(userID)
+	}
+	for _, l := range listeners {
+		if l.onOnline != nil {
+			l.onOnline(userID)
+		}
 	}
 }
 
@@ -346,9 +376,19 @@ func (m *ConnectionManager) emitOffline(userID uint) {
 	}
 	m.offlineNotified[userID] = true
 	cb := m.onUserOffline
+	listeners := make([]struct {
+		onOnline  func(userID uint)
+		onOffline func(userID uint)
+	}, len(m.listeners))
+	copy(listeners, m.listeners)
 	m.mu.Unlock()
 	if cb != nil {
 		cb(userID)
+	}
+	for _, l := range listeners {
+		if l.onOffline != nil {
+			l.onOffline(userID)
+		}
 	}
 }
 

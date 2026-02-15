@@ -18,10 +18,25 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
         configure: (proxy, _options) => {
+          proxy.on('upgrade', (req, socket, head) => {
+            console.log('[vite] WebSocket upgrade request:', req.url)
+          })
           proxy.on('proxyReqWs', (_proxyReq, _req, socket, _options, _head) => {
+            console.log('[vite] Proxying WebSocket connection')
             if (socket && !socket.destroySoon) {
               // @ts-expect-error - Shim for Bun/Vite compatibility
               socket.destroySoon = socket.destroy
+            }
+          })
+          proxy.on('error', (err, _req, res) => {
+            console.error('[vite] Proxy error:', err)
+            if (res && !res.headersSent) {
+              res.writeHead(500, {
+                'Content-Type': 'application/json',
+              })
+              res.end(
+                JSON.stringify({ error: 'Proxy error', message: err.message })
+              )
             }
           })
         },
@@ -51,7 +66,7 @@ export default defineConfig({
             '@radix-ui/react-tabs',
           ],
           'query-vendor': ['@tanstack/react-query'],
-          'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
+          'form-vendor': ['@tanstack/react-form', 'zod'],
           'utils-vendor': [
             'date-fns',
             'lucide-react',

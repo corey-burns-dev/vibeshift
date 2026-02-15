@@ -381,22 +381,7 @@ export function ChatDock() {
         const conversationName = conv
           ? getDirectMessageName(conv, currentUser?.id)
           : 'Message'
-        const senderName = message.sender?.username ?? 'Someone'
-        const preview =
-          message.content.length > 50
-            ? `${message.content.slice(0, 50)}…`
-            : message.content
-
-        toast.message(`${senderName} in ${conversationName}`, {
-          description: preview || 'New message',
-          action: {
-            label: 'Open',
-            onClick: () => {
-              useChatDockStore.getState().open()
-              useChatDockStore.getState().setActiveConversation(conversationId)
-            },
-          },
-        })
+        toast.message(conversationName)
       }
     }
 

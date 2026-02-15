@@ -55,4 +55,17 @@ describe('Login', () => {
     expect(mutateAsync).not.toHaveBeenCalled()
     expect(screen.getByPlaceholderText('Enter your email')).toBeInTheDocument()
   })
+
+  it('shows zod validation error for short password', async () => {
+    renderLogin()
+    const user = userEvent.setup()
+    await user.type(screen.getByLabelText('Email'), 'valid@example.com')
+    await user.type(screen.getByLabelText('Password'), '123')
+    await user.click(screen.getByRole('button', { name: 'Sign In' }))
+
+    expect(mutateAsync).not.toHaveBeenCalled()
+    expect(
+      await screen.findByText('Password must be at least 6 characters')
+    ).toBeInTheDocument()
+  })
 })

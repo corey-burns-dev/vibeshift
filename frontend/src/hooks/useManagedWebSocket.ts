@@ -179,6 +179,12 @@ export function useManagedWebSocket({
 
   const connect = useCallback(() => {
     if (!enabledRef.current || unmountedRef.current) {
+      console.log(
+        '[ws-managed] Connect skipped: enabled=',
+        enabledRef.current,
+        'unmounted=',
+        unmountedRef.current
+      )
       return
     }
     if (
@@ -186,22 +192,36 @@ export function useManagedWebSocket({
       (wsRef.current.readyState === WS_READY_OPEN ||
         wsRef.current.readyState === WS_READY_CONNECTING)
     ) {
+      console.log(
+        '[ws-managed] Connect skipped: already connected or connecting, readyState=',
+        wsRef.current.readyState
+      )
       return
     }
 
+    console.log('[ws-managed] State: connecting')
     setConnectionState('connecting')
 
     void (async () => {
       let ws: WebSocket
       try {
+        console.log('[ws-managed] Calling createSocket...')
         ws = await createSocketRef.current()
-      } catch {
+        console.log(
+          '[ws-managed] WebSocket created, readyState=',
+          ws.readyState
+        )
+      } catch (err) {
+        console.error('[ws-managed] createSocket failed:', err)
         setConnectionState('disconnected')
         scheduleReconnect()
         return
       }
 
       if (!enabledRef.current || unmountedRef.current) {
+        console.log(
+          '[ws-managed] Component disabled/unmounted after socket creation, closing'
+        )
         ws.close()
         setConnectionState('disconnected')
         return
@@ -212,6 +232,7 @@ export function useManagedWebSocket({
       ws.onopen = event => {
         if (wsRef.current !== ws) return
 
+        console.log('[ws-managed] State: connected')
         reconnectAttemptsRef.current = 0
         setConnectionState('connected')
         setPlannedReconnect(false)
@@ -226,6 +247,7 @@ export function useManagedWebSocket({
 
       ws.onerror = event => {
         if (wsRef.current !== ws) return
+        console.error('[ws-managed] WebSocket error event:', event)
         onErrorRef.current?.(ws, event, {
           planned: plannedReconnectRef.current,
         })
@@ -236,6 +258,14 @@ export function useManagedWebSocket({
           wsRef.current = null
         }
 
+        console.log(
+          '[ws-managed] State: disconnected, code=',
+          event?.code,
+          'reason=',
+          event?.reason,
+          'wasClean=',
+          event?.wasClean
+        )
         setConnectionState('disconnected')
 
         const meta = { planned: plannedReconnectRef.current }
@@ -279,6 +309,7 @@ export function useManagedWebSocket({
   }, [enabled, close])
 
   useEffect(() => {
+    unmountedRef.current = false // Reset on mount (fixes React StrictMode remount)
     return () => {
       unmountedRef.current = true
       enabledRef.current = false

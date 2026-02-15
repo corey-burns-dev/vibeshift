@@ -26,7 +26,7 @@ YELLOW := \033[1;33m
 RED := \033[1;31m
 NC := \033[0m # No Color
 
-.PHONY: help dev dev-build dev-clean dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed db-migrate db-migrate-up db-migrate-auto db-schema-status db-reset-dev deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity stress-stack-up stress-stack-down stress-low stress-medium stress-high stress-extreme stress-insane stress-all ai-report stress-ai-low stress-ai-medium stress-ai-high stress-ai-extreme stress-ai-insane stress-index gateway-up gateway-down gateway-logs ai-memory-backfill ai-memory-update ai-memory-validate ai-docs-verify openapi-check
+.PHONY: help dev dev-build dev-clean dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed db-migrate db-migrate-up db-migrate-auto db-schema-status db-reset-dev deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity stress-stack-up stress-stack-down stress-low stress-medium stress-high stress-extreme stress-insane stress-all ai-report stress-ai-low stress-ai-medium stress-ai-high stress-ai-extreme stress-ai-insane stress-index ai-memory-backfill ai-memory-update ai-memory-validate ai-docs-verify openapi-check
 
 # Default target
 help:
@@ -97,11 +97,6 @@ help:
 	@echo "  make stress-all         - 🤖 Run low/medium/high/extreme/insane with AI report + index"
 	@echo "  make stress-index       - 📄 Rebuild stress report index page"
 	@echo ""
-	@echo "$(GREEN)Gateway & Proxy:$(NC)"
-	@echo "  make gateway-up         - 🛡️  Start app behind Nginx gateway (port 8080)"
-	@echo "  make gateway-down       - ⬇️  Stop gateway and app stack"
-	@echo "  make gateway-logs       - 📋 View Nginx gateway logs"
-	@echo ""
 	@echo "$(GREEN)Database:$(NC)"
 	@echo "  make seed               - 🌱 Seed database with test data"
 	@echo "  make db-migrate         - 🧭 Apply SQL migrations (Docker)"
@@ -131,11 +126,11 @@ help:
 	@echo "  make deps-add-backend pkg=<pkg> - ➕ Add Go dependency inside container"
 	@echo ""
 
-# Development targets (make dev = fast start; make dev-build = first time or after Dockerfile changes)
+# Development targets (make dev = fast start with hot reload; make dev-build = full rebuild)
 dev: env
-	@echo "$(BLUE)Starting full stack development environment...$(NC)"
-	@echo "$(YELLOW)Tip: First time or after Dockerfile changes? Run 'make dev-build'$(NC)"
-	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) $(COMPOSE_FILES) up app redis postgres frontend
+	@echo "$(BLUE)Starting full stack development environment with hot reload...$(NC)"
+	@echo "$(YELLOW)Tip: If you see old code, run 'make dev-build' to rebuild images$(NC)"
+	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) $(COMPOSE_FILES) up --force-recreate --renew-anon-volumes app redis postgres frontend
 
 dev-build: env
 	@echo "$(BLUE)Building dev images (first time or after Dockerfile changes)...$(NC)"
@@ -518,19 +513,6 @@ stress-index:
 	@echo "$(BLUE)Building stress report index...$(NC)"
 	@ARTIFACT_DIR=$(ARTIFACT_DIR) python3 scripts/ai_stress_report.py --build-index
 	@echo "$(GREEN)✓ Index ready: $(ARTIFACT_DIR)/index.html$(NC)"
-
-gateway-up:
-	@echo "$(BLUE)Starting app with Nginx gateway...$(NC)"
-	./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.gateway.yml up -d
-	@echo "$(GREEN)✓ Gateway is running at http://localhost:8080$(NC)"
-
-gateway-down:
-	@echo "$(BLUE)Stopping gateway stack...$(NC)"
-	./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.gateway.yml down
-
-gateway-logs:
-	@echo "$(BLUE)Streaming gateway logs...$(NC)"
-	./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.gateway.yml logs -f gateway
 
 stress-ai-low:
 	@set +e; \

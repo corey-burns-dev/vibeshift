@@ -264,6 +264,7 @@ class ApiClient {
     try {
       await this.request('/auth/logout', {
         method: 'POST',
+        body: JSON.stringify({}),
       })
     } catch (err) {
       logger.error('Logout request failed', { error: err })

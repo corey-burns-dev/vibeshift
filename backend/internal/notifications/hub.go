@@ -113,7 +113,24 @@ func (h *Hub) SetPresenceCallbacks(onOnline, onOffline func(userID uint)) {
 	if h.presence == nil {
 		return
 	}
-	h.presence.SetCallbacks(onOnline, onOffline)
+	// Use AddListener to avoid clobbering other subscribers on the same manager.
+	h.presence.AddListener(onOnline, onOffline)
+}
+
+// SetPresenceManager replaces the hub's ConnectionManager. If a previous
+// manager was present it will be stopped. The new manager will be used by
+// Register/Unregister and other presence-related operations.
+func (h *Hub) SetPresenceManager(m *ConnectionManager) {
+	if m == nil {
+		return
+	}
+	h.mu.Lock()
+	old := h.presence
+	h.presence = m
+	h.mu.Unlock()
+	if old != nil && old != m {
+		old.Stop()
+	}
 }
 
 // Broadcast sends message to all connections for userID

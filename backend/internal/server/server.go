@@ -153,11 +153,23 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	// Initialize notifier and hub if Redis is available
 	if redisClient != nil {
 		server.notifier = notifications.NewNotifier(redisClient)
+
+		// Create a single shared ConnectionManager and wire it into both hubs.
+		sharedPresence := notifications.NewConnectionManager(redisClient, notifications.ConnectionManagerConfig{})
+
 		server.hub = notifications.NewHub(redisClient)
+		// Replace hub's manager with the shared instance
+		server.hub.SetPresenceManager(sharedPresence)
+
 		server.chatHub = notifications.NewChatHub(redisClient)
+		// Replace chat hub's manager with the shared instance (registers chat handlers)
+		server.chatHub.SetPresenceManager(sharedPresence)
+
 		server.gameHub = notifications.NewGameHub(db, server.notifier)
 		server.hubs = []wireableHub{server.hub, server.chatHub, server.gameHub}
-		server.hub.SetPresenceCallbacks(
+
+		// Register server-level presence listeners (fanout to friend notifications)
+		sharedPresence.AddListener(
 			func(userID uint) { server.notifyFriendsPresence(userID, "online") },
 			func(userID uint) { server.notifyFriendsPresence(userID, "offline") },
 		)
@@ -220,11 +232,21 @@ func NewServerWithDeps(cfg *config.Config, db *gorm.DB, redisClient *redis.Clien
 	// Initialize notifier and hub if Redis is available
 	if redisClient != nil {
 		server.notifier = notifications.NewNotifier(redisClient)
+
+		// Create a single shared ConnectionManager and wire it into both hubs.
+		sharedPresence := notifications.NewConnectionManager(redisClient, notifications.ConnectionManagerConfig{})
+
 		server.hub = notifications.NewHub(redisClient)
+		server.hub.SetPresenceManager(sharedPresence)
+
 		server.chatHub = notifications.NewChatHub(redisClient)
+		server.chatHub.SetPresenceManager(sharedPresence)
+
 		server.gameHub = notifications.NewGameHub(db, server.notifier)
 		server.hubs = []wireableHub{server.hub, server.chatHub, server.gameHub}
-		server.hub.SetPresenceCallbacks(
+
+		// Register server-level presence listeners (fanout to friend notifications)
+		sharedPresence.AddListener(
 			func(userID uint) { server.notifyFriendsPresence(userID, "online") },
 			func(userID uint) { server.notifyFriendsPresence(userID, "offline") },
 		)
@@ -573,6 +595,7 @@ func (s *Server) AuthRequired() fiber.Handler {
 				if parseErr == nil {
 					userID = uint(parsed)
 					ticketValid = true
+					log.Printf("[WS Auth] Ticket validated from Redis for user %d, path=%s", userID, path)
 					// Cache the consumed ticket in-process for 10s to allow
 					// Fiber's websocket upgrade multi-pass handshake to succeed.
 					s.consumedTicketsMu.Lock()
@@ -580,6 +603,8 @@ func (s *Server) AuthRequired() fiber.Handler {
 						s.consumedTickets[ticket] = consumedTicketEntry{userID: userID, consumeAt: time.Now()}
 					}
 					s.consumedTicketsMu.Unlock()
+				} else {
+					log.Printf("[WS Auth] Ticket found in Redis but userID parse failed: %v, path=%s", parseErr, path)
 				}
 			} else if s.consumedTickets != nil {
 				// Ticket not in Redis -- check in-process cache for multi-pass handshake
@@ -587,6 +612,7 @@ func (s *Server) AuthRequired() fiber.Handler {
 				if entry, ok := s.consumedTickets[ticket]; ok && time.Since(entry.consumeAt) < 10*time.Second {
 					userID = entry.userID
 					ticketValid = true
+					log.Printf("[WS Auth] Ticket validated from in-process cache for user %d (multi-pass handshake), path=%s", userID, path)
 				}
 				s.consumedTicketsMu.Unlock()
 			}
@@ -608,6 +634,7 @@ func (s *Server) AuthRequired() fiber.Handler {
 			}
 			// If ticket was provided but invalid/expired, we fail if it's a WS path
 			if isWSPath {
+				log.Printf("[WS Auth] Invalid or expired ticket for WebSocket path=%s", path)
 				return models.RespondWithError(c, fiber.StatusUnauthorized,
 					models.NewUnauthorizedError("Invalid or expired WebSocket ticket"))
 			}

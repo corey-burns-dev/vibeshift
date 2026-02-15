@@ -8,14 +8,14 @@ RUN apk add --no-cache build-base libwebp-dev
 # Install air for hot reloading
 RUN go install github.com/air-verse/air@latest
 
-# Copy go mod files
+# Copy go mod files for dependency caching
 COPY backend/go.mod backend/go.sum ./
 
-# Download dependencies
+# Download dependencies (cached layer)
 RUN go mod download
 
-# Copy source code
-COPY backend/ .
+# Source code will be mounted via volume at runtime
+# No COPY needed here - this enables true hot reloading
 
 ENV PORT=8375
 EXPOSE 8375

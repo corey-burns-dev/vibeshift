@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"sanctum/internal/middleware"
-	"sanctum/internal/models"
 	"sanctum/internal/notifications"
 	"sanctum/internal/service"
 
@@ -203,15 +202,9 @@ func (s *Server) WebSocketChatHandler() fiber.Handler {
 							}
 						}
 
-						if s.chatHub != nil && s.isGroupConversation(ctx, convID) {
-							s.chatHub.BroadcastToConversation(convID, notifications.ChatMessage{
-								Type:           "room_message",
-								ConversationID: convID,
-								UserID:         userID,
-								Username:       username,
-								Payload:        message,
-							})
-						}
+						// NOTE: Direct BroadcastToConversation is intentionally NOT called here.
+						// The Redis pub/sub path (PublishChatMessage above) already delivers
+						// the message to conversation viewers via ChatHub.StartWiring.
 
 						if !conv.IsGroup {
 							for _, participant := range conv.Participants {
@@ -299,16 +292,6 @@ func (s *Server) isUserParticipant(ctx context.Context, userID, conversationID u
 		return false
 	}
 	return ok
-}
-
-func (s *Server) isGroupConversation(ctx context.Context, conversationID uint) bool {
-	var conversation models.Conversation
-	if err := s.db.WithContext(ctx).
-		Select("id", "is_group").
-		First(&conversation, conversationID).Error; err != nil {
-		return false
-	}
-	return conversation.IsGroup
 }
 
 // removeUserFromAllGroupChatrooms is intentionally removed.

@@ -70,6 +70,7 @@ export interface AppNotification {
     type?: string
     requestId?: number
     userId?: number
+    conversationId?: number
   }
 }
 
@@ -298,12 +299,21 @@ export function useRealtimeNotifications(enabled = true) {
             (payload.from_user as Record<string, unknown>)?.username
           )
           const preview = asString(payload.preview)
+          const conversationId = asNumber(payload.conversation_id)
+          const fromUserId = asNumber(
+            (payload.from_user as Record<string, unknown>)?.id
+          )
           if (username) {
             const desc = preview ? `"${preview}"` : 'New message'
             addNotification({
               title: `${username} sent a message`,
               description: desc,
               createdAt: new Date().toISOString(),
+              meta: {
+                type: 'message',
+                conversationId: conversationId ?? undefined,
+                userId: fromUserId ?? undefined,
+              },
             })
           }
           break
@@ -476,9 +486,25 @@ export function useRealtimeNotifications(enabled = true) {
 
   const wsEnabled = enabled && !!accessToken
 
+  logger.debug('[realtime] WebSocket state', {
+    wsEnabled,
+    enabled,
+    hasAccessToken: !!accessToken,
+  })
+
   const { reconnect, setPlannedReconnect } = useManagedWebSocket({
     enabled: wsEnabled,
-    createSocket: async () => createTicketedWS({ path: '/api/ws' }),
+    createSocket: async () => {
+      logger.debug('[realtime] createSocket called, requesting ticket...')
+      try {
+        const ws = await createTicketedWS({ path: '/api/ws' })
+        logger.debug('[realtime] WebSocket created successfully')
+        return ws
+      } catch (error) {
+        logger.error('[realtime] createSocket failed:', error)
+        throw error
+      }
+    },
     onOpen: () => {
       logger.debug('[realtime] notifications websocket opened')
     },

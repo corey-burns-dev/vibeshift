@@ -3,6 +3,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -35,9 +36,14 @@ func (s *Server) Signup(c *fiber.Ctx) error {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
-	if err := c.BodyParser(&req); err != nil {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid request body"))
+	// Manually inspect raw body so we can reliably distinguish an empty body
+	// from malformed JSON when Content-Type: application/json is present.
+	raw := c.Body()
+	if len(raw) > 0 {
+		if err := json.Unmarshal(raw, &req); err != nil {
+			return models.RespondWithError(c, fiber.StatusBadRequest,
+				models.NewValidationError("Invalid request body"))
+		}
 	}
 
 	// Validate input
@@ -149,8 +155,12 @@ func (s *Server) Login(c *fiber.Ctx) error {
 		Password string `json:"password"`
 	}
 	if err := c.BodyParser(&req); err != nil {
-		return models.RespondWithError(c, fiber.StatusBadRequest,
-			models.NewValidationError("Invalid request body"))
+		// Mirror Refresh behavior: ignore parse error when the body is empty.
+		// Malformed JSON with a present body should still return 400.
+		if len(c.Body()) > 0 {
+			return models.RespondWithError(c, fiber.StatusBadRequest,
+				models.NewValidationError("Invalid request body"))
+		}
 	}
 
 	// Find user by email

@@ -86,14 +86,25 @@ export function getWsBaseUrl(): string {
   // Prefer explicit API host when configured with an absolute URL.
   // This keeps WS routing aligned with API routing in all environments.
   const apiUrl = import.meta.env.VITE_API_URL
+  console.log('[ws] VITE_API_URL:', apiUrl)
+
   if (apiUrl?.startsWith('http')) {
     const url = new URL(apiUrl)
     const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
-    return `${protocol}//${url.host}`
+    const wsBaseUrl = `${protocol}//${url.host}`
+    console.log('[ws] Using explicit API host for WebSocket:', wsBaseUrl)
+    return wsBaseUrl
   }
 
   // Fallback to same-origin (supports relative /api and proxy-based setups)
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const host = window.location.host
-  return `${protocol}//${host}`
+  const wsBaseUrl = `${protocol}//${host}`
+  console.log(
+    '[ws] Using same-origin for WebSocket (proxy mode):',
+    wsBaseUrl,
+    '| window.location.host:',
+    host
+  )
+  return wsBaseUrl
 }

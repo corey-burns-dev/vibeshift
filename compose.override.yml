@@ -10,8 +10,11 @@ services:
       - .:/app
       - ./tmp/uploads:/var/sanctum/uploads
     command: air -c .air.toml
-    env_file:
-      - .env
+    # Do not use env_file here so compose environment (redis/postgres hostnames) wins.
+    # Required env is merged from compose.yml + this block; host .env is used by Make for interpolation only.
+    environment:
+      - REDIS_URL=redis:6379
+      - DB_HOST=postgres
 
   postgres:
     ports:
@@ -37,7 +40,7 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_URL=http://localhost:${GO_PORT:-8375}/api
+      - VITE_API_URL=http://localhost:8375/api
     volumes:
       - ./frontend:/app
       - /app/node_modules

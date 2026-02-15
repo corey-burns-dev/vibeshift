@@ -1,6 +1,6 @@
 import { Bell, LogOut, Search, ShieldCheck, User } from 'lucide-react'
 import { useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ModeToggle } from '@/components/mode-toggle'
 import {
   getRouteTitle,
@@ -47,6 +47,7 @@ function NavPill({ item, active }: { item: NavItem; active: boolean }) {
 
 export function TopBar() {
   const location = useLocation()
+  const navigate = useNavigate()
   useEffect(() => {
     // noop for now - keep effect hook available for future behavior
     return () => {}
@@ -60,6 +61,13 @@ export function TopBar() {
   const removeNotification = useNotificationStore(state => state.remove)
   const acceptReq = useAcceptFriendRequest()
   const rejectReq = useRejectFriendRequest()
+
+  const handleNotificationClick = (item: (typeof notifications)[0]) => {
+    if (item.meta?.type === 'message' && item.meta.conversationId) {
+      navigate(`/chat/${item.meta.conversationId}`)
+      removeNotification(item.id)
+    }
+  }
 
   if (!isAuthenticated) return null
 
@@ -145,7 +153,11 @@ export function TopBar() {
                   notifications.slice(0, 8).map(item => (
                     <DropdownMenuItem
                       key={item.id}
-                      className='flex flex-col items-start gap-2 py-2'
+                      className={cn(
+                        'flex flex-col items-start gap-2 py-2',
+                        item.meta?.type === 'message' && 'cursor-pointer'
+                      )}
+                      onClick={() => handleNotificationClick(item)}
                     >
                       <div className='flex w-full items-start justify-between gap-2'>
                         <span className='text-xs font-semibold'>
@@ -165,7 +177,8 @@ export function TopBar() {
                             <button
                               type='button'
                               className='text-[11px] rounded-md bg-emerald-600 px-2 py-1 text-emerald-foreground'
-                              onClick={() => {
+                              onClick={e => {
+                                e.stopPropagation()
                                 if (item.meta?.requestId) {
                                   acceptReq.mutate(item.meta.requestId)
                                   removeNotification(item.id)
@@ -177,7 +190,8 @@ export function TopBar() {
                             <button
                               type='button'
                               className='text-[11px] rounded-md bg-destructive px-2 py-1 text-destructive-foreground'
-                              onClick={() => {
+                              onClick={e => {
+                                e.stopPropagation()
                                 if (item.meta?.requestId) {
                                   rejectReq.mutate(item.meta.requestId)
                                   removeNotification(item.id)
