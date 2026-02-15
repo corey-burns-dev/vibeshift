@@ -19,4 +19,21 @@ if [ -d frontend ]; then
   fi
 fi
 
+# Run e2e smoke pre-push (skippable via SKIP_E2E_PRE_PUSH=1). This will attempt
+# to bring up the e2e compose stack if a test Postgres isn't reachable.
+if [ "${SKIP_E2E_PRE_PUSH:-}" != "1" ]; then
+	if command -v bash >/dev/null 2>&1; then
+		echo "Running quick e2e smoke (skippable with SKIP_E2E_PRE_PUSH=1)..."
+		# run the project script which will start compose e2e stack if needed
+		if ! ./scripts/run-e2e-smoke.sh; then
+			echo "Pre-push e2e smoke failed. To skip locally set SKIP_E2E_PRE_PUSH=1 and re-push."
+			exit 1
+		fi
+	else
+		echo "bash not found; skipping e2e pre-push smoke"
+	fi
+else
+	echo "SKIP_E2E_PRE_PUSH=1 set — not running e2e smoke"
+fi
+
 exit 0

@@ -42,7 +42,7 @@ export default defineConfig({
         },
       },
       '/media': {
-        target: 'http://app:8375',
+        target: 'http://localhost:8375',
         changeOrigin: true,
       },
       '/live': {

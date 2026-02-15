@@ -1,46 +1,13 @@
-Run bun run test:e2e:smoke
-  bun run test:e2e:smoke
-  shell: /usr/bin/bash -e {0}
-  env:
-    GOTOOLCHAIN: local
-    PLAYWRIGHT_BASE_URL: http://localhost:5173
-    PLAYWRIGHT_API_URL: http://localhost:8375/api
-    DB_HOST: localhost
-    DB_PORT: 5432
-    DB_USER: sanctum_user
-    DB_PASSWORD: sanctum_password
-    DB_NAME: sanctum_test
-$ playwright test --grep @smoke
-
-Running 7 tests using 2 workers
-
-  ✘  2 [chromium] › test/tests/e2e/auth-flows.spec.ts:4:7 › Auth flows › signup redirects to onboarding @smoke (1.8s)
-  ✘  1 [chromium] › test/tests/e2e/friends-workflow.spec.ts:8:7 › Friends workflow › friends page loads and shows find people or list @smoke (1.9s)
-  ✘  3 [chromium] › test/tests/e2e/auth-flows.spec.ts:4:7 › Auth flows › signup redirects to onboarding @smoke (retry #1) (1.9s)
-  ✘  4 [chromium] › test/tests/e2e/friends-workflow.spec.ts:8:7 › Friends workflow › friends page loads and shows find people or list @smoke (retry #1) (1.9s)
-  ✓  5 [chromium] › test/tests/e2e/navigation.spec.ts:8:7 › Navigation › navigates to sanctums and back @smoke (2.8s)
-  ✓  7 [chromium] › test/tests/e2e/sanctum-open-chat.spec.ts:7:7 › Sanctum open chat › open chat uses default_chat_room_id navigation @smoke (2.0s)
-  ✘  8 [chromium] › test/tests/e2e/sanctum-user-request.spec.ts:24:7 › Sanctum request user flow › auth user submits request and sees it in My requests @smoke (18.9s)
-  ✘  9 [chromium] › test/tests/e2e/sanctum-user-request.spec.ts:24:7 › Sanctum request user flow › auth user submits request and sees it in My requests @smoke (retry #1) (18.7s)
-Failed to fetch posts for cleanup: Error: getMyPosts failed: status=400 body={"error":"Invalid ID","code":"VALIDATION_ERROR","request_id":"3fc79455-c782-4421-a6e0-1b2fbf366817"}
-    at getMyPosts (/home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/utils/api.ts:296:11)
-    at deleteAllMyPosts (/home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/utils/api.ts:311:19)
-    at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/stress-journeys.spec.ts:12:26
-    at /home/runner/work/sanctum/sanctum/frontend/node_modules/playwright/lib/worker/testInfo.js:320:11
-    at TimeoutManager.withRunnable (/home/runner/work/sanctum/sanctum/frontend/node_modules/playwright/lib/worker/timeoutManager.js:67:14)
-    at TestInfoImpl._runWithTimeout (/home/runner/work/sanctum/sanctum/frontend/node_modules/playwright/lib/worker/testInfo.js:318:7)
-    at FixtureRunner.resolveParametersAndRunFunction (/home/runner/work/sanctum/sanctum/frontend/node_modules/playwright/lib/worker/fixtureRunner.js:232:5)
-    at /home/runner/work/sanctum/sanctum/frontend/node_modules/playwright/lib/worker/workerMain.js:479:11
-    at TestInfoImpl._runAsStep (/home/runner/work/sanctum/sanctum/frontend/node_modules/playwright/lib/worker/testInfo.js:309:7)
-    at WorkerMain._runEachHooksForSuites (/home/runner/work/sanctum/sanctum/frontend/node_modules/playwright/lib/worker/workerMain.js:478:9)
-    at /home/runner/work/sanctum/sanctum/frontend/node_modules/playwright/lib/worker/workerMain.js:340:11
-    at TestInfoImpl._runAsStep (/home/runner/work/sanctum/sanctum/frontend/node_modules/playwright/lib/worker/testInfo.js:309:7)
-    at WorkerMain._runTest (/home/runner/work/sanctum/sanctum/frontend/node_modules/playwright/lib/worker/workerMain.js:331:5)
-    at WorkerMain.runTestGroup (/home/runner/work/sanctum/sanctum/frontend/node_modules/playwright/lib/worker/workerMain.js:196:11)
-    at process.<anonymous> (/home/runner/work/sanctum/sanctum/frontend/node_modules/playwright/lib/common/process.js:72:22)
-  ✓  10 [chromium] › test/tests/e2e/stress-journeys.spec.ts:19:7 › Stress Journeys › User can create a post from feed @smoke (2.4s)
-  ✘  6 [chromium] › test/tests/e2e/sanctum-admin-approve.spec.ts:53:7 › Sanctum admin approve flow › admin approves request and sanctum appears in list/detail @smoke (48.3s)
-  ✘  11 [chromium] › test/tests/e2e/sanctum-admin-approve.spec.ts:53:7 › Sanctum admin approve flow › admin approves request and sanctum appears in list/detail @smoke (retry #1) (8.0s)
+ ✘  4 [chromium] › test/tests/e2e/sanctum-admin-approve.spec.ts:53:7 › Sanctum admin approve flow › admin approves request and sanctum appears in list/detail @smoke (6.4s)
+  ✘  2 [chromium] › test/tests/e2e/friends-workflow.spec.ts:8:7 › Friends workflow › friends page loads and shows find people or list @smoke (17.1s)
+  ✘  5 [chromium] › test/tests/e2e/sanctum-admin-approve.spec.ts:53:7 › Sanctum admin approve flow › admin approves request and sanctum appears in list/detail @smoke (retry #1) (6.5s)
+  ✘  6 [chromium] › test/tests/e2e/friends-workflow.spec.ts:8:7 › Friends workflow › friends page loads and shows find people or list @smoke (retry #1) (16.8s)
+  ✘  7 [chromium] › test/tests/e2e/sanctum-open-chat.spec.ts:7:7 › Sanctum open chat › open chat uses default_chat_room_id navigation @smoke (48.0s)
+  ✘  8 [chromium] › test/tests/e2e/sanctum-user-request.spec.ts:24:7 › Sanctum request user flow › auth user submits request and sees it in My requests @smoke (47.7s)
+  ✘  9 [chromium] › test/tests/e2e/sanctum-open-chat.spec.ts:7:7 › Sanctum open chat › open chat uses default_chat_room_id navigation @smoke (retry #1) (48.0s)
+  ✘  11 [chromium] › test/tests/e2e/stress-journeys.spec.ts:19:7 › Stress Journeys › User can create a post from feed @smoke (6.3s)
+  ✘  12 [chromium] › test/tests/e2e/stress-journeys.spec.ts:19:7 › Stress Journeys › User can create a post from feed @smoke (retry #1) (6.5s)
+  ✘  10 [chromium] › test/tests/e2e/sanctum-user-request.spec.ts:24:7 › Sanctum request user flow › auth user submits request and sees it in My requests @smoke (retry #1) (47.9s)
 
 🧹 Global teardown starting...
 💡 Tip: Set E2E_CLEANUP_USERS=true or E2E_CLEANUP_AUTH=true to clean up test data
@@ -48,102 +15,24 @@ Failed to fetch posts for cleanup: Error: getMyPosts failed: status=400 body={"e
 
 
 
-  1) [chromium] › test/tests/e2e/auth-flows.spec.ts:4:7 › Auth flows › signup redirects to onboarding @smoke 
-
-    Error: locator.fill: Error: strict mode violation: getByLabel('Password') resolved to 4 elements:
-        1) <input id="password" type="password" name="password" placeholder="Create a password" class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"/> aka getByRole('textbox', { name: 'Password', exact: true })
-        2) <button type="button" aria-label="Show password" class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:text-accent-foreground rounded-md text-xs absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent">…</button> aka getByRole('button', { name: 'Show password' }).first()
-        3) <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password" class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"/> aka getByRole('textbox', { name: 'Confirm Password' })
-        4) <button type="button" aria-label="Show password" class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:text-accent-foreground rounded-md text-xs absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent">…</button> aka getByRole('button', { name: 'Show password' }).nth(1)
-
-    Call log:
-      - waiting for getByLabel('Password')
-
-
-      10 |     await page.getByLabel('Username').fill(username)
-      11 |     await page.getByLabel('Email').fill(email)
-    > 12 |     await page.getByLabel('Password').fill('TestPass123!@#')
-         |                                       ^
-      13 |     await page.getByLabel('Confirm Password').fill('TestPass123!@#')
-      14 |     await page.getByRole('button', { name: 'Create Account' }).click()
-      15 |
-        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/auth-flows.spec.ts:12:39
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    test-results/auth-flows-Auth-flows-signup-redirects-to-onboarding-smoke-chromium/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    test-results/auth-flows-Auth-flows-signup-redirects-to-onboarding-smoke-chromium/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: test-results/auth-flows-Auth-flows-signup-redirects-to-onboarding-smoke-chromium/error-context.md
-
-    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
-    test-results/auth-flows-Auth-flows-signup-redirects-to-onboarding-smoke-chromium/trace.zip
-    Usage:
-
-        npx playwright show-trace test-results/auth-flows-Auth-flows-signup-redirects-to-onboarding-smoke-chromium/trace.zip
-
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
-
-    Error: locator.fill: Error: strict mode violation: getByLabel('Password') resolved to 4 elements:
-        1) <input id="password" type="password" name="password" placeholder="Create a password" class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"/> aka getByRole('textbox', { name: 'Password', exact: true })
-        2) <button type="button" aria-label="Show password" class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:text-accent-foreground rounded-md text-xs absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent">…</button> aka getByRole('button', { name: 'Show password' }).first()
-        3) <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password" class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"/> aka getByRole('textbox', { name: 'Confirm Password' })
-        4) <button type="button" aria-label="Show password" class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:text-accent-foreground rounded-md text-xs absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent">…</button> aka getByRole('button', { name: 'Show password' }).nth(1)
-
-    Call log:
-      - waiting for getByLabel('Password')
-
-
-      10 |     await page.getByLabel('Username').fill(username)
-      11 |     await page.getByLabel('Email').fill(email)
-    > 12 |     await page.getByLabel('Password').fill('TestPass123!@#')
-         |                                       ^
-      13 |     await page.getByLabel('Confirm Password').fill('TestPass123!@#')
-      14 |     await page.getByRole('button', { name: 'Create Account' }).click()
-      15 |
-        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/auth-flows.spec.ts:12:39
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    test-results/auth-flows-Auth-flows-signup-redirects-to-onboarding-smoke-chromium-retry1/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    test-results/auth-flows-Auth-flows-signup-redirects-to-onboarding-smoke-chromium-retry1/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: test-results/auth-flows-Auth-flows-signup-redirects-to-onboarding-smoke-chromium-retry1/error-context.md
-
-    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
-    test-results/auth-flows-Auth-flows-signup-redirects-to-onboarding-smoke-chromium-retry1/trace.zip
-    Usage:
-
-        npx playwright show-trace test-results/auth-flows-Auth-flows-signup-redirects-to-onboarding-smoke-chromium-retry1/trace.zip
-
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-  2) [chromium] › test/tests/e2e/friends-workflow.spec.ts:8:7 › Friends workflow › friends page loads and shows find people or list @smoke 
+  1) [chromium] › test/tests/e2e/friends-workflow.spec.ts:8:7 › Friends workflow › friends page loads and shows find people or list @smoke 
 
     Error: expect(locator).toBeVisible() failed
 
-    Locator: getByRole('heading', { name: /friends/i }).or(getByText(/friend/i))
+    Locator: getByRole('heading', { name: 'Friends', level: 1 })
     Expected: visible
-    Error: strict mode violation: getByRole('heading', { name: /friends/i }).or(getByText(/friend/i)) resolved to 3 elements:
-        1) <p class="truncate text-sm font-semibold text-foreground">Friends</p> aka locator('p').filter({ hasText: 'Friends' })
-        2) <span class="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Friends</span> aka getByRole('link', { name: 'Sanctum Friends' })
-        3) <span class="truncate hidden lg:inline">Friends</span> aka getByRole('link', { name: 'Friends', exact: true })
+    Timeout: 15000ms
+    Error: element(s) not found
 
     Call log:
       - Expect "toBeVisible" with timeout 15000ms
-      - waiting for getByRole('heading', { name: /friends/i }).or(getByText(/friend/i))
+      - waiting for getByRole('heading', { name: 'Friends', level: 1 })
+        - waiting for" http://localhost:5173/login" navigation to finish...
+        - navigated to "http://localhost:5173/login"
 
 
-      12 |         .getByRole('heading', { name: /friends/i })
-      13 |         .or(page.getByText(/friend/i))
+      12 |     await expect(
+      13 |       page.getByRole('heading', { name: 'Friends', level: 1 })
     > 14 |     ).toBeVisible({ timeout: TEST_TIMEOUTS.POLL })
          |       ^
       15 |   })
@@ -173,20 +62,20 @@ Failed to fetch posts for cleanup: Error: getMyPosts failed: status=400 body={"e
 
     Error: expect(locator).toBeVisible() failed
 
-    Locator: getByRole('heading', { name: /friends/i }).or(getByText(/friend/i))
+    Locator: getByRole('heading', { name: 'Friends', level: 1 })
     Expected: visible
-    Error: strict mode violation: getByRole('heading', { name: /friends/i }).or(getByText(/friend/i)) resolved to 3 elements:
-        1) <p class="truncate text-sm font-semibold text-foreground">Friends</p> aka locator('p').filter({ hasText: 'Friends' })
-        2) <span class="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Friends</span> aka getByRole('link', { name: 'Sanctum Friends' })
-        3) <span class="truncate hidden lg:inline">Friends</span> aka getByRole('link', { name: 'Friends', exact: true })
+    Timeout: 15000ms
+    Error: element(s) not found
 
     Call log:
       - Expect "toBeVisible" with timeout 15000ms
-      - waiting for getByRole('heading', { name: /friends/i }).or(getByText(/friend/i))
+      - waiting for getByRole('heading', { name: 'Friends', level: 1 })
+        - waiting for" http://localhost:5173/login" navigation to finish...
+        - navigated to "http://localhost:5173/login"
 
 
-      12 |         .getByRole('heading', { name: /friends/i })
-      13 |         .or(page.getByText(/friend/i))
+      12 |     await expect(
+      13 |       page.getByRole('heading', { name: 'Friends', level: 1 })
     > 14 |     ).toBeVisible({ timeout: TEST_TIMEOUTS.POLL })
          |       ^
       15 |   })
@@ -212,25 +101,28 @@ Failed to fetch posts for cleanup: Error: getMyPosts failed: status=400 body={"e
 
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  3) [chromium] › test/tests/e2e/sanctum-admin-approve.spec.ts:53:7 › Sanctum admin approve flow › admin approves request and sanctum appears in list/detail @smoke 
+  2) [chromium] › test/tests/e2e/sanctum-admin-approve.spec.ts:53:7 › Sanctum admin approve flow › admin approves request and sanctum appears in list/detail @smoke 
 
-    Test timeout of 45000ms exceeded.
+    Error: expect(locator).toBeVisible() failed
 
-    Error: locator.click: Test timeout of 45000ms exceeded.
+    Locator: locator('article').filter({ hasText: '/e2e-approve-zq2kpk' }).first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
     Call log:
-      - waiting for getByRole('button', { name: /open chat/i })
-        - waiting for" http://localhost:5173/login" navigation to finish...
-        - navigated to "http://localhost:5173/login"
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('article').filter({ hasText: '/e2e-approve-zq2kpk' }).first()
 
 
-      138 |     const openChatButton = page.getByRole('button', { name: /open chat/i })
-      139 |     await expect(openChatButton).toBeVisible()
-    > 140 |     await openChatButton.click()
-          |                          ^
-      141 |
-      142 |     // Verify chat opens
-      143 |     await expect(page).toHaveURL(/\/chat\/\d+/)
-        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/sanctum-admin-approve.spec.ts:140:26
+      101 |       .filter({ hasText: `/${slug}` })
+      102 |       .first()
+    > 103 |     await expect(row).toBeVisible()
+          |                       ^
+      104 |
+      105 |     // Assertion: Verify "pending" status badge is visible before approval
+      106 |     await expect(row.getByText(/pending/i)).toBeVisible()
+        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/sanctum-admin-approve.spec.ts:103:23
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results/sanctum-admin-approve-Sanc-14e20-ppears-in-list-detail-smoke-chromium/test-failed-1.png
@@ -254,24 +146,24 @@ Failed to fetch posts for cleanup: Error: getMyPosts failed: status=400 body={"e
 
     Error: expect(locator).toBeVisible() failed
 
-    Locator: getByRole('button', { name: /open chat/i })
+    Locator: locator('article').filter({ hasText: '/e2e-approve-uqmeao' }).first()
     Expected: visible
     Timeout: 5000ms
     Error: element(s) not found
 
     Call log:
       - Expect "toBeVisible" with timeout 5000ms
-      - waiting for getByRole('button', { name: /open chat/i })
+      - waiting for locator('article').filter({ hasText: '/e2e-approve-uqmeao' }).first()
 
 
-      137 |     // Assertion: Verify sanctum is functional (can access chat)
-      138 |     const openChatButton = page.getByRole('button', { name: /open chat/i })
-    > 139 |     await expect(openChatButton).toBeVisible()
-          |                                  ^
-      140 |     await openChatButton.click()
-      141 |
-      142 |     // Verify chat opens
-        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/sanctum-admin-approve.spec.ts:139:34
+      101 |       .filter({ hasText: `/${slug}` })
+      102 |       .first()
+    > 103 |     await expect(row).toBeVisible()
+          |                       ^
+      104 |
+      105 |     // Assertion: Verify "pending" status badge is visible before approval
+      106 |     await expect(row.getByText(/pending/i)).toBeVisible()
+        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/sanctum-admin-approve.spec.ts:103:23
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results/sanctum-admin-approve-Sanc-14e20-ppears-in-list-detail-smoke-chromium-retry1/test-failed-1.png
@@ -291,28 +183,95 @@ Failed to fetch posts for cleanup: Error: getMyPosts failed: status=400 body={"e
 
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
+  3) [chromium] › test/tests/e2e/sanctum-open-chat.spec.ts:7:7 › Sanctum open chat › open chat uses default_chat_room_id navigation @smoke 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.click: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Open Chat' })
+
+
+       9 |   }) => {
+      10 |     await page.goto('/s/atrium')
+    > 11 |     await page.getByRole('button', { name: 'Open Chat' }).click()
+         |                                                           ^
+      12 |     await expect(page).toHaveURL(/\/chat\/\d+$/)
+      13 |   })
+      14 | })
+        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/sanctum-open-chat.spec.ts:11:59
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.click: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Open Chat' })
+
+
+       9 |   }) => {
+      10 |     await page.goto('/s/atrium')
+    > 11 |     await page.getByRole('button', { name: 'Open Chat' }).click()
+         |                                                           ^
+      12 |     await expect(page).toHaveURL(/\/chat\/\d+$/)
+      13 |   })
+      14 | })
+        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/sanctum-open-chat.spec.ts:11:59
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/sanctum-open-chat-Sanctum--d73af-at-room-id-navigation-smoke-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
   4) [chromium] › test/tests/e2e/sanctum-user-request.spec.ts:24:7 › Sanctum request user flow › auth user submits request and sees it in My requests @smoke 
 
-    Error: expect(locator).toBeVisible() failed
+    Test timeout of 45000ms exceeded.
 
-    Locator: getByText('/e2e-req-xixwkh')
-    Expected: visible
-    Timeout: 15000ms
-    Error: element(s) not found
-
+    Error: locator.fill: Test timeout of 45000ms exceeded.
     Call log:
-      - Expect "toBeVisible" with timeout 15000ms
-      - waiting for getByText('/e2e-req-xixwkh')
+      - waiting for getByLabel('Requested Name')
 
 
-      66 |
-      67 |     // Assertion: Verify request appears in the list with correct details
-    > 68 |     await expect(page.getByText(`/${slug}`)).toBeVisible({
-         |                                              ^
-      69 |       timeout: TEST_TIMEOUTS.POLL,
-      70 |     })
-      71 |     await expect(page.getByText(name)).toBeVisible({
-        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/sanctum-user-request.spec.ts:68:46
+      33 |     await page.goto('/sanctums/request')
+      34 |
+    > 35 |     await page.getByLabel('Requested Name').fill(name)
+         |                                             ^
+      36 |     await page.getByLabel('Requested Slug').fill(slug)
+      37 |     await page.getByLabel('Reason').fill('E2E verification')
+      38 |
+        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/sanctum-user-request.spec.ts:35:45
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results/sanctum-user-request-Sanct-05034-ees-it-in-My-requests-smoke-chromium/test-failed-1.png
@@ -334,26 +293,21 @@ Failed to fetch posts for cleanup: Error: getMyPosts failed: status=400 body={"e
 
     Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
 
-    Error: expect(locator).toBeVisible() failed
+    Test timeout of 45000ms exceeded.
 
-    Locator: getByText('/e2e-req-f8jsyi')
-    Expected: visible
-    Timeout: 15000ms
-    Error: element(s) not found
-
+    Error: locator.fill: Test timeout of 45000ms exceeded.
     Call log:
-      - Expect "toBeVisible" with timeout 15000ms
-      - waiting for getByText('/e2e-req-f8jsyi')
+      - waiting for getByLabel('Requested Name')
 
 
-      66 |
-      67 |     // Assertion: Verify request appears in the list with correct details
-    > 68 |     await expect(page.getByText(`/${slug}`)).toBeVisible({
-         |                                              ^
-      69 |       timeout: TEST_TIMEOUTS.POLL,
-      70 |     })
-      71 |     await expect(page.getByText(name)).toBeVisible({
-        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/sanctum-user-request.spec.ts:68:46
+      33 |     await page.goto('/sanctums/request')
+      34 |
+    > 35 |     await page.getByLabel('Requested Name').fill(name)
+         |                                             ^
+      36 |     await page.getByLabel('Requested Slug').fill(slug)
+      37 |     await page.getByLabel('Reason').fill('E2E verification')
+      38 |
+        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/sanctum-user-request.spec.ts:35:45
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results/sanctum-user-request-Sanct-05034-ees-it-in-My-requests-smoke-chromium-retry1/test-failed-1.png
@@ -373,11 +327,94 @@ Failed to fetch posts for cleanup: Error: getMyPosts failed: status=400 body={"e
 
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  4 failed
-    [chromium] › test/tests/e2e/auth-flows.spec.ts:4:7 › Auth flows › signup redirects to onboarding @smoke 
+  5) [chromium] › test/tests/e2e/stress-journeys.spec.ts:19:7 › Stress Journeys › User can create a post from feed @smoke 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: /what's on your mind/i }).first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('button', { name: /what's on your mind/i }).first()
+
+
+      25 |       .getByRole('button', { name: /what's on your mind/i })
+      26 |       .first()
+    > 27 |     await expect(composerToggle).toBeVisible()
+         |                                  ^
+      28 |     await composerToggle.click()
+      29 |     await expect(
+      30 |       page.locator('textarea[placeholder*="Write your post"]')
+        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/stress-journeys.spec.ts:27:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: /what's on your mind/i }).first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('button', { name: /what's on your mind/i }).first()
+
+
+      25 |       .getByRole('button', { name: /what's on your mind/i })
+      26 |       .first()
+    > 27 |     await expect(composerToggle).toBeVisible()
+         |                                  ^
+      28 |     await composerToggle.click()
+      29 |     await expect(
+      30 |       page.locator('textarea[placeholder*="Write your post"]')
+        at /home/runner/work/sanctum/sanctum/frontend/test/tests/e2e/stress-journeys.spec.ts:27:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/stress-journeys-Stress-Jou-9533d-eate-a-post-from-feed-smoke-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5 failed
     [chromium] › test/tests/e2e/friends-workflow.spec.ts:8:7 › Friends workflow › friends page loads and shows find people or list @smoke 
     [chromium] › test/tests/e2e/sanctum-admin-approve.spec.ts:53:7 › Sanctum admin approve flow › admin approves request and sanctum appears in list/detail @smoke 
+    [chromium] › test/tests/e2e/sanctum-open-chat.spec.ts:7:7 › Sanctum open chat › open chat uses default_chat_room_id navigation @smoke 
     [chromium] › test/tests/e2e/sanctum-user-request.spec.ts:24:7 › Sanctum request user flow › auth user submits request and sees it in My requests @smoke 
-  3 passed (1.1m)
+    [chromium] › test/tests/e2e/stress-journeys.spec.ts:19:7 › Stress Journeys › User can create a post from feed @smoke 
+  2 passed (2.3m)
 error: script "test:e2e:smoke" exited with code 1
 Error: Process completed with exit code 1.

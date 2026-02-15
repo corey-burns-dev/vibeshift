@@ -1,6 +1,7 @@
 services:
   app:
     environment:
+      - DB_HOST=postgres_test
       - DB_NAME=sanctum_test
       - DB_USER=sanctum_user
       - DB_PASSWORD=sanctum_password

@@ -105,7 +105,9 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("DB_SSLMODE", "disable")
 	viper.SetDefault("DB_SCHEMA_MODE", "sql")
 	viper.SetDefault("DB_AUTOMIGRATE_ALLOW_DESTRUCTIVE", false)
-	viper.SetDefault("IMAGE_UPLOAD_DIR", "/tmp/sanctum/uploads/images")
+	// Use a single canonical layout for uploaded media across environments.
+	// Production nginx expects /var/sanctum/uploads/images; use the same layout in dev.
+	viper.SetDefault("IMAGE_UPLOAD_DIR", "/var/sanctum/uploads/images")
 	viper.SetDefault("IMAGE_MAX_UPLOAD_SIZE_MB", 10)
 	viper.SetDefault("DEV_BOOTSTRAP_ROOT", true)
 	viper.SetDefault("DEV_ROOT_USERNAME", "sanctum_root")
@@ -153,7 +155,7 @@ func (c *Config) Validate() error {
 	}
 	c.DBSchemaMode = mode
 	if c.ImageUploadDir == "" {
-		c.ImageUploadDir = "/tmp/sanctum/uploads/images"
+		c.ImageUploadDir = "/var/sanctum/uploads/images"
 	}
 	if c.ImageMaxUploadSizeMB <= 0 {
 		return errors.New("IMAGE_MAX_UPLOAD_SIZE_MB must be greater than 0")

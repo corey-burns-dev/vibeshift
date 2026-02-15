@@ -1,0 +1,57 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6]:
+        - link "Sanctum Admin Console" [ref=e7] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e8]: Sanctum
+          - generic [ref=e9]: Admin Console
+        - link "Search people and rooms" [ref=e10] [cursor=pointer]:
+          - /url: /users
+          - img [ref=e11]
+          - generic [ref=e14]: Search people and rooms
+        - generic [ref=e15]:
+          - link "Home" [ref=e16] [cursor=pointer]:
+            - /url: /
+            - img [ref=e17]
+            - generic [ref=e20]: Home
+          - link "Chat" [ref=e21] [cursor=pointer]:
+            - /url: /chat
+            - img [ref=e22]
+            - generic [ref=e24]: Chat
+          - link "Sanctums" [ref=e25] [cursor=pointer]:
+            - /url: /sanctums
+            - img [ref=e26]
+            - generic [ref=e28]: Sanctums
+          - link "Friends" [ref=e29] [cursor=pointer]:
+            - /url: /friends
+            - img [ref=e30]
+            - generic [ref=e35]: Friends
+          - link "Games" [ref=e36] [cursor=pointer]:
+            - /url: /games
+            - img [ref=e37]
+            - generic [ref=e39]: Games
+          - link "Admin Console" [ref=e40] [cursor=pointer]:
+            - /url: /admin
+            - img [ref=e41]
+            - generic [ref=e44]: Admin Console
+        - generic [ref=e45]:
+          - button "Notifications" [ref=e46]:
+            - img [ref=e47]
+          - button "Toggle theme" [ref=e50]:
+            - img
+            - generic [ref=e51]: Toggle theme
+          - button "E" [ref=e52]:
+            - generic [ref=e54]: E
+    - paragraph [ref=e60]: Validating session...
+    - button [ref=e61]:
+      - img [ref=e62]
+  - region "Notifications alt+T"
+  - generic [ref=e64]:
+    - img [ref=e66]
+    - button "Open Tanstack query devtools" [ref=e114] [cursor=pointer]:
+      - img [ref=e115]
+```

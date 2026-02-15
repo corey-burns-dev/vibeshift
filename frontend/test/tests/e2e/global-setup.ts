@@ -21,7 +21,13 @@ type SignupResponse = {
   }
 }
 
+// Zustand persist key used by useAuthSessionStore; app reads token from here, not from 'token'.
+const AUTH_SESSION_STORAGE_KEY = 'auth-session-storage'
+
 function buildStorageState(token: string, user: SignupResponse['user']) {
+  const authSessionStorageValue = JSON.stringify({
+    state: { accessToken: token },
+  })
   return {
     cookies: [],
     origins: [
@@ -30,6 +36,7 @@ function buildStorageState(token: string, user: SignupResponse['user']) {
         localStorage: [
           { name: 'token', value: token },
           { name: 'user', value: JSON.stringify(user) },
+          { name: AUTH_SESSION_STORAGE_KEY, value: authSessionStorageValue },
         ],
       },
     ],

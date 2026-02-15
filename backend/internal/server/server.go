@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -847,6 +848,24 @@ func (s *Server) Start() error {
 	}
 
 	log.Printf("Server starting on port %s...", s.config.Port)
+	// Ensure image upload dir exists in development to reduce 404s for /media/*
+	if dir := s.config.ImageUploadDir; dir != "" {
+		if _, err := os.Stat(dir); err != nil {
+			if os.IsNotExist(err) {
+				if s.config.Env == "development" || s.config.Env == "dev" || s.config.Env == "" {
+					if mkErr := os.MkdirAll(dir, 0o750); mkErr != nil {
+						log.Printf("WARNING: failed to create image upload dir %s: %v", dir, mkErr)
+					} else {
+						log.Printf("Created image upload dir for development: %s", dir)
+					}
+				} else {
+					log.Printf("WARNING: image upload dir %s does not exist - media requests may 404. Create it or set IMAGE_UPLOAD_DIR accordingly.", dir)
+				}
+			} else {
+				log.Printf("WARNING: unable to stat image upload dir %s: %v", dir, err)
+			}
+		}
+	}
 	return app.Listen(":" + s.config.Port)
 }
 

@@ -13,6 +13,11 @@ vi.mock('@/hooks/useUsers', () => ({
   useValidateToken: vi.fn(),
 }))
 
+vi.mock('@/stores/useAuthSessionStore', () => ({
+  useAuthSessionStore: (selector: (s: { _hasHydrated: boolean }) => boolean) =>
+    selector({ _hasHydrated: true }),
+}))
+
 function renderProtected(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>

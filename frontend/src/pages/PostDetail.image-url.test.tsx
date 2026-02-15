@@ -1,10 +1,10 @@
-import { screen } from '@testing-library/react'
-import { Route, Routes } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useLikePost, usePost } from '@/hooks/usePosts'
 import { useIsAuthenticated } from '@/hooks/useUsers'
 import PostDetail from '@/pages/PostDetail'
 import { renderWithProviders } from '@/test/test-utils'
+import { screen } from '@testing-library/react'
+import { Route, Routes } from 'react-router-dom'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 type ReturnMock = {
   mockReturnValue: (value: unknown) => unknown
@@ -33,6 +33,14 @@ vi.mock('@/components/UserMenu', () => ({
   UserMenu: ({ children }: any) => children,
 }))
 
+// Prevent accidental real network requests from PostComments by mocking
+// the API client used to fetch comments for this test file.
+vi.mock('@/api/client', () => ({
+  apiClient: {
+    getPostComments: vi.fn(() => Promise.resolve([])),
+  },
+}))
+
 describe('PostDetail image URL normalization', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -40,6 +48,10 @@ describe('PostDetail image URL normalization', () => {
     asReturnMock(useLikePost).mockReturnValue({
       mutate: vi.fn(),
     } as never)
+    // Stub global fetch to prevent accidental real network requests
+    vi.stubGlobal('fetch', vi.fn(() =>
+      Promise.resolve(new Response(JSON.stringify([]), { status: 200 }))
+    ))
   })
 
   it('renders legacy absolute image URLs as same-origin relative src', () => {
