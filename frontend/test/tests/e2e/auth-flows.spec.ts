@@ -9,8 +9,8 @@ test.describe('Auth flows', () => {
     await page.goto('/signup')
     await page.getByLabel('Username').fill(username)
     await page.getByLabel('Email').fill(email)
-    await page.getByRole('textbox', { name: 'Password', exact: true }).fill('TestPass123!@#')
-    await page.getByRole('textbox', { name: 'Confirm Password' }).fill('TestPass123!@#')
+    await page.locator('#password').fill('TestPass123!@#')
+    await page.locator('#confirmPassword').fill('TestPass123!@#')
     await page.getByRole('button', { name: 'Create Account' }).click()
 
     await expect(page).toHaveURL(/\/onboarding\/sanctums/)
@@ -19,7 +19,7 @@ test.describe('Auth flows', () => {
   test('login redirects to posts', async ({ page }) => {
     await page.goto('/login')
     await page.getByLabel('Email').fill('e2euser@example.com')
-    await page.getByLabel('Password').fill('wrong')
+    await page.locator('#password').fill('wrong')
     await page.getByRole('button', { name: 'Sign In' }).click()
 
     await expect(page).toHaveURL('/login')

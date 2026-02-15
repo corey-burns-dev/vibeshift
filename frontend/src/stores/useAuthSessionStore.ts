@@ -17,7 +17,7 @@ if (typeof window !== 'undefined') {
   const legacyToken = localStorage.getItem('token')
   if (legacyToken) {
     useAuthSessionStore.getState().setAccessToken(legacyToken)
-    localStorage.removeItem('token')
+    // localStorage.removeItem('token')
     console.debug('[AuthSessionStore] Migrated legacy token to in-memory store')
   }
 }
