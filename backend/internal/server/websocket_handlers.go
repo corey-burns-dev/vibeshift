@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"sanctum/internal/middleware"
-	"sanctum/internal/models"
 	"sanctum/internal/notifications"
 	"sanctum/internal/service"
 
@@ -293,16 +292,6 @@ func (s *Server) isUserParticipant(ctx context.Context, userID, conversationID u
 		return false
 	}
 	return ok
-}
-
-func (s *Server) isGroupConversation(ctx context.Context, conversationID uint) bool {
-	var conversation models.Conversation
-	if err := s.db.WithContext(ctx).
-		Select("id", "is_group").
-		First(&conversation, conversationID).Error; err != nil {
-		return false
-	}
-	return conversation.IsGroup
 }
 
 // removeUserFromAllGroupChatrooms is intentionally removed.
