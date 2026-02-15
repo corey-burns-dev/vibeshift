@@ -1,10 +1,10 @@
+import { screen } from '@testing-library/react'
+import { Route, Routes } from 'react-router-dom'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useLikePost, usePost } from '@/hooks/usePosts'
 import { useIsAuthenticated } from '@/hooks/useUsers'
 import PostDetail from '@/pages/PostDetail'
 import { renderWithProviders } from '@/test/test-utils'
-import { screen } from '@testing-library/react'
-import { Route, Routes } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 type ReturnMock = {
   mockReturnValue: (value: unknown) => unknown
@@ -49,9 +49,12 @@ describe('PostDetail image URL normalization', () => {
       mutate: vi.fn(),
     } as never)
     // Stub global fetch to prevent accidental real network requests
-    vi.stubGlobal('fetch', vi.fn(() =>
-      Promise.resolve(new Response(JSON.stringify([]), { status: 200 }))
-    ))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(new Response(JSON.stringify([]), { status: 200 }))
+      )
+    )
   })
 
   it('renders legacy absolute image URLs as same-origin relative src', () => {
