@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, apiClient } from '../api/client'
 import type { UpdateProfileRequest, User } from '../api/types'
+import { logger } from '../lib/logger'
 import { useAuthSessionStore } from '../stores/useAuthSessionStore'
 
 // Query keys
@@ -160,30 +161,71 @@ export function useValidateToken() {
   return useQuery({
     queryKey: ['auth', 'validate', token?.slice(-8)],
     queryFn: async () => {
+      const startTime = Date.now()
+      logger.debug('Token validation started')
+
       try {
         await apiClient.getCurrentUser()
+        const duration = Date.now() - startTime
+        logger.debug(`Token validation completed in ${duration}ms`)
         return true
       } catch (error) {
+        const duration = Date.now() - startTime
         const isAuthError =
           (error instanceof ApiError &&
             (error.status === 401 || error.status === 403)) ||
           (error instanceof Error &&
             (error.message.includes('Unauthorized') ||
               error.message.includes('Forbidden')))
+
+        const isTimeout =
+          error instanceof Error && error.message.includes('Request timeout')
+
         if (isAuthError) {
+          logger.debug(`Token validation failed (auth error) in ${duration}ms`)
           // Clear invalid session
           useAuthSessionStore.getState().clear()
           localStorage.removeItem('user')
           clearCachedUser()
           return false
         }
+
+        if (isTimeout) {
+          logger.debug(`Token validation failed (timeout) in ${duration}ms`)
+          // Treat timeout as invalid token to prevent infinite hang
+          useAuthSessionStore.getState().clear()
+          localStorage.removeItem('user')
+          clearCachedUser()
+          return false
+        }
+
+        logger.debug(
+          `Token validation failed (network error) in ${duration}ms, assuming valid`
+        )
         // If it's a different error (network, server), assume token is still valid
         return true
       }
     },
     enabled: !!token,
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: 30 * 1000, // 30 seconds (reduced from 60s)
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: false,
+    refetchOnMount: true, // Ensure fresh validation on navigation
+    refetchOnWindowFocus: false, // Prevent redundant re-validation on HMR focus events
+    // Optimistically assume the token is valid if it hasn't expired locally.
+    // This avoids showing "Validating session..." on every HMR reload while the
+    // background refetch confirms with the server. Data is immediately stale
+    // (no initialDataUpdatedAt), so the refetch still happens on mount.
+    initialData: () => {
+      if (!token) return undefined
+      try {
+        const parts = token.split('.')
+        if (parts.length !== 3) return undefined
+        const payload = JSON.parse(atob(parts[1]))
+        return payload.exp > Date.now() / 1000 ? true : undefined
+      } catch {
+        return undefined
+      }
+    },
   })
 }

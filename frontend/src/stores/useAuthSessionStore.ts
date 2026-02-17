@@ -14,8 +14,9 @@ export const useAuthSessionStore = create<AuthSessionState>()(
     set => ({
       _hasHydrated: false,
       accessToken: null,
-      setAccessToken: (token: string | null) => set({ accessToken: token }),
-      clear: () => set({ accessToken: null }),
+      setAccessToken: (token: string | null) =>
+        set({ accessToken: token, _hasHydrated: true }),
+      clear: () => set({ accessToken: null, _hasHydrated: true }),
     }),
     {
       name: 'auth-session-storage',
@@ -24,6 +25,9 @@ export const useAuthSessionStore = create<AuthSessionState>()(
           useAuthSessionStore.setState({ _hasHydrated: true })
         }
       },
+      partialize: state => ({
+        accessToken: state.accessToken,
+      }),
     }
   )
 )

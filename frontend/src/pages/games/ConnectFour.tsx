@@ -225,6 +225,8 @@ export default function ConnectFour() {
             }
             return newState
           })
+          // Ensure room metadata (opponent, status) is fresh when state changes
+          void queryClient.invalidateQueries({ queryKey: ['gameRoom', id] })
           break
         }
         case 'game_started':
@@ -437,14 +439,27 @@ export default function ConnectFour() {
     }
   }
 
-  if (!room || !gameState)
-    return <div className='p-8 text-center'>Loading game...</div>
-
-  const isCreator = currentUser?.id === room.creator_id
-  const isOpponent = currentUser?.id === room.opponent_id
+  const isCreator = currentUser?.id === room?.creator_id
+  const isOpponent = currentUser?.id === room?.opponent_id
   const isPlayer = isCreator || isOpponent
   const canJoin =
-    !isPlayer && room.status === 'pending' && gameState.status === 'pending'
+    !!room &&
+    !!gameState &&
+    !isPlayer &&
+    room.status === 'pending' &&
+    gameState.status === 'pending'
+
+  // Auto-attempt to join pending rooms when the current user is not a player.
+  // This makes the rematch flow smoother so a challenger doesn't need to
+  // manually click "Join Match" after navigating to a pending room.
+  useEffect(() => {
+    if (canJoin) {
+      void gameSession.joinRoom()
+    }
+  }, [canJoin, gameSession])
+
+  if (!room || !gameState) return <div className='p-8 text-center'>Loading game...</div>
+
   const isMyTurn =
     gameState.status === 'active' && gameState.next_turn === currentUser?.id
   const playerOneName = room.creator?.username ?? 'Deleted User'

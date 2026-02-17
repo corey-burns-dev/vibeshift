@@ -46,6 +46,7 @@ export function useGameRoomSession({
   onAction,
 }: UseGameRoomSessionOptions) {
   const previousTokenRef = useRef<string | null>(null)
+  const previousRoomIdRef = useRef<number | null | undefined>(roomId)
   const onActionRef = useRef(onAction)
   const shouldAutoJoinRef = useRef(false)
   const hasJoinedRef = useRef(false)
@@ -123,6 +124,22 @@ export function useGameRoomSession({
       },
       reconnectDelaysMs: [2000, 5000, 10000],
     })
+
+  // When roomId changes (e.g. "Play Again" navigates to a new room),
+  // reset join tracking and reconnect the WebSocket so it points at the
+  // new room's endpoint.  Without this the old socket stays open on the
+  // previous room and auto-join for the new room is silently skipped.
+  useEffect(() => {
+    const prevId = previousRoomIdRef.current
+    previousRoomIdRef.current = roomId
+
+    if (prevId != null && roomId != null && prevId !== roomId) {
+      hasJoinedRef.current = false
+      shouldAutoJoinRef.current = false
+      setPlannedReconnect(true)
+      reconnect(true)
+    }
+  }, [roomId, reconnect, setPlannedReconnect])
 
   const isSocketReady = connectionState === 'connected'
 

@@ -485,8 +485,11 @@ export function ChatProvider({ children }: ChatProviderProps) {
         }
 
         switch (data.type) {
-          case 'connected':
+          case 'connected': {
+            // Handshake is tracked by useManagedWebSocket base hook
+            logger.debug('[ChatProvider] Chat WebSocket handshake complete')
             break
+          }
 
           case 'joined': {
             const joinedId = data.conversation_id
@@ -815,6 +818,9 @@ export function ChatProvider({ children }: ChatProviderProps) {
         userId: currentUserRef.current?.id,
         username: currentUserRef.current?.username,
       })
+
+      // Handshake timeout is handled by useManagedWebSocket base hook
+
       const roomsToJoin = new Set(joinedRoomsRef.current)
       for (const roomId of roomsToJoin) {
         ws.send(JSON.stringify({ type: 'join', conversation_id: roomId }))

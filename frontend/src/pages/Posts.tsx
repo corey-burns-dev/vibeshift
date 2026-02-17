@@ -109,7 +109,7 @@ export default function Posts() {
   const [reportReason, setReportReason] = useState('')
   const [reportDetails, setReportDetails] = useState('')
   const queryClient = useQueryClient()
-  const debounceRef = useRef<number | null>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [likingPostId, setLikingPostId] = useState<number | null>(null)
 
   // Close post action menu on click outside (H5)

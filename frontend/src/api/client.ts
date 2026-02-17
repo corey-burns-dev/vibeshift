@@ -1,3 +1,4 @@
+import { fetchWithTimeout } from '../lib/fetch-utils'
 import { logger } from '../lib/logger'
 import { useAuthSessionStore } from '../stores/useAuthSessionStore'
 import type {
@@ -88,6 +89,7 @@ class ApiClient {
     const method = options.method || 'GET'
     const isFormDataBody = options.body instanceof FormData
 
+    const startTime = Date.now()
     logger.debug(`API Request: ${method} ${endpoint}`)
 
     const headers: Record<string, string> = {}
@@ -110,12 +112,30 @@ class ApiClient {
       delete headers['Content-Type']
     }
 
+    // Use shorter timeout for critical auth endpoints
+    const isCriticalAuthEndpoint =
+      endpoint === '/users/me' ||
+      endpoint === '/ws/ticket' ||
+      endpoint === '/auth/login' ||
+      endpoint === '/auth/signup' ||
+      endpoint === '/auth/refresh'
+    const timeout = isCriticalAuthEndpoint ? 5000 : 10000
+
     try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-        credentials: 'include',
-      })
+      const response = await fetchWithTimeout(
+        url,
+        {
+          ...options,
+          headers,
+          credentials: 'include',
+        },
+        timeout
+      )
+
+      const duration = Date.now() - startTime
+      logger.debug(
+        `API Request completed in ${duration}ms: ${method} ${endpoint}`
+      )
 
       const text = await response.text()
       const requestId = response.headers.get('X-Request-ID') || undefined
@@ -144,10 +164,11 @@ class ApiClient {
             logger.error('Token refresh failed', { error: refreshErr })
           }
 
-          // If refresh fails, clear auth and redirect to login
+          // If refresh fails, clear auth state and let React handle the redirect
+          // via ProtectedRoute — a hard window.location redirect destroys React Query
+          // and Zustand in-memory state, causing a reload loop on HMR.
           useAuthSessionStore.getState().clear()
           localStorage.removeItem('user')
-          window.location.href = '/login'
         }
 
         let errMsg = `HTTP ${response.status}: ${response.statusText}`
@@ -187,9 +208,16 @@ class ApiClient {
       if (error instanceof ApiError) throw error
 
       const msg = error instanceof Error ? error.message : String(error)
+      const isTimeout = msg.includes('Request timeout')
+
       logger.error(`API Network/Unexpected Error: ${method} ${endpoint}`, {
         error: msg,
+        isTimeout,
       })
+
+      if (isTimeout) {
+        throw new Error(`Request timeout: ${endpoint}`)
+      }
       throw new Error(`Connection failed: ${msg}`)
     }
   }
@@ -207,11 +235,15 @@ class ApiClient {
             ? `${window.location.origin}${this.baseUrl}/auth/refresh`
             : `${this.baseUrl}/auth/refresh`
 
-        const refreshResponse = await fetch(refreshUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-        })
+        const refreshResponse = await fetchWithTimeout(
+          refreshUrl,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+          },
+          5000 // 5s timeout for refresh
+        )
 
         if (refreshResponse.ok) {
           const data = await refreshResponse.json()

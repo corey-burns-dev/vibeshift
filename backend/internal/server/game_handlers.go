@@ -199,6 +199,16 @@ func (s *Server) WebSocketGameHandler() fiber.Handler {
 			s.gameHub.HandleAction(userID, action)
 		}
 
+		// Send connected message to signal handshake completion
+		_ = c.WriteJSON(notifications.GameAction{
+			Type:   "connected",
+			RoomID: roomID,
+			Payload: map[string]interface{}{
+				"user_id": userID,
+				"room_id": roomID,
+			},
+		})
+
 		// Launch write pump for serialized writes
 		go client.WritePump()
 

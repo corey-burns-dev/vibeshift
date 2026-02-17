@@ -23,6 +23,13 @@ interface UseManagedWebSocketOptions {
   ) => void
   reconnectDelaysMs?: number[]
   autoPong?: boolean
+  /**
+   * Connection handshake timeout in milliseconds.
+   * If the WebSocket doesn't receive a 'connected' message within this time,
+   * it will close and reconnect. Set to 0 to disable.
+   * @default 5000 (5 seconds)
+   */
+  handshakeTimeoutMs?: number
 }
 
 const DEFAULT_RECONNECT_DELAYS = [2000, 5000, 10000]
@@ -38,6 +45,7 @@ export function useManagedWebSocket({
   onClose,
   reconnectDelaysMs = DEFAULT_RECONNECT_DELAYS,
   autoPong = true,
+  handshakeTimeoutMs = 5000,
 }: UseManagedWebSocketOptions) {
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<number | null>(null)
@@ -45,6 +53,8 @@ export function useManagedWebSocket({
   const connectRef = useRef<() => void>(() => {})
   const unmountedRef = useRef(false)
   const enabledRef = useRef(enabled)
+  const handshakeTimeoutRef = useRef<number | null>(null)
+  const handshakeCompletedRef = useRef<boolean>(false)
 
   const createSocketRef = useRef(createSocket)
   const onOpenRef = useRef(onOpen)
@@ -53,6 +63,7 @@ export function useManagedWebSocket({
   const onCloseRef = useRef(onClose)
   const reconnectDelaysRef = useRef(reconnectDelaysMs)
   const autoPongRef = useRef(autoPong)
+  const handshakeTimeoutMsRef = useRef(handshakeTimeoutMs)
 
   const plannedReconnectRef = useRef(false)
   const [plannedReconnect, setPlannedReconnectState] = useState(false)
@@ -90,6 +101,10 @@ export function useManagedWebSocket({
     autoPongRef.current = autoPong
   }, [autoPong])
 
+  useEffect(() => {
+    handshakeTimeoutMsRef.current = handshakeTimeoutMs
+  }, [handshakeTimeoutMs])
+
   const handlePingMessage = useCallback(
     (ws: WebSocket, event: MessageEvent) => {
       if (!autoPongRef.current || ws.readyState !== WS_READY_OPEN) {
@@ -119,6 +134,32 @@ export function useManagedWebSocket({
     },
     []
   )
+
+  const handleConnectedMessage = useCallback((event: MessageEvent) => {
+    if (typeof event.data !== 'string') {
+      return false
+    }
+
+    try {
+      const payload = JSON.parse(event.data) as { type?: unknown }
+      if (payload.type === 'connected') {
+        // Mark handshake as completed and clear timeout
+        handshakeCompletedRef.current = true
+        if (handshakeTimeoutRef.current !== null) {
+          clearTimeout(handshakeTimeoutRef.current)
+          handshakeTimeoutRef.current = null
+        }
+        console.log(
+          '[ws-managed] Received "connected" message, handshake complete'
+        )
+        return true
+      }
+    } catch {
+      return false
+    }
+
+    return false
+  }, [])
 
   const clearReconnectTimer = useCallback(() => {
     if (reconnectTimeoutRef.current !== null) {
@@ -236,12 +277,39 @@ export function useManagedWebSocket({
         reconnectAttemptsRef.current = 0
         setConnectionState('connected')
         setPlannedReconnect(false)
+
+        // Set up connection handshake timeout if enabled
+        const timeoutMs = handshakeTimeoutMsRef.current
+        if (timeoutMs > 0) {
+          const connectStartTime = Date.now()
+          handshakeCompletedRef.current = false
+          console.log(
+            `[ws-managed] Waiting for 'connected' message (${timeoutMs}ms timeout)...`
+          )
+          handshakeTimeoutRef.current = window.setTimeout(() => {
+            if (!handshakeCompletedRef.current && wsRef.current === ws) {
+              const elapsed = Date.now() - connectStartTime
+              console.warn(
+                `[ws-managed] Connection handshake timeout after ${elapsed}ms, reconnecting...`
+              )
+              // Close the WebSocket to trigger reconnection
+              ws.close()
+            }
+          }, timeoutMs)
+        }
+
         onOpenRef.current?.(ws, event)
       }
 
       ws.onmessage = event => {
         if (wsRef.current !== ws) return
         if (handlePingMessage(ws, event)) return
+        // Check for connected message (handshake completion)
+        if (handleConnectedMessage(event)) {
+          // Still pass connected message to consumer's handler
+          onMessageRef.current?.(ws, event)
+          return
+        }
         onMessageRef.current?.(ws, event)
       }
 
@@ -273,7 +341,12 @@ export function useManagedWebSocket({
         scheduleReconnect()
       }
     })()
-  }, [handlePingMessage, scheduleReconnect, setPlannedReconnect])
+  }, [
+    handlePingMessage,
+    handleConnectedMessage,
+    scheduleReconnect,
+    setPlannedReconnect,
+  ])
 
   connectRef.current = connect
 
@@ -314,6 +387,11 @@ export function useManagedWebSocket({
       unmountedRef.current = true
       enabledRef.current = false
       clearReconnectTimer()
+      // Clean up handshake timeout
+      if (handshakeTimeoutRef.current !== null) {
+        clearTimeout(handshakeTimeoutRef.current)
+        handshakeTimeoutRef.current = null
+      }
       const ws = wsRef.current
       wsRef.current = null
       if (

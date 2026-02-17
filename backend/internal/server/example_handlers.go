@@ -74,6 +74,17 @@ func (s *Server) WebsocketHandler() fiber.Handler {
 
 		s.sendFriendsOnlineSnapshot(conn, uid)
 
+		// Send connected message to signal handshake completion
+		connectedMsg, _ := json.Marshal(map[string]interface{}{
+			"type": "connected",
+			"payload": map[string]interface{}{
+				"user_id": uid,
+			},
+		})
+		if err := conn.WriteMessage(websocket.TextMessage, connectedMsg); err != nil {
+			log.Printf("WebSocket Notification: Failed to send connected message: %v", err)
+		}
+
 		// Start pumps
 		go client.WritePump()
 		client.ReadPump()
