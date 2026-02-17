@@ -511,8 +511,8 @@ func (s *Server) ApproveSanctumRequest(c *fiber.Ctx) error {
 	}
 
 	var approvedRequest models.SanctumRequest
-	var createdSanctum models.Sanctum
-	var defaultRoom models.Conversation
+	createdSanctum := &models.Sanctum{}
+	defaultRoom := &models.Conversation{}
 
 	txErr := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&approvedRequest, requestID).Error; err != nil {
@@ -540,14 +540,14 @@ func (s *Server) ApproveSanctumRequest(c *fiber.Ctx) error {
 			return models.NewValidationError("slug is already in use")
 		}
 
-		createdSanctum = models.Sanctum{
+		*createdSanctum = models.Sanctum{
 			Name:            approvedRequest.RequestedName,
 			Slug:            approvedRequest.RequestedSlug,
 			Description:     approvedRequest.Reason,
 			CreatedByUserID: &approvedRequest.RequestedByUserID,
 			Status:          models.SanctumStatusActive,
 		}
-		if err := tx.Create(&createdSanctum).Error; err != nil {
+		if err := tx.Create(createdSanctum).Error; err != nil {
 			return err
 		}
 
@@ -560,13 +560,13 @@ func (s *Server) ApproveSanctumRequest(c *fiber.Ctx) error {
 			return err
 		}
 
-		defaultRoom = models.Conversation{
+		*defaultRoom = models.Conversation{
 			Name:      createdSanctum.Name,
 			IsGroup:   true,
 			CreatedBy: approvedRequest.RequestedByUserID,
 			SanctumID: &createdSanctum.ID,
 		}
-		if err := tx.Create(&defaultRoom).Error; err != nil {
+		if err := tx.Create(defaultRoom).Error; err != nil {
 			return err
 		}
 
@@ -594,7 +594,7 @@ func (s *Server) ApproveSanctumRequest(c *fiber.Ctx) error {
 	roomID := defaultRoom.ID
 	resp := fiber.Map{
 		"request": approvedRequest,
-		"sanctum": toSanctumDTO(createdSanctum, &roomID),
+		"sanctum": toSanctumDTO(*createdSanctum, &roomID),
 	}
 
 	s.publishBroadcastEvent(EventSanctumRequestReviewed, map[string]interface{}{
