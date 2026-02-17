@@ -6,3 +6,4 @@ reports/playwright-report/
 reports/test-results/
 test-results/
 test/tests/e2e/.auth/
+test/e2e/.auth/

@@ -1,10 +1,10 @@
+import { describe, expect, it } from 'vitest'
 import { countUnreadMessages } from '@/lib/chat-unread'
 import {
-    deduplicateDMConversations,
-    getDirectMessageAvatar,
-    getDirectMessageName,
+  deduplicateDMConversations,
+  getDirectMessageAvatar,
+  getDirectMessageName,
 } from '@/lib/chat-utils'
-import { describe, expect, it } from 'vitest'
 
 describe('chat utils edge cases', () => {
   it('deduplicates DM conversations keeping first occurrence', () => {

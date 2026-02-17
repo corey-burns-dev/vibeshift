@@ -1,13 +1,13 @@
+import { useQueryClient } from '@tanstack/react-query'
+import { useCallback, useEffect, useRef } from 'react'
+import { toast } from 'sonner'
+import { create } from 'zustand'
 import { apiClient } from '@/api/client'
 import { useManagedWebSocket } from '@/hooks/useManagedWebSocket'
 import { usePresenceStore } from '@/hooks/usePresence'
 import { logger } from '@/lib/logger'
 import { createTicketedWS } from '@/lib/ws-utils'
 import { useAuthSessionStore } from '@/stores/useAuthSessionStore'
-import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useRef } from 'react'
-import { toast } from 'sonner'
-import { create } from 'zustand'
 
 type RealtimeEventType =
   | 'post_created'

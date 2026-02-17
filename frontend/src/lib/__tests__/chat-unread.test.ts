@@ -1,5 +1,5 @@
-import countUnreadMessages from '@/lib/chat-unread'
 import { describe, expect, it } from 'vitest'
+import countUnreadMessages from '@/lib/chat-unread'
 
 describe('countUnreadMessages', () => {
   it('returns 0 for empty or undefined message lists', () => {

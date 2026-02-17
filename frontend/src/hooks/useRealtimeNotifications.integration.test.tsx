@@ -1,8 +1,8 @@
-import { apiClient } from '@/api/client'
 import { QueryClient } from '@tanstack/react-query'
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
 import { vi } from 'vitest'
+import { apiClient } from '@/api/client'
 
 vi.mock('@/hooks/useChat', () => ({
   useConversations: () => ({

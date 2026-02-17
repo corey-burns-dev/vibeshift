@@ -1,9 +1,9 @@
-import { apiClient } from '@/api/client'
-import { useMarkAsRead } from '@/hooks/useChat'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook } from '@testing-library/react'
 import type React from 'react'
 import { describe, expect, it, vi } from 'vitest'
+import { apiClient } from '@/api/client'
+import { useMarkAsRead } from '@/hooks/useChat'
 
 vi.mock('@/api/client', () => ({
   apiClient: {

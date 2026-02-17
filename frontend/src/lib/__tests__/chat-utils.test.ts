@@ -1,8 +1,8 @@
-import {
-    deduplicateDMConversations,
-    getDirectMessageName,
-} from '@/lib/chat-utils'
 import { describe, expect, it } from 'vitest'
+import {
+  deduplicateDMConversations,
+  getDirectMessageName,
+} from '@/lib/chat-utils'
 
 describe('chat-utils', () => {
   it('deduplicates DM conversations by other participant id', () => {
