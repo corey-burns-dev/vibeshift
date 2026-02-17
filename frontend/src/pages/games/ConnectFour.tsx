@@ -458,7 +458,8 @@ export default function ConnectFour() {
     }
   }, [canJoin, gameSession])
 
-  if (!room || !gameState) return <div className='p-8 text-center'>Loading game...</div>
+  if (!room || !gameState)
+    return <div className='p-8 text-center'>Loading game...</div>
 
   const isMyTurn =
     gameState.status === 'active' && gameState.next_turn === currentUser?.id
