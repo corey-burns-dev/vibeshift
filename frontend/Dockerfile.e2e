@@ -37,12 +37,12 @@ COPY frontend/ ./
 COPY scripts/wait-for-e2e.sh /app/wait-for-e2e.sh
 RUN chmod +x /app/wait-for-e2e.sh
 
+# Use a dedicated path for installed browsers
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
 # Ensure Playwright browsers are installed
 RUN npx playwright install-deps || true
 RUN npx playwright install chromium
-
-# Use a dedicated path for installed browsers
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 # Wait for services, then run Playwright. The wait script will exec the CMD.
 ENTRYPOINT ["/app/wait-for-e2e.sh"]
