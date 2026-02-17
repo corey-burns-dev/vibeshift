@@ -24,12 +24,14 @@
 ## Frontend (Vitest + RTL)
 
 ### Lib
+
 - Left-nav ordering/exclusion logic
   - `frontend/src/lib/sanctums.test.ts`
 - Utils
   - `frontend/src/lib/utils.test.ts`
 
 ### Hooks
+
 - Auth: signup, login, logout, getAuthToken
   - `frontend/src/hooks/useAuth.test.tsx`
 - Chat: conversations, messages, chatrooms, mutations
@@ -46,12 +48,14 @@
   - `frontend/src/hooks/usePosts.test.tsx`, `useUsers.test.tsx`, `useStreams.test.tsx`, `useComments.test.tsx`
 
 ### Providers
+
 - ChatProvider WebSocket dedupe and reconnect
   - `frontend/src/providers/ChatProvider.spec.tsx`
 - ChatProvider integration (subscription/message flow)
   - `frontend/src/providers/ChatProvider.integration.test.tsx`
 
 ### Components
+
 - MessageList, MessageItem, ChatDockConversationList, ParticipantsList
   - `frontend/src/components/chat/*.test.tsx`
 - FriendList, FriendCard, FriendRequests
@@ -60,6 +64,7 @@
   - `frontend/src/components/ProtectedRoute.test.tsx`, `ErrorBoundary.test.tsx`
 
 ### Pages
+
 - Request form, My Requests, Routes, Onboarding
   - `frontend/src/pages/SanctumRequestForm.test.tsx`, `MySanctumRequests.test.tsx`, `SanctumRoutes.test.tsx`, `OnboardingSanctums.test.tsx`
 - Login, Signup
@@ -69,17 +74,17 @@
 
 ## E2E (Playwright)
 
- - User submits Sanctum request and sees it in My Requests
-  - `frontend/test/tests/e2e/sanctum-user-request.spec.ts` (`@smoke`)
- - Admin approves request and sanctum appears in list/detail
-  - `frontend/test/tests/e2e/sanctum-admin-approve.spec.ts` (`@smoke`)
- - Open Chat button navigates using `default_chat_room_id`
-  - `frontend/test/tests/e2e/sanctum-open-chat.spec.ts`
- - Non-admin access control for admin page/approve endpoint
-  - `frontend/test/tests/e2e/sanctum-access-control.spec.ts`
- - Auth flows (signup, login)
-  - `frontend/test/tests/e2e/auth-flows.spec.ts`
- - Friends page
-  - `frontend/test/tests/e2e/friends-workflow.spec.ts`
- - Navigation (sanctums, posts)
-  - `frontend/test/tests/e2e/navigation.spec.ts`
+- User submits Sanctum request and sees it in My Requests
+- `frontend/test/tests/e2e/sanctum-user-request.spec.ts` (`@smoke`)
+- Admin approves request and sanctum appears in list/detail
+- `frontend/test/tests/e2e/sanctum-admin-approve.spec.ts` (`@smoke`)
+- Open Chat button navigates using `default_chat_room_id`
+- `frontend/test/tests/e2e/sanctum-open-chat.spec.ts`
+- Non-admin access control for admin page/approve endpoint
+- `frontend/test/tests/e2e/sanctum-access-control.spec.ts`
+- Auth flows (signup, login)
+- `frontend/test/tests/e2e/auth-flows.spec.ts`
+- Friends page
+- `frontend/test/tests/e2e/friends-workflow.spec.ts`
+- Navigation (sanctums, posts)
+- `frontend/test/tests/e2e/navigation.spec.ts`

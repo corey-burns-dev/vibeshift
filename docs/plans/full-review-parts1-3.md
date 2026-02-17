@@ -13,6 +13,7 @@ The 2026-02-12 deep production review identified 5 HIGH priority issues. This pl
 **File:** `backend/internal/notifications/notifier.go`
 
 **Changes:**
+
 - Add `"log"` and `"runtime/debug"` to imports
 - Wrap `onMessage(...)` in all 3 subscriber goroutines (lines 53-58, 120-123, 150-153) with per-message panic recovery using an IIFE:
 
@@ -46,6 +47,7 @@ The IIFE ensures recovery per message (bare `defer` in a `for` loop only fires o
 **Changes — admin endpoints (lines 419-431):**
 
 Add `middleware.RateLimit(...)` to each route:
+
 - **Admin reads** (GET): `30 req / 1 min`, resource name `"admin_read"`
   - `/feature-flags`, `/reports`, `/ban-requests`, `/users`, `/users/:id`, `/sanctum-requests/`
 - **Admin writes** (POST): `10 req / 5 min`, resource name `"admin_write"`
@@ -54,6 +56,7 @@ Add `middleware.RateLimit(...)` to each route:
 **Changes — user report endpoints (lines 339, 368, 385):**
 
 Add `middleware.RateLimit(s.redis, 5, 10*time.Minute, "report")` to:
+
 - `users.Post("/:id/report", ...)`
 - `posts.Post("/:id/report", ...)`
 - `conversations.Post("/:id/messages/:messageId/report", ...)`
@@ -78,20 +81,20 @@ No new imports needed (`middleware` and `time` already imported). Rate limits ar
 
 **Tests (~20 cases):**
 
-| Function | Test Cases |
-|----------|-----------|
-| `GetMyBlocks` | empty list; with blocks |
-| `BlockUser` | success; self-block prevention; duplicate block |
-| `UnblockUser` | success; not found |
-| `ReportUser` | success; missing reason; target not found |
-| `ReportPost` | success; post not found |
-| `GetAdminReports` | empty; with status/type filters |
-| `ResolveAdminReport` | success; invalid status; not found |
-| `GetAdminBanRequests` | aggregation with multiple reports |
-| `GetAdminUsers` | list; search filter |
-| `GetAdminUserDetail` | success; not found |
-| `BanUser` | success; self-ban prevention |
-| `UnbanUser` | success |
+| Function              | Test Cases                                      |
+| --------------------- | ----------------------------------------------- |
+| `GetMyBlocks`         | empty list; with blocks                         |
+| `BlockUser`           | success; self-block prevention; duplicate block |
+| `UnblockUser`         | success; not found                              |
+| `ReportUser`          | success; missing reason; target not found       |
+| `ReportPost`          | success; post not found                         |
+| `GetAdminReports`     | empty; with status/type filters                 |
+| `ResolveAdminReport`  | success; invalid status; not found              |
+| `GetAdminBanRequests` | aggregation with multiple reports               |
+| `GetAdminUsers`       | list; search filter                             |
+| `GetAdminUserDetail`  | success; not found                              |
+| `BanUser`             | success; self-ban prevention                    |
+| `UnbanUser`           | success                                         |
 
 `ReportMessage` deferred (requires `chatSvc()` with real repositories).
 
@@ -99,19 +102,19 @@ No new imports needed (`middleware` and `time` already imported). Rate limits ar
 
 **Tests (~7 cases):**
 
-| Function | Test Cases |
-|----------|-----------|
-| `GetSanctumAdmins` | as owner (200); as non-owner (403) |
-| `PromoteSanctumAdmin` | success; user not found |
-| `DemoteSanctumAdmin` | success; cannot demote owner; not found |
+| Function              | Test Cases                              |
+| --------------------- | --------------------------------------- |
+| `GetSanctumAdmins`    | as owner (200); as non-owner (403)      |
+| `PromoteSanctumAdmin` | success; user not found                 |
+| `DemoteSanctumAdmin`  | success; cannot demote owner; not found |
 
 ### File 3: `backend/internal/server/chat_safety_handlers_test.go` (new)
 
 **Tests (~4 cases):**
 
-| Function | Test Cases |
-|----------|-----------|
-| `GetMyMentions` | empty; with mentions |
+| Function                    | Test Cases                               |
+| --------------------------- | ---------------------------------------- |
+| `GetMyMentions`             | empty; with mentions                     |
 | `getMessageReactionSummary` | direct helper test with seeded reactions |
 
 `AddMessageReaction`/`RemoveMessageReaction` deferred (require `chatHub` + `chatSvc()`).
@@ -128,10 +131,10 @@ No new imports needed (`middleware` and `time` already imported). Rate limits ar
 
 ## Files Summary
 
-| File | Action |
-|------|--------|
-| `backend/internal/notifications/notifier.go` | Edit (add recovery) |
-| `backend/internal/server/server.go` | Edit (add rate limits) |
-| `backend/internal/server/moderation_handlers_test.go` | Create |
-| `backend/internal/server/sanctum_admin_handlers_test.go` | Create |
-| `backend/internal/server/chat_safety_handlers_test.go` | Create |
+| File                                                     | Action                 |
+| -------------------------------------------------------- | ---------------------- |
+| `backend/internal/notifications/notifier.go`             | Edit (add recovery)    |
+| `backend/internal/server/server.go`                      | Edit (add rate limits) |
+| `backend/internal/server/moderation_handlers_test.go`    | Create                 |
+| `backend/internal/server/sanctum_admin_handlers_test.go` | Create                 |
+| `backend/internal/server/chat_safety_handlers_test.go`   | Create                 |

@@ -57,6 +57,7 @@ go run ./backend/cmd/openapi-compat -base /tmp/base-swagger.yaml -revision backe
 ```
 
 Notes:
+
 - CI now includes a fast `go test -short` job that runs early to fail fast on obvious test regressions.
 - Nightly job: `Nightly Go Race Detector` runs `go test -race ./...` against a test Postgres and Redis.
 - Dependabot is enabled for Actions and Go modules; review Dependabot PRs and test updates locally.
@@ -69,4 +70,5 @@ redli -h localhost -p 6379 PING
 If CI fails on formatting or linting, fix locally and push; do not merge until checks are green.
 
 Operational rollback procedure:
+
 - See `docs/operations/runbooks/rollback-runbook.md` (including `scripts/rollback_to_ref.sh` dry-run and execute modes).

@@ -8,16 +8,17 @@ Understanding exactly what your local LLM can handle and how to design queues ar
 
 **Llama 3.1 8B on a Good GPU (RTX 3080/4070 level):**
 
-| Metric | Value |
-|--------|-------|
-| **Tokens per second** | 50-100 tokens/s |
-| **Average response time** | 1-3 seconds |
-| **Concurrent requests** | 1 (sequential by default) |
-| **VRAM usage** | ~6GB |
-| **Requests per minute** | ~20-40 |
-| **Requests per hour** | ~1,200-2,400 |
+| Metric                    | Value                     |
+| ------------------------- | ------------------------- |
+| **Tokens per second**     | 50-100 tokens/s           |
+| **Average response time** | 1-3 seconds               |
+| **Concurrent requests**   | 1 (sequential by default) |
+| **VRAM usage**            | ~6GB                      |
+| **Requests per minute**   | ~20-40                    |
+| **Requests per hour**     | ~1,200-2,400              |
 
 **What this means practically:**
+
 - ✅ Can handle moderation checks during post creation (1-2s delay)
 - ✅ Can process 100-200 posts/hour for batch scanning
 - ✅ Can analyze site health every 6 hours easily
@@ -31,12 +32,14 @@ Understanding exactly what your local LLM can handle and how to design queues ar
 ### Scenario 1: Small/Medium Site (Your Likely Case)
 
 **Your probable stats:**
+
 - 100-500 active users
 - 50-200 posts/day
 - 200-500 comments/day
 - Peak traffic: 10-20 posts/hour
 
 **AI workload:**
+
 ```
 Moderation checks per hour (peak): 20-30
 Time per check: 2 seconds
@@ -53,12 +56,14 @@ You can handle this easily with a simple queue.
 ### Scenario 2: Growing Site
 
 **Stats:**
+
 - 1,000-5,000 active users
 - 500-2,000 posts/day
 - 2,000-5,000 comments/day
 - Peak: 50-100 posts/hour
 
 **AI workload:**
+
 ```
 Moderation checks per hour (peak): 100-150
 Time per check: 2 seconds
@@ -73,12 +78,14 @@ Utilization: ~5-8%
 ### Scenario 3: Large Site (Future Planning)
 
 **Stats:**
+
 - 10,000+ active users
 - 5,000+ posts/day
 - 20,000+ comments/day
 - Peak: 200-300 posts/hour
 
 **AI workload:**
+
 ```
 Moderation checks per hour (peak): 300-400
 Time per check: 2 seconds
@@ -205,6 +212,7 @@ def moderate():
 ```
 
 **Performance:**
+
 - Sequential processing: ~30-60 requests/minute
 - Queue can hold thousands of items
 - Simple, reliable, easy to monitor
@@ -333,6 +341,7 @@ Return array of results: [{{"safe": true/false, "violations": [...]}}, ...]
 ```
 
 **Benefit:**
+
 - Can process 10 items in ~3 seconds instead of 10×2=20 seconds
 - 3-4x throughput improvement
 - Good for background scanning
@@ -401,6 +410,7 @@ def smart_moderate(text):
 ```
 
 **Performance gain:**
+
 - ~50% of content can skip AI
 - Those items process in <10ms instead of 2s
 - AI queue stays clearer for complex cases
@@ -453,6 +463,7 @@ async def deep_ai_check(post_id, content):
 ```
 
 **User experience:**
+
 - Post appears immediately (fast!)
 - AI checks it within 2-3 seconds
 - If bad, gets removed quickly
@@ -543,6 +554,7 @@ class TieredAI:
 ```
 
 **Models you could run simultaneously:**
+
 - Phi-3 Mini (3.8B) - 2GB VRAM - Fast simple checks
 - Llama 3.1 8B - 6GB VRAM - Complex analysis
 - **Total: 8GB VRAM - can run both!**
@@ -567,6 +579,7 @@ class HybridAI:
 ```
 
 **Cost:**
+
 - Normal traffic: $0 (local)
 - Spike traffic: $0.01-0.02 per request (cloud)
 - Total: Maybe $5-10/month for spikes
@@ -659,6 +672,7 @@ class QueueMetrics:
 ```
 
 **Alert if:**
+
 - Queue size > 100 (getting backed up)
 - Average wait time > 5s (too slow)
 - Requests per minute approaching capacity (need scaling)
@@ -702,6 +716,7 @@ def moderate_post_with_queue(content, user_id):
 ```
 
 **Performance:**
+
 - 50% skip AI entirely (fast-path) - <10ms
 - 30% use cache - <1ms
 - 15% normal AI - 2-3s
@@ -715,22 +730,26 @@ def moderate_post_with_queue(content, user_id):
 ## 🎯 Summary & Recommendations
 
 **Your Situation (Most Likely):**
+
 - Small/medium site
 - <100 posts/hour peak
 - Good GPU (6GB+ VRAM)
 
 **Recommendation:**
+
 1. Start with simple FIFO queue
 2. Add fast-path optimization
 3. Monitor queue size and wait times
 4. If queue ever backs up, add priority levels
 
 **You'll be fine with:**
+
 - Single Llama 3.1 8B instance
 - Simple Python queue
 - 90%+ headroom for growth
 
 **When to worry:**
+
 - Queue consistently >20 items
 - Wait times >3 seconds average
 - Processing <30 req/minute

@@ -14,13 +14,13 @@ For code-level implementation details, see:
 make db-migrate
 ```
 
-2. Start the app:
+1. Start the app:
 
 ```bash
 make dev
 ```
 
-3. Sign in as a master admin (development root defaults below).
+1. Sign in as a master admin (development root defaults below).
 
 ## Roles and What They Can Do
 

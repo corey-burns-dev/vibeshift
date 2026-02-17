@@ -1,7 +1,15 @@
 import { defineConfig, devices } from '@playwright/test'
+import fs from 'node:fs'
+import path from 'node:path'
+
+// Prefer new canonical location `test/e2e` but fall back to legacy `test/tests/e2e`.
+const baseDir = process.cwd()
+const preferred = path.join(baseDir, 'test', 'e2e')
+const legacy = path.join(baseDir, 'test', 'tests', 'e2e')
+const testDir = fs.existsSync(preferred) ? './test/e2e' : './test/tests/e2e'
 
 export default defineConfig({
-  testDir: './test/tests/e2e',
+  testDir: testDir,
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
   forbidOnly: !!process.env.CI,
@@ -24,8 +32,8 @@ export default defineConfig({
     ['list'],
     ['html', { open: 'never', outputFolder: 'reports/playwright-report' }],
   ],
-  globalSetup: './test/tests/e2e/global-setup.ts',
-  globalTeardown: './test/tests/e2e/global-teardown.ts',
+  globalSetup: `${testDir}/global-setup.ts`,
+  globalTeardown: `${testDir}/global-teardown.ts`,
   projects: [
     {
       name: 'chromium',

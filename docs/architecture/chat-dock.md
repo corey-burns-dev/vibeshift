@@ -49,11 +49,11 @@ Transform the existing full-page chat views (`/chat` for chatrooms, `/messages` 
 
 ### Z-Index Strategy
 
-| Element | z-index |
-|---------|---------|
-| TopBar, MobileHeader, BottomBar | `z-50` |
-| ChatDock (button + panel) | `z-[60]` |
-| Toasts (Sonner) | `z-[100]` |
+| Element                         | z-index   |
+| ------------------------------- | --------- |
+| TopBar, MobileHeader, BottomBar | `z-50`    |
+| ChatDock (button + panel)       | `z-[60]`  |
+| Toasts (Sonner)                 | `z-[100]` |
 
 ### Reused Existing Code
 
@@ -66,8 +66,6 @@ Transform the existing full-page chat views (`/chat` for chatrooms, `/messages` 
 ---
 
 ## ✅ Phase 2: Persistent WebSocket Connection (COMPLETED)
-
-### What was built
 
 **New files created:**
 
@@ -110,9 +108,7 @@ Transform the existing full-page chat views (`/chat` for chatrooms, `/messages` 
 
 ## ✅ Phase 3: Enhanced Notifications & Unread Counts (COMPLETED)
 
-### What was built
-
-#### 3.1 Toast Notifications for Incoming Messages
+### 3.1 Toast Notifications for Incoming Messages
 
 - **`frontend/src/components/chat/ChatDock.tsx`**
   - In the `setOnMessage` callback: when the message is from another user and the dock is closed, minimized, or a different conversation is active, show a sonner toast.
@@ -144,9 +140,7 @@ Transform the existing full-page chat views (`/chat` for chatrooms, `/messages` 
 
 ## ✅ Phase 4: Polished UX & Persistence (COMPLETED)
 
-### What was built
-
-#### 4.1 Persist Dock State to localStorage
+### 4.1 Persist Dock State to localStorage
 
 - **`frontend/src/stores/useChatDockStore.ts`**
   - Extended `partialize` to persist `activeConversationId`, `drafts`, and `unreadCounts` (same storage key `chat-dock-storage`).
@@ -173,9 +167,7 @@ Transform the existing full-page chat views (`/chat` for chatrooms, `/messages` 
 
 ## ✅ Phase 5: Refactor Existing Pages to Use ChatProvider (COMPLETED)
 
-### What was built
-
-#### 5.1 Messages Page
+### 5.1 Messages Page
 
 - **`frontend/src/pages/Messages.tsx`**
   - Replaced `useChatWebSocket()` with `useChatContext()`
@@ -250,6 +242,7 @@ Transform the existing full-page chat views (`/chat` for chatrooms, `/messages` 
 ### Current WebSocket Architecture
 
 **Current (Phase 5):**
+
 - `ChatProvider` (root level) — single source of truth for WebSocket
 - `ChatDock` — consumes context; re-registers message callback when leaving `/messages` or `/chat`
 - `/messages` and `/chat` pages — consume context (no duplicate connections)
@@ -258,17 +251,19 @@ Transform the existing full-page chat views (`/chat` for chatrooms, `/messages` 
 ### State Management
 
 **Zustand stores:**
+
 - `useChatDockStore` -- dock UI state, unread counts, drafts
 - `usePresenceStore` -- online user IDs (existing)
 
 **TanStack Query cache:**
+
 - `['chat', 'conversations']` -- conversation list
 - `['chat', 'messages', conversationId]` -- messages per conversation
 - Updated automatically by ChatProvider WebSocket handler
 
 ### Component Hierarchy
 
-```
+```text
 App.tsx
 └── Router
     └── ChatProvider  <-- owns WebSocket
@@ -330,16 +325,19 @@ App.tsx
 ### Architectural Decisions
 
 **Why Zustand for dock state?**
+
 - Lightweight, no provider boilerplate
 - Easy to access outside React components if needed
 - Already used for `usePresenceStore`
 
 **Why not use TanStack Query for unread counts?**
+
 - Unread counts are ephemeral UI state, not server data
 - Simpler to manage in Zustand with local increments
 - Can sync with server data when available
 
 **Why keep existing pages using useChatWebSocket in Phase 2?**
+
 - Minimizes risk and scope of Phase 2
 - Pages continue to work while ChatProvider is stabilized
 - Easier to test in isolation

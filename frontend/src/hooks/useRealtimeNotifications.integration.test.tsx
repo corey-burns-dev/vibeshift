@@ -1,13 +1,8 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { QueryClient } from '@tanstack/react-query'
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
-import { lazy, Suspense } from 'react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { vi } from 'vitest'
 import { apiClient } from '@/api/client'
-import type { Conversation } from '@/api/types'
 
 vi.mock('@/hooks/useChat', () => ({
   useConversations: () => ({
@@ -69,9 +64,6 @@ vi.mock('@/providers/ChatProvider', () => {
   }
 })
 
-import Chat from '@/pages/Chat'
-import { ChatProvider } from '@/providers/ChatProvider'
-
 // This test exercises the notification -> open direct message flow.
 // It ensures the created conversation is seeded into the cache and
 // the chat view renders instead of stalling in a loading state.
@@ -109,17 +101,16 @@ describe('realtime notification -> open DM flow', () => {
     const conv = await apiClient.createConversation({ participant_ids: [2] })
 
     // Seeding logic (mimicking the actual implementation in useRealtimeNotifications or wherever)
-    queryClient.setQueryData(['chat', 'conversations'], (old: any) => {
-      const existing = Array.isArray(old) ? old : []
+    queryClient.setQueryData(['chat', 'conversations'], (old: unknown) => {
+      const existing = Array.isArray(old) ? (old as unknown[]) : []
       return [conv, ...existing]
     })
     queryClient.setQueryData(['chat', 'conversation', conv.id], conv)
 
     // Verify cache state
-    const cachedList = queryClient.getQueryData([
-      'chat',
-      'conversations',
-    ]) as any[]
+    const cachedList = queryClient.getQueryData(['chat', 'conversations']) as
+      | unknown[]
+      | undefined
     const cachedConv = queryClient.getQueryData([
       'chat',
       'conversation',

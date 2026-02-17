@@ -19,13 +19,14 @@ sudo chown $(id -u):$(id -g) /tmp/sanctum/uploads/images
 chmod 0750 /tmp/sanctum/uploads/images
 ```
 
-4. To use a different path locally, set `IMAGE_UPLOAD_DIR` in your `.env` or in `backend/config.yml` (or the env file used by your local setup). Example `.env` entry:
+1. To use a different path locally, set `IMAGE_UPLOAD_DIR` in your `.env` or in `backend/config.yml` (or the env file used by your local setup). Example `.env` entry:
 
-```
+```text
 IMAGE_UPLOAD_DIR=/tmp/sanctum/uploads/images
 ```
 
 Notes
+
 - Production uses `/var/sanctum/uploads/images` and `nginx` expects that directory to exist and be readable by the nginx user. Do not change production paths without coordinating deployment.
 - The backend now attempts to create the configured `IMAGE_UPLOAD_DIR` automatically when running in development to reduce missing-file errors.
 - If you still see 404s for `/media/i/...` verify that the image hash directory contains `master.jpg` (e.g. `/tmp/sanctum/uploads/images/<hash>/master.jpg`).

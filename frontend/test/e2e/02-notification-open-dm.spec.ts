@@ -1,7 +1,9 @@
 import { expect, request, test } from '@playwright/test'
 
 test.describe('Notification -> open DM', () => {
-  test('creates conversation via API and opens chat route', async ({ page }) => {
+  test('creates conversation via API and opens chat route', async ({
+    page,
+  }) => {
     const apiBase = process.env.PLAYWRIGHT_API_URL
     test.skip(!apiBase, 'PLAYWRIGHT_API_URL not configured')
 
@@ -26,13 +28,17 @@ test.describe('Notification -> open DM', () => {
   })
 })
 
-test('unread badge appears after external message and clears on open', async ({ page }) => {
+test('unread badge appears after external message and clears on open', async ({
+  page,
+}) => {
   const apiBase = process.env.PLAYWRIGHT_API_URL
   test.skip(!apiBase, 'PLAYWRIGHT_API_URL not configured')
 
   const api = await request.newContext({ baseURL: apiBase })
   // create a conversation with a fake user id
-  const resp = await api.post('conversations', { data: { participant_ids: [2] } })
+  const resp = await api.post('conversations', {
+    data: { participant_ids: [2] },
+  })
   test.expect(resp.ok()).toBeTruthy()
   const conv = await resp.json()
 
@@ -41,7 +47,10 @@ test('unread badge appears after external message and clears on open', async ({ 
     data: { body: 'Hello from API test' },
   })
 
-  test.skip(!msgResp.ok(), 'Message creation via API not permitted in this environment')
+  test.skip(
+    !msgResp.ok(),
+    'Message creation via API not permitted in this environment'
+  )
 
   // Now navigate home and assert the ChatDock shows an unread badge
   await page.goto('/')

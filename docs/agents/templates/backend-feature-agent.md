@@ -17,7 +17,6 @@ tools:
 
 # Backend Feature Agent (Go / Postgres / Redis)
 
-
 > Follow `/AGENTS.md` for repo-wide rules and constraints.
 
 ## Purpose

@@ -9,6 +9,7 @@ A practical, scalable approach to maintaining production quality as you add new 
 **Small changes, small reviews. Big changes, bigger reviews.**
 
 The key is having:
+
 1. **Automated checks** that run on every change
 2. **Scope-based review checklists** that scale with change size
 3. **Critical-path verification** that ensures core functionality isn't broken
@@ -18,6 +19,7 @@ The key is having:
 ## 🔄 Three-Tier Review System
 
 ### Tier 1: Automatic (Every Commit)
+
 **Time: 2-5 minutes** | **Effort: Zero** | **Runs: Automatically**
 
 This happens automatically in your CI/CD pipeline. No manual effort required.
@@ -65,6 +67,7 @@ jobs:
 ```
 
 **What this catches:**
+
 - Syntax errors
 - Type errors
 - Lint violations
@@ -75,6 +78,7 @@ jobs:
 ---
 
 ### Tier 2: Self-Review Checklist (Every Feature)
+
 **Time: 10-15 minutes** | **Effort: Medium** | **Runs: Before creating PR**
 
 Use this checklist for EVERY new feature, route, or significant change. Copy this into your PR template.
@@ -133,12 +137,14 @@ Use this checklist for EVERY new feature, route, or significant change. Copy thi
 ```
 
 **How to use:**
+
 1. Copy this checklist into your PR description
 2. Check off each item as you verify it
 3. Fix any issues you find
 4. Only create PR when all boxes checked
 
 **Time saver:** Create a script to add this to every PR:
+
 ```bash
 # scripts/create-pr.sh
 #!/bin/bash
@@ -148,9 +154,11 @@ cat .github/PULL_REQUEST_TEMPLATE.md | gh pr create --fill
 ---
 
 ### Tier 3: Focused Code Review (Features with Complexity/Risk)
+
 **Time: 30-60 minutes** | **Effort: High** | **Runs: For risky changes**
 
 Use this for features that:
+
 - Touch authentication/authorization
 - Modify WebSocket functionality  
 - Change database schema
@@ -286,6 +294,7 @@ Use this to decide how much review effort is needed:
 ```
 
 **Rule of thumb:**
+
 - Lines changed < 50: Tier 1
 - Lines changed 50-300: Tier 2
 - Lines changed > 300 OR touches critical systems: Tier 3
@@ -297,6 +306,7 @@ Use this to decide how much review effort is needed:
 Set up automatic blocking for common issues:
 
 ### Pre-commit Hook
+
 ```bash
 #!/bin/bash
 # .git/hooks/pre-commit
@@ -329,6 +339,7 @@ echo "✅ Pre-commit checks passed"
 Install with: `cp .git/hooks/pre-commit.sample .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit`
 
 ### GitHub Actions Quality Gate
+
 ```yaml
 # .github/workflows/quality-gate.yml
 name: Quality Gate
@@ -369,6 +380,7 @@ jobs:
 ## 📁 Organizing Your Workflow
 
 ### PR Template
+
 Create `.github/pull_request_template.md`:
 
 ```markdown
@@ -428,6 +440,7 @@ Closes #[issue number]
 ```
 
 ### Commit Message Convention
+
 Enforce this with a commit-msg hook:
 
 ```
@@ -439,6 +452,7 @@ footer
 ```
 
 Types:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `sec`: Security fix
@@ -449,6 +463,7 @@ Types:
 - `chore`: Maintenance
 
 Example:
+
 ```
 feat(chat): add message reactions
 
@@ -466,6 +481,7 @@ Closes #123
 Let's walk through adding a new feature: **"User can edit their posts"**
 
 ### Step 1: Automated (Happens automatically)
+
 ```bash
 git checkout -b feature/post-editing
 # ... make changes ...
@@ -477,6 +493,7 @@ git push origin feature/post-editing
 ```
 
 ### Step 2: Self-Review (15 minutes)
+
 ```markdown
 ## Feature Self-Review: Post Editing
 
@@ -523,6 +540,7 @@ All boxes checked! Ready for PR.
 ```
 
 ### Step 3: Create PR with checklist
+
 ```bash
 gh pr create --fill
 # PR template auto-fills with checklist
@@ -530,7 +548,9 @@ gh pr create --fill
 ```
 
 ### Step 4: Peer Review (Optional but recommended)
+
 For this feature: **Low risk** (simple CRUD operation)
+
 - Quick peer review: 5-10 minutes
 - Reviewer focuses on: Authorization logic, tests
 
@@ -570,9 +590,10 @@ Keep these metrics to ensure quality doesn't slip:
 ## 🚨 When to Do a Full Review Again
 
 Trigger a full production review when:
+
 - **Time-based**: Every 3-6 months
 - **Change-based**: After 100+ PRs merged
-- **Event-based**: 
+- **Event-based**:
   - Before major version release
   - After security incident
   - Before scaling to new user tier (1k → 10k → 100k users)
@@ -611,17 +632,20 @@ If any answer is concerning → Tier 3 review
 ## Summary
 
 **The key to sustainable quality:**
+
 1. **Automate everything possible** (Tier 1)
 2. **Make self-review a habit** (Tier 2)  
 3. **Invest in deep review when needed** (Tier 3)
 4. **Track metrics** to ensure it's working
 
 **Time investment:**
+
 - Tier 1: 0 minutes (automated)
 - Tier 2: 15 minutes per feature
 - Tier 3: 60 minutes per risky feature
 
 **This is sustainable because:**
+
 - 80% of features are Tier 1-2 (15 min or less)
 - 20% of features need Tier 3 (where risk is highest)
 - Full reviews are rare (quarterly)

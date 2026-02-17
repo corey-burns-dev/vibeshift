@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { TEST_TIMEOUTS } from './config'
 import { readTokenFromStorageState, USER_STATE_PATH } from './fixtures/auth'
 import { deleteAllMyPosts } from './utils/api'

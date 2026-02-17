@@ -70,6 +70,7 @@ At minimum:
 - Validate migration checksums at startup
 
 **Migration Test Correctness:**
+
 - Test file: `backend/test/sanctum_migration_seed_test.go`
 - Must use real SQL migrations (`runMigrations`) instead of `runAutoMigrate`
 - Validate FK constraints: `fk_conversations_sanctum`
@@ -218,6 +219,7 @@ Prioritize:
 Run backend tests with race detection enabled.
 
 **Test Infrastructure Health:**
+
 - `make test-backend` must pass
 - `make test-backend-integration` must pass
 - `make test-frontend` must pass
@@ -287,11 +289,13 @@ If the answer is unclear, add visibility there.
 **Issue:** Production frontend cannot reliably reach API/WS through current container routing.
 
 **Root Causes:**
+
 1. `frontend/nginx.conf:1` only proxies `/health`, not `/api` or WS upgrade headers
 2. `compose.yml:53` does not expose backend port publicly
 3. Browser direct calls to `:8375` fail in prod-style deployment
 
 **Fix:**
+
 1. Update `frontend/nginx.conf` to proxy `/api` to `app:8375` with WS upgrade headers
 2. Keep `/health` proxy as-is
 3. Ensure `/api/ws/*` flows through same proxy
@@ -303,10 +307,12 @@ If the answer is unclear, add visibility there.
 **Issue:** WS base URL construction is environment-fragile and breaks in deployed contexts.
 
 **Root Causes:**
+
 1. `frontend/src/lib/chat-utils.ts:85` hardcodes `hostname + VITE_API_PORT|8375`, ignoring `VITE_API_URL`
 2. `frontend/src/api/client.ts:50` defaults API to `http://localhost:8375/api`
 
 **Fix:**
+
 1. Change frontend API default from hardcoded localhost to same-origin: `/api`
 2. Replace `getWsBaseUrl()` logic to derive WS host from resolved API URL
 3. Keep support for explicit `VITE_API_URL` absolute URLs
@@ -319,11 +325,13 @@ If the answer is unclear, add visibility there.
 **Issue:** Game WebSocket has duplicate fanout paths and concurrent write risks.
 
 **Root Causes:**
+
 1. `backend/internal/server/game_handlers.go:176` per-connection Redis subscription writes directly to socket
 2. `backend/internal/notifications/game_hub.go:102` and `:335` also write to same sockets
 3. Creates duplicate events and concurrent write race conditions
 
 **Fix:**
+
 1. Remove per-connection Redis subscribe/write loop from `WebSocketGameHandler`
 2. Rely on hub wiring for fanout
 3. Ensure serialized writes per game connection (mutex or channel-backed writer)
@@ -336,10 +344,12 @@ If the answer is unclear, add visibility there.
 **Issue:** Notification WebSocket reconnect is aggressive with fixed delay, can thrash on auth/network errors.
 
 **Root Causes:**
+
 1. `frontend/src/hooks/useRealtimeNotifications.ts:455` retries every 1500ms with no backoff cap
 2. `frontend/src/hooks/useRealtimeNotifications.ts:460` force-closes on `onerror`, feeding reconnect loop
 
 **Fix:**
+
 1. Switch to exponential backoff with jitter (1s base, 30s cap)
 2. Reset attempts on successful connection
 3. On auth failure while obtaining WS ticket, clear auth and redirect to login once (no reconnect loop)
@@ -351,10 +361,12 @@ If the answer is unclear, add visibility there.
 **Issue:** Connection limits are likely too low for multi-tab usage with multiple socket types.
 
 **Root Causes:**
+
 1. `backend/internal/notifications/hub.go:17` `maxConnsPerUser = 5`
 2. `backend/internal/notifications/chat_hub.go:61` uses same cap
 
 **Fix:**
+
 1. Increase per-user WS limit from 5 to 12 for chat/notification hubs
 2. Add explicit log event when limit is hit
 3. Test with 4+ tabs to verify no connection-limit rejection
@@ -366,11 +378,13 @@ If the answer is unclear, add visibility there.
 **Issue:** Backend test workflow is inconsistent between host and container execution.
 
 **Root Causes:**
+
 1. `backend/test/api_integration_test.go:25` forces `DB_HOST=postgres_test`
 2. Host `go test` cannot resolve this
 3. `Dockerfile.test:1` runtime PATH does not include `/usr/local/go/bin`
 
 **Fix:**
+
 1. Remove hardcoded `DB_HOST=postgres_test` override
 2. Use config/env inputs instead
 3. In `Dockerfile.test`, set PATH to include `/usr/local/go/bin` explicitly
@@ -383,6 +397,7 @@ If the answer is unclear, add visibility there.
 **Issue:** Some Make targets reference missing scripts or are undocumented.
 
 **Fixes:**
+
 1. `make test-api`: Fix to call `./test-routes.sh` (current `./test-api.sh` is missing)
 2. `make test-frontend`: Add target (`cd frontend && bun run test:run`)
 3. Update `.PHONY` and `help` entries for these corrections
@@ -402,6 +417,7 @@ Strict ticket-based authentication for all `/api/ws/*` endpoints.
 ### Migration Plan
 
 **Phase 1: Frontend Changes**
+
 1. Add `apiClient.issueWSTicket()` for `POST /api/ws/ticket`
 2. Introduce shared helper to open WS with fresh ticket per connection attempt
 3. Migrate all active WS clients to ticket auth:
@@ -412,11 +428,13 @@ Strict ticket-based authentication for all `/api/ws/*` endpoints.
    - `frontend/src/hooks/useChatWebSocket.ts` (keep functional)
 
 **Phase 2: Backend Enforcement**
+
 1. In `AuthRequired`, for `/api/ws/*`, require valid `ticket`
 2. Reject token query auth for WebSocket endpoints
 3. Keep existing Bearer auth unchanged for non-WS HTTP routes
 
 **Benefits:**
+
 - No WS auth tokens in URL query strings
 - Short-lived tickets reduce exposure window
 - Clear separation between HTTP and WS auth
@@ -473,11 +491,13 @@ Strict ticket-based authentication for all `/api/ws/*` endpoints.
 A selective patch strategy was used to merge validated changes from the `database-caching` orphan branch into `master`.
 
 **What Was Ported:**
+
 - Fix for `make test-api` target to call existing `test-routes.sh`
 - Addition of `make test-frontend` target
 - Migration test correctness fixes in `sanctum_migration_seed_test.go`
 
 **What Was Not Ported:**
+
 - Test pipeline behavior rewrites
 - Formatter policy changes
 - Server wiring changes (kept current `internal/bootstrap` + `NewServerWithDeps` pattern)

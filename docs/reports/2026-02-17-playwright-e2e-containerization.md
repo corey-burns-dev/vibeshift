@@ -11,6 +11,7 @@ This report documents the work done to containerize Playwright E2E tests, run th
 
 What changed
 ------------
+
 - Added `frontend/Dockerfile.e2e` — Debian 13 slim image that installs Playwright system libraries and browsers.
 - Added a helper script: `scripts/run-playwright-docker.sh` to build the image and run Playwright inside a container, saving artifacts to `frontend/reports/`.
 - Added Make targets: `build-playwright-image` and `test-e2e-container` to build and run tests locally.
@@ -30,7 +31,7 @@ How to run locally
 make test-e2e
 ```
 
-2. Containerized (host missing Bun or OS libs):
+1. Containerized (host missing Bun or OS libs):
 
 ```bash
 chmod +x ./scripts/run-playwright-docker.sh

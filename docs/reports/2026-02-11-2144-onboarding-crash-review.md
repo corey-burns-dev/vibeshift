@@ -17,6 +17,7 @@
 ### High
 
 1. Global group-message fanout to all connected users could trigger event storms and UI pressure under active traffic.
+
 - Evidence:
   - `backend/internal/server/chat_handlers.go` previously broadcast group `room_message` with global fanout.
   - `backend/internal/server/websocket_handlers.go` previously mirrored the same global fanout for WS-originated messages.
@@ -26,13 +27,15 @@
 ### Medium
 
 1. Frontend `room_message` handling treated events like direct conversation messages without membership/known-conversation containment.
+
 - Evidence:
   - `frontend/src/providers/ChatProvider.tsx` handled `message` and `room_message` together and invalidated conversations per event.
   - `frontend/src/components/chat/ChatDock.tsx` incremented unread/toast even when conversation metadata was absent.
 - Risk: unread/toast storms and unnecessary query invalidations from irrelevant events.
 - Status: **Mitigated** (unknown-room drop + throttled invalidation + ChatDock unknown guard).
 
-2. Session validation used healthcheck rather than an authenticated endpoint.
+1. Session validation used healthcheck rather than an authenticated endpoint.
+
 - Evidence:
   - `frontend/src/hooks/useUsers.ts` previously used `apiClient.healthCheck()` for token validation.
 - Risk: false-positive session validity and unnecessary reconnect churn.
@@ -41,6 +44,7 @@
 ### Low
 
 1. Onboarding submit eligibility counted selected items from local set rather than visible valid slugs.
+
 - Evidence:
   - `frontend/src/pages/OnboardingSanctums.tsx` previously used `selected.size` as submit threshold.
 - Risk: edge-case mismatch when selected defaults diverge from visible sanctums.

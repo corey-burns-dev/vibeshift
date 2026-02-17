@@ -20,9 +20,11 @@ On this page:
 Protected endpoints:
 
 1. `GET /api/sanctums/memberships/me`
+
 - Returns the current user's sanctum memberships with sanctum metadata.
 
-2. `POST /api/sanctums/memberships/bulk`
+1. `POST /api/sanctums/memberships/bulk`
+
 - Request body:
   - `{ "sanctum_slugs": string[] }`
 - Behavior:

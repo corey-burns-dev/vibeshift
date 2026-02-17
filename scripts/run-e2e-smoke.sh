@@ -44,6 +44,8 @@ export VITE_API_URL="http://localhost:8375/api"
 # Ensure the e2e compose stack is up with correct environment (compose.e2e.override.yml).
 # We use --force-recreate for 'app' to ensure any dev-mode environment variables are replaced.
 echo "Ensuring e2e compose stack is up..."
+# avoid host Redis port conflicts when running e2e
+export REDIS_HOST_PORT=${REDIS_HOST_PORT:-6380}
 (cd "$REPO_ROOT" && "$REPO_ROOT/scripts/compose.sh" -f compose.yml -f compose.override.yml -f compose.e2e.override.yml up -d --force-recreate --wait --wait-timeout 120 postgres_test redis app)
 
 if command -v psql >/dev/null 2>&1; then

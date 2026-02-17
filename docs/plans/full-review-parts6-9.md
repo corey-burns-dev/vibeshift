@@ -1,10 +1,12 @@
 # Plan: Implement MEDIUM-6 Through MEDIUM-9 (Deep Production Review, 2026-02-12)
 
 ## Summary
+
 We will deliver this as **4 focused PRs**, one per finding, in issue order (`MEDIUM-6`, `MEDIUM-7`, `MEDIUM-8`, `MEDIUM-9`).  
 The plan keeps architecture patterns intact, adds tests with each PR, and includes rollout/validation steps so each PR is independently shippable.
 
 ## Public APIs / Interfaces / Types (Planned Changes)
+
 1. `GameRoom` API shape becomes nullable for deleted-user references: `creator_id`, `opponent_id`, `winner_id` can be null/omitted when related users are deleted; frontend types and guards will be updated accordingly.
 2. Internal WebSocket hub interface in notifications will require `Name()` in addition to unregister behavior so metrics can be labeled by hub.
 3. New Prometheus metrics for websocket backpressure/drops will be emitted from send paths.
@@ -37,6 +39,7 @@ The plan keeps architecture patterns intact, adds tests with each PR, and includ
    Acceptance: repeated reads hit cache; mutation paths invalidate/bump versions correctly; stale windows are bounded and intentional.
 
 ## Test Cases and Validation Scenarios
+
 1. Migration integrity: verify FK `confdeltype` for all changed constraints and nullability changes in `game_rooms`; verify rollback behavior on nullable creator rows.
 2. Game runtime resilience: fetch/join/leave/update flows when creator/opponent/winner references are null after user deletion.
 3. Error response security: same handler error in `development` vs `production` confirms `details` gating.
@@ -45,6 +48,7 @@ The plan keeps architecture patterns intact, adds tests with each PR, and includ
 6. Full regression pass: `make test-backend`, `make test-frontend`, `make db-schema-status`, `make swagger` (if generated API artifacts are maintained).
 
 ## Assumptions and Defaults Chosen
+
 1. Scope is exactly `MEDIUM-6`, `MEDIUM-7`, `MEDIUM-8`, `MEDIUM-9`.
 2. MEDIUM-6 follows report-strict FK behavior (`SET NULL` for room user FKs, `CASCADE` for `game_moves.user_id`).
 3. API/frontend contract is updated to handle nullable game participant IDs (no sentinel `0` workaround).

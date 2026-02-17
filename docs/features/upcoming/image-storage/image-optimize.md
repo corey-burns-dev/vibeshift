@@ -282,4 +282,3 @@ Queue options (simple to robust):
 * Serve from Nginx with `immutable` caching (if URLs never overwrite)
 
 ---
-

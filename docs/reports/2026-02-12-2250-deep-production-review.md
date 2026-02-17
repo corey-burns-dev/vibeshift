@@ -39,6 +39,7 @@ The application shows strong architectural foundations with proper auth, layered
 **Risk:** Security-critical moderation code has no automated validation
 
 **Location:**
+
 - `backend/internal/server/moderation_handlers.go` (476 lines, 0 tests)
 - `backend/internal/server/chat_safety_handlers.go` (213 lines, 0 tests)
 - `backend/internal/server/sanctum_admin_handlers.go` (240 lines, 0 tests)
@@ -56,6 +57,7 @@ Three new backend handler files totaling 929 lines and two frontend hooks totali
 
 **Fix Required:**
 Create test files:
+
 - `backend/internal/server/moderation_handlers_test.go`
 - `backend/internal/server/chat_safety_handlers_test.go`
 - `backend/internal/server/sanctum_admin_handlers_test.go`
@@ -109,6 +111,7 @@ Add `middleware.RateLimit(s.redis, ...)` to admin routes and report creation end
 **Risk:** Single panic crashes entire notification subsystem
 
 **Location:**
+
 - `backend/internal/notifications/notifier.go:53-58` (PatternSubscriber)
 - `backend/internal/notifications/notifier.go:120-124` (ChatSubscriber)
 - `backend/internal/notifications/notifier.go:150-154` (GameSubscriber)
@@ -162,6 +165,7 @@ go func() {
 **Risk:** Database traffic transmitted in plaintext in production
 
 **Location:**
+
 - `backend/internal/database/database.go:93-95`
 - `backend/internal/config/config.go:149` (only warns, doesn't error)
 
@@ -200,6 +204,7 @@ Change the production validation to return an error instead of a warning when `D
 **Risk:** Memory exhaustion on large datasets
 
 **Location:**
+
 - `backend/internal/repository/comment.go:47` — `ListByPost()` has no LIMIT
 - `backend/internal/repository/friend.go:76-86` — `GetFriends()` has no LIMIT
 - `backend/internal/repository/friend.go:88-115` — `GetPendingRequests()`/`GetSentRequests()` have no LIMIT
@@ -351,6 +356,7 @@ When a client's send buffer (256 messages) is full, messages are silently droppe
 **Severity:** MEDIUM
 
 **Location:**
+
 - `backend/internal/service/chat_service.go:132` — `GetUserConversations()` not cached
 - `backend/internal/service/chat_service.go:264` — `GetAllChatrooms()` not cached
 - `backend/internal/service/post_service.go:177` — `ListPosts()` (primary feed) not cached
@@ -687,6 +693,7 @@ Both tools fail due to Go 1.26 vs 1.25 version mismatch. Rebuild tools with Go 1
 ### New Issues Introduced Since 2026-02-11
 
 All new issues stem from commit `abde659` (moderation suite):
+
 - 929 lines of untested handler code (HIGH-1)
 - Missing rate limits on new admin endpoints (HIGH-2)
 - Ignored errors in moderation handlers (MEDIUM-1)
@@ -717,7 +724,7 @@ All new issues stem from commit `abde659` (moderation suite):
 | Missing down migrations                              | 0       | All 7 paired                                      |
 | Hardcoded secrets in source                          | 1       | `DevRoot123!` in bootstrap — guarded by env check |
 | Unbounded goroutines (`go func`)                     | 7       | All reviewed — 3 need panic recovery              |
-| Ignored errors (`_ = `) in non-test code             | ~30     | 15+ need review — see error handling section      |
+| Ignored errors (`_ =`) in non-test code              | ~30     | 15+ need review — see error handling section      |
 | `console.log` in frontend                            | 12      | Mostly debug/logger-wrapped; 1 raw log            |
 
 ---
@@ -815,6 +822,7 @@ Automated analysis (8 make targets + 8 pattern scans) run in parallel, followed 
 Security and new moderation code received highest attention due to the significant new feature surface area introduced in commit `abde659`. Previous review issues were verified as resolved.
 
 **Limitations:**
+
 - golangci-lint and govulncheck could not run due to Go version mismatch
 - No load/performance testing conducted
 - No penetration testing — this is a code review only

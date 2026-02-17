@@ -1,7 +1,9 @@
 # Plan: Implement MEDIUM-1/2/3/4/5/10 (Remaining Deep-Review Findings)
 
 ## Summary
+
 This pass delivers the six remaining medium findings with one coordinated backend/frontend hardening plan:
+
 1. `MEDIUM-3` atomic WebSocket ticket consumption (`GETDEL`) to enforce single-use.
 2. `MEDIUM-5` transactional poll creation to prevent partial poll writes.
 3. `MEDIUM-10` targeted extraction of admin moderation query logic into `ModerationService`.
@@ -10,6 +12,7 @@ This pass delivers the six remaining medium findings with one coordinated backen
 6. `MEDIUM-2` access-token migration from `localStorage` to in-memory session flow with refresh-cookie bootstrap.
 
 ## Public API / Interface / Type Changes
+
 1. `GET /api/admin/users/:id` response adds optional `warnings: string[]` when supplementary admin detail data is partially unavailable.
 2. Frontend type `AdminUserDetailResponse` gains optional `warnings?: string[]`.
 3. Frontend internal auth contract changes:
@@ -19,6 +22,7 @@ This pass delivers the six remaining medium findings with one coordinated backen
 ## Implementation Plan
 
 ### 1) MEDIUM-3: Atomic WebSocket Ticket Validation
+
 1. Update `backend/internal/server/server.go` in `AuthRequired()` to use Redis `GETDEL` for ticket validation on WS paths.
 2. Remove deferred ticket deletion from WS handlers since consumption is now atomic in middleware:
 `backend/internal/server/websocket_handlers.go`,
@@ -27,11 +31,13 @@ This pass delivers the six remaining medium findings with one coordinated backen
 3. Keep existing failure semantics: invalid/expired WS ticket returns `401`.
 
 ### 2) MEDIUM-5: Poll Creation Transaction
+
 1. Update `backend/internal/repository/poll.go` `Create()` to wrap poll + options insertions in `db.Transaction(...)`.
 2. Ensure in-transaction option accumulation and assign final `poll.Options` only on commit path.
 3. Return error unchanged so callers keep current behavior.
 
 ### 3) MEDIUM-10 + MEDIUM-1: ModerationService Extraction + Warnings
+
 1. Add `backend/internal/service/moderation_service.go` with targeted methods:
 `GetAdminBanRequests(ctx, limit, offset)`,
 `GetAdminUserDetail(ctx, userID)`.
@@ -48,6 +54,7 @@ return partial data plus `warnings[]` entries.
 `frontend/src/api/types.ts` (`AdminUserDetailResponse.warnings?: string[]`).
 
 ### 4) MEDIUM-4: Resource Limits in production compose overrides
+
 1. Add `deploy.resources.limits` to each prod service in the production compose overrides.
 2. Use balanced defaults:
 `app: 1.00 CPU / 768M`,
@@ -57,6 +64,7 @@ return partial data plus `warnings[]` entries.
 3. Keep current restart/logging behavior unchanged in this pass.
 
 ### 5) MEDIUM-2: Access Token Out of localStorage (In-Memory Refresh Flow)
+
 1. Introduce frontend in-memory auth session store/module (new file):
 `frontend/src/stores/useAuthSessionStore.ts` (or equivalent single auth module).
 2. Migrate token operations:
@@ -95,6 +103,7 @@ admin user detail returns warnings on supplementary query failures.
 `docker compose -f compose.yml config` passes with new limits (prod overlay removed).
 
 ## Rollout Order
+
 1. PR-1: `MEDIUM-3` WS atomic ticket fix + tests.
 2. PR-2: `MEDIUM-5` poll transaction + repo tests.
 3. PR-3: `MEDIUM-10` targeted ModerationService extraction + `MEDIUM-1` warnings/logging + tests + frontend type/UI update.
@@ -102,6 +111,7 @@ admin user detail returns warnings on supplementary query failures.
 5. PR-5: `MEDIUM-2` frontend auth token in-memory migration + refresh bootstrap + frontend test updates.
 
 ## Assumptions and Defaults
+
 1. `MEDIUM-10` scope is targeted extraction (admin aggregation/detail paths), not full moderation rewrite.
 2. `MEDIUM-2` keeps `user` persisted, but removes all persistent storage for access tokens.
 3. `MEDIUM-4` uses balanced single-host production limits listed above.

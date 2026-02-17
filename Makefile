@@ -658,12 +658,12 @@ test-e2e:
 
 test-e2e-up:
 	@echo "$(BLUE)Starting e2e test stack (app -> sanctum_test)...$(NC)"
-	@./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.e2e.override.yml up -d --wait --wait-timeout 120 postgres_test redis app
+	@./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.e2e.override.yml -f compose.e2e.no-sysctls.override.yml up -d --wait --wait-timeout 120 postgres_test redis app
 	@echo "$(GREEN)✓ e2e stack started$(NC)"
 
 test-e2e-down:
 	@echo "$(BLUE)Stopping e2e test stack...$(NC)"
-	@./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.e2e.override.yml down --remove-orphans
+	@./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.e2e.override.yml -f compose.e2e.no-sysctls.override.yml down --remove-orphans
 	@echo "$(GREEN)✓ e2e stack stopped$(NC)"
 
 .PHONY: build-playwright-image test-e2e-container

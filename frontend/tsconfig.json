@@ -14,7 +14,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    // "types": ["vitest/globals", "node"],
+    "types": ["vitest/globals", "node"],
     "paths": {
       "@/*": ["./src/*"],
       "@/components": ["./src/components"],
