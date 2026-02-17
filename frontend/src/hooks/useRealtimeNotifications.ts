@@ -137,6 +137,25 @@ export function useRealtimeNotifications(enabled = true) {
       const conv = await apiClient.createConversation({
         participant_ids: [userID],
       })
+
+      // Seed the chat query cache with the created conversation so
+      // the Chat page can render immediately when navigated to.
+      try {
+        // Add to conversations list if not present
+        queryClient.setQueryData(['chat', 'conversations'], (old: any) => {
+          if (!old) return [conv]
+          if (Array.isArray(old) && old.some((c: any) => c.id === conv.id))
+            return old
+          return [conv, ...old]
+        })
+
+        // Set the single-conversation cache entry
+        queryClient.setQueryData(['chat', 'conversation', conv.id], conv)
+      } catch (e) {
+        // non-fatal cache update failure
+        logger.debug('[realtime] failed to seed chat cache', e)
+      }
+
       window.location.href = `/chat/${conv.id}`
     } catch {
       // Silently ignore failures; user can still navigate manually.

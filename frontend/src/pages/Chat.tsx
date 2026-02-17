@@ -559,7 +559,6 @@ export default function Chat() {
         console.log(`Playing friend online sound for ${username}`)
         markNotified(userId)
         playFriendOnlineSound()
-        toast.success(`${username} is online!`)
       }
 
       setParticipants(prev => ({

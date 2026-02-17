@@ -11,14 +11,15 @@ echo "Installing Playwright browsers (best-effort)..."
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT/frontend" || exit 1
 
+USE_DOCKER_PLAYWRIGHT=0
 if ! command -v bun >/dev/null 2>&1; then
-  echo "bun not found in PATH — cannot run Playwright smoke tests. Install Bun or run tests manually." >&2
-  exit 0
-fi
-
-# attempt to install browsers if script exists
-if bun -v >/dev/null 2>&1; then
-  bun run test:e2e:install || true
+  echo "bun not found in PATH — will run Playwright inside the e2e 'playwright' container instead." >&2
+  USE_DOCKER_PLAYWRIGHT=1
+else
+  # attempt to install browsers if script exists
+  if bun -v >/dev/null 2>&1; then
+    bun run test:e2e:install || true
+  fi
 fi
 
 echo "Running Playwright smoke tests (grep @smoke)..."
@@ -52,4 +53,10 @@ if command -v psql >/dev/null 2>&1; then
   fi
 fi
 
-bun run test:e2e -- --grep @smoke --workers=$WORKERS
+if [ "$USE_DOCKER_PLAYWRIGHT" = "1" ]; then
+  echo "Building and running Playwright inside compose 'playwright' service..."
+  (cd "$REPO_ROOT" && "$REPO_ROOT/scripts/compose.sh" -f compose.yml -f compose.override.yml -f compose.e2e.override.yml build --no-cache playwright)
+  (cd "$REPO_ROOT" && "$REPO_ROOT/scripts/compose.sh" -f compose.yml -f compose.override.yml -f compose.e2e.override.yml run --rm playwright npx playwright test --grep @smoke --workers=$WORKERS)
+else
+  bun run test:e2e -- --grep @smoke --workers=$WORKERS
+fi

@@ -1,0 +1,33 @@
+FROM debian:13-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install Playwright system dependencies (recommended set for Debian/Ubuntu)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    ca-certificates wget gnupg curl git python3 build-essential \
+    libnss3 libxss1 libasound2 libatk1.0-0 libatk-bridge2.0-0 \
+    libcups2 libx11-xcb1 libxrandr2 libxcomposite1 libxdamage1 \
+    libpango1.0-0 libglib2.0-0 libgtk-3-0 libgbm1 fonts-liberation \
+    libu2f-udev xvfb libxshmfence1 libgdk-pixbuf2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy package manifest first to leverage layer caching
+COPY frontend/package.json ./package.json
+COPY frontend/package-lock.json* ./
+
+# Install JS dependencies (includes @playwright/test / playwright)
+RUN npm install --no-audit --no-fund
+
+# Copy full frontend sources (tests live under frontend/test/...)
+COPY frontend/ ./
+
+# Install Playwright browsers and system dependencies for browsers
+RUN npx playwright install --with-deps chromium
+
+# Use a dedicated path for installed browsers to avoid per-user issues
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+CMD ["npx", "playwright", "test", "--project=chromium"]

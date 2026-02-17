@@ -40,6 +40,7 @@ help:
 	@echo "  make dev                - 🚀 Start full stack (fast; no rebuild)"
 	@echo "  make dev-build          - 🔨 Build images then start (first time or after Dockerfile change)"
 	@echo "  make dev-clean          - 🧹 Fresh start (clean volumes/data + build + dev)"
+	@echo "  make dev-clean-full     - 🔥 Destructive full reset (images, volumes, networks)"
 	@echo "  make dev-backend        - 🔧 Backend only (Go + Redis + Postgres)"
 	@echo "  make dev-frontend       - 🎨 Frontend only (Vite dev server, local)"
 	@echo "  make dev-both           - 🔀 Backend in Docker + Frontend local (best DX)"
@@ -291,6 +292,16 @@ lint-frontend:
 # Frontend dependencies
 install:
 	@echo "$(BLUE)Installing frontend dependencies...$(NC)"
+	# If existing node_modules/.bun are present but not writable (often from running install as root),
+	# remove them so the local user can reinstall cleanly. This avoids repeated EACCES errors.
+	@if [ -d frontend/node_modules ] && [ ! -w frontend/node_modules ]; then \
+		echo "$(YELLOW)Detected non-writable frontend/node_modules; removing to avoid permission errors$(NC)"; \
+		rm -rf frontend/node_modules || true; \
+	fi
+	@if [ -d frontend/.bun ] && [ ! -w frontend/.bun ]; then \
+		echo "$(YELLOW)Detected non-writable frontend/.bun; removing to avoid permission errors$(NC)"; \
+		rm -rf frontend/.bun || true; \
+	fi
 	cd frontend && $(BUN) install
 	@echo "$(GREEN)✓ Dependencies installed$(NC)"
 
@@ -346,6 +357,19 @@ clean:
 	rm -rf frontend/node_modules frontend/dist
 	$(GO) clean
 	@echo "$(GREEN)✓ Cleanup complete$(NC)"
+
+# Destructive full-clean: removes images, volumes, networks and monitoring stacks
+.PHONY: dev-clean-full
+dev-clean-full:
+	@echo "$(BLUE)Performing FULL destructive Docker clean for this project...$(NC)"
+	# Bring down main dev compose (removes containers + project volumes)
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) down -v --rmi all --remove-orphans
+	@echo "$(BLUE)Attempting to bring down monitoring stacks (if present)...$(NC)"
+	$(DOCKER_COMPOSE) $(MONITOR_FILES) down -v --rmi all --remove-orphans || true
+	$(DOCKER_COMPOSE) -f compose.monitor-lite.yml down -v --rmi all --remove-orphans || true
+	@echo "$(BLUE)Removing project network if present...$(NC)"
+	-docker network rm sanctum_default 2>/dev/null || true
+	@echo "$(GREEN)✓ Full Docker-only cleanup complete$(NC)"
 
 # Testing
 test: test-backend
@@ -641,6 +665,20 @@ test-e2e-down:
 	@echo "$(BLUE)Stopping e2e test stack...$(NC)"
 	@./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.e2e.override.yml down --remove-orphans
 	@echo "$(GREEN)✓ e2e stack stopped$(NC)"
+
+.PHONY: build-playwright-image test-e2e-container
+build-playwright-image:
+	@echo "$(BLUE)Building Playwright e2e image...$(NC)"
+	@docker build -f frontend/Dockerfile.e2e -t sanctum/playwright:local .
+
+test-e2e-container: build-playwright-image test-e2e-up
+	@echo "$(BLUE)Running E2E smoke tests inside Playwright container...$(NC)"
+	@docker run --rm --network host \
+		-e PLAYWRIGHT_BASE_URL=http://localhost:5173 \
+		-e PLAYWRIGHT_API_URL=http://localhost:8375/api \
+		-e DB_HOST=localhost -e DB_PORT=5432 -e DB_USER=sanctum_user \
+		-e DB_PASSWORD=sanctum_password -e DB_NAME=sanctum_test \
+		sanctum/playwright:local npx playwright test --grep @smoke --workers=2
 
 test-up:
 	$(DOCKER_COMPOSE) $(COMPOSE_FILES) up -d postgres_test redis

@@ -65,7 +65,9 @@ export function BottomBar() {
               'relative flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition-colors',
               isOpen && !minimized
                 ? 'bg-primary/15 text-primary'
-                : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+                : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground',
+              totalUnread > 0 &&
+                'animate-pulse shadow-[0_0_12px_rgba(59,130,246,0.3)]'
             )}
           >
             <MessageCircle className='h-5 w-5' />
