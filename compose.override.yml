@@ -8,7 +8,6 @@ services:
       - "${GO_PORT:-8375}:${GO_PORT:-8375}"
     volumes:
       - .:/app
-      - ./tmp/uploads:/var/sanctum/uploads
     command: air -c .air.toml
     # Do not use env_file here so compose environment (redis/postgres hostnames) wins.
     # Required env is merged from compose.yml + this block; host .env is used by Make for interpolation only.
@@ -44,7 +43,6 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-      - ./tmp/uploads:/var/sanctum/uploads:ro
 
   # Test services (start with: docker compose --profile test up)
   postgres_test:

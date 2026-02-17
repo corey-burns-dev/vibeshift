@@ -24,7 +24,7 @@
       "@/pages": ["./src/pages"]
     }
   },
-  "include": ["src", "playwright.config.ts"],
+  "include": ["src", "playwright.config.ts", "vite.config.ts"],
   "exclude": [
     "node_modules",
     "dist",

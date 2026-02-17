@@ -23,14 +23,14 @@ export default defineConfig({
           })
           proxy.on('proxyReqWs', (_proxyReq, _req, socket, _options, _head) => {
             console.log('[vite] Proxying WebSocket connection')
-            if (socket && !socket.destroySoon) {
-              // @ts-expect-error - Shim for Bun/Vite compatibility
-              socket.destroySoon = socket.destroy
+            if (socket && !('destroySoon' in socket)) {
+              ;(socket as any).destroySoon = (socket as any).destroy
             }
           })
           proxy.on('error', (err, _req, res) => {
             console.error('[vite] Proxy error:', err)
-            if (res && !res.headersSent) {
+            // res can be either http.ServerResponse or net.Socket
+            if (res && 'writeHead' in res && !res.headersSent) {
               res.writeHead(500, {
                 'Content-Type': 'application/json',
               })
@@ -42,7 +42,7 @@ export default defineConfig({
         },
       },
       '/media': {
-        target: 'http://localhost:8375',
+        target: 'http://app:8375',
         changeOrigin: true,
       },
       '/live': {

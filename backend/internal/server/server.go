@@ -3,6 +3,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -822,10 +823,19 @@ func (s *Server) Start() error {
 	app := fiber.New(fiber.Config{
 		AppName: "Social Media API",
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			// Custom error handler
-			log.Printf("Error: %v", err)
-			return models.RespondWithError(c, fiber.StatusInternalServerError,
-				models.NewInternalError(err))
+			// Default status code
+			code := fiber.StatusInternalServerError
+
+			// If it's a fiber.Error, use its status code
+			var e *fiber.Error
+			if errors.As(err, &e) {
+				code = e.Code
+			}
+
+			// Log the error
+			log.Printf("Error [%d]: %v", code, err)
+
+			return models.RespondWithError(c, code, err)
 		},
 	})
 	s.app = app
