@@ -40,16 +40,16 @@ export DB_HOST="$PGHOST" DB_PORT="$PGPORT" DB_USER="$PGUSER" DB_PASSWORD="$PGPAS
 # Ensure frontend dev server uses the correct API URL on the host
 export VITE_API_URL="http://localhost:8375/api"
 
+# Ensure the e2e compose stack is up with correct environment (compose.e2e.override.yml).
+# We use --force-recreate for 'app' to ensure any dev-mode environment variables are replaced.
+echo "Ensuring e2e compose stack is up..."
+(cd "$REPO_ROOT" && "$REPO_ROOT/scripts/compose.sh" -f compose.yml -f compose.override.yml -f compose.e2e.override.yml up -d --force-recreate --wait --wait-timeout 120 postgres_test redis app)
+
 if command -v psql >/dev/null 2>&1; then
   if ! PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -c '\q' >/dev/null 2>&1; then
-    echo "Postgres not reachable with $PGUSER@$PGHOST:$PGPORT/$PGDATABASE — bringing up e2e compose stack..."
-    # run compose.sh from the repo root so its relative env-file paths resolve
-    (cd "$REPO_ROOT" && "$REPO_ROOT/scripts/compose.sh" -f compose.yml -f compose.override.yml -f compose.e2e.override.yml up -d --wait --wait-timeout 120 postgres_test redis app)
     echo "Waiting briefly for DB to accept connections..."
     sleep 5
   fi
-else
-  echo "psql not found — skipping direct DB check. Ensure test DB is available before running e2e."
 fi
 
 bun run test:e2e -- --grep @smoke --workers=$WORKERS
