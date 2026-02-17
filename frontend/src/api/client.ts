@@ -17,6 +17,7 @@ import type {
   CreateConversationRequest,
   CreatePostRequest,
   CreateSanctumRequestInput,
+  CreateStreamRequest,
   FriendRequest,
   FriendshipStatus,
   GameRoom,
@@ -37,9 +38,13 @@ import type {
   SearchParams,
   SendMessageRequest,
   SignupRequest,
+  Stream,
+  StreamMessage,
+  StreamsResponse,
   UpdateCommentRequest,
   UpdatePostRequest,
   UpdateProfileRequest,
+  UpdateStreamRequest,
   UploadedImage,
   User,
   UserBlock,
@@ -887,6 +892,84 @@ class ApiClient {
   // biome-ignore lint/suspicious/noExplicitAny: dynamic stats object
   async getGameStats(type: string): Promise<any> {
     return this.request(`/games/stats/${type}`)
+  }
+
+  // Streams
+  async getStreams(params?: {
+    category?: string
+    limit?: number
+    offset?: number
+  }): Promise<StreamsResponse> {
+    const query = new URLSearchParams()
+    if (params?.category) query.set('category', params.category)
+    if (params?.limit !== undefined) query.set('limit', params.limit.toString())
+    if (params?.offset !== undefined)
+      query.set('offset', params.offset.toString())
+    const queryString = query.toString() ? `?${query.toString()}` : ''
+    return this.request(`/streams${queryString}`)
+  }
+
+  async getStream(id: number): Promise<Stream> {
+    return this.request(`/streams/${id}`)
+  }
+
+  async getStreamCategories(): Promise<string[]> {
+    return this.request('/streams/categories')
+  }
+
+  async getMyStreams(): Promise<Stream[]> {
+    return this.request('/streams/me')
+  }
+
+  async createStream(data: CreateStreamRequest): Promise<Stream> {
+    return this.request('/streams', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateStream(id: number, data: UpdateStreamRequest): Promise<Stream> {
+    return this.request(`/streams/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteStream(id: number): Promise<void> {
+    return this.request(`/streams/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async goLive(id: number): Promise<Stream> {
+    return this.request(`/streams/${id}/go-live`, {
+      method: 'POST',
+    })
+  }
+
+  async endStream(id: number): Promise<Stream> {
+    return this.request(`/streams/${id}/end`, {
+      method: 'POST',
+    })
+  }
+
+  async getStreamMessages(
+    id: number,
+    params?: PaginationParams
+  ): Promise<StreamMessage[]> {
+    const query = new URLSearchParams()
+    if (params?.offset !== undefined)
+      query.set('offset', params.offset.toString())
+    if (params?.limit !== undefined) query.set('limit', params.limit.toString())
+    const queryString = query.toString() ? `?${query.toString()}` : ''
+    return this.request(`/streams/${id}/messages${queryString}`)
+  }
+
+  async sendStreamMessage(id: number, content: string): Promise<StreamMessage> {
+    return this.request(`/streams/${id}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    })
   }
 
   async getCurrentUser(): Promise<User> {

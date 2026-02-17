@@ -348,6 +348,62 @@ export interface GameRoom {
   opponent?: User
 }
 
+// Stream types
+export interface Stream {
+  id: number
+  user_id: number
+  user?: User
+  title: string
+  description?: string
+  thumbnail_url?: string
+  stream_url: string
+  stream_type: 'youtube' | 'twitch' | 'hls' | 'iframe'
+  is_live: boolean
+  viewer_count: number
+  category?: string
+  tags?: string
+  started_at?: string
+  ended_at?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface StreamMessage {
+  id: number
+  stream_id: number
+  user_id: number
+  user?: User
+  content: string
+  created_at: string
+}
+
+export interface CreateStreamRequest {
+  title: string
+  description?: string
+  thumbnail_url?: string
+  stream_url: string
+  stream_type: 'youtube' | 'twitch' | 'hls' | 'iframe'
+  category?: string
+  tags?: string
+}
+
+export interface UpdateStreamRequest {
+  title?: string
+  description?: string
+  thumbnail_url?: string
+  stream_url?: string
+  stream_type?: 'youtube' | 'twitch' | 'hls' | 'iframe'
+  category?: string
+  tags?: string
+}
+
+export interface StreamsResponse {
+  streams: Stream[]
+  total: number
+  limit: number
+  offset: number
+}
+
 export interface SanctumDTO {
   id: number
   name: string
