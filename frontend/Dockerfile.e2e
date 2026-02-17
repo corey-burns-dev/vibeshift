@@ -19,7 +19,8 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
 # Install Bun
 RUN curl -fsSL https://bun.sh/install | bash
 
-ENV PATH="/root/.local/bin:${PATH}"
+ENV BUN_INSTALL="/root/.bun"
+ENV PATH="${BUN_INSTALL}/bin:${PATH}"
 
 WORKDIR /app
 
