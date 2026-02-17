@@ -1,5 +1,5 @@
 import { Bell, LogOut, Search, ShieldCheck, User } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ModeToggle } from '@/components/mode-toggle'
 import {
@@ -21,19 +21,86 @@ import {
 import { getCurrentUser, useIsAuthenticated, useLogout } from '@/hooks'
 import {
   useAcceptFriendRequest,
+  useFriends,
   useRejectFriendRequest,
 } from '@/hooks/useFriends'
 import { useNotificationStore } from '@/hooks/useRealtimeNotifications'
 import { cn } from '@/lib/utils'
+import { useChatContext } from '@/providers/ChatProvider'
+import { useChatDockStore } from '@/stores/useChatDockStore'
+
+function FriendsDropdown() {
+  const { data: friends = [] } = useFriends()
+  const { isUserOnline } = useChatContext()
+  const { setActiveConversation, open } = useChatDockStore()
+
+  return (
+    <DropdownMenuContent align='center' className='w-64'>
+      <DropdownMenuLabel className='flex items-center justify-between'>
+        <span>Friends</span>
+        <Link
+          to='/friends'
+          className='text-[10px] font-medium text-primary hover:underline'
+        >
+          View All
+        </Link>
+      </DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <div className='max-h-80 overflow-y-auto'>
+        {friends.length === 0 ? (
+          <div className='px-2 py-4 text-center text-xs text-muted-foreground'>
+            No friends yet
+          </div>
+        ) : (
+          friends.map(friend => {
+            const isOnline = isUserOnline(friend.id)
+            return (
+              <DropdownMenuItem
+                key={friend.id}
+                className='flex items-center gap-3 py-2 cursor-pointer'
+                onClick={() => {
+                  // If we use negative IDs for virtual, we need to handle it here too
+                  // or just let ChatDock handle it when it opens.
+                  // For simplicity, let's use the virtual ID convention
+                  setActiveConversation(-friend.id)
+                  open()
+                }}
+              >
+                <div className='relative shrink-0'>
+                  <Avatar className='h-8 w-8'>
+                    <AvatarImage src={friend.avatar} />
+                    <AvatarFallback className='text-[10px]'>
+                      {friend.username.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  {isOnline && (
+                    <span className='absolute bottom-0 right-0 h-2 w-2 rounded-full border-2 border-background bg-green-500' />
+                  )}
+                </div>
+                <div className='flex flex-col min-w-0'>
+                  <span className='truncate text-xs font-medium'>
+                    {friend.username}
+                  </span>
+                  <span className='text-[10px] text-muted-foreground'>
+                    {isOnline ? 'Online' : 'Offline'}
+                  </span>
+                </div>
+              </DropdownMenuItem>
+            )
+          })
+        )}
+      </div>
+    </DropdownMenuContent>
+  )
+}
 
 function NavPill({ item, active }: { item: NavItem; active: boolean }) {
-  return (
-    <Link
-      key={item.path}
-      to={item.path}
-      title={item.label}
+  const isFriends = item.label === 'Friends'
+
+  const content = (
+    <div
       className={cn(
-        'inline-flex h-9 lg:h-8 items-center gap-3 lg:gap-1.5 rounded-lg px-3 lg:px-2.5 text-xs font-semibold transition-colors',
+        'inline-flex h-9 lg:h-8 items-center gap-3 lg:gap-1.5 rounded-lg px-3 lg:px-2.5 text-xs font-semibold transition-colors cursor-pointer',
         active
           ? 'bg-primary/15 text-primary'
           : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
@@ -41,6 +108,21 @@ function NavPill({ item, active }: { item: NavItem; active: boolean }) {
     >
       <item.icon className='h-6 w-6 lg:h-5 lg:w-5' />
       <span className='truncate hidden lg:inline'>{item.label}</span>
+    </div>
+  )
+
+  if (isFriends) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>{content}</DropdownMenuTrigger>
+        <FriendsDropdown />
+      </DropdownMenu>
+    )
+  }
+
+  return (
+    <Link key={item.path} to={item.path} title={item.label}>
+      {content}
     </Link>
   )
 }
@@ -56,7 +138,16 @@ export function TopBar() {
   const currentUser = getCurrentUser()
   const logout = useLogout()
   const notifications = useNotificationStore(state => state.items)
-  const unreadCount = useNotificationStore(state => state.unreadCount())
+  const displayNotifications = useMemo(
+    () => notifications.filter(item => item.meta?.type !== 'message'),
+    [notifications]
+  )
+  const unreadCount = useMemo(
+    () =>
+      displayNotifications.filter((n: (typeof notifications)[0]) => !n.read)
+        .length,
+    [displayNotifications]
+  )
   const markAllRead = useNotificationStore(state => state.markAllRead)
   const removeNotification = useNotificationStore(state => state.remove)
   const acceptReq = useAcceptFriendRequest()
@@ -145,66 +236,68 @@ export function TopBar() {
                   )}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {notifications.length === 0 ? (
+                {displayNotifications.length === 0 ? (
                   <div className='px-2 py-6 text-center text-xs text-muted-foreground'>
                     No notifications yet
                   </div>
                 ) : (
-                  notifications.slice(0, 8).map(item => (
-                    <DropdownMenuItem
-                      key={item.id}
-                      className={cn(
-                        'flex flex-col items-start gap-2 py-2',
-                        item.meta?.type === 'message' && 'cursor-pointer'
-                      )}
-                      onClick={() => handleNotificationClick(item)}
-                    >
-                      <div className='flex w-full items-start justify-between gap-2'>
-                        <span className='text-xs font-semibold'>
-                          {item.title}
-                        </span>
-                        {!item.read && (
-                          <span className='mt-1 h-2 w-2 shrink-0 rounded-full bg-primary' />
+                  displayNotifications
+                    .slice(0, 8)
+                    .map((item: (typeof notifications)[0]) => (
+                      <DropdownMenuItem
+                        key={item.id}
+                        className={cn(
+                          'flex flex-col items-start gap-2 py-2',
+                          item.meta?.type === 'message' && 'cursor-pointer'
                         )}
-                      </div>
-                      <div className='flex w-full items-center justify-between gap-2'>
-                        <span className='line-clamp-2 text-[11px] text-muted-foreground flex-1'>
-                          {item.description}
-                        </span>
-                        {item.meta?.type === 'friend_request' &&
-                        item.meta.requestId ? (
-                          <div className='flex items-center gap-2'>
-                            <button
-                              type='button'
-                              className='text-[11px] rounded-md bg-emerald-600 px-2 py-1 text-emerald-foreground'
-                              onClick={e => {
-                                e.stopPropagation()
-                                if (item.meta?.requestId) {
-                                  acceptReq.mutate(item.meta.requestId)
-                                  removeNotification(item.id)
-                                }
-                              }}
-                            >
-                              Accept
-                            </button>
-                            <button
-                              type='button'
-                              className='text-[11px] rounded-md bg-destructive px-2 py-1 text-destructive-foreground'
-                              onClick={e => {
-                                e.stopPropagation()
-                                if (item.meta?.requestId) {
-                                  rejectReq.mutate(item.meta.requestId)
-                                  removeNotification(item.id)
-                                }
-                              }}
-                            >
-                              Decline
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                    </DropdownMenuItem>
-                  ))
+                        onClick={() => handleNotificationClick(item)}
+                      >
+                        <div className='flex w-full items-start justify-between gap-2'>
+                          <span className='text-xs font-semibold'>
+                            {item.title}
+                          </span>
+                          {!item.read && (
+                            <span className='mt-1 h-2 w-2 shrink-0 rounded-full bg-primary' />
+                          )}
+                        </div>
+                        <div className='flex w-full items-center justify-between gap-2'>
+                          <span className='line-clamp-2 text-[11px] text-muted-foreground flex-1'>
+                            {item.description}
+                          </span>
+                          {item.meta?.type === 'friend_request' &&
+                          item.meta.requestId ? (
+                            <div className='flex items-center gap-2'>
+                              <button
+                                type='button'
+                                className='text-[11px] rounded-md bg-emerald-600 px-2 py-1 text-emerald-foreground'
+                                onClick={e => {
+                                  e.stopPropagation()
+                                  if (item.meta?.requestId) {
+                                    acceptReq.mutate(item.meta.requestId)
+                                    removeNotification(item.id)
+                                  }
+                                }}
+                              >
+                                Accept
+                              </button>
+                              <button
+                                type='button'
+                                className='text-[11px] rounded-md bg-destructive px-2 py-1 text-destructive-foreground'
+                                onClick={e => {
+                                  e.stopPropagation()
+                                  if (item.meta?.requestId) {
+                                    rejectReq.mutate(item.meta.requestId)
+                                    removeNotification(item.id)
+                                  }
+                                }}
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                      </DropdownMenuItem>
+                    ))
                 )}
               </DropdownMenuContent>
             </DropdownMenu>

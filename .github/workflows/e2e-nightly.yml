@@ -54,7 +54,20 @@ jobs:
 
       - name: Install Playwright browsers
         working-directory: ./frontend
-        run: bun run test:e2e:install:system
+        run: echo "(Skipped) browsers will be provided by built e2e image"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Playwright e2e image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: frontend/Dockerfile.e2e
+          push: false
+          tags: sanctum/playwright:nightly
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Start backend
         env:
@@ -92,8 +105,7 @@ jobs:
           echo "Service startup timed out"
           exit 1
 
-      - name: Run full Playwright suite
-        working-directory: ./frontend
+      - name: Run full Playwright suite (container)
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:5173
           PLAYWRIGHT_API_URL: http://localhost:8375/api
@@ -102,7 +114,13 @@ jobs:
           DB_USER: sanctum_user
           DB_PASSWORD: sanctum_password
           DB_NAME: sanctum_test
-        run: bun run test:e2e
+        run: |
+          docker run --rm --network host \
+            -e PLAYWRIGHT_BASE_URL="$PLAYWRIGHT_BASE_URL" \
+            -e PLAYWRIGHT_API_URL="$PLAYWRIGHT_API_URL" \
+            -e DB_HOST="$DB_HOST" -e DB_PORT="$DB_PORT" -e DB_USER="$DB_USER" \
+            -e DB_PASSWORD="$DB_PASSWORD" -e DB_NAME="$DB_NAME" \
+            sanctum/playwright:nightly npx playwright test --workers=2
 
       - name: Upload Playwright artifacts
         if: always()

@@ -1,0 +1,72 @@
+name: GHCR Container Cleanup
+
+on:
+    schedule:
+        # Run daily at 03:00 UTC
+        - cron: "0 3 * * *"
+    workflow_dispatch:
+        inputs:
+            retention_days:
+                description: "Number of days to keep package versions"
+                required: false
+                default: "30"
+
+permissions:
+    contents: read
+    packages: write
+
+jobs:
+    cleanup:
+        name: Cleanup old GHCR container package versions
+        runs-on: ubuntu-latest
+        steps:
+            - name: Install tools
+              run: |
+                  sudo apt-get update && sudo apt-get install -y jq python3
+
+            - name: Delete old container package versions
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  OWNER: ${{ github.repository_owner }}
+                  RETENTION_DAYS: ${{ github.event.inputs.retention_days || '30' }}
+              run: |
+                  set -euo pipefail
+                  API='https://api.github.com'
+                  PKGS='playwright frontend backend'
+
+                  # detect owner type (User vs Organization) so we use correct API path
+                  owner_type=$(curl -s -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" "$API/users/$OWNER" | jq -r '.type // empty')
+                  if [ "$owner_type" = "Organization" ]; then
+                    PKG_BASE="$API/orgs/$OWNER/packages/container"
+                  else
+                    PKG_BASE="$API/users/$OWNER/packages/container"
+                  fi
+
+                  for pkg in $PKGS; do
+                    echo "Checking package: $pkg (api base: $PKG_BASE)"
+                    # List versions (paginated); take first 100
+                    resp=$(curl -s -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" "$PKG_BASE/$pkg/versions?per_page=100")
+                    echo "$resp" | jq -c '.[]' | while read -r ver; do
+                      id=$(echo "$ver" | jq -r '.id')
+                      created=$(echo "$ver" | jq -r '.created_at')
+                      # collect tags (may be empty)
+                      tags=$(echo "$ver" | jq -r '.metadata.container.tags // [] | join(" ")')
+                      if [ -z "$id" ] || [ -z "$created" ]; then
+                        continue
+                      fi
+                      # Skip deletion if this version contains the 'latest' tag
+                      if echo "$tags" | grep -qw "latest"; then
+                        echo "Skipping $pkg version $id (tagged latest)"
+                        continue
+                      fi
+                      # compute age in days (single-line python to avoid heredoc/YAML parsing issues)
+                      age=$(python3 -c "from datetime import datetime,timezone; created='${created}'; fmt='%Y-%m-%dT%H:%M:%SZ'; dt=datetime.strptime(created,fmt).replace(tzinfo=timezone.utc); now=datetime.utcnow().replace(tzinfo=timezone.utc); print((now-dt).days)")
+                      if [ "${age:-0}" -ge "$RETENTION_DAYS" ]; then
+                        echo "Deleting $pkg version $id (age ${age}d)"
+                        curl -s -X DELETE \
+                          -H "Accept: application/vnd.github+json" \
+                          -H "Authorization: Bearer $GITHUB_TOKEN" \
+                          "$PKG_BASE/$pkg/versions/$id" || true
+                      fi
+                    done
+                  done

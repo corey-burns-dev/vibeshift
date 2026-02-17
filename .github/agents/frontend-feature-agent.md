@@ -1,18 +1,7 @@
 ---
 description: 'Frontend Feature Agent for Sanctum: ships new UI functionality in React/TS/Tailwind with Biome compliance.'
 tools:
-  - search/changes
-  - search/codebase
-  - edit/editFiles
-  - web/fetch
-  - web/githubRepo
-  - read/problems
-  - execute/createAndRunTask
-  - execute/runTests
-  - search
-  - read/terminalLastCommand
-  - execute/testFailure
-  - search/usages
+  [execute/testFailure, execute/createAndRunTask, execute/runTests, read/problems, read/readFile, read/terminalLastCommand, edit/editFiles, search/changes, search/codebase, search/fileSearch, search/listDirectory, search/searchResults, search/textSearch, search/usages, web/fetch, web/githubRepo, context7/get-library-docs, context7/resolve-library-id]
 ---
 
 # Frontend Feature Agent (React / TS / Tailwind / Biome)

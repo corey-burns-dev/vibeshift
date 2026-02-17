@@ -58,6 +58,20 @@ Prefer:
 - `make lint-frontend`
 - `cd frontend && bun run type-check`
 
+Note: Running frontend tests requires the project dev dependencies (vitest) to be installed in the environment where tests are executed. If you run tests locally, install with `bun install` or `npm install` inside the `frontend` directory.
+
+Run tests locally:
+
+```bash
+cd frontend
+# Install deps (bun preferred in this repo)
+bun install
+# Run the unit/integration tests
+bun run test:run
+```
+
+If tests fail locally with missing JSX runtime, ensure your Node/Bun environment matches the project's setup and that `react`/`react-dom` are installed in `node_modules` after installing deps.
+
 Use Bun, not npm/yarn, unless task explicitly requires otherwise.
 
 ## Scope Routing

@@ -17,6 +17,20 @@ From the `frontend/` directory (or repo root via Make):
 
 **Prerequisites for E2E:** Backend and frontend must be running, and Playwright browsers installed (`bun run test:e2e:install` for local/browser-only install, or `bun run test:e2e:install:system` when OS deps must also be installed).
 
+Running Playwright in Docker
+-----------------------------
+
+If your host is missing Bun/Playwright or system libraries, run Playwright inside a container that includes the required OS libraries and browsers.
+
+From the repo root:
+
+```bash
+# build & run (artifacts placed under frontend/reports)
+./scripts/run-playwright-docker.sh --grep @smoke --workers=2
+```
+
+The helper builds `frontend/Dockerfile.e2e` and runs tests with host networking so the container can reach services started on the runner. Artifacts (HTML report, traces, test-results) are saved to `frontend/reports/` on the host. Pass any Playwright CLI args and they will be forwarded into the container.
+
 ## Test structure
 
 - **Unit tests**: Vitest + React Testing Library. Live next to source or in `src/**/*.test.{ts,tsx}` or `*.spec.tsx`.

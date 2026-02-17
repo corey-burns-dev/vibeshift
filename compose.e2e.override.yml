@@ -13,3 +13,22 @@ services:
       - POSTGRES_USER=sanctum_user
       - POSTGRES_PASSWORD=sanctum_password
       - POSTGRES_DB=sanctum_test
+
+  playwright:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.e2e
+    environment:
+      - PLAYWRIGHT_BASE_URL=http://frontend:5173
+      - PLAYWRIGHT_API_URL=http://app:8375/api
+      - PGHOST=postgres_test
+      - PGPORT=5432
+      - PGUSER=sanctum_user
+      - PGPASSWORD=sanctum_password
+      - PGDATABASE=sanctum_test
+    depends_on:
+      - frontend
+      - app
+    volumes:
+      - ./frontend/reports:/app/reports
+    command: ["npx", "playwright", "test", "--project=chromium"]

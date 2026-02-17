@@ -2,18 +2,27 @@ import { MessageCircle, Minus, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
-import type { Conversation, Message } from '@/api/types'
+import type { Conversation, Message, User } from '@/api/types'
 import { ChatDockConversationList } from '@/components/chat/ChatDockConversationList'
 import { ChatDockConversationView } from '@/components/chat/ChatDockConversationView'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useAudio } from '@/hooks/useAudio'
-import { useConversation, useConversations } from '@/hooks/useChat'
+import {
+  useConversation,
+  useConversations,
+  useCreateConversation,
+} from '@/hooks/useChat'
 import { useFriends } from '@/hooks/useFriends'
 import { useIsMobile } from '@/hooks/useMediaQuery'
+import { usePresenceStore } from '@/hooks/usePresence'
 import { getCurrentUser } from '@/hooks/useUsers'
-import { shouldPlayFriendDMInMessagesView } from '@/lib/chat-sounds'
-import { getDirectMessageName } from '@/lib/chat-utils'
+import {
+  shouldPlayFriendDMInMessagesView,
+  shouldPlayFriendOnlineSound,
+} from '@/lib/chat-sounds'
+import { getDirectMessageAvatar, getDirectMessageName } from '@/lib/chat-utils'
 import { cn } from '@/lib/utils'
 import { useChatContext } from '@/providers/ChatProvider'
 import { useChatDockStore } from '@/stores/useChatDockStore'
@@ -102,13 +111,15 @@ function ChatDockPanelContent({
               const name = getDirectMessageName(conv, currentUserId)
               const isActive =
                 view === 'conversation' && activeConversationId === id
+              const unread = unreadByConversation[String(id)] || 0
 
               return (
                 <div
                   key={id}
                   className={cn(
                     'group relative flex shrink-0 items-center rounded-md transition-colors',
-                    isActive ? 'bg-background shadow-sm' : 'hover:bg-accent/50'
+                    isActive ? 'bg-background shadow-sm' : 'hover:bg-accent/50',
+                    unread > 0 && !isActive && 'animate-pulse'
                   )}
                 >
                   <Button
@@ -116,11 +127,15 @@ function ChatDockPanelContent({
                     size='sm'
                     className={cn(
                       'h-7 px-2.5 text-[11px] font-medium transition-none',
-                      isActive ? 'text-foreground' : 'text-muted-foreground'
+                      isActive ? 'text-foreground' : 'text-muted-foreground',
+                      unread > 0 && !isActive && 'text-primary'
                     )}
                     onClick={() => onSelectConversation(id)}
                   >
                     {name}
+                    {unread > 0 && (
+                      <span className='ml-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary shadow-[0_0_8px_rgba(59,130,246,0.6)]' />
+                    )}
                   </Button>
                   <button
                     type='button'
@@ -185,6 +200,7 @@ export function ChatDock() {
     activeConversationId,
     openConversationIds,
     toggle,
+    open,
     minimize,
     close,
     setActiveConversation,
@@ -194,6 +210,7 @@ export function ChatDock() {
 
   const { data: conversations = [] } = useConversations()
   const { data: friends = [], isSuccess: friendsLoaded } = useFriends()
+  const { mutate: createConversation } = useCreateConversation()
   const { data: activeConversation } = useConversation(
     activeConversationId || 0,
     { enabled: activeConversationId !== null && activeConversationId > 0 }
@@ -208,15 +225,32 @@ export function ChatDock() {
     [friends]
   )
 
-  const friendDMConversations = useMemo(
-    () =>
-      conversations.filter(c => {
-        if (c.is_group) return false
-        const other = c.participants?.find(p => p.id !== currentUser?.id)
-        return other ? friendUserIds.has(other.id) : false
-      }),
-    [conversations, currentUser?.id, friendUserIds]
-  )
+  const friendDMConversations = useMemo(() => {
+    const existingDMs = conversations.filter(c => {
+      if (c.is_group) return false
+      const other = c.participants?.find(p => p.id !== currentUser?.id)
+      return other ? friendUserIds.has(other.id) : false
+    })
+
+    const usersWithDM = new Set(
+      existingDMs.flatMap(c =>
+        c.participants?.filter(p => p.id !== currentUser?.id).map(p => p.id)
+      )
+    )
+
+    const virtualDMs: Conversation[] = friends
+      .filter(f => !usersWithDM.has(f.id))
+      .map(f => ({
+        id: -f.id, // Use negative ID to distinguish virtual DMs
+        is_group: false,
+        created_by: currentUser?.id || 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        participants: [f, currentUser].filter((p): p is User => !!p),
+      }))
+
+    return [...existingDMs, ...virtualDMs]
+  }, [conversations, currentUser, friendUserIds, friends])
 
   const friendDMConversationIds = useMemo(
     () => new Set(friendDMConversations.map(c => c.id)),
@@ -232,7 +266,134 @@ export function ChatDock() {
     clearUnread,
     subscribeOnMessage,
     subscribeOnTyping,
+    subscribeOnPresence,
   } = useChatContext()
+
+  const notifiedUserIds = usePresenceStore(state => state.notifiedUserIds)
+  const markNotified = usePresenceStore(state => state.markNotified)
+  const { playFriendOnlineSound } = useAudio()
+
+  // Friend Online Toasts
+  useEffect(() => {
+    const unsub = subscribeOnPresence((userId, username, status) => {
+      if (
+        shouldPlayFriendOnlineSound(
+          userId,
+          status,
+          currentUser?.id,
+          notifiedUserIds,
+          friends.map(f => f.id)
+        )
+      ) {
+        markNotified(userId)
+        playFriendOnlineSound()
+
+        const friend = friends.find(f => f.id === userId)
+
+        toast(
+          <button
+            type='button'
+            className='flex w-full items-center gap-3 cursor-pointer border-none bg-transparent p-0 text-left'
+            onClick={() => {
+              setActiveConversation(-userId)
+              open()
+            }}
+          >
+            <Avatar className='h-9 w-9 border-2 border-primary/20'>
+              <AvatarImage src={friend?.avatar} />
+              <AvatarFallback className='bg-primary/10 text-[10px] font-bold text-primary'>
+                {username.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className='flex flex-col min-w-0'>
+              <span className='truncate text-[13px] font-bold text-foreground'>
+                {username} is online!
+              </span>
+              <span className='text-[11px] text-muted-foreground'>
+                Jump in and say hi
+              </span>
+            </div>
+          </button>,
+          {
+            duration: 4000,
+            className:
+              'border-border/50 bg-background/95 backdrop-blur-md shadow-xl',
+          }
+        )
+      }
+    })
+    return () => unsub()
+  }, [
+    currentUser?.id,
+    friends,
+    notifiedUserIds,
+    markNotified,
+    playFriendOnlineSound,
+    subscribeOnPresence,
+    open,
+    setActiveConversation,
+  ])
+
+  // New Friend Online Check: if we just became friends and they are already online, notify.
+  // We use a ref to track which friend IDs we've already "checked" during this session
+  // to avoid re-notifying on every friends list refresh.
+  const checkedFriendIdsRef = useRef<Set<number>>(new Set())
+  const { isUserOnline } = useChatContext()
+
+  useEffect(() => {
+    if (!friendsLoaded || friends.length === 0) return
+
+    for (const friend of friends) {
+      if (checkedFriendIdsRef.current.has(friend.id)) continue
+
+      // If they are online and we haven't notified for them yet this session
+      if (isUserOnline(friend.id) && !notifiedUserIds.has(friend.id)) {
+        markNotified(friend.id)
+        playFriendOnlineSound()
+
+        toast(
+          <button
+            type='button'
+            className='flex w-full items-center gap-3 cursor-pointer border-none bg-transparent p-0 text-left'
+            onClick={() => {
+              setActiveConversation(-friend.id)
+              open()
+            }}
+          >
+            <Avatar className='h-9 w-9 border-2 border-primary/20'>
+              <AvatarImage src={friend.avatar} />
+              <AvatarFallback className='bg-primary/10 text-[10px] font-bold text-primary'>
+                {friend.username.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className='flex flex-col min-w-0'>
+              <span className='truncate text-[13px] font-bold text-foreground'>
+                {friend.username} is online!
+              </span>
+              <span className='text-[11px] text-muted-foreground'>
+                Your new friend is ready to chat
+              </span>
+            </div>
+          </button>,
+          {
+            duration: 4000,
+            className:
+              'border-border/50 bg-background/95 backdrop-blur-md shadow-xl',
+          }
+        )
+      }
+      checkedFriendIdsRef.current.add(friend.id)
+    }
+  }, [
+    friends,
+    friendsLoaded,
+    isUserOnline,
+    notifiedUserIds,
+    markNotified,
+    playFriendOnlineSound,
+    setActiveConversation,
+    open,
+  ])
 
   // Requirement: Auto-reconnect and re-subscribe to all rooms in OpenRooms
   // We'll also keep JOINED to all conversations for unread counts OR just use openConversationIds?
@@ -337,8 +498,14 @@ export function ChatDock() {
     const handleMessage = (message: Message, conversationId: number) => {
       if (message.sender_id === currentUser?.id) return
 
-      // Only track/notify for friend 1-on-1 DMs
-      if (!friendDMConversationIds.has(conversationId)) return
+      // Determine if this is a friend DM.
+      // Either we already have the conversation in our list, or the sender is a friend.
+      const isFriendDM =
+        friendDMConversationIds.has(conversationId) ||
+        friendUserIds.has(message.sender_id)
+
+      if (!isFriendDM) return
+
       // Chat.tsx owns unread transitions while user is in Messages view.
       if (isMessagesRoute) return
 
@@ -378,10 +545,47 @@ export function ChatDock() {
 
       if (shouldShowToast) {
         const conv = friendDMConversations.find(c => c.id === conversationId)
+        const friend = friends.find(f => f.id === message.sender_id)
+
         const conversationName = conv
           ? getDirectMessageName(conv, currentUser?.id)
-          : 'Message'
-        toast.message(conversationName)
+          : friend
+            ? friend.username
+            : 'New Message'
+
+        const avatar = conv
+          ? getDirectMessageAvatar(conv, currentUser?.id)
+          : friend?.avatar
+
+        toast(
+          <button
+            type='button'
+            className='flex w-full items-center gap-3 cursor-pointer border-none bg-transparent p-0 text-left'
+            onClick={() => {
+              setActiveConversation(conversationId)
+              open()
+            }}
+          >
+            <Avatar className='h-9 w-9 border-2 border-primary/20'>
+              <AvatarImage src={avatar} />
+              <AvatarFallback className='bg-primary/10 text-[10px] font-bold text-primary'>
+                {conversationName.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className='flex flex-col min-w-0'>
+              <span className='truncate text-[13px] font-bold text-foreground'>
+                {conversationName}
+              </span>
+              <span className='line-clamp-1 text-[11px] text-muted-foreground'>
+                {message.content}
+              </span>
+            </div>
+          </button>,
+          {
+            className:
+              'border-border/50 bg-background/95 backdrop-blur-md shadow-xl',
+          }
+        )
       }
     }
 
@@ -389,6 +593,8 @@ export function ChatDock() {
     return () => unsub()
   }, [
     currentUser?.id,
+    friends,
+    friendUserIds,
     friendDMConversations,
     friendDMConversationIds,
     friendsLoaded,
@@ -396,6 +602,8 @@ export function ChatDock() {
     isMessagesRoute,
     playNewMessageSound,
     subscribeOnMessage,
+    open,
+    setActiveConversation,
   ])
 
   // Keyboard shortcuts: Cmd/Ctrl+K toggle, Escape close (when not typing)
@@ -443,22 +651,34 @@ export function ChatDock() {
 
   const handleSelectConversation = useCallback(
     (id: number | null) => {
-      setActiveConversation(id)
-      if (id !== null) {
-        clearUnread(id)
+      if (id !== null && id < 0) {
+        // Virtual conversation, create it
+        const friendId = -id
+        createConversation(
+          { participant_ids: [friendId] },
+          {
+            onSuccess: (conv: Conversation) => {
+              setActiveConversation(conv.id)
+              clearUnread(conv.id)
+            },
+          }
+        )
+      } else {
+        setActiveConversation(id)
+        if (id !== null) {
+          clearUnread(id)
+        }
       }
     },
-    [clearUnread, setActiveConversation]
+    [clearUnread, createConversation, setActiveConversation]
   )
 
-  const conversationName = activeConversation
-    ? (() => {
-        const other = activeConversation.participants?.find(
-          p => p.id !== currentUser?.id
-        )
-        return other?.username || 'Friends'
-      })()
-    : 'Friends'
+  const conversationName = useMemo(() => {
+    if (!activeConversationId) return 'Friends'
+    const conv = friendDMConversations.find(c => c.id === activeConversationId)
+    if (!conv) return 'Friends'
+    return getDirectMessageName(conv, currentUser?.id)
+  }, [activeConversationId, friendDMConversations, currentUser?.id])
 
   const activeTypingUsers = useMemo(() => {
     if (!activeConversationId || !typingState[activeConversationId]) return []
@@ -473,12 +693,17 @@ export function ChatDock() {
         onClick={toggle}
         className={cn(
           'fixed bottom-6 right-6 z-60 h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 md:flex',
-          isMobile ? 'hidden' : 'flex'
+          isMobile ? 'hidden' : 'flex',
+          totalUnread > 0 &&
+            'animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.5)]'
         )}
       >
         <MessageCircle className='h-5 w-5' />
         {totalUnread > 0 && (
-          <span className='absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground'>
+          <span
+            data-testid='chat-dock-unread-badge'
+            className='absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground'
+          >
             {totalUnread > 99 ? '99+' : totalUnread}
           </span>
         )}
