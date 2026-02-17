@@ -3,6 +3,7 @@
 Follow `/CLAUDE.md` + `/AGENTS.md` first. Frontend conventions live in `/frontend/AGENTS.md`.
 
 ## How to run
+
 - From `frontend/`:
   - `bun run dev`
   - `bun run build`
@@ -15,5 +16,6 @@ Follow `/CLAUDE.md` + `/AGENTS.md` first. Frontend conventions live in `/fronten
   - `make lint-frontend`
 
 ## Rules of thumb
+
 - Follow existing TanStack Query + hooks patterns in `/frontend/AGENTS.md`.
 - Prefer small UI diffs; keep styling consistent with Tailwind/shadcn usage in this repo.

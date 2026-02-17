@@ -1,4 +1,3 @@
-import { request as playwrightRequest } from '@playwright/test'
 import fs from 'node:fs'
 import { Client } from 'pg'
 import { ADMIN_STATE_PATH, USER_STATE_PATH } from './fixtures/auth'

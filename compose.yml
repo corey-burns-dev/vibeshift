@@ -8,9 +8,9 @@ services:
     environment:
       - DB_HOST=postgres
       - REDIS_URL=redis:6379
-      - DB_USER=${POSTGRES_USER:-user}
+      - DB_USER=${POSTGRES_USER:-sanctum_user}
       - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_DB:-sanctum}
+      - DB_NAME=${POSTGRES_DB:-sanctum_test}
       - IMAGE_UPLOAD_DIR=/var/sanctum/uploads/images
     volumes:
       - .:/app
@@ -34,13 +34,17 @@ services:
   postgres:
     image: postgres:${POSTGRES_VERSION}
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-sanctum}
-      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_DB: ${POSTGRES_DB:-sanctum_test}
+      POSTGRES_USER: ${POSTGRES_USER:-sanctum_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-sanctum}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-sanctum_user} -d ${POSTGRES_DB:-sanctum_test} || pg_isready -U postgres -d ${POSTGRES_DB:-sanctum_test}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5

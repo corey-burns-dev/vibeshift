@@ -1,11 +1,10 @@
+import { ChatDock } from '@/components/chat/ChatDock'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
 import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
-import type { Conversation } from '@/api/types'
-import { ChatDock } from '@/components/chat/ChatDock'
 
 // Mock useChatContext to avoid complex WebSocket setup in unit test
 vi.mock('@/providers/ChatProvider', () => ({
@@ -47,7 +46,9 @@ describe('ChatDock unread indicator for DM', () => {
     )
 
     // Initial state: 0 unread
-    ;(useChatContext as any).mockReturnValue({
+    ;(
+      useChatContext as unknown as { mockReturnValue: (v: unknown) => void }
+    ).mockReturnValue({
       unreadByConversation: {},
       isUserOnline: vi.fn(() => false),
       subscribeOnMessage: () => () => {},
@@ -69,7 +70,9 @@ describe('ChatDock unread indicator for DM', () => {
     ).not.toBeInTheDocument()
 
     // Simulate unread count change in context
-    ;(useChatContext as any).mockReturnValue({
+    ;(
+      useChatContext as unknown as { mockReturnValue: (v: unknown) => void }
+    ).mockReturnValue({
       unreadByConversation: { '200': 1 },
       isUserOnline: vi.fn(() => false),
       subscribeOnMessage: () => () => {},

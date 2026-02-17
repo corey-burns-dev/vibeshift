@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/src/assets/images/logo.jpeg" width="200" alt="Sanctum Logo">
+   ![Sanctum Logo](frontend/src/assets/images/logo.jpeg)
 </p>
 
 # Sanctum
@@ -74,34 +74,44 @@ Sanctum is a Reddit-style social platform focused on creativity, hobbies, and sh
 Sanctum uses Docker Compose with environment-specific overrides for staging and production.
 
 #### 1. Pre-deployment Checklist
+
 Before deploying, ensure you have generated strong secrets:
+
 ```bash
 # Generate secrets (run twice, once for JWT and once for DB)
 openssl rand -base64 32
 ```
+
 Create/update your `.env` file with these values:
+
 - `JWT_SECRET`
 - `POSTGRES_PASSWORD`
 - `ALLOWED_ORIGINS` (e.g., `https://sanctum.coreyburns.ca`)
 
 #### 2. Staging Deployment
+
 Staging is used for testing features before they go to production.
+
 - **Domain:** `staging.sanctum.coreyburns.ca`
 - **Command:**
+
   ```bash
   make build ENVIRONMENT=stage
   make up ENVIRONMENT=stage
   ```
 
 #### 3. Production Deployment
+
 - **Domain:** `sanctum.coreyburns.ca`
 - **Command:**
+
   ```bash
   make build ENVIRONMENT=prod
   make up ENVIRONMENT=prod
   ```
 
 ### Building
+
 - `make build` — Build all Docker images (production)
 - `make build-backend` — Build backend image only
 - `make build-frontend` — Build frontend image only
@@ -109,12 +119,16 @@ Staging is used for testing features before they go to production.
 ## Feature Guide
 
 ### Onboarding Flow
+
 New users go through an onboarding process where they must join at least 3 Sanctums (communities).
+
 - **Atrium:** The main community, joined by default.
 - **Customization:** Users can select other communities like Forge or Game Room during signup.
 
 ### Hierarchical Moderation
+
 Sanctum uses a three-tier moderation system:
+
 1. **Master Admin:** Global control over the entire platform.
 2. **Sanctum Admin:** Moderate specific communities (Sanctums).
 3. **Chat Moderator:** Room-scoped moderation for specific chat channels.
@@ -122,26 +136,33 @@ Sanctum uses a three-tier moderation system:
 For details, see `docs/guides/hierarchical-moderation-guide.md`.
 
 ### Real-time Features
+
 - **Chat:** Real-time messaging powered by WebSockets.
 - **Games:** Play social games like Connect Four or Chess with other users.
 
 ## Operations & Maintenance
 
 ### Database Migrations
+
 Migrations run automatically in staging but are strictly SQL-driven in production for safety.
+
 ```bash
 # Apply migrations
 make db-migrate
 ```
 
 ### Seeding Data
+
 For development or testing, you can seed the database with mock data:
+
 ```bash
 make seed
 ```
+
 **Warning:** This should not be used in production as it creates dummy users and posts.
 
 ### Troubleshooting
+
 - **Logs:** Check service logs with `make logs-all`.
 - **Health:** Access `/health/ready` on the backend to verify system status.
 - **Monitoring:** Start the lite monitoring stack with `make monitor-lite-up` to see container status and uptime.

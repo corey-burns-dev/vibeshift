@@ -86,4 +86,3 @@ onError: error => {
 
 - [frontend/src/pages/Messages.tsx](frontend/src/pages/Messages.tsx) -- fix useEffect deps / add ref guard
 - [frontend/src/hooks/useChat.ts](frontend/src/hooks/useChat.ts) -- soften error handling in `useMarkAsRead`
-

@@ -23,17 +23,17 @@ This report documents the implementation of the first three high-priority securi
 
 - **File:** `backend/internal/server/server.go`
 - **Change:** Integrated `middleware.RateLimit` into several route groups:
-    - **Admin Reads:** Limited to 30 requests per minute.
-    - **Admin Writes:** Limited to 10 requests per 5 minutes.
-    - **User Reporting:** Unified "report" bucket (covering users, posts, and messages) limited to 5 reports per 10 minutes.
+  - **Admin Reads:** Limited to 30 requests per minute.
+  - **Admin Writes:** Limited to 10 requests per 5 minutes.
+  - **User Reporting:** Unified "report" bucket (covering users, posts, and messages) limited to 5 reports per 10 minutes.
 - **Outcome:** Mitigates the risk of data enumeration from compromised accounts and prevents automated spamming of the moderation queue.
 
 ### 3. Moderation Suite Test Coverage (HIGH-1)
 
 - **Files Created:**
-    - `backend/internal/server/moderation_handlers_test.go`
-    - `backend/internal/server/sanctum_admin_handlers_test.go`
-    - `backend/internal/server/chat_safety_handlers_test.go`
+  - `backend/internal/server/moderation_handlers_test.go`
+  - `backend/internal/server/sanctum_admin_handlers_test.go`
+  - `backend/internal/server/chat_safety_handlers_test.go`
 - **Change:** Implemented ~30 new test cases using the project's established SQLite in-memory testing pattern.
 - **Outcome:** Security-critical logic (banning, blocking, reporting, sanctum management) is now verified, ensuring regressions are caught early.
 
@@ -42,17 +42,23 @@ This report documents the implementation of the first three high-priority securi
 ## Issues & Technical Challenges
 
 ### SQLite Compatibility: `NOW()` vs `time.Now()`
+
 During test implementation, it was discovered that `sanctum_admin_handlers.go` used `gorm.Expr("NOW()")` in several `Updates` calls. While this works in PostgreSQL, it is not a built-in function in SQLite, causing unit tests to fail with "no such function: NOW".
+
 - **Resolution:** Replaced `gorm.Expr("NOW()")` with Go's `time.Now()` in the handler logic. This is more portable and idiomatic for this codebase's testing strategy.
 
 ### Model Field Discrepancies
+
 Initial test implementations failed to compile due to incorrect assumptions about model field names.
+
 - **UserBlock:** Used `BlockerID` and `BlockedID` (not `UserID`/`BlockedUserID`).
 - **ModerationReport:** Used `ReporterID` (not `ReporterUserID`).
 - **Resolution:** Updated tests to match the actual definitions in `internal/models/`.
 
 ### Unique Constraints in Tests
+
 Tests initially failed when creating multiple users without specifying unique emails, triggering `UNIQUE constraint failed: users.email`.
+
 - **Resolution:** Updated test data generators to use unique emails (e.g., `u1@e.com`, `u2@e.com`).
 
 ---
@@ -60,6 +66,7 @@ Tests initially failed when creating multiple users without specifying unique em
 ## Verification Results
 
 All backend tests were executed via `make test-backend`.
+
 - **Total Result:** PASS
 - **New Coverage:** Handlers for blocking, reporting, banning, and sanctum administration now have >80% coverage within their respective test files.
 

@@ -80,13 +80,13 @@ The second player navigates to the new room, the WebSocket is still on the old r
 
 Added 5 new test cases:
 
-| Test | Coverage |
-|------|----------|
-| `resets join state when roomId changes (play-again flow)` | Core bug: verifies auto-join fires on new room after finishing a game in old room |
-| `allows manual joinRoom after roomId change even if previously joined` | Verifies `joinRoom()` isn't blocked by stale `hasJoinedRef` from previous room |
-| `does not auto-join when current user is the creator` | Creator waits for opponent; no self-join |
-| `does not auto-join an active room (already started)` | Non-participant spectators don't trigger join on in-progress games |
-| `dispatches incoming messages to the onAction callback` | WebSocket messages reach the `onAction` handler correctly |
+| Test                                                                   | Coverage                                                                          |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `resets join state when roomId changes (play-again flow)`              | Core bug: verifies auto-join fires on new room after finishing a game in old room |
+| `allows manual joinRoom after roomId change even if previously joined` | Verifies `joinRoom()` isn't blocked by stale `hasJoinedRef` from previous room    |
+| `does not auto-join when current user is the creator`                  | Creator waits for opponent; no self-join                                          |
+| `does not auto-join an active room (already started)`                  | Non-participant spectators don't trigger join on in-progress games                |
+| `dispatches incoming messages to the onAction callback`                | WebSocket messages reach the `onAction` handler correctly                         |
 
 ## Validation
 

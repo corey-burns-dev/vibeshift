@@ -28,6 +28,7 @@ go run ./cmd/migrate/main.go down <version>
 ```
 
 Default runtime mode is `DB_SCHEMA_MODE=sql`:
+
 - SQL migrations always run.
 - `AutoMigrate` is not run during normal test startup.
 - Use `go run ./cmd/migrate/main.go auto` only when explicitly validating model/schema parity.

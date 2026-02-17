@@ -210,10 +210,10 @@ If you tell me your stack for realtime (WebSocket? SSE? Redis pubsub? Fiber?) an
 
 Progress: I implemented an initial subset of the plan in the frontend:
 
-- Seed chat cache when opening a DM from a notification to avoid the Chat view getting stuck. See `frontend/src/hooks/useRealtimeNotifications.ts`.
-- Added an unread-count utility and unit tests: `frontend/src/lib/chat-unread.ts` and `frontend/src/lib/__tests__/chat-unread.test.ts`.
-- Added an integration-style test that simulates the notification -> open chat flow: `frontend/src/providers/__tests__/realtimeNotifications.chat.integration.test.tsx`.
-- Added a test that asserts the `ChatDock` shows an unread indicator when a DM arrives: `frontend/src/components/chat/__tests__/chatDock.unreadIndicator.test.tsx` and added a `data-testid` to the badge in `ChatDock`.
+* Seed chat cache when opening a DM from a notification to avoid the Chat view getting stuck. See `frontend/src/hooks/useRealtimeNotifications.ts`.
+* Added an unread-count utility and unit tests: `frontend/src/lib/chat-unread.ts` and `frontend/src/lib/__tests__/chat-unread.test.ts`.
+* Added an integration-style test that simulates the notification -> open chat flow: `frontend/src/providers/__tests__/realtimeNotifications.chat.integration.test.tsx`.
+* Added a test that asserts the `ChatDock` shows an unread indicator when a DM arrives: `frontend/src/components/chat/__tests__/chatDock.unreadIndicator.test.tsx` and added a `data-testid` to the badge in `ChatDock`.
 
 Next suggested steps:
 

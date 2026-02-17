@@ -1,11 +1,23 @@
-FROM mcr.microsoft.com/playwright:v1.50.1-bookworm
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install Bun
-RUN apt-get update && apt-get install -y curl unzip && \
-    curl -fsSL https://bun.sh/install | bash && \
+# Install base deps, Node.js, and system libs required by Playwright
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl gnupg lsb-release wget unzip build-essential \
+    libnss3 libxss1 libasound2t64 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
+    libdrm2 libxrandr2 libx11-xcb1 libgbm1 libgtk-3-0 libxcomposite1 \
+    libxdamage1 libxfixes3 libxext6 libxtst6 libpangocairo-1.0-0 \
+    libpango-1.0-0 libatspi2.0-0 fonts-liberation && \
     rm -rf /var/lib/apt/lists/*
+
+# Install Node.js (LTS) from NodeSource
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | bash
 
 ENV PATH="/root/.local/bin:${PATH}"
 
@@ -21,10 +33,17 @@ RUN bun install --frozen-lockfile
 # Copy full frontend sources
 COPY frontend/ ./
 
-# Ensure Playwright browsers are installed (though they are in base image)
+# Copy e2e wait script
+COPY scripts/wait-for-e2e.sh /app/wait-for-e2e.sh
+RUN chmod +x /app/wait-for-e2e.sh
+
+# Ensure Playwright browsers are installed
+RUN npx playwright install-deps || true
 RUN npx playwright install chromium
 
 # Use a dedicated path for installed browsers
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
+# Wait for services, then run Playwright. The wait script will exec the CMD.
+ENTRYPOINT ["/app/wait-for-e2e.sh"]
 CMD ["npx", "playwright", "test", "--project=chromium"]

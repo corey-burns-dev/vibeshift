@@ -2,43 +2,43 @@
 
 ## Auth Hooks
 
-| Hook | Purpose | Usage |
-|------|---------|-------|
+| Hook          | Purpose       | Usage                                          |
+| ------------- | ------------- | ---------------------------------------------- |
 | `useSignup()` | Register user | `signup.mutate({ username, email, password })` |
-| `useLogin()` | Login user | `login.mutate({ email, password })` |
-| `useLogout()` | Logout | `const logout = useLogout(); logout()` |
+| `useLogin()`  | Login user    | `login.mutate({ email, password })`            |
+| `useLogout()` | Logout        | `const logout = useLogout(); logout()`         |
 
 ## Post Hooks
 
-| Hook | Purpose | Returns |
-|------|---------|---------|
-| `usePosts(params?)` | Get paginated posts | `{ data: Post[], isLoading, error }` |
-| `useInfinitePosts(limit)` | Infinite scroll | `{ data, fetchNextPage, hasNextPage }` |
-| `usePost(id)` | Get single post | `{ data: Post, isLoading, error }` |
-| `useSearchPosts(params)` | Search posts | `{ data: Post[], isLoading, error }` |
-| `useCreatePost()` | Create post | `mutation.mutate({ title, content })` |
-| `useUpdatePost(id)` | Update post | `mutation.mutate({ title, content })` |
-| `useDeletePost()` | Delete post | `mutation.mutate(postId)` |
-| `useLikePost(id)` | Like post | `mutation.mutate()` |
+| Hook                      | Purpose             | Returns                                |
+| ------------------------- | ------------------- | -------------------------------------- |
+| `usePosts(params?)`       | Get paginated posts | `{ data: Post[], isLoading, error }`   |
+| `useInfinitePosts(limit)` | Infinite scroll     | `{ data, fetchNextPage, hasNextPage }` |
+| `usePost(id)`             | Get single post     | `{ data: Post, isLoading, error }`     |
+| `useSearchPosts(params)`  | Search posts        | `{ data: Post[], isLoading, error }`   |
+| `useCreatePost()`         | Create post         | `mutation.mutate({ title, content })`  |
+| `useUpdatePost(id)`       | Update post         | `mutation.mutate({ title, content })`  |
+| `useDeletePost()`         | Delete post         | `mutation.mutate(postId)`              |
+| `useLikePost(id)`         | Like post           | `mutation.mutate()`                    |
 
 ## Comment Hooks
 
-| Hook | Purpose | Usage |
-|------|---------|-------|
-| `usePostComments(postId)` | Get comments | `{ data: Comment[], isLoading, error }` |
-| `useCreateComment(postId)` | Create comment | `mutation.mutate({ content })` |
-| `useUpdateComment(postId, commentId)` | Update comment | `mutation.mutate({ content })` |
-| `useDeleteComment(postId)` | Delete comment | `mutation.mutate(commentId)` |
+| Hook                                  | Purpose        | Usage                                   |
+| ------------------------------------- | -------------- | --------------------------------------- |
+| `usePostComments(postId)`             | Get comments   | `{ data: Comment[], isLoading, error }` |
+| `useCreateComment(postId)`            | Create comment | `mutation.mutate({ content })`          |
+| `useUpdateComment(postId, commentId)` | Update comment | `mutation.mutate({ content })`          |
+| `useDeleteComment(postId)`            | Delete comment | `mutation.mutate(commentId)`            |
 
 ## User Hooks
 
-| Hook | Purpose | Usage |
-|------|---------|-------|
-| `useMyProfile()` | Get current user | `{ data: User, isLoading, error }` |
-| `useUserProfile(id)` | Get user by ID | `{ data: User, isLoading, error }` |
-| `useUpdateMyProfile()` | Update profile | `mutation.mutate({ bio, avatar })` |
-| `getCurrentUser()` | Sync get user | `const user = getCurrentUser()` |
-| `useIsAuthenticated()` | Check auth | `const isAuth = useIsAuthenticated()` |
+| Hook                   | Purpose          | Usage                                 |
+| ---------------------- | ---------------- | ------------------------------------- |
+| `useMyProfile()`       | Get current user | `{ data: User, isLoading, error }`    |
+| `useUserProfile(id)`   | Get user by ID   | `{ data: User, isLoading, error }`    |
+| `useUpdateMyProfile()` | Update profile   | `mutation.mutate({ bio, avatar })`    |
+| `getCurrentUser()`     | Sync get user    | `const user = getCurrentUser()`       |
+| `useIsAuthenticated()` | Check auth       | `const isAuth = useIsAuthenticated()` |
 
 ## Common Patterns
 

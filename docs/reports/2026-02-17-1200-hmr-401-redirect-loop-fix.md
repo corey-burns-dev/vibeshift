@@ -102,11 +102,11 @@ initialData: () => {
 
 ## Risks and Regressions
 
-| Risk | Likelihood | Mitigation |
-|---|---|---|
-| 401 from a non-validate API call (e.g. POST /messages) no longer hard-redirects; caller sees an ApiError instead | Low — callers handle errors via React Query mutation/query error states | ProtectedRoute redirects as soon as `isAuthenticated` goes false from store clear |
-| `initialData: true` briefly shows protected content if token expired server-side but not locally | Very low — JWTs have clock-based expiry; local check is accurate within clock skew | Background refetch confirms and redirects within one round-trip |
-| `refetchOnWindowFocus: false` means tab-switching no longer re-validates | Acceptable — `staleTime: 30s` + `refetchOnMount: true` provide sufficient coverage | Can be re-enabled if future requirements demand it |
+| Risk                                                                                                             | Likelihood                                                                         | Mitigation                                                                        |
+| ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| 401 from a non-validate API call (e.g. POST /messages) no longer hard-redirects; caller sees an ApiError instead | Low — callers handle errors via React Query mutation/query error states            | ProtectedRoute redirects as soon as `isAuthenticated` goes false from store clear |
+| `initialData: true` briefly shows protected content if token expired server-side but not locally                 | Very low — JWTs have clock-based expiry; local check is accurate within clock skew | Background refetch confirms and redirects within one round-trip                   |
+| `refetchOnWindowFocus: false` means tab-switching no longer re-validates                                         | Acceptable — `staleTime: 30s` + `refetchOnMount: true` provide sufficient coverage | Can be re-enabled if future requirements demand it                                |
 
 ## Follow-ups
 

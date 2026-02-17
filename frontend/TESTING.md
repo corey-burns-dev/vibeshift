@@ -17,8 +17,7 @@ From the `frontend/` directory (or repo root via Make):
 
 **Prerequisites for E2E:** Backend and frontend must be running, and Playwright browsers installed (`bun run test:e2e:install` for local/browser-only install, or `bun run test:e2e:install:system` when OS deps must also be installed).
 
-Running Playwright in Docker
------------------------------
+## Running Playwright in Docker
 
 If your host is missing Bun/Playwright or system libraries, run Playwright inside a container that includes the required OS libraries and browsers.
 
@@ -34,7 +33,7 @@ The helper builds `frontend/Dockerfile.e2e` and runs tests with host networking 
 ## Test structure
 
 - **Unit tests**: Vitest + React Testing Library. Live next to source or in `src/**/*.test.{ts,tsx}` or `*.spec.tsx`.
-- **E2E tests**: Playwright in `test/tests/e2e/*.spec.ts`.
+- **E2E tests**: Playwright in `test/e2e/*.spec.ts` (legacy: `test/tests/e2e/*`).
 - **Setup**: `src/test/setup.ts` runs before unit tests (jest-dom, matchMedia, ResizeObserver, IntersectionObserver mocks).
 - **Utilities**: `src/test/test-utils.tsx` provides custom `render`, `renderHook`, `createTestQueryClient`, mock factories (`buildUser`, `buildMessage`, etc.), and `createLocalStorageMock()`.
 

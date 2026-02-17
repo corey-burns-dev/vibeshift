@@ -73,8 +73,8 @@ Updated `frontend/src/components/ProtectedRoute.test.tsx` to mock the hydration 
 
 ## Verification Results
 
-| Check | Result |
-|-------|--------|
-| Build (`bun run build`) | ✅ Passes |
-| Unit tests (42 files, 181 tests) | ✅ All pass |
-| E2E smoke tests | Resolved via hydration gating |
+| Check                            | Result                        |
+| -------------------------------- | ----------------------------- |
+| Build (`bun run build`)          | ✅ Passes                      |
+| Unit tests (42 files, 181 tests) | ✅ All pass                    |
+| E2E smoke tests                  | Resolved via hydration gating |

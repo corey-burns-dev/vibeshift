@@ -10,7 +10,7 @@ This project uses **TanStack Query (React Query)** for all server state manageme
 
 ## File Structure
 
-```
+```text
 frontend/src/
 ├── api/
 │   ├── client.ts       # API client with fetch wrapper

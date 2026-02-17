@@ -17,7 +17,7 @@ Upgrade the existing AI stress analyzer so medium/high runs correctly identify r
   - `rate_limit_signals` (counts + endpoint/check evidence)
   - `deterministic_status` (computed status and reasons)
 
-2. Report rendering updates (`report.html`, `report.md`, `report.txt`):
+1. Report rendering updates (`report.html`, `report.md`, `report.txt`):
 
 - Add explicit “Rate Limit Signals” section with:
   - Loki 429/rate-limit sample count
@@ -25,7 +25,7 @@ Upgrade the existing AI stress analyzer so medium/high runs correctly identify r
   - Endpoint-level bottleneck callouts
 - Rename Loki sample section to indicate it includes rate-limit evidence.
 
-3. Status policy:
+1. Status policy:
 
 - Final status is threshold-driven and enforced after model output:
   - `CRITICAL` when `http_req_failed` exceeds profile threshold OR any primary write-check pass rate `< 20%`
@@ -105,19 +105,19 @@ Upgrade the existing AI stress analyzer so medium/high runs correctly identify r
 - `rate_limit_signals` still populated from k6 check pass rates.
 - Analysis remains functional with degraded Loki health.
 
-2. Missing `root_group.checks`:
+1. Missing `root_group.checks`:
 
 - Fall back to `http_req_failed` threshold-only deterministic rule.
 
-3. Non-standard check names in future scripts:
+1. Non-standard check names in future scripts:
 
 - Unknown checks ignored; only canonical names affect severe write-check rule.
 
-4. Missing/invalid threshold expression:
+1. Missing/invalid threshold expression:
 
 - Use profile default thresholds (`low=0.05`, `medium=0.08`, `high=0.10`).
 
-5. Ollama failure/non-JSON:
+1. Ollama failure/non-JSON:
 
 - Fallback analysis still receives deterministic policy enforcement.
 
@@ -129,19 +129,19 @@ Upgrade the existing AI stress analyzer so medium/high runs correctly identify r
 - Expect `rate_limit_signals` populated with failing write checks.
 - Expect final status escalated to `CRITICAL` under policy.
 
-2. Healthy low run:
+1. Healthy low run:
 
 - No critical write-check failures; status stays `HEALTHY`/`WARNING` based on thresholds.
 
-3. Loki-down simulation:
+1. Loki-down simulation:
 
 - `loki` health is `degraded`; deterministic logic still computes status from k6 data.
 
-4. Ollama-down simulation:
+1. Ollama-down simulation:
 
 - Fallback analysis generated; deterministic status present and enforced.
 
-5. Regression check:
+1. Regression check:
 
 - `make ai-report` still generates `report.html`, `report.md`, `report.txt`, and updates `tmp/stress-runs/index.html`.
 

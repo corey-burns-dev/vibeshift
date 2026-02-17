@@ -38,5 +38,5 @@ globalThis.IntersectionObserver = class IntersectionObserver {
   takeRecords() {
     return []
   }
-  // biome-ignore lint/suspicious/noExplicitAny: Mock implementation
-} as any
+  // Mocking intersection observer for tests
+} as unknown as typeof globalThis.IntersectionObserver
