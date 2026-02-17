@@ -8,6 +8,12 @@ vi.mock('@/hooks/usePresence', () => ({
   usePresenceStore: () => new Set<number>(),
 }))
 
+vi.mock('@/providers/ChatProvider', () => ({
+  useChatContext: () => ({
+    isUserOnline: vi.fn(() => false),
+  }),
+}))
+
 describe('ChatDockConversationList', () => {
   it('renders empty state when no conversations', () => {
     render(

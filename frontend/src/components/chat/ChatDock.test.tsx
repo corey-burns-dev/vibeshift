@@ -5,6 +5,14 @@ import type { Message, User } from '@/api/types'
 import { ChatDock } from '@/components/chat/ChatDock'
 
 const toastMessageMock = vi.fn()
+vi.mock('sonner', () => ({
+  toast: Object.assign((...args: unknown[]) => toastMessageMock(...args), {
+    message: vi.fn(),
+    error: vi.fn(),
+    success: vi.fn(),
+  }),
+}))
+
 let onMessageSubscription:
   | ((message: Message, conversationId: number) => void)
   | null = null
@@ -26,12 +34,6 @@ const chatDockState = {
   removeOpenConversation: vi.fn(),
   clearOpenConversations: vi.fn(),
 }
-
-vi.mock('sonner', () => ({
-  toast: {
-    message: (...args: unknown[]) => toastMessageMock(...args),
-  },
-}))
 
 vi.mock('@/hooks/useMediaQuery', () => ({
   useIsMobile: () => false,
@@ -56,6 +58,7 @@ vi.mock('@/hooks/useChat', () => ({
     ],
   }),
   useConversation: () => ({ data: undefined }),
+  useCreateConversation: () => ({ mutate: vi.fn() }),
 }))
 
 vi.mock('@/providers/ChatProvider', () => ({
@@ -63,11 +66,13 @@ vi.mock('@/providers/ChatProvider', () => ({
     isConnected: true,
     joinRoom: vi.fn(),
     leaveRoom: vi.fn(),
+    isUserOnline: vi.fn(() => false),
     sendTyping: vi.fn(),
     unreadByConversation: {},
     incrementUnread: incrementUnreadMock,
     clearUnread: clearUnreadMock,
     subscribeOnTyping: () => () => {},
+    subscribeOnPresence: () => () => {},
     subscribeOnMessage: (
       cb: (message: Message, conversationId: number) => void
     ) => {
@@ -132,13 +137,13 @@ describe('ChatDock', () => {
       {
         id: 50,
         conversation_id: 999,
-        sender_id: 2,
+        sender_id: 99, // Not a friend (friend ID is 2)
         content: 'hello',
         message_type: 'text',
         is_read: false,
         created_at: now,
         updated_at: now,
-        sender: minimalUser('friend'),
+        sender: minimalUser('stranger'),
       },
       999
     )
