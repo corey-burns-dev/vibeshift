@@ -119,8 +119,10 @@ jobs:
           docker run --rm --network host \
             -e PLAYWRIGHT_BASE_URL="$PLAYWRIGHT_BASE_URL" \
             -e PLAYWRIGHT_API_URL="$PLAYWRIGHT_API_URL" \
-            -e DB_HOST="$DB_HOST" -e DB_PORT="$DB_PORT" -e DB_USER="$DB_USER" \
+            -e DB_HOST="localhost" -e DB_PORT="$DB_PORT" -e DB_USER="$DB_USER" \
             -e DB_PASSWORD="$DB_PASSWORD" -e DB_NAME="$DB_NAME" \
+            -e REDIS_HOST="localhost" \
+            -e APP_HOST="localhost" \
             sanctum/playwright:nightly npx playwright test --workers=2
 
       - name: Upload Playwright artifacts

@@ -38,14 +38,18 @@ wait_http_ok() {
 
 echo "Waiting for e2e dependencies (timeout=${TIMEOUT}s)"
 
+DB_HOST=${DB_HOST:-postgres}
+REDIS_HOST=${REDIS_HOST:-redis}
+APP_HOST=${APP_HOST:-app}
+
 echo "Checking Redis..."
-wait_tcp redis 6379
+wait_tcp "$REDIS_HOST" 6379
 
 echo "Checking Postgres..."
-wait_tcp postgres 5432
+wait_tcp "$DB_HOST" 5432
 
 echo "Checking App HTTP health..."
-wait_http_ok http://app:8375/health/ready
+wait_http_ok "http://${APP_HOST}:8375/health/ready"
 
 echo "Dependency wait finished; execing CMD"
 
