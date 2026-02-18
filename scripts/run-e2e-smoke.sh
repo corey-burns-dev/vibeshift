@@ -11,6 +11,13 @@ echo "Installing Playwright browsers (best-effort)..."
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT/frontend" || exit 1
 
+if [ -f "$REPO_ROOT/.env" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$REPO_ROOT/.env"
+  set +a
+fi
+
 USE_DOCKER_PLAYWRIGHT=0
 if ! command -v bun >/dev/null 2>&1; then
   echo "bun not found in PATH — will run Playwright inside the e2e 'playwright' container instead." >&2
@@ -31,9 +38,9 @@ WORKERS=${E2E_WORKERS:-2}
 PGHOST=${PGHOST:-localhost}
 # postgres_test maps to host port 5433 in compose.override.yml; prefer that for e2e
 PGPORT=${PGPORT:-5433}
-PGUSER=${PGUSER:-sanctum_user}
-PGPASSWORD=${PGPASSWORD:-sanctum_password}
-PGDATABASE=${PGDATABASE:-sanctum_test}
+PGUSER=${PGUSER:-${POSTGRES_USER:-sanctum_user}}
+PGPASSWORD=${PGPASSWORD:-${POSTGRES_PASSWORD:-sanctum_password}}
+PGDATABASE=${PGDATABASE:-${POSTGRES_DB:-sanctum_test}}
 
 # export DB vars for Playwright/global-setup to consume
 export PGHOST PGPORT PGUSER PGPASSWORD PGDATABASE

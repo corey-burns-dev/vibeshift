@@ -22,8 +22,8 @@ docker run --rm \
   -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL:-http://localhost:5173}" \
   -e PLAYWRIGHT_API_URL="${PLAYWRIGHT_API_URL:-http://localhost:8375/api}" \
   -e DB_HOST="${DB_HOST:-localhost}" -e DB_PORT="${DB_PORT:-5432}" \
-  -e DB_USER="${DB_USER:-sanctum_user}" -e DB_PASSWORD="${DB_PASSWORD:-sanctum_password}" \
-  -e DB_NAME="${DB_NAME:-sanctum_test}" \
+  -e DB_USER="${DB_USER:-${POSTGRES_USER:-sanctum_user}}" -e DB_PASSWORD="${DB_PASSWORD:-${POSTGRES_PASSWORD:-sanctum_password}}" \
+  -e DB_NAME="${DB_NAME:-${POSTGRES_DB:-sanctum_test}}" \
   -v "$REPO_ROOT/frontend/reports":/app/reports \
   "$IMAGE_NAME" npx playwright test ${PLAYWRIGHT_ARGS}
 
