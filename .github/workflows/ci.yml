@@ -235,6 +235,7 @@ jobs:
           context: .
           file: frontend/Dockerfile.e2e
           push: false
+          load: true
           tags: sanctum/playwright:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -331,6 +332,7 @@ jobs:
           context: .
           file: Dockerfile
           push: false
+          load: true
           tags: sanctum/backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -341,6 +343,7 @@ jobs:
           context: ./frontend
           file: frontend/Dockerfile
           push: false
+          load: true
           tags: sanctum/frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -351,6 +354,7 @@ jobs:
           context: .
           file: frontend/Dockerfile.e2e
           push: false
+          load: true
           tags: sanctum/playwright:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

@@ -65,6 +65,7 @@ jobs:
           context: .
           file: frontend/Dockerfile.e2e
           push: false
+          load: true
           tags: sanctum/playwright:nightly
           cache-from: type=gha
           cache-to: type=gha,mode=max
