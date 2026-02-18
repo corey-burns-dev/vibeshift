@@ -3,7 +3,7 @@ name: Responsive Image Pipeline
 overview: "Upgrade image handling to a durable responsive pipeline: 5 size variants (256-2048px), dual WebP+JPEG output, normalized crops (1:1 / 4:5 / 1.91:1), DB-backed background processing with recovery, nginx-first serving from /media/i/, and frontend <picture> delivery."
 todos:
   - id: docker-webp
-    content: "Phase 1: Dockerfile, Dockerfile.dev, Dockerfile.test -- enable CGO + libwebp and add github.com/chai2010/webp"
+    content: "Phase 1: Dockerfile -- enable CGO + libwebp in build/test stages and add github.com/chai2010/webp"
     status: pending
   - id: db-schema
     content: "Phase 2: Migration 000004 -- image processing state fields, image_variants table, posts.image_hash for fast joins"
@@ -78,9 +78,7 @@ flowchart TD
 
 ### Docker updates
 
-- `Dockerfile`: switch final runtime to alpine, enable CGO in build, install `libwebp-dev` in builder and `libwebp` in runtime.
-- `Dockerfile.dev`: add `build-base libwebp-dev`.
-- `Dockerfile.test`: add `libwebp-dev` (tests compile CGO path too).
+- `Dockerfile`: switch final runtime to alpine, enable CGO in build, install `libwebp-dev` in builder and `libwebp` in runtime. All stages (dev, test, production) now reside in this single file.
 
 ### Go dependency
 
@@ -368,8 +366,8 @@ Note: use `$request_filename` with `alias`; `$uri` here can produce false 404s.
 | File                                           | Changes                                            |
 | ---------------------------------------------- | -------------------------------------------------- |
 | `Dockerfile`                                   | CGO + libwebp build/runtime                        |
-| `Dockerfile.dev`                               | libwebp-dev for local builds                       |
-| `Dockerfile.test`                              | libwebp-dev for test compile path                  |
+| `Dockerfile`                                   | libwebp-dev for all builds (multi-stage)          |
+| `frontend/Dockerfile`                          | deps, dev, build, production stages                |
 | `compose.yml`                                  | remove distroless arg, mount uploads into frontend |
 | `compose.override.yml`                         | uploads mount for dev parity                       |
 | `backend/go.mod`                               | add `github.com/chai2010/webp`                     |

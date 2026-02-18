@@ -1,7 +1,9 @@
 services:
   app:
     build:
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: Dockerfile
+      target: dev
       args:
         GO_VERSION: ${GO_VERSION}
     ports:
@@ -9,15 +11,14 @@ services:
     volumes:
       - .:/app
     command: air -c .air.toml
-    # Do not use env_file here so compose environment (redis/postgres hostnames) wins.
-    # Required env is merged from compose.yml + this block; host .env is used by Make for interpolation only.
     environment:
       - REDIS_URL=redis:6379
       - DB_HOST=postgres
+      - APP_ENV=${APP_ENV:-development}
 
   postgres:
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
       interval: 2s
       timeout: 3s
@@ -33,11 +34,13 @@ services:
 
   frontend:
     build:
-      dockerfile: Dockerfile.dev
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
       args:
         BUN_VERSION: ${BUN_VERSION}
     ports:
-      - "5173:5173"
+      - "${VITE_PORT:-5173}:5173"
     environment:
       - VITE_API_URL=http://localhost:8375/api
     volumes:
@@ -48,8 +51,8 @@ services:
   media-server:
     image: tiangolo/nginx-rtmp
     ports:
-      - "1935:1935" # RTMP OBS Ingest
-      - "8082:80"   # HLS Playback
+      - "${RTMP_PORT:-1935}:1935" # RTMP OBS Ingest
+      - "${HLS_PORT:-8082}:80"   # HLS Playback
     volumes:
       - ./infra/nginx-rtmp/nginx.conf:/etc/nginx/nginx.conf
       - /tmp/hls:/tmp/hls # Shared volume for segments (internal)
@@ -60,15 +63,15 @@ services:
       - test
     image: postgres:${POSTGRES_VERSION}
     environment:
-      POSTGRES_DB: sanctum_test
-      POSTGRES_USER: sanctum_user
-      POSTGRES_PASSWORD: sanctum_password
+      POSTGRES_DB: ${POSTGRES_DB:-sanctum_test}
+      POSTGRES_USER: ${POSTGRES_USER:-sanctum_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sanctum_password}
     ports:
       - "5433:5432"
     volumes:
       - postgres_test_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sanctum_user -d sanctum_test"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sanctum_user} -d ${POSTGRES_DB:-sanctum_test}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -78,7 +81,8 @@ services:
       - test
     build:
       context: .
-      dockerfile: Dockerfile.test
+      dockerfile: Dockerfile
+      target: test
       args:
         GO_VERSION: ${GO_VERSION}
     depends_on:
@@ -91,9 +95,9 @@ services:
     environment:
       - DB_HOST=postgres_test
       - DB_PORT=5432
-      - DB_USER=sanctum_user
-      - DB_PASSWORD=sanctum_password
-      - DB_NAME=sanctum_test
+      - DB_USER=${POSTGRES_USER:-sanctum_user}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-sanctum_password}
+      - DB_NAME=${POSTGRES_DB:-sanctum_test}
       - REDIS_URL=redis:6379
       - GIN_MODE=release
       - APP_ENV=testing

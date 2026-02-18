@@ -1,8 +1,10 @@
 #!/bin/sh
 set -e
 
-# Pre-push hook: ensure frontend lockfile is in sync with package.json
+# Pre-push hook: ensure frontend lockfile, all tests, and backend quality checks
 # This prevents pushes that would pass local non-frozen installs but fail CI.
+
+echo "🚀 Running pre-push quality checks..."
 
 if [ -d frontend ]; then
   if command -v bun >/dev/null 2>&1; then
@@ -23,6 +25,14 @@ if [ -d frontend ]; then
   else
 	echo "bun not found; skipping frontend lockfile and test checks"
   fi
+fi
+
+if [ -d backend ]; then
+	echo "Running backend unit tests..."
+	if ! make test; then
+	  printf "\nERROR: Backend unit tests failed. Fix tests before pushing.\n"
+	  exit 1
+	fi
 fi
 
 # Run e2e smoke pre-push (skippable via SKIP_E2E_PRE_PUSH=1). This will attempt

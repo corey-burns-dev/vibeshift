@@ -1,18 +1,25 @@
-ARG BUN_ALPINE_TAG=1.3.9-alpine
+ARG BUN_VERSION=1.3.9
 ARG NGINX_VERSION=1.28.2-alpine3.23
 
-### production Dockerfile for frontend (build static files and serve with nginx)
-FROM oven/bun:${BUN_ALPINE_TAG} AS build
+# Stage: deps — install node_modules
+FROM oven/bun:${BUN_VERSION} AS deps
 WORKDIR /app
-
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
-COPY tsconfig.json vite.config.ts ./
-COPY src ./src
-COPY index.html ./
-RUN bun --bun run build
 
-FROM nginx:${NGINX_VERSION} AS runtime
+# Stage: dev — vite dev server
+FROM oven/bun:${BUN_VERSION} AS dev
+WORKDIR /app
+EXPOSE 5173
+CMD ["bun", "run", "dev"]
+
+# Stage: build — vite production build
+FROM deps AS build
+COPY . .
+RUN bun run build
+
+# Stage: production — nginx static serving
+FROM nginx:${NGINX_VERSION} AS production
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80

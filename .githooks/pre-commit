@@ -44,6 +44,12 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+make type-check-frontend
+if [ $? -ne 0 ]; then
+    echo "❌ Frontend type checking failed. Please fix errors before committing."
+    exit 1
+fi
+
 # --- 4. Smart Re-staging ---
 # Only re-stage files that were already staged but modified by fmt/lint
 echo "📦 Re-staging formatted files..."

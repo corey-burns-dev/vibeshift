@@ -8,28 +8,20 @@ import {
 
 describe('chat utils edge cases', () => {
   it('deduplicates DM conversations keeping first occurrence', () => {
-    type Participant = { id: number; username?: string; avatar?: string }
-    type Conv = {
-      id: number
-      is_group?: boolean
-      participants: Participant[]
-      name?: string
-    }
-
-    const convs: Conv[] = [
+    const convs: any[] = [
       { id: 1, is_group: false, participants: [{ id: 10 }, { id: 2 }] },
       { id: 2, is_group: false, participants: [{ id: 10 }, { id: 2 }] },
       { id: 3, is_group: false, participants: [{ id: 10 }, { id: 3 }] },
     ]
-    const deduped = deduplicateDMConversations(convs, 10)
+    const deduped = deduplicateDMConversations(convs as any, 10)
     expect(deduped.map(c => c.id)).toEqual([1, 3])
   })
 
   it('resolves DM name and falls back when needed', () => {
-    const convWithName: Conv = { id: 5, name: 'Team Up', participants: [] }
+    const convWithName: any = { id: 5, name: 'Team Up', participants: [] }
     expect(getDirectMessageName(convWithName, 1)).toBe('Team Up')
 
-    const convUnnamed: Conv = {
+    const convUnnamed: any = {
       id: 6,
       participants: [
         { id: 1, username: 'me' },
@@ -40,7 +32,7 @@ describe('chat utils edge cases', () => {
   })
 
   it('resolves DM avatar or falls back to pravatar url', () => {
-    const convWithAvatar: Conv = {
+    const convWithAvatar: any = {
       id: 11,
       participants: [{ id: 1 }, { id: 8, avatar: 'https://example.com/a.png' }],
     }
@@ -48,7 +40,7 @@ describe('chat utils edge cases', () => {
       'https://example.com/a.png'
     )
 
-    const convNoAvatar: Conv = {
+    const convNoAvatar: any = {
       id: 12,
       participants: [{ id: 1 }, { id: 9, username: 'other' }],
     }
@@ -57,8 +49,7 @@ describe('chat utils edge cases', () => {
   })
 
   it('counts unread messages with lastRead and current user filtering', () => {
-    type Msg = { id?: number; sender_id: number }
-    const messages: Msg[] = [
+    const messages: any[] = [
       { id: 1, sender_id: 2 }, // other, id 1
       { id: 2, sender_id: 1 }, // me, id 2
       { /* temp message without id */ sender_id: 2 },

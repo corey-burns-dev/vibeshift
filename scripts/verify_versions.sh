@@ -40,11 +40,8 @@ assert_contains ".github/workflows/nightly-race.yml" "image: redis:${REDIS_VERSI
 # Dockerfiles must have ARG defaults matching catalog
 assert_contains "Dockerfile" "ARG GO_VERSION=${GO_VERSION}"
 assert_contains "Dockerfile" "ARG ALPINE_VERSION=${ALPINE_VERSION}"
-assert_contains "Dockerfile.dev" "ARG GO_VERSION=${GO_VERSION}"
-assert_contains "Dockerfile.test" "ARG GO_VERSION=${GO_VERSION}"
-assert_contains "frontend/Dockerfile" "ARG BUN_ALPINE_TAG=${BUN_ALPINE_TAG}"
+assert_contains "frontend/Dockerfile" "ARG BUN_VERSION=${BUN_VERSION}"
 assert_contains "frontend/Dockerfile" "ARG NGINX_VERSION=${NGINX_VERSION}"
-assert_contains "frontend/Dockerfile.dev" "ARG BUN_VERSION=${BUN_VERSION}"
 
 # Compose files should use catalog env references
 assert_contains "compose.yml" "image: postgres:\${POSTGRES_VERSION}"

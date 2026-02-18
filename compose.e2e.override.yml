@@ -2,21 +2,21 @@ services:
   app:
     environment:
       - DB_HOST=postgres_test
-      - DB_NAME=sanctum_test
-      - DB_USER=sanctum_user
-      - DB_PASSWORD=sanctum_password
-      - POSTGRES_USER=sanctum_user
-      - POSTGRES_PASSWORD=sanctum_password
-      - POSTGRES_DB=sanctum_test
+      - DB_NAME=${POSTGRES_DB:-sanctum_test}
+      - DB_USER=${POSTGRES_USER:-sanctum_user}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-sanctum_password}
+      - POSTGRES_USER=${POSTGRES_USER:-sanctum_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-sanctum_password}
+      - POSTGRES_DB=${POSTGRES_DB:-sanctum_test}
   postgres_test:
     environment:
-      - POSTGRES_USER=sanctum_user
-      - POSTGRES_PASSWORD=sanctum_password
-      - POSTGRES_DB=sanctum_test
+      - POSTGRES_USER=${POSTGRES_USER:-sanctum_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-sanctum_password}
+      - POSTGRES_DB=${POSTGRES_DB:-sanctum_test}
 
   redis:
     ports:
-      - "6380:6379"
+      - "${REDIS_E2E_PORT:-6380}:6379"
 
   playwright:
     build:
@@ -27,9 +27,9 @@ services:
       - PLAYWRIGHT_API_URL=http://app:8375/api
       - PGHOST=postgres_test
       - PGPORT=5432
-      - PGUSER=sanctum_user
-      - PGPASSWORD=sanctum_password
-      - PGDATABASE=sanctum_test
+      - PGUSER=${POSTGRES_USER:-sanctum_user}
+      - PGPASSWORD=${POSTGRES_PASSWORD:-sanctum_password}
+      - PGDATABASE=${POSTGRES_DB:-sanctum_test}
     depends_on:
       - frontend
       - app

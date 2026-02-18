@@ -12,8 +12,9 @@ ifeq ($(ENVIRONMENT),prod)
 else ifeq ($(ENVIRONMENT),stage)
 	COMPOSE_FILES := -f compose.yml -f compose.stage.yml
 else ifeq ($(ENVIRONMENT),stress)
-	# Use base compose plus stress overrides
-	COMPOSE_FILES := -f compose.yml -f compose.stress.yml
+	# Stress mode uses standard dev overrides with stress env var
+	COMPOSE_FILES := -f compose.yml -f compose.override.yml
+	export APP_ENV=stress
 else
 	COMPOSE_FILES := -f compose.yml -f compose.override.yml
 endif
@@ -288,6 +289,11 @@ lint-frontend:
 	@echo "$(BLUE)Linting frontend code with Biome...$(NC)"
 	cd frontend && $(BUN) --bun biome check --write src
 	@echo "$(GREEN)✓ Frontend linting passed$(NC)"
+
+type-check-frontend:
+	@echo "$(BLUE)Type checking frontend code with tsc...$(NC)"
+	cd frontend && $(BUN) --bun tsc --noEmit
+	@echo "$(GREEN)✓ Frontend type checking passed$(NC)"
 
 # Frontend dependencies
 install:
@@ -658,12 +664,12 @@ test-e2e:
 
 test-e2e-up:
 	@echo "$(BLUE)Starting e2e test stack (app -> sanctum_test)...$(NC)"
-	@./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.e2e.override.yml -f compose.e2e.no-sysctls.override.yml up -d --wait --wait-timeout 120 postgres_test redis app
+	@./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.e2e.override.yml up -d --wait --wait-timeout 120 postgres_test redis app
 	@echo "$(GREEN)✓ e2e stack started$(NC)"
 
 test-e2e-down:
 	@echo "$(BLUE)Stopping e2e test stack...$(NC)"
-	@./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.e2e.override.yml -f compose.e2e.no-sysctls.override.yml down --remove-orphans
+	@./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.e2e.override.yml down --remove-orphans
 	@echo "$(GREEN)✓ e2e stack stopped$(NC)"
 
 .PHONY: build-playwright-image test-e2e-container

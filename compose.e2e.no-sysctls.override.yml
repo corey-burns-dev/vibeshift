@@ -1,4 +1,0 @@
-services:
-  redis:
-    # Override to remove sysctls set in compose.yml which can fail on some hosts/runtimes
-    sysctls: {}
