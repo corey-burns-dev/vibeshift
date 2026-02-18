@@ -7,7 +7,7 @@ on:
         types: [completed]
     # Also allow pushing immutable images for tag-based releases (v* tags)
     push:
-        tags: ['v*']
+        tags: ["v*"]
     # Manual run for re-pushing or debugging
     workflow_dispatch: {}
 
@@ -20,17 +20,18 @@ permissions:
     packages: write
 
 jobs:
-        build-and-push:
-                name: Build and Push Images
-                runs-on: ubuntu-latest
-                # If this was started by `workflow_run`, only proceed when the upstream CI succeeded.
-                if: >
-                    github.event_name != 'workflow_run' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    build-and-push:
+        name: Build and Push Images
+        runs-on: ubuntu-latest
+        # If this was started by `workflow_run`, only proceed when the upstream CI succeeded.
+        if: >
+            github.event_name != 'workflow_run' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
         steps:
-                        - uses: actions/checkout@v4
-                            with:
-                                # When triggered by `workflow_run` we want to check out the commit that CI ran on
-                                ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  # When triggered by `workflow_run` we want to check out the commit that CI ran on
+                  ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
@@ -42,18 +43,6 @@ jobs:
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Extract metadata
-              id: meta
-              uses: docker/metadata-action@v5
-              with:
-                  images: |
-                      ghcr.io/${{ github.repository }}/backend
-                      ghcr.io/${{ github.repository }}/frontend
-                      ghcr.io/${{ github.repository }}/playwright
-                  tags: |
-                      type=raw,value=latest
-                      type=sha,format=long
-
             - name: Build and push Backend
               uses: docker/build-push-action@v5
               with:
@@ -63,6 +52,7 @@ jobs:
                   tags: |
                       ghcr.io/${{ github.repository }}/backend:latest
                       ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+                      ${{ startsWith(github.ref, 'refs/tags/') && format('ghcr.io/{0}/backend:{1}', github.repository, github.ref_name) || '' }}
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
 
@@ -75,6 +65,7 @@ jobs:
                   tags: |
                       ghcr.io/${{ github.repository }}/frontend:latest
                       ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
+                      ${{ startsWith(github.ref, 'refs/tags/') && format('ghcr.io/{0}/frontend:{1}', github.repository, github.ref_name) || '' }}
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
 
@@ -87,5 +78,6 @@ jobs:
                   tags: |
                       ghcr.io/${{ github.repository }}/playwright:latest
                       ghcr.io/${{ github.repository }}/playwright:${{ github.sha }}
+                      ${{ startsWith(github.ref, 'refs/tags/') && format('ghcr.io/{0}/playwright:{1}', github.repository, github.ref_name) || '' }}
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
