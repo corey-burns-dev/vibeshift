@@ -131,7 +131,10 @@ jobs:
           DB_PASSWORD: sanctum_password
           DB_NAME: sanctum_test
         run: |
+          mkdir -p frontend/reports frontend/test-results
           docker run --rm --network host \
+            -v "$PWD/frontend/reports:/app/reports" \
+            -v "$PWD/frontend/test-results:/app/test-results" \
             -e PLAYWRIGHT_BASE_URL="$PLAYWRIGHT_BASE_URL" \
             -e PLAYWRIGHT_API_URL="$PLAYWRIGHT_API_URL" \
             -e DB_HOST="localhost" -e DB_PORT="$DB_PORT" -e DB_USER="$DB_USER" \
@@ -147,7 +150,7 @@ jobs:
           name: playwright-report-nightly
           path: |
             frontend/reports/playwright-report
-            frontend/reports/test-results
+            frontend/test-results
 
       - name: Dump service logs on failure
         if: failure()

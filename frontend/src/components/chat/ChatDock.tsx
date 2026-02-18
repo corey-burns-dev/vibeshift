@@ -690,6 +690,7 @@ export function ChatDock() {
       {/* Floating button */}
       <button
         type='button'
+        aria-label='Open messages'
         onClick={toggle}
         className={cn(
           'fixed bottom-6 right-6 z-60 h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 md:flex',
