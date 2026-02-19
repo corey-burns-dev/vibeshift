@@ -4,16 +4,24 @@ import type { ReactNode } from 'react'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiClient } from '@/api/client'
 import {
+  useAddChatroomModerator,
   useAllChatrooms,
+  useBanChatroomUser,
   useConversation,
   useConversations,
   useCreateConversation,
   useDeleteMessage,
+  useKickChatroomParticipant,
   useJoinChatroom,
   useJoinedChatrooms,
   useLeaveConversation,
   useMarkAsRead,
   useMessages,
+  useRemoveChatroomModerator,
+  useRoomBanUser,
+  useRoomMuteUser,
+  useRoomMutes,
+  useRoomUnbanUser,
   useSendMessage,
 } from '@/hooks/useChat'
 import { createTestQueryClient } from '@/test/test-utils'
@@ -31,6 +39,16 @@ vi.mock('@/api/client', () => ({
     getAllChatrooms: vi.fn(),
     getJoinedChatrooms: vi.fn(),
     joinChatroom: vi.fn(),
+    getChatroomMutes: vi.fn(),
+    muteChatroomUser: vi.fn(),
+    unmuteChatroomUser: vi.fn(),
+    getChatroomBans: vi.fn(),
+    banChatroomUser: vi.fn(),
+    unbanChatroomUser: vi.fn(),
+    removeChatroomParticipant: vi.fn(),
+    addChatroomModerator: vi.fn(),
+    removeChatroomModerator: vi.fn(),
+    getChatroomModerators: vi.fn(),
   },
 }))
 
@@ -312,6 +330,105 @@ describe('useChat hooks', () => {
       })
 
       expect(vi.mocked(apiClient).deleteMessage).toHaveBeenCalledWith(1, 99)
+    })
+  })
+
+  describe('room moderation hooks', () => {
+    it('fetches room mutes', async () => {
+      vi.mocked(apiClient.getChatroomMutes).mockResolvedValue([] as never)
+      const { result } = renderHook(() => useRoomMutes(12), {
+        wrapper: createWrapper(),
+      })
+      await waitFor(() => expect(result.current.isSuccess).toBe(true))
+      expect(vi.mocked(apiClient.getChatroomMutes)).toHaveBeenCalledWith(12)
+    })
+
+    it('bans and unbans room users', async () => {
+      vi.mocked(apiClient.banChatroomUser).mockResolvedValue({
+        message: 'ok',
+      } as never)
+      vi.mocked(apiClient.unbanChatroomUser).mockResolvedValue({
+        message: 'ok',
+      } as never)
+
+      const { result: banResult } = renderHook(() => useRoomBanUser(9), {
+        wrapper: createWrapper(),
+      })
+      const { result: unbanResult } = renderHook(() => useRoomUnbanUser(9), {
+        wrapper: createWrapper(),
+      })
+
+      await act(async () => {
+        await banResult.current.mutateAsync({ userId: 77, reason: 'abuse' })
+      })
+      await act(async () => {
+        await unbanResult.current.mutateAsync(77)
+      })
+
+      expect(vi.mocked(apiClient.banChatroomUser)).toHaveBeenCalledWith(9, 77, {
+        reason: 'abuse',
+      })
+      expect(vi.mocked(apiClient.unbanChatroomUser)).toHaveBeenCalledWith(9, 77)
+    })
+
+    it('mutes, kicks, and manages moderators', async () => {
+      vi.mocked(apiClient.muteChatroomUser).mockResolvedValue({
+        message: 'ok',
+      } as never)
+      vi.mocked(apiClient.removeChatroomParticipant).mockResolvedValue({
+        message: 'ok',
+      } as never)
+      vi.mocked(apiClient.addChatroomModerator).mockResolvedValue({
+        conversation_id: 9,
+        user_id: 44,
+        granted_by_user_id: 1,
+        created_at: '',
+      } as never)
+      vi.mocked(apiClient.removeChatroomModerator).mockResolvedValue({
+        message: 'ok',
+      } as never)
+
+      const { result: muteResult } = renderHook(() => useRoomMuteUser(9), {
+        wrapper: createWrapper(),
+      })
+      const { result: kickResult } = renderHook(() => useKickChatroomParticipant(9), {
+        wrapper: createWrapper(),
+      })
+      const { result: addModResult } = renderHook(
+        () => useAddChatroomModerator(9),
+        {
+          wrapper: createWrapper(),
+        }
+      )
+      const { result: removeModResult } = renderHook(
+        () => useRemoveChatroomModerator(9),
+        {
+          wrapper: createWrapper(),
+        }
+      )
+
+      await act(async () => {
+        await muteResult.current.mutateAsync({
+          userId: 44,
+          payload: { reason: 'timeout' },
+        })
+      })
+      await act(async () => {
+        await kickResult.current.mutateAsync(44)
+      })
+      await act(async () => {
+        await addModResult.current.mutateAsync(44)
+      })
+      await act(async () => {
+        await removeModResult.current.mutateAsync(44)
+      })
+
+      expect(vi.mocked(apiClient.muteChatroomUser)).toHaveBeenCalledWith(9, 44, {
+        reason: 'timeout',
+      })
+      expect(vi.mocked(apiClient.removeChatroomParticipant)).toHaveBeenCalledWith(9, 44)
+      expect(vi.mocked(apiClient.addChatroomModerator)).toHaveBeenCalledWith(9, 44)
+      expect(vi.mocked(apiClient.removeChatroomModerator)).toHaveBeenCalledWith(9, 44)
     })
   })
 })

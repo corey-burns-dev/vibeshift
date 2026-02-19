@@ -84,4 +84,22 @@ describe('FriendList', () => {
     expect(screen.getByText('alice')).toBeInTheDocument()
     expect(screen.getByText('bob')).toBeInTheDocument()
   })
+
+  it('renders initials fallback when avatar cannot be resolved', () => {
+    const friends = [
+      buildUser({
+        id: 1,
+        username: 'alice',
+        avatar: 'https://example.com/avatar.png',
+      }),
+    ]
+    vi.mocked(useFriendsHook).mockReturnValue({
+      data: friends,
+      isLoading: false,
+    } as never)
+
+    renderWithProviders(<FriendList />)
+
+    expect(screen.getByText('A')).toBeInTheDocument()
+  })
 })

@@ -10,6 +10,7 @@ import type {
   BanUserRequest,
   BulkSanctumMembershipsInput,
   ChatroomModerator,
+  ChatroomBan,
   ChatroomMute,
   Comment,
   Conversation,
@@ -327,6 +328,8 @@ class ApiClient {
     if (params?.offset !== undefined)
       query.set('offset', params.offset.toString())
     if (params?.limit !== undefined) query.set('limit', params.limit.toString())
+    if (params?.sanctum_id !== undefined)
+      query.set('sanctum_id', params.sanctum_id.toString())
     const queryString = query.toString() ? `?${query.toString()}` : ''
     return this.request(`/posts${queryString}`)
   }
@@ -665,6 +668,15 @@ class ApiClient {
     })
   }
 
+  async removeChatroomParticipant(
+    chatroomId: number,
+    participantId: number
+  ): Promise<{ message: string }> {
+    return this.request(`/chatrooms/${chatroomId}/participants/${participantId}`, {
+      method: 'DELETE',
+    })
+  }
+
   async getChatroomModerators(
     chatroomId: number
   ): Promise<ChatroomModerator[]> {
@@ -709,6 +721,30 @@ class ApiClient {
     userId: number
   ): Promise<{ message: string }> {
     return this.request(`/chatrooms/${chatroomId}/mutes/${userId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async getChatroomBans(chatroomId: number): Promise<ChatroomBan[]> {
+    return this.request(`/chatrooms/${chatroomId}/bans`)
+  }
+
+  async banChatroomUser(
+    chatroomId: number,
+    userId: number,
+    data?: { reason?: string }
+  ): Promise<{ message: string }> {
+    return this.request(`/chatrooms/${chatroomId}/bans/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify(data ?? {}),
+    })
+  }
+
+  async unbanChatroomUser(
+    chatroomId: number,
+    userId: number
+  ): Promise<{ message: string }> {
+    return this.request(`/chatrooms/${chatroomId}/bans/${userId}`, {
       method: 'DELETE',
     })
   }

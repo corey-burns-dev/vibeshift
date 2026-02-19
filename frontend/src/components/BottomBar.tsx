@@ -36,7 +36,10 @@ export function BottomBar() {
   return (
     <nav className='fixed inset-x-0 bottom-3 z-50 px-3 md:hidden'>
       <div className='mx-auto max-w-lg rounded-2xl border border-border/70 bg-background/78 p-2 shadow-xl backdrop-blur-xl'>
-        <div className='grid grid-cols-4 gap-1'>
+        <div
+          className='grid gap-1'
+          style={{ gridTemplateColumns: `repeat(${mobileNav.length + 1}, 1fr)` }}
+        >
           {mobileNav.map(item => {
             const active = isRouteActive(location.pathname, item.path)
 

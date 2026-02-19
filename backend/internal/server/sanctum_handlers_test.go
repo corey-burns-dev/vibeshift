@@ -24,6 +24,7 @@ func setupSanctumHandlerTestDB(t *testing.T) *gorm.DB {
 	if err := db.AutoMigrate(
 		&models.User{},
 		&models.Conversation{},
+		&models.ChatroomModerator{},
 		&models.Sanctum{},
 		&models.SanctumRequest{},
 		&models.SanctumMembership{},
@@ -107,6 +108,11 @@ func TestApproveSanctumRequestFlow(t *testing.T) {
 	var conv models.Conversation
 	if err := db.Where("sanctum_id = ?", sanctum.ID).First(&conv).Error; err != nil {
 		t.Fatalf("default conversation missing: %v", err)
+	}
+
+	var roomMod models.ChatroomModerator
+	if err := db.Where("conversation_id = ? AND user_id = ?", conv.ID, requester.ID).First(&roomMod).Error; err != nil {
+		t.Fatalf("room moderator row missing: %v", err)
 	}
 }
 

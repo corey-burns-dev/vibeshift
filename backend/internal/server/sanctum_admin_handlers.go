@@ -55,6 +55,52 @@ func (s *Server) findSanctumBySlug(ctx context.Context, slug string) (*models.Sa
 	return &sanctum, nil
 }
 
+func (s *Server) upsertSanctumRoomModerator(ctx context.Context, sanctumID, targetUserID, grantedByUserID uint) error {
+	var room models.Conversation
+	err := s.db.WithContext(ctx).
+		Select("id").
+		Where("sanctum_id = ?", sanctumID).
+		First(&room).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		return err
+	}
+
+	return s.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns: []clause.Column{
+			{Name: "conversation_id"},
+			{Name: "user_id"},
+		},
+		DoUpdates: clause.Assignments(map[string]any{
+			"granted_by_user_id": grantedByUserID,
+		}),
+	}).Create(&models.ChatroomModerator{
+		ConversationID:  room.ID,
+		UserID:          targetUserID,
+		GrantedByUserID: grantedByUserID,
+	}).Error
+}
+
+func (s *Server) removeSanctumRoomModerator(ctx context.Context, sanctumID, targetUserID uint) error {
+	var room models.Conversation
+	err := s.db.WithContext(ctx).
+		Select("id").
+		Where("sanctum_id = ?", sanctumID).
+		First(&room).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		return err
+	}
+
+	return s.db.WithContext(ctx).
+		Where("conversation_id = ? AND user_id = ?", room.ID, targetUserID).
+		Delete(&models.ChatroomModerator{}).Error
+}
+
 // GetSanctumAdmins handles GET /api/sanctums/:slug/admins.
 // @Summary List sanctum admins
 // @Description List owners and moderators for a sanctum.
@@ -185,6 +231,9 @@ func (s *Server) PromoteSanctumAdmin(c *fiber.Ctx) error {
 	}).Create(&membership).Error; err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
+	if err := s.upsertSanctumRoomModerator(ctx, sanctum.ID, targetUserID, actorUserID); err != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	}
 
 	var updated models.SanctumMembership
 	if err := s.db.WithContext(ctx).
@@ -264,6 +313,9 @@ func (s *Server) DemoteSanctumAdmin(c *fiber.Ctx) error {
 			"role":       models.SanctumMembershipRoleMember,
 			"updated_at": time.Now(),
 		}).Error; err != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	}
+	if err := s.removeSanctumRoomModerator(ctx, sanctum.ID, targetUserID); err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 

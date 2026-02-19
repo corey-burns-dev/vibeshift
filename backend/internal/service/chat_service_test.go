@@ -199,7 +199,13 @@ func TestChatService_FullFlow(t *testing.T) {
 
 func TestChatService_Chatrooms(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	_ = db.AutoMigrate(&models.Conversation{}, &models.User{}, &models.ConversationParticipant{}, &models.Message{})
+	_ = db.AutoMigrate(
+		&models.Conversation{},
+		&models.User{},
+		&models.ConversationParticipant{},
+		&models.Message{},
+		&models.ChatroomBan{},
+	)
 
 	repo := repository.NewChatRepository(db)
 	userRepo := repository.NewUserRepository(db)
@@ -225,6 +231,76 @@ func TestChatService_Chatrooms(t *testing.T) {
 		assert.Len(t, all, 1)
 		assert.True(t, all[0].IsJoined)
 	})
+}
+
+func TestChatService_JoinChatroom_BannedUserForbidden(t *testing.T) {
+	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	_ = db.AutoMigrate(
+		&models.Conversation{},
+		&models.User{},
+		&models.ConversationParticipant{},
+		&models.ChatroomBan{},
+	)
+
+	repo := repository.NewChatRepository(db)
+	userRepo := repository.NewUserRepository(db)
+	svc := NewChatService(repo, userRepo, db, nil, nil)
+
+	ctx := context.Background()
+	user := &models.User{Username: "u1", Email: "u1@e.com"}
+	db.Create(user)
+	room := &models.Conversation{Name: "Public", IsGroup: true, CreatedBy: user.ID}
+	db.Create(room)
+	db.Create(&models.ChatroomBan{
+		ConversationID: room.ID,
+		UserID:         user.ID,
+		BannedByUserID: user.ID,
+		Reason:         "abuse",
+	})
+
+	_, err := svc.JoinChatroom(ctx, room.ID, user.ID)
+	assert.Error(t, err)
+	var appErr *models.AppError
+	assert.True(t, errors.As(err, &appErr))
+	assert.Equal(t, "FORBIDDEN", appErr.Code)
+}
+
+func TestChatService_SendMessage_BannedUserForbidden(t *testing.T) {
+	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	_ = db.AutoMigrate(
+		&models.Conversation{},
+		&models.User{},
+		&models.ConversationParticipant{},
+		&models.Message{},
+		&models.ChatroomBan{},
+	)
+
+	repo := repository.NewChatRepository(db)
+	userRepo := repository.NewUserRepository(db)
+	svc := NewChatService(repo, userRepo, db, nil, nil)
+
+	ctx := context.Background()
+	user := &models.User{Username: "u1", Email: "u1@e.com"}
+	db.Create(user)
+	room := &models.Conversation{Name: "Public", IsGroup: true, CreatedBy: user.ID}
+	db.Create(room)
+	db.Create(&models.ConversationParticipant{ConversationID: room.ID, UserID: user.ID})
+	db.Create(&models.ChatroomBan{
+		ConversationID: room.ID,
+		UserID:         user.ID,
+		BannedByUserID: user.ID,
+		Reason:         "abuse",
+	})
+
+	_, _, err := svc.SendMessage(ctx, SendMessageInput{
+		UserID:         user.ID,
+		ConversationID: room.ID,
+		Content:        "hello",
+	})
+	assert.Error(t, err)
+	var appErr *models.AppError
+	assert.True(t, errors.As(err, &appErr))
+	assert.Equal(t, "FORBIDDEN", appErr.Code)
 }
 
 func TestChatService_RemoveParticipant_Authorization(t *testing.T) {

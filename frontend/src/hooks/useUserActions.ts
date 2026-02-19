@@ -16,6 +16,7 @@ import {
   useReportUser,
   useUnblockUser,
 } from '@/hooks/useModeration'
+import { usePresenceStore } from '@/hooks/usePresence'
 import { getCurrentUser, useIsAuthenticated } from '@/hooks/useUsers'
 
 export function useUserActions(user: User) {
@@ -32,6 +33,8 @@ export function useUserActions(user: User) {
   const blockUser = useBlockUser()
   const unblockUser = useUnblockUser()
   const reportUser = useReportUser()
+  const onlineUserIDs = usePresenceStore(state => state.onlineUserIds)
+  const isUserOnline = (userID: number) => onlineUserIDs.has(userID)
 
   const isSelf = currentUser != null && currentUser.id === user.id
   const status = statusData?.status || 'none'
@@ -52,6 +55,10 @@ export function useUserActions(user: User) {
   }
 
   const handleJoinConnect4 = async () => {
+    if (!isUserOnline(user.id)) {
+      toast.error('User is offline and cannot be invited right now')
+      return
+    }
     try {
       const freshRooms = await apiClient.getActiveGameRooms('connect4')
       const openRoom = freshRooms.find(
@@ -92,6 +99,7 @@ export function useUserActions(user: User) {
   }
 
   const isBlocked = myBlocks.some(block => block.blocked_id === user.id)
+  const targetOnline = isUserOnline(user.id)
   const toggleBlockUser = () => {
     if (isBlocked) {
       unblockUser.mutate(user.id, {
@@ -141,6 +149,7 @@ export function useUserActions(user: User) {
     handleViewProfile,
     handleMessage,
     handleJoinConnect4,
+    targetOnline,
     handleAddFriend,
     handleRemoveFriend,
     canAddFriend,

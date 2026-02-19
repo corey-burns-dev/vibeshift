@@ -1,5 +1,13 @@
 import type { LucideIcon } from 'lucide-react'
-import { Gamepad2, Home, Landmark, MessageSquare, Users } from 'lucide-react'
+import {
+  Gamepad2,
+  Home,
+  Landmark,
+  MessageSquare,
+  PenSquare,
+  Rss,
+  Users,
+} from 'lucide-react'
 
 export interface NavItem {
   icon: LucideIcon
@@ -15,11 +23,13 @@ export interface NavSection {
 
 export const topRouteNav: NavItem[] = [
   { icon: Home, label: 'Home', path: '/' },
+  { icon: Rss, label: 'Feed', path: '/feed' },
   { icon: MessageSquare, label: 'Chat', path: '/chat' },
 ]
 
 export const topServiceNav: NavItem[] = [
   { icon: Landmark, label: 'Sanctums', path: '/sanctums' },
+  { icon: PenSquare, label: 'Create', path: '/submit' },
   { icon: Users, label: 'Friends', path: '/friends' },
   { icon: Gamepad2, label: 'Games', path: '/games' },
 ]
@@ -31,6 +41,7 @@ export const sideNavSections: NavSection[] = [
 
 export const mobileNav: NavItem[] = [
   { icon: Home, label: 'Home', path: '/' },
+  { icon: Rss, label: 'Feed', path: '/feed' },
   { icon: MessageSquare, label: 'Chat', path: '/chat' },
   { icon: Gamepad2, label: 'Games', path: '/games' },
 ]
@@ -47,7 +58,9 @@ const routeTitles: Array<{ path: string; title: string }> = [
   { path: '/games', title: 'Games' },
   { path: '/users', title: 'People' },
   { path: '/profile', title: 'Profile' },
-  { path: '/posts', title: 'Feed' },
+  { path: '/submit', title: 'Create Post' },
+  { path: '/feed', title: 'Feed' },
+  { path: '/posts', title: 'Home' },
   { path: '/signup', title: 'Create Account' },
   { path: '/login', title: 'Login' },
   { path: '/', title: 'Home' },

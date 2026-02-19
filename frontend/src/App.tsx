@@ -30,6 +30,7 @@ const Signup = lazy(() => import('@/pages/Signup'))
 const Posts = lazy(() => import('@/pages/Posts'))
 const PostDetail = lazy(() => import('@/pages/PostDetail'))
 const PostEdit = lazy(() => import('@/pages/PostEdit'))
+const CreatePost = lazy(() => import('@/pages/CreatePost'))
 const Profile = lazy(() => import('@/pages/Profile'))
 const Friends = lazy(() => import('@/pages/Friends'))
 const Chat = lazy(() => import('@/pages/Chat'))
@@ -82,7 +83,7 @@ function HomePage() {
   const isAuthenticated = useIsAuthenticated()
 
   if (isAuthenticated) {
-    return <Posts />
+    return <Posts mode='all' />
   }
 
   const highlights = [
@@ -196,7 +197,23 @@ function RoutesWithPrefetch() {
         <Route path='/messages/:id' element={<RedirectMessagesToChat />} />
         <Route path='/login' element={<Login />} />
         <Route path='/signup' element={<Signup />} />
-        <Route path='/posts' element={<Posts />} />
+        <Route path='/posts' element={<Navigate to='/' replace />} />
+        <Route
+          path='/feed'
+          element={
+            <ProtectedRoute>
+              <Posts mode='all' />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/submit'
+          element={
+            <ProtectedRoute>
+              <CreatePost />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path='/posts/:id/edit'
           element={

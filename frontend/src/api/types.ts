@@ -62,6 +62,7 @@ export interface Post {
   liked?: boolean
   comments_count?: number
   user_id: number
+  sanctum_id?: number
   user?: User
   created_at: string
   updated_at: string
@@ -122,6 +123,7 @@ export interface CreatePostRequest {
   post_type?: PostType
   link_url?: string
   youtube_url?: string
+  sanctum_id?: number
   poll?: CreatePostPollInput
 }
 
@@ -150,6 +152,7 @@ export interface UpdateProfileRequest {
 export interface PaginationParams {
   offset?: number
   limit?: number
+  sanctum_id?: number
 }
 
 export interface SearchParams extends PaginationParams {
@@ -299,6 +302,17 @@ export interface ChatroomMute {
   updated_at: string
   user?: User
   muted_by_user?: User
+}
+
+export interface ChatroomBan {
+  conversation_id: number
+  user_id: number
+  banned_by_user_id: number
+  reason: string
+  created_at: string
+  updated_at: string
+  user?: User
+  banned_by_user?: User
 }
 
 export interface MuteChatroomUserRequest {

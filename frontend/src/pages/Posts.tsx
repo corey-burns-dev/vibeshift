@@ -8,13 +8,15 @@ import {
   Image,
   Link2,
   Loader2,
+  Menu,
   MessageCircle,
   Send,
   Type,
+  X,
   Video,
 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiClient } from '@/api/client'
 // Types
@@ -40,13 +42,16 @@ import {
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { useReportPost } from '@/hooks/useModeration'
+import { usePresenceStore } from '@/hooks/usePresence'
 // Hooks
 import {
   useCreatePost,
   useDeletePost,
   useInfinitePosts,
   useLikePost,
+  useMembershipFeedPosts,
 } from '@/hooks/usePosts'
+import { useSanctums } from '@/hooks/useSanctums'
 import { getCurrentUser, useIsAuthenticated } from '@/hooks/useUsers'
 import { getAvatarUrl } from '@/lib/chat-utils'
 import { handleAuthOrFKError } from '@/lib/handleAuthOrFKError'
@@ -67,7 +72,14 @@ type PollOptionDraft = {
   value: string
 }
 
-export default function Posts() {
+type PostsMode = 'all' | 'membership'
+
+interface PostsProps {
+  mode?: PostsMode
+  sanctumId?: number
+}
+
+export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
   const pollOptionSeedRef = useRef(0)
   const createPollOption = useCallback((value = ''): PollOptionDraft => {
     pollOptionSeedRef.current += 1
@@ -90,12 +102,37 @@ export default function Posts() {
   ])
   const [isExpandingPost, setIsExpandingPost] = useState(false)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [isSanctumDrawerOpen, setIsSanctumDrawerOpen] = useState(false)
+  const [newPostSanctumSelection, setNewPostSanctumSelection] = useState<
+    'main' | number
+  >(sanctumId ?? 'main')
 
   const isAuthenticated = useIsAuthenticated()
   const currentUser = getCurrentUser()
   const navigate = useNavigate()
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    useInfinitePosts(10)
+  const onlineUserIDs = usePresenceStore(state => state.onlineUserIds)
+  const isUserOnline = useCallback(
+    (userID: number) => onlineUserIDs.has(userID),
+    [onlineUserIDs]
+  )
+  const isMembershipFeed = mode === 'membership' && sanctumId === undefined
+  const [membershipPage, setMembershipPage] = useState(1)
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isLoadingAllPosts,
+  } = useInfinitePosts(10, sanctumId)
+  const {
+    memberships,
+    posts: membershipPosts,
+    isLoading: isLoadingMembershipPosts,
+    isFetching: isFetchingMembershipPosts,
+    isError: isMembershipFeedError,
+    hasMore: hasMoreMembershipPosts,
+  } = useMembershipFeedPosts(10, membershipPage)
+  const { data: sanctums = [] } = useSanctums()
   const createPostMutation = useCreatePost()
   const likePostMutation = useLikePost()
   const reportPostMutation = useReportPost()
@@ -121,10 +158,16 @@ export default function Posts() {
   }, [openMenuPostId])
 
   // Flatten pages into single array of posts
-  const posts = data?.pages.flat() ?? []
+  const allPosts = data?.pages.flat() ?? []
+  const posts = isMembershipFeed ? membershipPosts : allPosts
+  const isLoading = isMembershipFeed
+    ? isLoadingMembershipPosts
+    : isLoadingAllPosts
 
   // Infinite scroll with debouncing
   useEffect(() => {
+    if (isMembershipFeed) return
+
     const handleScroll = () => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current)
@@ -148,7 +191,7 @@ export default function Posts() {
         clearTimeout(debounceRef.current)
       }
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [isMembershipFeed, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   useEffect(() => {
     if (!newPostImageFile) {
@@ -161,6 +204,12 @@ export default function Posts() {
       URL.revokeObjectURL(objectURL)
     }
   }, [newPostImageFile])
+
+  useEffect(() => {
+    if (typeof sanctumId === 'number') {
+      setNewPostSanctumSelection(sanctumId)
+    }
+  }, [sanctumId])
 
   const canSubmitNewPost = () => {
     switch (newPostType) {
@@ -210,6 +259,10 @@ export default function Posts() {
       title,
       content: content || '',
       post_type: newPostType,
+      sanctum_id:
+        newPostSanctumSelection === 'main'
+          ? undefined
+          : newPostSanctumSelection,
       image_url: uploadedImageURL,
       link_url:
         newPostType === 'link' && newPostLinkUrl.trim()
@@ -240,6 +293,7 @@ export default function Posts() {
       setNewPostYoutubeUrl('')
       setNewPollQuestion('')
       setNewPollOptions([createPollOption(), createPollOption()])
+      setNewPostSanctumSelection(sanctumId ?? 'main')
       setIsExpandingPost(false)
       queryClient.invalidateQueries({ queryKey: ['posts'] })
     } catch (error) {
@@ -303,6 +357,35 @@ export default function Posts() {
     }
   }
 
+  const sanctumNameByID = useMemo(
+    () => new Map(sanctums.map(sanctum => [sanctum.id, sanctum.name])),
+    [sanctums]
+  )
+  const membershipSanctums = useMemo(
+    () =>
+      memberships
+        .map(membership => membership.sanctum)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [memberships]
+  )
+  const newestPosts = useMemo(() => posts.slice(0, 6), [posts])
+  const hotSanctums = useMemo(() => {
+    const counts = new Map<number, number>()
+    posts.forEach(post => {
+      if (!post.sanctum_id) return
+      counts.set(post.sanctum_id, (counts.get(post.sanctum_id) ?? 0) + 1)
+    })
+
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([id, count]) => ({
+        id,
+        count,
+        name: sanctumNameByID.get(id) ?? `Sanctum #${id}`,
+      }))
+  }, [posts, sanctumNameByID])
+
   if (isLoading) {
     return (
       <div className='flex justify-center py-6'>
@@ -312,11 +395,118 @@ export default function Posts() {
   }
 
   return (
-    <div className='flex-1 overflow-y-auto py-8'>
-      <div className='max-w-3xl mx-auto px-4'>
-        {/* Create Post */}
-        {isAuthenticated && (
-          <Card className='mb-6 overflow-hidden border bg-card/95 shadow-sm hover:shadow-md transition-shadow rounded-2xl'>
+    <div className='mx-auto w-full max-w-[1920px] px-3 py-6 md:px-4 lg:px-5'>
+      <div className='grid items-start gap-4 lg:grid-cols-[18rem_minmax(0,1fr)_18rem]'>
+        <aside className='sticky top-20 hidden space-y-4 lg:block'>
+          <Card className='rounded-2xl border border-border/70 bg-card/70 shadow-lg'>
+            <CardContent className='space-y-3 p-4'>
+              <div>
+                <p className='text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground'>
+                  Browse
+                </p>
+                <div className='mt-2 flex flex-col gap-1.5'>
+                  <Link
+                    to='/'
+                    className={cn(
+                      'rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
+                      !isMembershipFeed
+                        ? 'bg-primary/15 text-primary'
+                        : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                    )}
+                  >
+                    Home
+                  </Link>
+                  <Link
+                    to='/feed'
+                    className={cn(
+                      'rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
+                      isMembershipFeed
+                        ? 'bg-primary/15 text-primary'
+                        : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                    )}
+                  >
+                    Feed
+                  </Link>
+                  <Link
+                    to='/sanctums'
+                    className='rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground'
+                  >
+                    All Sanctums
+                  </Link>
+                </div>
+              </div>
+
+              <div className='border-t border-border/60 pt-3'>
+                <p className='text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground'>
+                  Sanctums
+                </p>
+                {sanctums.length === 0 ? (
+                  <p className='mt-2 text-xs text-muted-foreground'>
+                    No sanctums available yet.
+                  </p>
+                ) : (
+                  <div className='mt-2 space-y-1.5'>
+                    {sanctums.slice(0, 14).map(sanctum => (
+                      <Link
+                        key={sanctum.id}
+                        to={`/s/${sanctum.slug}`}
+                        className={cn(
+                          'block rounded-lg px-2.5 py-2 text-sm transition-colors',
+                          sanctumId === sanctum.id
+                            ? 'bg-primary/15 text-primary'
+                            : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                        )}
+                      >
+                        {sanctum.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </aside>
+
+        <main className='min-w-0'>
+          <div className='mb-4 flex items-center justify-between gap-2 lg:hidden'>
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              className='gap-2'
+              onClick={() => setIsSanctumDrawerOpen(true)}
+            >
+              <Menu className='h-4 w-4' />
+              Sanctums
+            </Button>
+            <div className='flex items-center gap-2'>
+              <Link
+                to='/'
+                className={cn(
+                  'rounded-full border px-3 py-1.5 text-xs font-semibold',
+                  !isMembershipFeed
+                    ? 'border-primary/40 bg-primary/15 text-primary'
+                    : 'border-border/60 text-muted-foreground'
+                )}
+              >
+                Home
+              </Link>
+              <Link
+                to='/feed'
+                className={cn(
+                  'rounded-full border px-3 py-1.5 text-xs font-semibold',
+                  isMembershipFeed
+                    ? 'border-primary/40 bg-primary/15 text-primary'
+                    : 'border-border/60 text-muted-foreground'
+                )}
+              >
+                Feed
+              </Link>
+            </div>
+          </div>
+
+          {isAuthenticated && (
+            <Card className='mb-6 overflow-hidden border bg-card/95 shadow-sm transition-shadow hover:shadow-md rounded-2xl'>
             <CardContent className='p-5'>
               <div className='flex gap-3 mb-4'>
                 <Avatar className='w-10 h-10 ring-2 ring-primary/5'>
@@ -359,6 +549,37 @@ export default function Posts() {
                             {label}
                           </Button>
                         ))}
+                      </div>
+
+                      <div className='grid gap-1'>
+                        <label
+                          htmlFor='post-sanctum-target'
+                          className='text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground'
+                        >
+                          Post destination
+                        </label>
+                        <select
+                          id='post-sanctum-target'
+                          value={
+                            newPostSanctumSelection === 'main'
+                              ? 'main'
+                              : String(newPostSanctumSelection)
+                          }
+                          onChange={event => {
+                            const value = event.target.value
+                            setNewPostSanctumSelection(
+                              value === 'main' ? 'main' : Number(value)
+                            )
+                          }}
+                          className='rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-sm'
+                        >
+                          <option value='main'>Main Feed (No Sanctum)</option>
+                          {sanctums.map(s => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       {newPostType === 'text' && (
@@ -570,302 +791,328 @@ export default function Posts() {
               )}
             </CardContent>
           </Card>
-        )}
+          )}
 
-        {/* Posts Feed */}
-        <div className='space-y-6'>
-          {posts.map(post => (
-            <Card
-              key={post.id}
-              role='button'
-              tabIndex={0}
-              onClick={() => navigate(`/posts/${post.id}`)}
-              onKeyDown={event => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault()
-                  navigate(`/posts/${post.id}`)
-                }
-              }}
-              className='border bg-card/95 shadow-sm rounded-2xl overflow-hidden text-sm transition-shadow hover:shadow-md cursor-pointer'
-            >
-              <div className='flex items-center justify-between px-4 py-3'>
-                <div className='flex items-center gap-3'>
-                  {post.user && (
-                    <UserMenu user={post.user}>
-                      <button
-                        type='button'
-                        className='flex items-center gap-3 text-left'
-                        onClick={event => event.stopPropagation()}
-                      >
-                        <Avatar className='w-8 h-8 cursor-pointer ring-1 ring-border'>
-                          <AvatarImage
-                            src={
-                              post.user.avatar ||
-                              getAvatarUrl(post.user.username)
-                            }
-                          />
-                          <AvatarFallback>
-                            {post.user.username?.[0]?.toUpperCase() || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className='font-semibold text-sm cursor-pointer'>
-                          {post.user.username}
-                        </span>
-                      </button>
-                    </UserMenu>
-                  )}
-                </div>
-                {currentUser && currentUser.id !== post.user_id && (
-                  <Button
-                    size='sm'
-                    variant='ghost'
-                    className='h-8 w-8 p-0 text-muted-foreground hover:text-destructive'
-                    onClick={event => {
-                      event.stopPropagation()
-                      setReportingPostId(post.id)
-                      setReportReason('')
-                      setReportDetails('')
-                    }}
-                    title='Report post'
-                  >
-                    <Flag className='h-4 w-4' />
-                  </Button>
-                )}
-                {currentUser && currentUser.id === post.user_id && (
-                  <div className='flex gap-2 relative'>
+          {isMembershipFeedError && (
+            <Card className='mb-5 rounded-2xl border-destructive/40 bg-destructive/5'>
+              <CardContent className='p-4 text-sm text-destructive'>
+                Unable to load your personalized feed right now.
+              </CardContent>
+            </Card>
+          )}
+
+          {isMembershipFeed && memberships.length === 0 && (
+            <Card className='mb-5 rounded-2xl'>
+              <CardContent className='p-5 text-sm text-muted-foreground'>
+                You are not subscribed to any sanctums yet. Visit{' '}
+                <Link to='/sanctums' className='font-semibold text-primary'>
+                  Sanctums
+                </Link>{' '}
+                to join communities and build your feed.
+              </CardContent>
+            </Card>
+          )}
+
+          <div className='space-y-6'>
+            {posts.map(post => (
+              <Card
+                key={post.id}
+                role='button'
+                tabIndex={0}
+                onClick={() => navigate(`/posts/${post.id}`)}
+                onKeyDown={event => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    navigate(`/posts/${post.id}`)
+                  }
+                }}
+                className='border bg-card/95 shadow-sm rounded-2xl overflow-hidden text-sm transition-shadow hover:shadow-md cursor-pointer'
+              >
+                <div className='flex items-center justify-between px-4 py-3'>
+                  <div className='flex items-center gap-3'>
+                    {post.user && (
+                      <UserMenu user={post.user}>
+                        <button
+                          type='button'
+                          className='flex items-center gap-3 text-left'
+                          onClick={event => event.stopPropagation()}
+                        >
+                          <Avatar className='w-8 h-8 cursor-pointer ring-1 ring-border'>
+                            <AvatarImage
+                              src={
+                                post.user.avatar ||
+                                getAvatarUrl(post.user.username)
+                              }
+                            />
+                            <AvatarFallback>
+                              {post.user.username?.[0]?.toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className='font-semibold text-sm cursor-pointer'>
+                            {post.user.username}
+                          </span>
+                          <span
+                            className={cn(
+                              'text-[10px] font-semibold',
+                              isUserOnline(post.user.id)
+                                ? 'text-emerald-500'
+                                : 'text-muted-foreground'
+                            )}
+                          >
+                            {isUserOnline(post.user.id) ? 'Online' : 'Offline'}
+                          </span>
+                          {post.sanctum_id ? (
+                            <span className='rounded-full border border-border/60 px-2 py-0.5 text-[10px] text-muted-foreground'>
+                              {sanctumNameByID.get(post.sanctum_id) ?? 'Sanctum'}
+                            </span>
+                          ) : null}
+                        </button>
+                      </UserMenu>
+                    )}
+                  </div>
+                  {currentUser && currentUser.id !== post.user_id && (
                     <Button
                       size='sm'
                       variant='ghost'
-                      className='h-8 w-8 p-0'
+                      className='h-8 w-8 p-0 text-muted-foreground hover:text-destructive'
                       onClick={event => {
                         event.stopPropagation()
-                        setOpenMenuPostId(prev =>
-                          prev === post.id ? null : post.id
-                        )
+                        setReportingPostId(post.id)
+                        setReportReason('')
+                        setReportDetails('')
                       }}
-                      aria-expanded={openMenuPostId === post.id}
-                      aria-haspopup='menu'
+                      title='Report post'
                     >
-                      <span className='sr-only'>Post actions</span>
+                      <Flag className='h-4 w-4' />
+                    </Button>
+                  )}
+                  {currentUser && currentUser.id === post.user_id && (
+                    <div className='flex gap-2 relative'>
+                      <Button
+                        size='sm'
+                        variant='ghost'
+                        className='h-8 w-8 p-0'
+                        onClick={event => {
+                          event.stopPropagation()
+                          setOpenMenuPostId(prev =>
+                            prev === post.id ? null : post.id
+                          )
+                        }}
+                        aria-expanded={openMenuPostId === post.id}
+                        aria-haspopup='menu'
+                      >
+                        <span className='sr-only'>Post actions</span>
+                        <svg
+                          aria-hidden='true'
+                          xmlns='http://www.w3.org/2000/svg'
+                          width='16'
+                          height='16'
+                          viewBox='0 0 24 24'
+                          fill='none'
+                          stroke='currentColor'
+                          strokeWidth='2'
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                        >
+                          <circle cx='12' cy='12' r='1' />
+                          <circle cx='19' cy='12' r='1' />
+                          <circle cx='5' cy='12' r='1' />
+                        </svg>
+                      </Button>
+
+                      {openMenuPostId === post.id && (
+                        <div
+                          role='menu'
+                          className='absolute right-0 top-9 z-20 w-36 bg-card border border-border rounded-md shadow-lg'
+                          onClick={e => e.stopPropagation()}
+                          onKeyDown={e => e.stopPropagation()}
+                        >
+                          <button
+                            type='button'
+                            role='menuitem'
+                            className='w-full text-left px-3 py-2 hover:bg-muted'
+                            onClick={() => {
+                              setOpenMenuPostId(null)
+                              navigate(`/posts/${post.id}/edit`)
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type='button'
+                            role='menuitem'
+                            className='w-full text-left px-3 py-2 text-destructive hover:bg-muted'
+                            onClick={() => {
+                              setOpenMenuPostId(null)
+                              setDeletingPostId(post.id)
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className='px-4 pb-3'>
+                  {editingPostId === post.id ? (
+                    <div className='p-4 bg-muted/30 rounded-xl border border-border/60 space-y-4'>
+                      {post.post_type === 'text' && (
+                        <input
+                          type='text'
+                          value={editingPostTitle}
+                          onChange={e => setEditingPostTitle(e.target.value)}
+                          className='w-full font-bold bg-transparent border-none focus:ring-0 p-0 text-base'
+                          placeholder='Title'
+                        />
+                      )}
+                      <Textarea
+                        value={editingPostContent}
+                        onChange={e => setEditingPostContent(e.target.value)}
+                        className='min-h-25 border-none focus-visible:ring-0 p-0 -ml-1 resize-none'
+                      />
+                      <div className='flex justify-end gap-2 pt-2'>
+                        <Button
+                          size='sm'
+                          variant='ghost'
+                          onClick={cancelEditPost}
+                        >
+                          Cancel
+                        </Button>
+                        <Button size='sm' onClick={() => saveEditPost(post.id)}>
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  ) : post.youtube_url ? (
+                    <div className='space-y-2'>
+                      <YouTubeEmbed url={post.youtube_url} />
+                      {post.content ? (
+                        <div className='p-4 bg-muted/30 rounded-xl border border-border/60'>
+                          <PostCaption content={post.content} />
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : post.link_url ? (
+                    <div className='space-y-2'>
+                      <LinkCard url={post.link_url} title={post.title} />
+                      {post.content ? (
+                        <div className='p-4 bg-muted/30 rounded-xl border border-border/60'>
+                          <PostCaption content={post.content} />
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : post.poll ? (
+                    <div className='space-y-2'>
+                      <PollBlock
+                        poll={post.poll}
+                        postId={post.id}
+                        onVoteClick={e => {
+                          e.stopPropagation()
+                          navigate(`/posts/${post.id}`)
+                        }}
+                      />
+                    </div>
+                  ) : post.image_url ? (
+                    <div className='space-y-2'>
+                      <ResponsiveImage
+                        variants={post.image_variants}
+                        fallbackUrl={post.image_url}
+                        alt={`Post by ${post.user?.username}`}
+                        sizes='(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 640px'
+                        cropMode={post.image_crop_mode}
+                        loading='lazy'
+                      />
+                      {post.content ? <PostCaption content={post.content} /> : null}
+                    </div>
+                  ) : (
+                    <div className='p-4 bg-muted/30 rounded-xl border border-border/60'>
+                      <PostCaption title={post.title} content={post.content} />
+                    </div>
+                  )}
+                </div>
+
+                <div className='px-4 pt-1 pb-4 grid gap-1'>
+                  <div className='flex items-center gap-4'>
+                    <button
+                      type='button'
+                      onClick={event => {
+                        event.stopPropagation()
+                        handleLikeToggle(post)
+                      }}
+                      className='hover:opacity-70 transition-opacity'
+                      disabled={!isAuthenticated}
+                    >
+                      <Heart
+                        className={cn(
+                          'w-6 h-6 transition-all',
+                          post.liked
+                            ? 'fill-red-500 text-red-500 scale-110'
+                            : 'text-foreground'
+                        )}
+                      />
+                    </button>
+                    <button
+                      type='button'
+                      onClick={event => {
+                        event.stopPropagation()
+                        navigate(`/posts/${post.id}`)
+                      }}
+                      className='hover:opacity-70 transition-opacity'
+                    >
+                      <MessageCircle className='w-6 h-6 -rotate-90' />
+                    </button>
+                    <button
+                      className='hover:opacity-70 transition-opacity ml-auto'
+                      type='button'
+                      onClick={event => event.stopPropagation()}
+                    >
+                      <span className='sr-only'>Share</span>
                       <svg
                         aria-hidden='true'
                         xmlns='http://www.w3.org/2000/svg'
-                        width='16'
-                        height='16'
+                        width='24'
+                        height='24'
                         viewBox='0 0 24 24'
                         fill='none'
                         stroke='currentColor'
                         strokeWidth='2'
                         strokeLinecap='round'
                         strokeLinejoin='round'
+                        className='w-6 h-6'
                       >
-                        <circle cx='12' cy='12' r='1' />
-                        <circle cx='19' cy='12' r='1' />
-                        <circle cx='5' cy='12' r='1' />
+                        <path d='M5 12h14' />
+                        <path d='m12 5 7 7-7 7' />
                       </svg>
-                    </Button>
+                    </button>
+                  </div>
 
-                    {openMenuPostId === post.id && (
-                      <div
-                        role='menu'
-                        className='absolute right-0 top-9 z-20 w-36 bg-card border border-border rounded-md shadow-lg'
-                        onClick={e => e.stopPropagation()}
-                        onKeyDown={e => e.stopPropagation()}
-                      >
-                        <button
-                          type='button'
-                          role='menuitem'
-                          className='w-full text-left px-3 py-2 hover:bg-muted'
-                          onClick={() => {
-                            setOpenMenuPostId(null)
-                            navigate(`/posts/${post.id}/edit`)
-                          }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type='button'
-                          role='menuitem'
-                          className='w-full text-left px-3 py-2 text-destructive hover:bg-muted'
-                          onClick={() => {
-                            setOpenMenuPostId(null)
-                            setDeletingPostId(post.id)
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
+                  <div className='font-semibold text-sm mt-1'>
+                    {post.likes_count} likes
                   </div>
-                )}
-              </div>
 
-              {/* Post Media / Content */}
-              <div className='px-4 pb-3'>
-                {editingPostId === post.id ? (
-                  <div className='p-4 bg-muted/30 rounded-xl border border-border/60 space-y-4'>
-                    {post.post_type === 'text' && (
-                      <input
-                        type='text'
-                        value={editingPostTitle}
-                        onChange={e => setEditingPostTitle(e.target.value)}
-                        className='w-full font-bold bg-transparent border-none focus:ring-0 p-0 text-base'
-                        placeholder='Title'
-                      />
-                    )}
-                    <Textarea
-                      value={editingPostContent}
-                      onChange={e => setEditingPostContent(e.target.value)}
-                      className='min-h-25 border-none focus-visible:ring-0 p-0 -ml-1 resize-none'
-                    />
-                    <div className='flex justify-end gap-2 pt-2'>
-                      <Button
-                        size='sm'
-                        variant='ghost'
-                        onClick={cancelEditPost}
-                      >
-                        Cancel
-                      </Button>
-                      <Button size='sm' onClick={() => saveEditPost(post.id)}>
-                        Save
-                      </Button>
-                    </div>
-                  </div>
-                ) : post.youtube_url ? (
-                  <div className='space-y-2'>
-                    <YouTubeEmbed url={post.youtube_url} />
-                    {post.content ? (
-                      <div className='p-4 bg-muted/30 rounded-xl border border-border/60'>
-                        <PostCaption content={post.content} />
-                      </div>
-                    ) : null}
-                  </div>
-                ) : post.link_url ? (
-                  <div className='space-y-2'>
-                    <LinkCard url={post.link_url} title={post.title} />
-                    {post.content ? (
-                      <div className='p-4 bg-muted/30 rounded-xl border border-border/60'>
-                        <PostCaption content={post.content} />
-                      </div>
-                    ) : null}
-                  </div>
-                ) : post.poll ? (
-                  <div className='space-y-2'>
-                    <PollBlock
-                      poll={post.poll}
-                      postId={post.id}
-                      onVoteClick={e => {
-                        e.stopPropagation()
-                        navigate(`/posts/${post.id}`)
-                      }}
-                    />
-                  </div>
-                ) : post.image_url ? (
-                  <div className='space-y-2'>
-                    <ResponsiveImage
-                      variants={post.image_variants}
-                      fallbackUrl={post.image_url}
-                      alt={`Post by ${post.user?.username}`}
-                      sizes='(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 640px'
-                      cropMode={post.image_crop_mode}
-                      loading='lazy'
-                    />
-                    {post.content ? (
-                      <PostCaption content={post.content} />
-                    ) : null}
-                  </div>
-                ) : (
-                  <div className='p-4 bg-muted/30 rounded-xl border border-border/60'>
-                    <PostCaption title={post.title} content={post.content} />
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className='px-4 pt-1 pb-4 grid gap-1'>
-                <div className='flex items-center gap-4'>
                   <button
                     type='button'
-                    onClick={event => {
-                      event.stopPropagation()
-                      handleLikeToggle(post)
-                    }}
-                    className='hover:opacity-70 transition-opacity'
-                    disabled={!isAuthenticated}
-                  >
-                    <Heart
-                      className={cn(
-                        'w-6 h-6 transition-all',
-                        post.liked
-                          ? 'fill-red-500 text-red-500 scale-110'
-                          : 'text-foreground'
-                      )}
-                    />
-                  </button>
-                  <button
-                    type='button'
+                    className='text-muted-foreground text-sm text-left mt-1 hover:text-foreground'
                     onClick={event => {
                       event.stopPropagation()
                       navigate(`/posts/${post.id}`)
                     }}
-                    className='hover:opacity-70 transition-opacity'
                   >
-                    <MessageCircle className='w-6 h-6 -rotate-90' />
+                    {(post.comments_count ?? 0) > 0
+                      ? `View all ${post.comments_count} comments`
+                      : 'Add a comment...'}
                   </button>
-                  <button
-                    className='hover:opacity-70 transition-opacity ml-auto'
-                    type='button'
-                    onClick={event => event.stopPropagation()}
-                  >
-                    <span className='sr-only'>Share</span>
-                    <svg
-                      aria-hidden='true'
-                      xmlns='http://www.w3.org/2000/svg'
-                      width='24'
-                      height='24'
-                      viewBox='0 0 24 24'
-                      fill='none'
-                      stroke='currentColor'
-                      strokeWidth='2'
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      className='w-6 h-6'
-                    >
-                      <path d='M5 12h14' />
-                      <path d='m12 5 7 7-7 7' />
-                    </svg>
-                  </button>
+                  <p className='text-[10px] text-muted-foreground bg-transparent uppercase tracking-wider mt-1'>
+                    {formatDistanceToNow(new Date(post.created_at), {
+                      addSuffix: false,
+                    })}{' '}
+                    AGO
+                  </p>
                 </div>
-
-                {/* Likes Count */}
-                <div className='font-semibold text-sm mt-1'>
-                  {post.likes_count} likes
-                </div>
-
-                {/* Caption handled above for media/link/poll/text */}
-
-                {/* Comments Link */}
-                <button
-                  type='button'
-                  className='text-muted-foreground text-sm text-left mt-1 hover:text-foreground'
-                  onClick={event => {
-                    event.stopPropagation()
-                    navigate(`/posts/${post.id}`)
-                  }}
-                >
-                  {(post.comments_count ?? 0) > 0
-                    ? `View all ${post.comments_count} comments`
-                    : 'Add a comment...'}
-                </button>
-                <p className='text-[10px] text-muted-foreground bg-transparent uppercase tracking-wider mt-1'>
-                  {formatDistanceToNow(new Date(post.created_at), {
-                    addSuffix: false,
-                  })}{' '}
-                  AGO
-                </p>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            ))}
 
           {/* Delete confirmation dialog */}
           <Dialog
@@ -959,33 +1206,162 @@ export default function Posts() {
             </DialogContent>
           </Dialog>
 
-          {/* Loading indicator for infinite scroll */}
-          {isFetchingNextPage && (
-            <div className='flex justify-center py-4'>
-              <Loader2 className='w-6 h-6 animate-spin text-muted-foreground' />
-            </div>
-          )}
-          {/* End of feed */}
-          {!hasNextPage && posts.length > 0 && (
-            <div className='flex justify-center py-8 text-muted-foreground'>
-              <div className='w-2 h-2 rounded-full bg-border' />
-            </div>
-          )}
-
-          {/* Empty state */}
-          {posts.length === 0 && (
-            <div className='text-center py-20'>
-              <div className='w-20 h-20 mx-auto bg-muted rounded-full flex items-center justify-center mb-6'>
-                <Image className='w-10 h-10 text-muted-foreground' />
+            {!isMembershipFeed && isFetchingNextPage && (
+              <div className='flex justify-center py-4'>
+                <Loader2 className='w-6 h-6 animate-spin text-muted-foreground' />
               </div>
-              <h3 className='font-bold text-lg mb-2'>No Posts Yet</h3>
-              <p className='text-muted-foreground'>
-                Start capturing your moments to see them here.
-              </p>
-            </div>
-          )}
-        </div>
+            )}
+            {!isMembershipFeed && !hasNextPage && posts.length > 0 && (
+              <div className='flex justify-center py-8 text-muted-foreground'>
+                <div className='w-2 h-2 rounded-full bg-border' />
+              </div>
+            )}
+            {isMembershipFeed && posts.length > 0 && hasMoreMembershipPosts && (
+              <div className='flex justify-center py-2'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={() => setMembershipPage(prev => prev + 1)}
+                  disabled={isFetchingMembershipPosts}
+                >
+                  {isFetchingMembershipPosts ? 'Loading...' : 'Load more'}
+                </Button>
+              </div>
+            )}
+
+            {isMembershipFeed &&
+              !hasMoreMembershipPosts &&
+              posts.length > 0 && (
+                <div className='flex justify-center py-8 text-muted-foreground'>
+                  <div className='w-2 h-2 rounded-full bg-border' />
+                </div>
+              )}
+
+            {posts.length === 0 && (
+              <div className='text-center py-20'>
+                <div className='w-20 h-20 mx-auto bg-muted rounded-full flex items-center justify-center mb-6'>
+                  <Image className='w-10 h-10 text-muted-foreground' />
+                </div>
+                <h3 className='font-bold text-lg mb-2'>
+                  {isMembershipFeed ? 'No Feed Posts Yet' : 'No Posts Yet'}
+                </h3>
+                <p className='text-muted-foreground'>
+                  {isMembershipFeed
+                    ? 'Posts from your subscribed sanctums will appear here.'
+                    : 'Start capturing your moments to see them here.'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <section className='mt-6 space-y-3 lg:hidden'>
+            <Card className='rounded-2xl border border-border/70 bg-card/70'>
+              <CardContent className='p-4'>
+                <h3 className='mb-2 text-sm font-semibold'>Newest Posts</h3>
+                <div className='space-y-2'>
+                  {newestPosts.slice(0, 4).map(post => (
+                    <button
+                      key={post.id}
+                      type='button'
+                      onClick={() => navigate(`/posts/${post.id}`)}
+                      className='block w-full rounded-lg px-2 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground'
+                    >
+                      {post.title || post.content.slice(0, 40)}
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        </main>
+
+        <aside className='sticky top-20 hidden space-y-3 lg:block'>
+          <Card className='rounded-2xl border border-border/70 bg-card/70'>
+            <CardContent className='p-4'>
+              <h3 className='mb-2 text-sm font-semibold'>Newest Posts</h3>
+              {newestPosts.length === 0 ? (
+                <p className='text-xs text-muted-foreground'>No posts yet.</p>
+              ) : (
+                <div className='space-y-1.5'>
+                  {newestPosts.map(post => (
+                    <button
+                      key={post.id}
+                      type='button'
+                      onClick={() => navigate(`/posts/${post.id}`)}
+                      className='block w-full rounded-lg px-2 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground'
+                    >
+                      {post.title || post.content.slice(0, 52)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className='rounded-2xl border border-border/70 bg-card/70'>
+            <CardContent className='p-4'>
+              <h3 className='mb-2 text-sm font-semibold'>Hot Sanctums</h3>
+              {hotSanctums.length === 0 ? (
+                <p className='text-xs text-muted-foreground'>
+                  Hot sanctums will appear as activity grows.
+                </p>
+              ) : (
+                <div className='space-y-1.5'>
+                  {hotSanctums.map(item => (
+                    <div
+                      key={item.id}
+                      className='flex items-center justify-between rounded-lg px-2 py-2 text-xs text-muted-foreground'
+                    >
+                      <span className='truncate'>{item.name}</span>
+                      <span className='font-semibold'>{item.count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </aside>
       </div>
+      {isSanctumDrawerOpen && (
+        <div className='fixed inset-0 z-50 lg:hidden'>
+          <button
+            type='button'
+            className='absolute inset-0 bg-black/40'
+            onClick={() => setIsSanctumDrawerOpen(false)}
+            aria-label='Close sanctums menu'
+          />
+          <aside className='absolute left-0 top-0 h-full w-72 max-w-[85vw] border-r border-border bg-background p-4 shadow-xl'>
+            <div className='mb-3 flex items-center justify-between'>
+              <h3 className='text-sm font-semibold'>Sanctums</h3>
+              <Button
+                type='button'
+                variant='ghost'
+                size='icon'
+                onClick={() => setIsSanctumDrawerOpen(false)}
+              >
+                <X className='h-4 w-4' />
+              </Button>
+            </div>
+            <div className='space-y-1.5 overflow-y-auto'>
+              {sanctums.map(s => (
+                <Link
+                  key={s.id}
+                  to={`/s/${s.slug}`}
+                  onClick={() => setIsSanctumDrawerOpen(false)}
+                  className={cn(
+                    'block rounded-lg px-2.5 py-2 text-sm',
+                    sanctumId === s.id
+                      ? 'bg-primary/15 text-primary'
+                      : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                  )}
+                >
+                  {s.name}
+                </Link>
+              ))}
+            </div>
+          </aside>
+        </div>
+      )}
     </div>
   )
 }

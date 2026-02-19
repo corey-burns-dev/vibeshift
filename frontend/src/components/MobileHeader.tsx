@@ -1,4 +1,4 @@
-import { Search } from 'lucide-react'
+import { PenSquare, Search } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { ModeToggle } from '@/components/mode-toggle'
 import { getRouteTitle } from '@/components/navigation'
@@ -29,6 +29,13 @@ export function MobileHeader() {
             aria-label='Search'
           >
             <Search className='h-4 w-4' />
+          </Link>
+          <Link
+            to='/submit'
+            className='inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
+            aria-label='Create post'
+          >
+            <PenSquare className='h-4 w-4' />
           </Link>
           <ModeToggle />
           <Link

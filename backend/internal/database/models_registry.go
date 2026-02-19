@@ -16,6 +16,7 @@ func PersistentModels() []interface{} {
 		&models.Like{},
 		&models.Conversation{},
 		&models.ChatroomModerator{},
+		&models.ChatroomBan{},
 		&models.Message{},
 		&models.MessageReaction{},
 		&models.MessageMention{},

@@ -14,6 +14,17 @@ interface MessageListProps {
   isIRCStyle?: boolean
   showTimestamps?: boolean
   scrollElement?: HTMLDivElement | null
+  getModerationActions?: (userId: number) => {
+    canModerate: boolean
+    canManageModerators: boolean
+    isMuted?: boolean
+    isBanned?: boolean
+    isModerator?: boolean
+    onKick?: () => void
+    onTimeout?: () => void
+    onToggleBan?: () => void
+    onToggleModerator?: () => void
+  } | undefined
 }
 
 export const MessageList = memo(function MessageList({
@@ -26,6 +37,7 @@ export const MessageList = memo(function MessageList({
   isIRCStyle = false,
   showTimestamps = true,
   scrollElement,
+  getModerationActions,
 }: MessageListProps) {
   const canVirtualize = Boolean(scrollElement) && messages.length > 100
   const virtualizer = useVirtualizer({
@@ -69,6 +81,7 @@ export const MessageList = memo(function MessageList({
             conversationId={conversationId}
             isIRCStyle={isIRCStyle}
             showTimestamps={showTimestamps}
+            moderationActions={getModerationActions?.(msg.sender_id)}
           />
         ))}
       </div>
@@ -100,12 +113,13 @@ export const MessageList = memo(function MessageList({
               message={msg}
               isOwnMessage={msg.sender_id === currentUserId}
               currentUserId={currentUserId}
-              isDirectMessage={isDirectMessage}
-              showReadReceipt={showReadReceipts}
-              conversationId={conversationId}
-              isIRCStyle={isIRCStyle}
-              showTimestamps={showTimestamps}
-            />
+            isDirectMessage={isDirectMessage}
+            showReadReceipt={showReadReceipts}
+            conversationId={conversationId}
+            isIRCStyle={isIRCStyle}
+            showTimestamps={showTimestamps}
+            moderationActions={getModerationActions?.(msg.sender_id)}
+          />
           </div>
         )
       })}

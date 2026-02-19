@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
+import { sanctumKeys } from '@/hooks/useSanctums'
 import { userKeys } from '@/hooks/useUsers'
 
 // Prefetch utilities for route transitions
@@ -20,6 +21,30 @@ export const prefetchUtils = {
       queryFn: () => apiClient.getPosts({ offset: 0, limit: 10 }),
       staleTime: 2 * 60 * 1000, // 2 minutes
     })
+  },
+
+  // Prefetch personalized feed shell
+  async prefetchFeed(queryClient: QueryClient) {
+    const memberships = await queryClient.fetchQuery({
+      queryKey: sanctumKeys.myMemberships(),
+      queryFn: () => apiClient.getMySanctumMemberships(),
+      staleTime: 2 * 60 * 1000,
+    })
+
+    await Promise.all(
+      memberships.slice(0, 3).map(membership =>
+        queryClient.prefetchQuery({
+          queryKey: ['posts', 'membership-feed', membership.sanctum_id, 10],
+          queryFn: () =>
+            apiClient.getPosts({
+              offset: 0,
+              limit: 10,
+              sanctum_id: membership.sanctum_id,
+            }),
+          staleTime: 60 * 1000,
+        })
+      )
+    )
   },
 
   // Prefetch friends list
@@ -46,7 +71,9 @@ export const routePrefetchMap: Record<
   string,
   (queryClient: QueryClient) => Promise<void>
 > = {
+  '/': prefetchUtils.prefetchPosts,
   '/posts': prefetchUtils.prefetchPosts,
+  '/feed': prefetchUtils.prefetchFeed,
   '/profile': prefetchUtils.prefetchUserProfile,
   '/friends': prefetchUtils.prefetchFriends,
   '/chat': prefetchUtils.prefetchConversations,

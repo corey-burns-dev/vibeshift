@@ -1,4 +1,4 @@
-import { Bell, LogOut, Search, ShieldCheck, User } from 'lucide-react'
+import { Bell, LogOut, PenSquare, Search, ShieldCheck, User } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ModeToggle } from '@/components/mode-toggle'
@@ -10,6 +10,7 @@ import {
   topServiceNav,
 } from '@/components/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -207,6 +208,12 @@ export function TopBar() {
           </div>
 
           <div className='ml-auto flex shrink-0 items-center gap-2'>
+            <Button asChild size='sm' className='hidden xl:inline-flex gap-1.5'>
+              <Link to='/submit'>
+                <PenSquare className='h-4 w-4' />
+                Create Post
+              </Link>
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button

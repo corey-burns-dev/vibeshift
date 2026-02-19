@@ -2,7 +2,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { create } from 'zustand'
-import { apiClient } from '@/api/client'
 import { useManagedWebSocket } from '@/hooks/useManagedWebSocket'
 import { usePresenceStore } from '@/hooks/usePresence'
 import { logger } from '@/lib/logger'
@@ -131,48 +130,6 @@ export function useRealtimeNotifications(enabled = true) {
     state => state.setInitialOnlineUsers
   )
   const accessToken = useAuthSessionStore(state => state.accessToken)
-
-  const openDirectMessage = useCallback(
-    async (userID: number) => {
-      try {
-        const conv = await apiClient.createConversation({
-          participant_ids: [userID],
-        })
-
-        // Seed the chat query cache with the created conversation so
-        // the Chat page can render immediately when navigated to.
-        try {
-          // Add to conversations list if not present
-          queryClient.setQueryData(
-            ['chat', 'conversations'],
-            (old: unknown) => {
-              if (!old) return [conv]
-              if (
-                Array.isArray(old) &&
-                (old as Array<{ id?: number }>).some(c => c.id === conv.id)
-              )
-                return old as unknown[]
-              return [conv, ...(old as unknown[])]
-            }
-          )
-
-          // Set the single-conversation cache entry
-          queryClient.setQueryData(['chat', 'conversation', conv.id], conv)
-        } catch (e) {
-          // non-fatal cache update failure
-          logger.debug('[realtime] failed to seed chat cache', e)
-        }
-
-        window.location.href = `/chat/${conv.id}`
-      } catch {
-        // Silently ignore failures; user can still navigate manually.
-      }
-    },
-    [
-      // Set the single-conversation cache entry
-      queryClient.setQueryData,
-    ]
-  )
 
   const handleRealtimeMessage = useCallback(
     (event: MessageEvent) => {
@@ -419,31 +376,14 @@ export function useRealtimeNotifications(enabled = true) {
         case 'friend_presence_changed': {
           const friendID = asNumber(payload.user_id)
           const status = asString(payload.status)
-          const username = asString(payload.username) ?? 'A friend'
           if (!friendID || !status) break
 
+          // Only update the presence store here. ChatDock's subscribeOnPresence
+          // handler owns the user-facing toast so we don't show a duplicate.
           if (status === 'online') {
             setOnline(friendID)
-            toast.message(`${username} is online`, {
-              id: `presence-${friendID}`,
-              description: 'Tap to open chat',
-              duration: 7000,
-              className: 'border border-emerald-500/40',
-              action: {
-                label: 'Message',
-                onClick: () => {
-                  void openDirectMessage(friendID)
-                },
-              },
-            })
           } else if (status === 'offline') {
             setOffline(friendID)
-            toast.message(`${username} went offline`, {
-              id: `presence-${friendID}`,
-              description: 'They are currently offline',
-              duration: 7000,
-              className: 'border border-slate-500/40',
-            })
           }
           break
         }
@@ -511,7 +451,6 @@ export function useRealtimeNotifications(enabled = true) {
       setOnline,
       setOffline,
       setInitialOnlineUsers,
-      openDirectMessage,
     ]
   )
 

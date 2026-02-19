@@ -3,9 +3,12 @@ import {
   Flag,
   Gamepad2,
   MessageCircle,
+  Shield,
+  Timer,
   User as UserIcon,
   UserMinus,
   UserPlus,
+  UserX,
 } from 'lucide-react'
 import type { User } from '@/api/types'
 import { UserContextMenu } from '@/components/UserContextMenu'
@@ -22,14 +25,26 @@ import { useUserActions } from '@/hooks/useUserActions'
 interface UserMenuProps {
   user: User
   children: React.ReactNode
+  moderationActions?: {
+    canModerate: boolean
+    canManageModerators: boolean
+    isMuted?: boolean
+    isBanned?: boolean
+    isModerator?: boolean
+    onKick?: () => void
+    onTimeout?: () => void
+    onToggleBan?: () => void
+    onToggleModerator?: () => void
+  }
 }
 
-export function UserMenu({ user, children }: UserMenuProps) {
+export function UserMenu({ user, children, moderationActions }: UserMenuProps) {
   const {
     isSelf,
     handleViewProfile,
     handleMessage,
     handleJoinConnect4,
+    targetOnline,
     handleAddFriend,
     handleRemoveFriend,
     canAddFriend,
@@ -48,7 +63,7 @@ export function UserMenu({ user, children }: UserMenuProps) {
   }
 
   return (
-    <UserContextMenu user={user}>
+    <UserContextMenu user={user} moderationActions={moderationActions}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild className='cursor-pointer'>
           {children}
@@ -67,6 +82,65 @@ export function UserMenu({ user, children }: UserMenuProps) {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+
+          {moderationActions?.canModerate && (
+            <>
+              <DropdownMenuItem
+                onClick={event => {
+                  event.stopPropagation()
+                  moderationActions.onKick?.()
+                }}
+              >
+                <UserX className='mr-2 h-4 w-4' />
+                <span>Kick from room</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={event => {
+                  event.stopPropagation()
+                  moderationActions.onTimeout?.()
+                }}
+              >
+                <Timer className='mr-2 h-4 w-4' />
+                <span>
+                  {moderationActions.isMuted ? 'Update Timeout' : 'Timeout User'}
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={event => {
+                  event.stopPropagation()
+                  moderationActions.onToggleBan?.()
+                }}
+                className='text-destructive focus:text-destructive'
+              >
+                <Ban className='mr-2 h-4 w-4' />
+                <span>
+                  {moderationActions.isBanned
+                    ? 'Unban from Room'
+                    : 'Ban from Room'}
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
+
+          {moderationActions?.canManageModerators && (
+            <>
+              <DropdownMenuItem
+                onClick={event => {
+                  event.stopPropagation()
+                  moderationActions.onToggleModerator?.()
+                }}
+              >
+                <Shield className='mr-2 h-4 w-4' />
+                <span>
+                  {moderationActions.isModerator
+                    ? 'Remove Room Moderator'
+                    : 'Promote to Room Moderator'}
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
 
           <DropdownMenuItem
             onClick={event => {
@@ -93,9 +167,10 @@ export function UserMenu({ user, children }: UserMenuProps) {
               event.stopPropagation()
               void handleJoinConnect4()
             }}
+            disabled={!targetOnline}
           >
             <Gamepad2 className='mr-2 h-4 w-4' />
-            <span>Join Connect 4</span>
+            <span>{targetOnline ? 'Join Connect 4' : 'Connect 4 (Offline)'}</span>
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
