@@ -275,9 +275,10 @@ fmt:
 
 lint:
 	@echo "$(BLUE)Linting Go code with golangci-lint...$(NC)"
-	@if command -v golangci-lint >/dev/null 2>&1; then \
+	@if command -v golangci-lint >/dev/null 2>&1 && golangci-lint version 2>/dev/null | grep -Eq 'version (v)?2\.'; then \
 		cd backend && golangci-lint run ./...; \
 	else \
+		echo "$(YELLOW)Local golangci-lint v2 not found; using Docker v2-compatible runner.$(NC)"; \
 		$(MAKE) lint-backend-docker; \
 	fi
 	@echo "$(GREEN)✓ Linting passed$(NC)"
@@ -290,7 +291,7 @@ lint-backend-docker:
 .PHONY: install-linter
 install-linter:
 	@echo "$(BLUE)Installing golangci-lint...$(NC)"
-	@GO111MODULE=on go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	@GO111MODULE=on go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 	@echo "$(GREEN)✓ golangci-lint installed (ensure $HOME/go/bin is in your PATH)$(NC)"
 
 fmt-frontend:
