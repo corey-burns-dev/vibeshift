@@ -15,7 +15,6 @@ services:
       - IMAGE_UPLOAD_DIR=/var/sanctum/uploads/images
       - APP_ENV=${APP_ENV:-production}
     volumes:
-      - .:/app
       - uploads_data:/var/sanctum/uploads
     depends_on:
       redis:
@@ -71,8 +70,6 @@ services:
         BUN_VERSION: ${BUN_VERSION}
         NGINX_VERSION: ${NGINX_VERSION}
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
       - uploads_data:/var/sanctum/uploads:ro
     depends_on:
       - app

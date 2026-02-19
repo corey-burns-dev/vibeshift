@@ -43,9 +43,10 @@ services:
       - "${VITE_PORT:-5173}:5173"
     environment:
       - VITE_API_URL=http://localhost:8375/api
+    command: sh -c "bun install && bun run dev"
     volumes:
       - ./frontend:/app
-      - /app/node_modules
+      - frontend_node_modules:/app/node_modules
 
   # Local Media Server for RTMP -> HLS
   media-server:
@@ -104,3 +105,4 @@ services:
 
 volumes:
   postgres_test_data:
+  frontend_node_modules:

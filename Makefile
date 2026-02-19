@@ -29,7 +29,7 @@ YELLOW := \033[1;33m
 RED := \033[1;31m
 NC := \033[0m # No Color
 
-.PHONY: help dev dev-build dev-clean dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed db-migrate db-migrate-up db-migrate-auto db-schema-status db-reset-dev deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity stress-stack-up stress-stack-down stress-low stress-medium stress-high stress-extreme stress-insane stress-all ai-report stress-ai-low stress-ai-medium stress-ai-high stress-ai-extreme stress-ai-insane stress-index ai-memory-backfill ai-memory-update ai-memory-validate ai-docs-verify openapi-check
+.PHONY: help setup-local bootstrap dev dev-build dev-clean dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed db-migrate db-migrate-up db-migrate-auto db-schema-status db-reset-dev deps-install-backend-local deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity stress-stack-up stress-stack-down stress-low stress-medium stress-high stress-extreme stress-insane stress-all ai-report stress-ai-low stress-ai-medium stress-ai-high stress-ai-extreme stress-ai-insane stress-index ai-memory-backfill ai-memory-update ai-memory-validate ai-docs-verify openapi-check
 
 # Default target
 help:
@@ -38,6 +38,8 @@ help:
 	@echo "$(BLUE)╚════════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
 	@echo "$(GREEN)Development:$(NC)"
+	@echo "  make setup-local        - ⚙️  Bootstrap local env + frontend/backend deps"
+	@echo "  make bootstrap          - ⚙️  Alias for setup-local"
 	@echo "  make dev                - 🚀 Start full stack (fast; no rebuild)"
 	@echo "  make dev-build          - 🔨 Build images then start (first time or after Dockerfile change)"
 	@echo "  make dev-clean          - 🧹 Fresh start (clean volumes/data + build + dev)"
@@ -110,6 +112,8 @@ help:
 	@echo "  make prod-admin email=.. - 🛡️  Promote production user to admin"
 	@echo ""
 	@echo "$(GREEN)Utilities:$(NC)"
+	@echo "  make setup-local        - ⚙️  Bootstrap local env + frontend/backend deps"
+	@echo "  make bootstrap          - ⚙️  Alias for setup-local"
 	@echo "  make env                - ⚙️  Initialize .env file"
 	@echo "  make restart            - 🔄 Restart all services"
 	@echo "  make clean              - 🧹 Clean containers, volumes, and artifacts"
@@ -131,10 +135,15 @@ help:
 	@echo ""
 
 # Development targets (make dev = fast start with hot reload; make dev-build = full rebuild)
+setup-local: env install deps-install-backend-local
+	@echo "$(GREEN)✓ Local bootstrap complete. Next step: make dev$(NC)"
+
+bootstrap: setup-local
+
 dev: env
 	@echo "$(BLUE)Starting full stack development environment with hot reload...$(NC)"
 	@echo "$(YELLOW)Tip: If you see old code, run 'make dev-build' to rebuild images$(NC)"
-	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) $(COMPOSE_FILES) up --force-recreate --renew-anon-volumes app redis postgres frontend
+	@set -a; [ -f .env ] && . ./.env; set +a; $(DOCKER_COMPOSE) $(COMPOSE_FILES) up --force-recreate app redis postgres frontend
 
 dev-build: env
 	@echo "$(BLUE)Building dev images (first time or after Dockerfile changes)...$(NC)"
@@ -744,6 +753,11 @@ deps-install-backend:
 	@echo "$(BLUE)Installing Go dependencies...$(NC)"
 	$(DOCKER_COMPOSE) $(COMPOSE_FILES) exec -T app go mod download
 	@echo "$(GREEN)✓ Go dependencies installed$(NC)"
+
+deps-install-backend-local:
+	@echo "$(BLUE)Installing backend Go dependencies in Docker...$(NC)"
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) run --rm --no-deps app sh -c "cd /app/backend && go mod download"
+	@echo "$(GREEN)✓ Backend Go dependencies installed$(NC)"
 
 deps-add-backend:
 	@if [ -z "$(pkg)" ]; then echo "Usage: make deps-add-backend pkg=github.com/foo/bar"; exit 1; fi

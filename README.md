@@ -25,7 +25,7 @@ Sanctum is a Reddit-style social platform focused on creativity, hobbies, and sh
 - Docker and Docker Compose
 - Git
 - Node.js (v24+) and Bun (for local frontend development)
-- Go (v1.26+, optional for local backend development)
+- Go (v1.26+, optional for local backend development; Dockerized setup does not require host Go)
 
 ## Quick Start
 
@@ -36,13 +36,13 @@ Sanctum is a Reddit-style social platform focused on creativity, hobbies, and sh
    cd sanctum
    ```
 
-2. **Set up environment variables:**
+2. **Bootstrap local development (env + dependencies):**
 
    ```bash
-   make env
+   make setup-local
    ```
 
-   This creates `.env` from `.env.example`. Update with your settings if needed.
+   This creates `.env`/`config.yml` as needed, installs frontend dependencies, and primes backend Go modules in Docker.
 
 3. **Start the full stack:**
 
@@ -65,6 +65,7 @@ Sanctum is a Reddit-style social platform focused on creativity, hobbies, and sh
 
 ### Development
 
+- `make setup-local` — Bootstrap local env + frontend/backend dependencies
 - `make dev` — Start full stack (backend + frontend + databases)
 - `make dev-backend` — Backend only (Go + Redis + Postgres)
 - `make dev-frontend` — Frontend only (Vite dev server, local)
@@ -194,6 +195,7 @@ make seed
 
 ### Utilities
 
+- `make setup-local` — Bootstrap local env + frontend/backend dependencies
 - `make env` — Initialize .env file
 - `make config-sanity` — Validate config/env safety defaults
 - `make versions-check` — Verify Docker/Compose versions match catalog
