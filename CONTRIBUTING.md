@@ -1,33 +1,71 @@
 # Contributing to Sanctum
 
-Thanks for your interest in contributing!  
-This document explains how development is done in this repository, even when working solo.
+Thanks for contributing. This doc captures the default local workflow and quality gates.
 
----
+## Project Philosophy
 
-## 📐 Project Philosophy
+- Prefer clarity over cleverness.
+- Keep diffs small and reviewable.
+- Preserve behavior unless the change explicitly updates behavior.
 
-- Prefer **clarity over cleverness**
-- Optimize for **long-term maintainability**
-- Treat documentation as **first-class**
-- Use AI tools intentionally, not blindly
-- Small, reviewable changes beat large rewrites
+## Branching
 
----
+- `master` is protected.
+- Open a feature/fix branch and use PRs for merges.
 
-## 🌿 Branching & Workflow
+## Local Setup
 
-### Protected `master`
+1. Clone the repo.
+2. Run:
 
-- `master` is protected
-- No direct pushes
-- All changes go through pull requests
+```bash
+make setup-local
+```
 
-### Standard Flow
+This bootstraps env/deps and installs repo-managed git hooks (`core.hooksPath=.githooks`).
 
-1. Create a branch from `master`
+## Hooks
 
-   ```bash
-   git checkout -b feat/<short-description>
-   # or
-   git checkout -b fix/<short-description>
+- Install hooks manually if needed:
+
+```bash
+make install-githooks
+```
+
+- Verify hooks are configured:
+
+```bash
+make verify-githooks
+```
+
+## Frontend Quality Gate (Before Push)
+
+Run the canonical frontend gate:
+
+```bash
+make check-frontend
+```
+
+This runs:
+
+- `bun install --frozen-lockfile`
+- `make lint-frontend` (check-only)
+- `make type-check-frontend`
+- `make test-frontend`
+- `bun run build`
+
+For autofixable frontend lint/format issues:
+
+```bash
+make lint-frontend-fix
+```
+
+## Backend Quality Gate
+
+Run backend checks as needed:
+
+```bash
+make fmt
+make lint
+make test-backend
+```

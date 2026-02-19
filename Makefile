@@ -29,7 +29,7 @@ YELLOW := \033[1;33m
 RED := \033[1;31m
 NC := \033[0m # No Color
 
-.PHONY: help setup-local bootstrap dev dev-build dev-clean dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed db-migrate db-migrate-up db-migrate-auto db-schema-status db-reset-dev deps-install-backend-local deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity stress-stack-up stress-stack-down stress-low stress-medium stress-high stress-extreme stress-insane stress-all ai-report stress-ai-low stress-ai-medium stress-ai-high stress-ai-extreme stress-ai-insane stress-index ai-memory-backfill ai-memory-update ai-memory-validate ai-docs-verify openapi-check
+.PHONY: help setup-local bootstrap dev dev-build dev-clean dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend lint-frontend-fix type-check-frontend check-frontend install-githooks verify-githooks install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed db-migrate db-migrate-up db-migrate-auto db-schema-status db-reset-dev deps-install-backend-local deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity stress-stack-up stress-stack-down stress-low stress-medium stress-high stress-extreme stress-insane stress-all ai-report stress-ai-low stress-ai-medium stress-ai-high stress-ai-extreme stress-ai-insane stress-index ai-memory-backfill ai-memory-update ai-memory-validate ai-docs-verify openapi-check
 
 # Default target
 help:
@@ -77,7 +77,9 @@ help:
 	@echo "  make fmt                - 🎨 Format Go code"
 	@echo "  make fmt-frontend       - 🎨 Format frontend code (Biome)"
 	@echo "  make lint               - 🔍 Lint Go code"
-	@echo "  make lint-frontend      - 🔍 Lint frontend code (Biome)"
+	@echo "  make lint-frontend      - 🔍 Lint frontend code (Biome, check-only)"
+	@echo "  make lint-frontend-fix  - 🎨+🔍 Auto-fix frontend formatting/lint (Biome)"
+	@echo "  make check-frontend     - ✅ Frontend gate (frozen install + lint + type-check + tests + build)"
 	@echo "  make openapi-check      - 🔍 Verify frontend endpoints are covered by OpenAPI"
 	@echo "  make install            - 📦 Install frontend dependencies"
 	@echo ""
@@ -114,6 +116,8 @@ help:
 	@echo "$(GREEN)Utilities:$(NC)"
 	@echo "  make setup-local        - ⚙️  Bootstrap local env + frontend/backend deps"
 	@echo "  make bootstrap          - ⚙️  Alias for setup-local"
+	@echo "  make install-githooks   - 🪝 Configure repo-managed git hooks"
+	@echo "  make verify-githooks    - 🪝 Verify hooks are configured (core.hooksPath=.githooks)"
 	@echo "  make env                - ⚙️  Initialize .env file"
 	@echo "  make restart            - 🔄 Restart all services"
 	@echo "  make clean              - 🧹 Clean containers, volumes, and artifacts"
@@ -135,7 +139,7 @@ help:
 	@echo ""
 
 # Development targets (make dev = fast start with hot reload; make dev-build = full rebuild)
-setup-local: env install deps-install-backend-local
+setup-local: env install deps-install-backend-local install-githooks
 	@echo "$(GREEN)✓ Local bootstrap complete. Next step: make dev$(NC)"
 
 bootstrap: setup-local
@@ -296,13 +300,27 @@ fmt-frontend:
 
 lint-frontend:
 	@echo "$(BLUE)Linting frontend code with Biome...$(NC)"
-	cd frontend && $(BUN) --bun biome check --write src
+	cd frontend && $(BUN) --bun biome check src
 	@echo "$(GREEN)✓ Frontend linting passed$(NC)"
+
+lint-frontend-fix:
+	@echo "$(BLUE)Fixing frontend code with Biome...$(NC)"
+	cd frontend && $(BUN) --bun biome check --write src
+	@echo "$(GREEN)✓ Frontend lint/format fixes applied$(NC)"
 
 type-check-frontend:
 	@echo "$(BLUE)Type checking frontend code with tsc...$(NC)"
 	cd frontend && $(BUN) --bun tsc --noEmit
 	@echo "$(GREEN)✓ Frontend type checking passed$(NC)"
+
+check-frontend:
+	@echo "$(BLUE)Running frontend quality gate (frozen install + lint + type-check + tests + build)...$(NC)"
+	cd frontend && $(BUN) install --frozen-lockfile
+	@$(MAKE) lint-frontend
+	@$(MAKE) type-check-frontend
+	@$(MAKE) test-frontend
+	cd frontend && $(BUN) run build
+	@echo "$(GREEN)✓ Frontend quality gate passed$(NC)"
 
 # Frontend dependencies
 install:
@@ -665,6 +683,17 @@ install-githooks:
 	@chmod +x .githooks/* || true
 	@echo "$(GREEN)✓ Git hooks configured. Run 'make install-githooks' on each clone.$(NC)"
 
+verify-githooks:
+	@echo "$(BLUE)Verifying git hooks configuration...$(NC)"
+	@HOOKS_PATH="$$(git config --get core.hooksPath || true)"; \
+	if [ "$$HOOKS_PATH" != ".githooks" ]; then \
+		echo "$(RED)Git hooks are not configured for this repo.$(NC)"; \
+		echo "$(YELLOW)Expected: core.hooksPath=.githooks$(NC)"; \
+		echo "$(YELLOW)Fix: make install-githooks$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)✓ Git hooks are configured (core.hooksPath=.githooks)$(NC)"
+
 .PHONY: test-e2e test-e2e-up test-e2e-down
 test-e2e:
 	@echo "$(BLUE)Running E2E smoke tests...$(NC)"
@@ -697,7 +726,7 @@ test-e2e-container: build-playwright-image test-e2e-up
 		sanctum/playwright:local npx playwright test --grep @smoke --workers=2
 
 test-up:
-	$(DOCKER_COMPOSE) $(COMPOSE_FILES) up -d postgres_test redis
+	./scripts/compose.sh -f compose.yml -f compose.override.yml up -d --wait --wait-timeout 120 postgres_test redis
 
 test-down:
 	$(DOCKER_COMPOSE) $(COMPOSE_FILES) down

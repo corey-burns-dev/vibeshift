@@ -101,7 +101,9 @@ func (s *pollRepoStub) EnrichWithResults(ctx context.Context, poll *models.Poll,
 
 func noopPollRepo() *pollRepoStub {
 	return &pollRepoStub{
-		createFn:            func(_ context.Context, _ uint, _ string, _ []string) (*models.Poll, error) { return &models.Poll{}, nil },
+		createFn: func(_ context.Context, _ uint, _ string, _ []string) (*models.Poll, error) {
+			return &models.Poll{}, nil
+		},
 		voteFn:              func(_ context.Context, _, _, _ uint) error { return nil },
 		enrichWithResultsFn: func(_ context.Context, _ *models.Poll, _ uint) error { return nil },
 	}

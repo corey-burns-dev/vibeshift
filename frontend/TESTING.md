@@ -14,6 +14,13 @@ From the `frontend/` directory (or repo root via Make):
 | `bun run test:e2e`       | Run Playwright E2E tests            |
 | `bun run test:e2e:smoke` | Run only @smoke E2E tests           |
 | `make test-frontend`     | Run unit tests from repo root       |
+| `make check-frontend`    | Run full frontend pre-push gate     |
+
+Recommended before pushing:
+
+```bash
+make check-frontend
+```
 
 **Prerequisites for E2E:** Backend and frontend must be running, and Playwright browsers installed (`bun run test:e2e:install` for local/browser-only install, or `bun run test:e2e:install:system` when OS deps must also be installed).
 
@@ -96,5 +103,5 @@ await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
 ## CI
 
-- Run `make test-frontend` for unit tests.
+- Run `make check-frontend` for the frontend quality gate (frozen install, lint, type-check, tests, build).
 - E2E typically runs in CI with backend and frontend started; ensure global setup can reach the API and DB (e.g. for admin promotion).

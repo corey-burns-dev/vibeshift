@@ -1,29 +1,20 @@
 #!/bin/sh
 set -e
 
-# Pre-push hook: ensure frontend lockfile, all tests, and backend quality checks
-# This prevents pushes that would pass local non-frozen installs but fail CI.
+# Pre-push hook: run frontend quality gate + backend tests.
+# This keeps local checks aligned with CI and catches failures before push.
 
 echo "🚀 Running pre-push quality checks..."
 
 if [ -d frontend ]; then
   if command -v bun >/dev/null 2>&1; then
-	echo "Checking frontend lockfile with 'bun install --frozen-lockfile'..."
-	cd frontend
-	if ! bun install --frozen-lockfile >/dev/null 2>&1; then
-	  printf "\nERROR: frontend lockfile is out of sync with package.json.\n"
-	  printf "Run 'cd frontend && bun install' and commit the updated lockfile, or fix package.json.\n"
-	  exit 1
-	fi
-	cd - >/dev/null 2>&1 || true
-
-	echo "Running frontend unit tests..."
-	if ! make test-frontend; then
-	  printf "\nERROR: Frontend unit tests failed. Fix tests before pushing.\n"
-	  exit 1
+	echo "Running frontend quality gate..."
+	if ! make check-frontend; then
+		printf "\nERROR: Frontend quality gate failed. Fix issues before pushing.\n"
+		exit 1
 	fi
   else
-	echo "bun not found; skipping frontend lockfile and test checks"
+	echo "bun not found; skipping frontend quality checks"
   fi
 fi
 

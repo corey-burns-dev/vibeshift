@@ -31,7 +31,7 @@ import (
 
 const (
 	// DefaultImageUploadDir is the default directory for uploaded images.
-	DefaultImageUploadDir       = "/tmp/sanctum/uploads/images"
+	DefaultImageUploadDir = "/tmp/sanctum/uploads/images"
 	// DefaultImageMaxUploadSizeMB is the default max upload size in MB.
 	DefaultImageMaxUploadSizeMB = 10
 	// MasterMaxSize is the max dimension in px for the master image.
@@ -61,7 +61,7 @@ var allowedRatios = []struct {
 }{
 	{name: "landscape", ratio: 1.91},
 	{name: "square", ratio: 1.0},
-	{name: "portrait", 	ratio: 0.8},
+	{name: "portrait", ratio: 0.8},
 }
 
 // UploadImageInput is the input for uploading an image.

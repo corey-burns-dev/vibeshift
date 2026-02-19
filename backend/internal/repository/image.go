@@ -13,7 +13,7 @@ import (
 
 const (
 	// ImageStatusQueued is the status for an image awaiting processing.
-	ImageStatusQueued     = "queued"
+	ImageStatusQueued = "queued"
 	// ImageStatusProcessing is the status for an image being processed.
 	ImageStatusProcessing = "processing"
 	// ImageStatusReady is the status for a processed image ready to serve.

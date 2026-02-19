@@ -37,6 +37,13 @@ class MockSocket {
   triggerOpen() {
     this.readyState = 1
     this.onopen?.(new Event('open'))
+    // useManagedWebSocket expects a server "connected" handshake message.
+    // Emit it in tests to avoid timeout-driven reconnect updates.
+    this.onmessage?.(
+      new MessageEvent('message', {
+        data: JSON.stringify({ type: 'connected' }),
+      })
+    )
   }
 }
 

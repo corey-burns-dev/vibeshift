@@ -42,7 +42,7 @@ Sanctum is a Reddit-style social platform focused on creativity, hobbies, and sh
    make setup-local
    ```
 
-   This creates `.env`/`config.yml` as needed, installs frontend dependencies, and primes backend Go modules in Docker.
+   This creates `.env`/`config.yml` as needed, installs frontend dependencies, primes backend Go modules in Docker, and configures repo-managed git hooks (`core.hooksPath=.githooks`).
 
 3. **Start the full stack:**
 
@@ -190,12 +190,16 @@ make seed
 - `make fmt` — Format Go code
 - `make lint` — Lint Go code
 - `make fmt-frontend` — Format frontend code (Biome)
-- `make lint-frontend` — Lint frontend code (Biome)
+- `make lint-frontend` — Lint frontend code (Biome, check-only)
+- `make lint-frontend-fix` — Auto-fix frontend lint/format issues (Biome)
+- `make check-frontend` — Frontend quality gate (frozen install + lint + type-check + tests + build)
 - `make install` — Install frontend dependencies
 
 ### Utilities
 
 - `make setup-local` — Bootstrap local env + frontend/backend dependencies
+- `make install-githooks` — Configure repo-managed git hooks
+- `make verify-githooks` — Verify `core.hooksPath=.githooks`
 - `make env` — Initialize .env file
 - `make config-sanity` — Validate config/env safety defaults
 - `make versions-check` — Verify Docker/Compose versions match catalog

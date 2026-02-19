@@ -37,8 +37,8 @@ fi
 
 # --- 3. Frontend Quality ---
 echo "🎨 Formatting and 🔍 Linting frontend code (Biome)..."
-# Now uses --write as updated in Makefile
-make lint-frontend
+# Auto-fix frontend formatting/lint issues when safe.
+make lint-frontend-fix
 if [ $? -ne 0 ]; then
     echo "❌ Frontend quality checks failed."
     exit 1

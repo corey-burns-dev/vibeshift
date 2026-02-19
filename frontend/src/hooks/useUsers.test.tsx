@@ -1,5 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query'
-import { renderHook, waitFor } from '@testing-library/react'
+import { cleanup, renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import {
   afterEach,
@@ -71,6 +71,7 @@ describe('useUsers hooks', () => {
   })
 
   afterEach(() => {
+    cleanup()
     localStorage.removeItem('user')
     localStorage.removeItem('token')
     useAuthSessionStore.getState().clear()
