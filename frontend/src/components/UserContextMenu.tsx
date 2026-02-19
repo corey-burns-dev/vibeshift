@@ -112,7 +112,9 @@ export function UserContextMenu({
             >
               <Ban className='mr-2 h-4 w-4' />
               <span>
-                {moderationActions.isBanned ? 'Unban from Room' : 'Ban from Room'}
+                {moderationActions.isBanned
+                  ? 'Unban from Room'
+                  : 'Ban from Room'}
               </span>
             </ContextMenuItem>
             <ContextMenuSeparator />

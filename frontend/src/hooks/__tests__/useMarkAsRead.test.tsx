@@ -47,7 +47,7 @@ describe('useMarkAsRead', () => {
         | Array<{ id: number; unread_count: number }>
         | undefined) ?? []
 
-    expect(single!.unread_count).toBe(0)
-    expect(list.find(c => c.id === 11)!.unread_count).toBe(0)
+    expect(single?.unread_count).toBe(0)
+    expect(list.find(c => c.id === 11)?.unread_count).toBe(0)
   })
 })

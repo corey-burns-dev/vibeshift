@@ -12,10 +12,14 @@ import (
 )
 
 const (
+	// ImageStatusQueued is the status for an image awaiting processing.
 	ImageStatusQueued     = "queued"
+	// ImageStatusProcessing is the status for an image being processed.
 	ImageStatusProcessing = "processing"
-	ImageStatusReady      = "ready"
-	ImageStatusFailed     = "failed"
+	// ImageStatusReady is the status for a processed image ready to serve.
+	ImageStatusReady = "ready"
+	// ImageStatusFailed is the status for a failed image processing.
+	ImageStatusFailed = "failed"
 )
 
 // ImageRepository defines storage operations for uploaded images.

@@ -1,3 +1,4 @@
+// Package service provides application business logic (chat, posts, users, etc.).
 package service
 
 import (
@@ -15,6 +16,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// ChatService provides chat and conversation business logic.
 type ChatService struct {
 	chatRepo            repository.ChatRepository
 	userRepo            repository.UserRepository
@@ -23,6 +25,7 @@ type ChatService struct {
 	canModerateChatroom func(ctx context.Context, userID, roomID uint) (bool, error)
 }
 
+// CreateConversationInput is the input for creating a conversation.
 type CreateConversationInput struct {
 	UserID         uint
 	Name           string
@@ -30,6 +33,7 @@ type CreateConversationInput struct {
 	ParticipantIDs []uint
 }
 
+// SendMessageInput is the input for sending a message.
 type SendMessageInput struct {
 	UserID         uint
 	ConversationID uint
@@ -38,6 +42,7 @@ type SendMessageInput struct {
 	Metadata       json.RawMessage
 }
 
+// NewChatService returns a new ChatService.
 func NewChatService(
 	chatRepo repository.ChatRepository,
 	userRepo repository.UserRepository,
@@ -54,11 +59,13 @@ func NewChatService(
 	}
 }
 
+// ChatroomWithJoined pairs a conversation with joined status.
 type ChatroomWithJoined struct {
 	Conversation *models.Conversation
 	IsJoined     bool
 }
 
+// CreateConversation creates a new conversation (DM or group).
 func (s *ChatService) CreateConversation(ctx context.Context, in CreateConversationInput) (*models.Conversation, error) {
 	if in.IsGroup && in.Name == "" {
 		return nil, models.NewValidationError("Group conversations require a name")
@@ -130,10 +137,12 @@ func (s *ChatService) CreateConversation(ctx context.Context, in CreateConversat
 	return s.chatRepo.GetConversation(ctx, conv.ID)
 }
 
+// GetConversations returns conversations for the user.
 func (s *ChatService) GetConversations(ctx context.Context, userID uint) ([]*models.Conversation, error) {
 	return s.chatRepo.GetUserConversations(ctx, userID)
 }
 
+// GetConversationForUser returns the conversation if the user is a participant.
 func (s *ChatService) GetConversationForUser(ctx context.Context, convID, userID uint) (*models.Conversation, error) {
 	conv, err := s.chatRepo.GetConversation(ctx, convID)
 	if err != nil {
@@ -147,6 +156,7 @@ func (s *ChatService) GetConversationForUser(ctx context.Context, convID, userID
 
 const maxMessageContentLen = 10000 // 10K characters
 
+// SendMessage sends a message in a conversation.
 func (s *ChatService) SendMessage(ctx context.Context, in SendMessageInput) (*models.Message, *models.Conversation, error) {
 	if in.Content == "" {
 		return nil, nil, models.NewValidationError("Message content is required")
@@ -217,6 +227,7 @@ func (s *ChatService) SendMessage(ctx context.Context, in SendMessageInput) (*mo
 	return message, conv, nil
 }
 
+// GetMessagesForUser returns messages for a conversation (participant check applied).
 func (s *ChatService) GetMessagesForUser(ctx context.Context, convID, userID uint, limit, offset int) ([]*models.Message, error) {
 	conv, err := s.chatRepo.GetConversation(ctx, convID)
 	if err != nil {
@@ -246,6 +257,7 @@ func (s *ChatService) GetMessagesForUser(ctx context.Context, convID, userID uin
 	return filtered, nil
 }
 
+// AddParticipant adds a participant to a group conversation.
 func (s *ChatService) AddParticipant(ctx context.Context, convID, actorUserID, participantUserID uint) error {
 	conv, err := s.chatRepo.GetConversation(ctx, convID)
 	if err != nil {
@@ -260,6 +272,7 @@ func (s *ChatService) AddParticipant(ctx context.Context, convID, actorUserID, p
 	return s.chatRepo.AddParticipant(ctx, convID, participantUserID)
 }
 
+// LeaveConversation removes the user from the conversation.
 func (s *ChatService) LeaveConversation(ctx context.Context, convID, userID uint) (*models.Conversation, error) {
 	conv, err := s.chatRepo.GetConversation(ctx, convID)
 	if err != nil {
@@ -274,6 +287,7 @@ func (s *ChatService) LeaveConversation(ctx context.Context, convID, userID uint
 	return conv, nil
 }
 
+// GetAllChatrooms returns all group chatrooms with joined status for the user.
 func (s *ChatService) GetAllChatrooms(ctx context.Context, userID uint) ([]ChatroomWithJoined, error) {
 	var chatrooms []*models.Conversation
 	key := cache.ChatroomsAllKeyWithVersion(ctx)
@@ -311,6 +325,7 @@ func (s *ChatService) GetAllChatrooms(ctx context.Context, userID uint) ([]Chatr
 	return result, nil
 }
 
+// GetJoinedChatrooms returns group chatrooms the user has joined.
 func (s *ChatService) GetJoinedChatrooms(ctx context.Context, userID uint) ([]*models.Conversation, error) {
 	var chatrooms []*models.Conversation
 	err := s.db.WithContext(ctx).
@@ -329,6 +344,7 @@ func (s *ChatService) GetJoinedChatrooms(ctx context.Context, userID uint) ([]*m
 	return chatrooms, nil
 }
 
+// JoinChatroom adds the user to a group chatroom.
 func (s *ChatService) JoinChatroom(ctx context.Context, roomID, userID uint) (*models.Conversation, error) {
 	var conv models.Conversation
 	if err := s.db.WithContext(ctx).First(&conv, roomID).Error; err != nil {
@@ -361,6 +377,7 @@ func (s *ChatService) JoinChatroom(ctx context.Context, roomID, userID uint) (*m
 	return &conv, nil
 }
 
+// RemoveParticipant removes a participant from a group chatroom (moderator or self).
 func (s *ChatService) RemoveParticipant(ctx context.Context, roomID, actorUserID, participantUserID uint) (string, error) {
 	var conv models.Conversation
 	if err := s.db.WithContext(ctx).First(&conv, roomID).Error; err != nil {

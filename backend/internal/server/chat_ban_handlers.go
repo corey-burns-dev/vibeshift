@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// ListChatroomBans returns the list of banned users for a chatroom.
 func (s *Server) ListChatroomBans(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	actorUserID := c.Locals("userID").(uint)
@@ -40,6 +41,7 @@ func (s *Server) ListChatroomBans(c *fiber.Ctx) error {
 	return c.JSON(bans)
 }
 
+// AddChatroomBan bans a user from a chatroom.
 func (s *Server) AddChatroomBan(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	actorUserID := c.Locals("userID").(uint)
@@ -101,6 +103,7 @@ func (s *Server) AddChatroomBan(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "User banned from chatroom"})
 }
 
+// RemoveChatroomBan removes a user's ban from a chatroom.
 func (s *Server) RemoveChatroomBan(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	actorUserID := c.Locals("userID").(uint)

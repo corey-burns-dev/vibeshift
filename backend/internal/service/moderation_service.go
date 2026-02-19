@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"time"
 
 	"sanctum/internal/models"
@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// BanRequestRow is a row for admin ban-request listing.
 type BanRequestRow struct {
 	ReportedUserID uint        `json:"reported_user_id"`
 	ReportCount    int64       `json:"report_count"`
@@ -17,6 +18,7 @@ type BanRequestRow struct {
 	User           models.User `json:"user"`
 }
 
+// AdminUserDetail aggregates user and moderation data for admin views.
 type AdminUserDetail struct {
 	User           models.User               `json:"user"`
 	Reports        []models.ModerationReport `json:"reports"`
@@ -26,14 +28,17 @@ type AdminUserDetail struct {
 	Warnings       []string                  `json:"warnings,omitempty"`
 }
 
+// ModerationService provides admin moderation and reporting logic.
 type ModerationService struct {
 	db *gorm.DB
 }
 
+// NewModerationService returns a new ModerationService.
 func NewModerationService(db *gorm.DB) *ModerationService {
 	return &ModerationService{db: db}
 }
 
+// GetAdminBanRequests returns aggregated ban-request rows for admin.
 func (s *ModerationService) GetAdminBanRequests(ctx context.Context, limit, offset int) ([]BanRequestRow, error) {
 	type RawRow struct {
 		ReportedUserID uint      `json:"reported_user_id"`
@@ -82,6 +87,7 @@ func (s *ModerationService) GetAdminBanRequests(ctx context.Context, limit, offs
 	return resp, nil
 }
 
+// GetAdminUserDetail returns detailed user and moderation data for admin.
 func (s *ModerationService) GetAdminUserDetail(ctx context.Context, userID uint) (*AdminUserDetail, error) {
 	var user models.User
 	if err := s.db.WithContext(ctx).First(&user, userID).Error; err != nil {
@@ -98,7 +104,7 @@ func (s *ModerationService) GetAdminUserDetail(ctx context.Context, userID uint)
 		Order("created_at DESC").
 		Limit(200).
 		Find(&detail.Reports).Error; err != nil {
-		log.Printf("[ModerationService] Warning: Failed to load reports for user %d: %v", userID, err)
+		slog.WarnContext(ctx, "failed to load reports for user", "user_id", userID, "err", err)
 		detail.Warnings = append(detail.Warnings, "Partial data: Moderation reports could not be loaded.")
 	}
 
@@ -107,7 +113,7 @@ func (s *ModerationService) GetAdminUserDetail(ctx context.Context, userID uint)
 		Where("user_id = ?", userID).
 		Order("created_at DESC").
 		Find(&detail.ActiveMutes).Error; err != nil {
-		log.Printf("[ModerationService] Warning: Failed to load active mutes for user %d: %v", userID, err)
+		slog.WarnContext(ctx, "failed to load active mutes for user", "user_id", userID, "err", err)
 		detail.Warnings = append(detail.Warnings, "Partial data: Active mutes could not be loaded.")
 	}
 
@@ -117,7 +123,7 @@ func (s *ModerationService) GetAdminUserDetail(ctx context.Context, userID uint)
 		Order("created_at DESC").
 		Limit(200).
 		Find(&detail.BlocksGiven).Error; err != nil {
-		log.Printf("[ModerationService] Warning: Failed to load blocks given for user %d: %v", userID, err)
+		slog.WarnContext(ctx, "failed to load blocks given for user", "user_id", userID, "err", err)
 		detail.Warnings = append(detail.Warnings, "Partial data: Outgoing blocks could not be loaded.")
 	}
 
@@ -127,7 +133,7 @@ func (s *ModerationService) GetAdminUserDetail(ctx context.Context, userID uint)
 		Order("created_at DESC").
 		Limit(200).
 		Find(&detail.BlocksReceived).Error; err != nil {
-		log.Printf("[ModerationService] Warning: Failed to load blocks received for user %d: %v", userID, err)
+		slog.WarnContext(ctx, "failed to load blocks received for user", "user_id", userID, "err", err)
 		detail.Warnings = append(detail.Warnings, "Partial data: Incoming blocks could not be loaded.")
 	}
 

@@ -1,3 +1,4 @@
+// Package main provides a CLI to inspect database schema.
 package main
 
 import (

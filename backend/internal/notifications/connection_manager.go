@@ -101,6 +101,7 @@ func NewConnectionManager(rdb *redis.Client, cfg ConnectionManagerConfig) *Conne
 	return m
 }
 
+// SetCallbacks registers callbacks invoked when a user is considered online or offline.
 func (m *ConnectionManager) SetCallbacks(onOnline, onOffline func(userID uint)) {
 	m.mu.Lock()
 	m.onUserOnline = onOnline
@@ -119,6 +120,7 @@ func (m *ConnectionManager) AddListener(onOnline, onOffline func(userID uint)) {
 	m.mu.Unlock()
 }
 
+// SetOfflineGracePeriod sets the delay before a user is marked offline after disconnect.
 func (m *ConnectionManager) SetOfflineGracePeriod(d time.Duration) {
 	if d <= 0 {
 		return
@@ -128,6 +130,7 @@ func (m *ConnectionManager) SetOfflineGracePeriod(d time.Duration) {
 	m.mu.Unlock()
 }
 
+// SetReaperInterval sets the interval at which the reaper runs to clean stale presence.
 func (m *ConnectionManager) SetReaperInterval(d time.Duration) {
 	if d <= 0 {
 		return
@@ -137,6 +140,7 @@ func (m *ConnectionManager) SetReaperInterval(d time.Duration) {
 	m.mu.Unlock()
 }
 
+// Stop shuts down the connection manager and stops the reaper.
 func (m *ConnectionManager) Stop() {
 	m.stopOnce.Do(func() {
 		close(m.stopCh)
@@ -151,6 +155,7 @@ func (m *ConnectionManager) Stop() {
 	})
 }
 
+// Register records a new connection for the user and updates presence.
 func (m *ConnectionManager) Register(ctx context.Context, userID uint) {
 	wasOnline := m.IsOnline(ctx, userID)
 
@@ -169,6 +174,7 @@ func (m *ConnectionManager) Register(ctx context.Context, userID uint) {
 	}
 }
 
+// Touch updates the last-seen timestamp for the user in the presence store.
 func (m *ConnectionManager) Touch(ctx context.Context, userID uint) {
 	if m.rdb == nil {
 		return
@@ -182,6 +188,7 @@ func (m *ConnectionManager) Touch(ctx context.Context, userID uint) {
 	}
 }
 
+// Unregister removes one connection for the user; after grace period the user is marked offline.
 func (m *ConnectionManager) Unregister(_ context.Context, userID uint) {
 	m.mu.Lock()
 	if n, ok := m.localConnCounts[userID]; ok {
@@ -204,6 +211,7 @@ func (m *ConnectionManager) Unregister(_ context.Context, userID uint) {
 	m.mu.Unlock()
 }
 
+// IsOnline returns whether the user has at least one registered connection or is in the presence set.
 func (m *ConnectionManager) IsOnline(ctx context.Context, userID uint) bool {
 	m.mu.RLock()
 	if m.localConnCounts[userID] > 0 {

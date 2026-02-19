@@ -69,7 +69,7 @@ func TestHub_ReaperRemovesStalePresence(t *testing.T) {
 	defer mr.Close()
 
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	defer rdb.Close()
+	defer func() { _ = rdb.Close() }()
 
 	hub := NewHub(rdb)
 

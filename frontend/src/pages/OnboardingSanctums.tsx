@@ -94,7 +94,8 @@ export default function OnboardingSanctums() {
             Choose your Sanctums
           </h1>
           <p className='text-sm text-muted-foreground'>
-            Select sanctums you want to follow. You can skip and use the main feed.
+            Select sanctums you want to follow. You can skip and use the main
+            feed.
           </p>
         </div>
 

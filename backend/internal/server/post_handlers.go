@@ -17,7 +17,7 @@ func (s *Server) SearchPosts(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	q := c.Query("q")
 	page := parsePagination(c, 10)
-	userID, _ := s.optionalUserID(c)
+	userID := s.optionalUserID(c)
 
 	posts, err := s.postSvc().SearchPosts(ctx, q, page.Limit, page.Offset, userID)
 	if err != nil {
@@ -85,7 +85,7 @@ func (s *Server) CreatePost(c *fiber.Ctx) error {
 func (s *Server) GetPosts(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	page := parsePagination(c, 20)
-	userID, _ := s.optionalUserID(c)
+	userID := s.optionalUserID(c)
 
 	var sanctumID *uint
 	sanctumIDStr := c.Query("sanctum_id")
@@ -117,7 +117,7 @@ func (s *Server) GetPost(c *fiber.Ctx) error {
 	if err != nil {
 		return nil
 	}
-	userID, _ := s.optionalUserID(c)
+	userID := s.optionalUserID(c)
 
 	post, err := s.postSvc().GetPost(ctx, id, userID)
 	if err != nil {
@@ -136,7 +136,7 @@ func (s *Server) GetUserPosts(c *fiber.Ctx) error {
 	}
 
 	page := parsePagination(c, 20)
-	currentUserID, _ := s.optionalUserID(c)
+	currentUserID := s.optionalUserID(c)
 
 	posts, err := s.postSvc().GetUserPosts(ctx, userIDParam, page.Limit, page.Offset, currentUserID)
 	if err != nil {

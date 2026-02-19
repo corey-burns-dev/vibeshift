@@ -234,7 +234,7 @@ func TestChatHub_ReaperRemovesStalePresenceAndBroadcastsOffline(t *testing.T) {
 	defer mr.Close()
 
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	defer rdb.Close()
+	defer func() { _ = rdb.Close() }()
 
 	hub := NewChatHub(rdb)
 	hub.presence.SetOfflineGracePeriod(20 * time.Millisecond)

@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// ListChatroomMutes returns the list of muted users for a chatroom.
 func (s *Server) ListChatroomMutes(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	actorUserID := c.Locals("userID").(uint)
@@ -39,6 +40,7 @@ func (s *Server) ListChatroomMutes(c *fiber.Ctx) error {
 	return c.JSON(mutes)
 }
 
+// MuteChatroomUser mutes a user in a chatroom.
 func (s *Server) MuteChatroomUser(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	actorUserID := c.Locals("userID").(uint)
@@ -99,6 +101,7 @@ func (s *Server) MuteChatroomUser(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "User muted"})
 }
 
+// UnmuteChatroomUser removes a user's mute in a chatroom.
 func (s *Server) UnmuteChatroomUser(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	actorUserID := c.Locals("userID").(uint)

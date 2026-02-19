@@ -1,3 +1,4 @@
+// Package middleware provides HTTP middleware for the Fiber application.
 package middleware
 
 import (

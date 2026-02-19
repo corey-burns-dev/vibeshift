@@ -38,7 +38,9 @@ export function BottomBar() {
       <div className='mx-auto max-w-lg rounded-2xl border border-border/70 bg-background/78 p-2 shadow-xl backdrop-blur-xl'>
         <div
           className='grid gap-1'
-          style={{ gridTemplateColumns: `repeat(${mobileNav.length + 1}, 1fr)` }}
+          style={{
+            gridTemplateColumns: `repeat(${mobileNav.length + 1}, 1fr)`,
+          }}
         >
           {mobileNav.map(item => {
             const active = isRouteActive(location.pathname, item.path)

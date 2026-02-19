@@ -125,9 +125,13 @@ export default function SanctumDetail() {
             </div>
 
             <section className='mt-5 rounded-xl border border-border/60 bg-background/50 p-4'>
-              <h2 className='font-semibold'>Posts in {sanctumQuery.data.name}</h2>
+              <h2 className='font-semibold'>
+                Posts in {sanctumQuery.data.name}
+              </h2>
               {sanctumPostsLoading ? (
-                <p className='mt-2 text-sm text-muted-foreground'>Loading posts...</p>
+                <p className='mt-2 text-sm text-muted-foreground'>
+                  Loading posts...
+                </p>
               ) : sanctumPostsError ? (
                 <p className='mt-2 text-sm text-destructive'>
                   Failed to load posts for this sanctum.

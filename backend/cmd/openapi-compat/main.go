@@ -1,3 +1,4 @@
+// Package main provides a CLI to check OpenAPI compatibility with the frontend.
 package main
 
 import (

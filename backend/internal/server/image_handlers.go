@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// ImageUploadResponse is the API response after uploading an image.
 type ImageUploadResponse struct {
 	ID        uint              `json:"id"`
 	Hash      string            `json:"hash"`
@@ -24,6 +25,7 @@ type ImageUploadResponse struct {
 	Variants  map[string]string `json:"variants"`
 }
 
+// ImageStatusResponse is the API response for image status/polling.
 type ImageStatusResponse struct {
 	Status   string            `json:"status"`
 	CropMode string            `json:"crop_mode"`

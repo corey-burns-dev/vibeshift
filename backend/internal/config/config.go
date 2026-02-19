@@ -12,7 +12,7 @@ import (
 
 // Config holds application configuration values loaded from file or environment variables.
 type Config struct {
-	JWTSecret                     string  `mapstructure:"JWT_SECRET"`
+	JWTSecret                     string  `mapstructure:"JWT_SECRET"` // #nosec G117 -- config struct must map env var name
 	Port                          string  `mapstructure:"PORT"`
 	DBHost                        string  `mapstructure:"DB_HOST"`
 	DBPort                        string  `mapstructure:"DB_PORT"`

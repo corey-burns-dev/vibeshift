@@ -1,3 +1,4 @@
+// Package bootstrap provides application runtime bootstrap (DB, cache, seed).
 package bootstrap
 
 import (

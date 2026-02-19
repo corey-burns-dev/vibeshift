@@ -34,7 +34,7 @@ func (s *Server) Signup(c *fiber.Ctx) error {
 	var req struct {
 		Username string `json:"username"`
 		Email    string `json:"email"`
-		Password string `json:"password"`
+		Password string `json:"password"` // #nosec G117 -- API request body field for login/signup
 	}
 	// Manually inspect raw body so we can reliably distinguish an empty body
 	// from malformed JSON when Content-Type: application/json is present.
@@ -152,7 +152,7 @@ func (s *Server) setRefreshTokenCookie(c *fiber.Ctx, token string) {
 func (s *Server) Login(c *fiber.Ctx) error {
 	var req struct {
 		Email    string `json:"email"`
-		Password string `json:"password"`
+		Password string `json:"password"` // #nosec G117 -- API request body field
 	}
 	if err := c.BodyParser(&req); err != nil {
 		// Mirror Refresh behavior: ignore parse error when the body is empty.
@@ -217,7 +217,7 @@ func (s *Server) Login(c *fiber.Ctx) error {
 // @Router /auth/refresh [post]
 func (s *Server) Refresh(c *fiber.Ctx) error {
 	var req struct {
-		RefreshToken string `json:"refresh_token"`
+		RefreshToken string `json:"refresh_token"` // #nosec G117 -- API request body field
 	}
 	if err := c.BodyParser(&req); err != nil {
 		// Only ignore parse error when the body is empty (Content-Length 0 or missing).
@@ -347,7 +347,7 @@ func (s *Server) Refresh(c *fiber.Ctx) error {
 // @Router /auth/logout [post]
 func (s *Server) Logout(c *fiber.Ctx) error {
 	var req struct {
-		RefreshToken string `json:"refresh_token"`
+		RefreshToken string `json:"refresh_token"` // #nosec G117 -- API request body field
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return models.RespondWithError(c, fiber.StatusBadRequest,

@@ -10,19 +10,16 @@ import (
 )
 
 var (
-	// Time allowed to write a message to the peer.
-	// Reduced to detect write failures faster on abnormal disconnects.
+	// WriteWait is the time allowed to write a message to the peer (reduced to detect write failures faster on abnormal disconnects).
 	WriteWait = 3 * time.Second
 
-	// Time allowed to read the next pong message from the peer.
-	// Shortened to target ~10s offline detection while avoiding flapping.
+	// PongWait is the time allowed to read the next pong message from the peer (shortened to target ~10s offline detection).
 	PongWait = 10 * time.Second
 
-	// Send pings to peer with this period. Must be less than PongWait.
-	// Use a relatively frequent ping so the server detects dead peers quickly.
+	// PingPeriod is the period for sending pings to the peer; must be less than PongWait.
 	PingPeriod = 3 * time.Second
 
-	// Maximum message size allowed from peer.
+	// MaxMessageSize is the maximum message size allowed from the peer.
 	MaxMessageSize = 16384
 )
 

@@ -7,10 +7,12 @@ import (
 	"sanctum/internal/repository"
 )
 
+// UserService provides user and profile business logic.
 type UserService struct {
 	userRepo repository.UserRepository
 }
 
+// UpdateProfileInput is the input for updating a user profile.
 type UpdateProfileInput struct {
 	UserID   uint
 	Username string
@@ -18,18 +20,22 @@ type UpdateProfileInput struct {
 	Avatar   string
 }
 
+// NewUserService returns a new UserService.
 func NewUserService(userRepo repository.UserRepository) *UserService {
 	return &UserService{userRepo: userRepo}
 }
 
+// ListUsers returns a paginated list of users.
 func (s *UserService) ListUsers(ctx context.Context, limit, offset int) ([]models.User, error) {
 	return s.userRepo.List(ctx, limit, offset)
 }
 
+// GetUserByID returns a user by ID.
 func (s *UserService) GetUserByID(ctx context.Context, id uint) (*models.User, error) {
 	return s.userRepo.GetByID(ctx, id)
 }
 
+// UpdateProfile updates the user profile (username, bio, avatar).
 func (s *UserService) UpdateProfile(ctx context.Context, in UpdateProfileInput) (*models.User, error) {
 	user, err := s.userRepo.GetByID(ctx, in.UserID)
 	if err != nil {
@@ -62,6 +68,7 @@ func (s *UserService) UpdateProfile(ctx context.Context, in UpdateProfileInput) 
 	return user, nil
 }
 
+// SetAdmin sets or unsets the admin flag for a user.
 func (s *UserService) SetAdmin(ctx context.Context, targetID uint, isAdmin bool) (*models.User, error) {
 	user, err := s.userRepo.GetByID(ctx, targetID)
 	if err != nil {

@@ -14,12 +14,14 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// MessageReactionSummary is the API shape for reaction counts on a message.
 type MessageReactionSummary struct {
 	Emoji       string `json:"emoji"`
 	Count       int    `json:"count"`
 	ReactedByMe bool   `json:"reacted_by_me"`
 }
 
+// AddMessageReaction adds an emoji reaction to a message.
 func (s *Server) AddMessageReaction(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	userID := c.Locals("userID").(uint)
@@ -94,6 +96,7 @@ func (s *Server) AddMessageReaction(c *fiber.Ctx) error {
 	})
 }
 
+// RemoveMessageReaction removes an emoji reaction from a message.
 func (s *Server) RemoveMessageReaction(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	userID := c.Locals("userID").(uint)
@@ -150,6 +153,7 @@ func (s *Server) RemoveMessageReaction(c *fiber.Ctx) error {
 	})
 }
 
+// GetMyMentions returns mentions of the current user across messages.
 func (s *Server) GetMyMentions(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	userID := c.Locals("userID").(uint)

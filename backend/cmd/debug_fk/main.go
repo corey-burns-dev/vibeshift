@@ -1,3 +1,4 @@
+// Package main provides a CLI to debug foreign key constraints in the database.
 package main
 
 import (

@@ -30,18 +30,27 @@ import (
 )
 
 const (
+	// DefaultImageUploadDir is the default directory for uploaded images.
 	DefaultImageUploadDir       = "/tmp/sanctum/uploads/images"
+	// DefaultImageMaxUploadSizeMB is the default max upload size in MB.
 	DefaultImageMaxUploadSizeMB = 10
-	MasterMaxSize               = 2048
-	OriginalMaxSize             = MasterMaxSize
-	JPEGQuality                 = 82
-	WebPQuality                 = 70
+	// MasterMaxSize is the max dimension in px for the master image.
+	MasterMaxSize = 2048
+	// OriginalMaxSize is the size label for the original (same as MasterMaxSize).
+	OriginalMaxSize = MasterMaxSize
+	// JPEGQuality is the quality for JPEG encoding (0-100).
+	JPEGQuality = 82
+	// WebPQuality is the quality for WebP encoding (0-100).
+	WebPQuality = 70
 )
 
 const (
-	ImageSizeOriginal  = "original"
+	// ImageSizeOriginal is the size key for the original image.
+	ImageSizeOriginal = "original"
+	// ImageSizeThumbnail is the size key for the thumbnail variant.
 	ImageSizeThumbnail = "thumbnail"
-	ImageSizeMedium    = "medium"
+	// ImageSizeMedium is the size key for the medium variant.
+	ImageSizeMedium = "medium"
 )
 
 var sizeLadder = []int{256, 640, 1080, 1440, 2048}
@@ -52,9 +61,10 @@ var allowedRatios = []struct {
 }{
 	{name: "landscape", ratio: 1.91},
 	{name: "square", ratio: 1.0},
-	{name: "portrait", ratio: 0.8},
+	{name: "portrait", 	ratio: 0.8},
 }
 
+// UploadImageInput is the input for uploading an image.
 type UploadImageInput struct {
 	UserID      uint
 	Filename    string
@@ -62,6 +72,7 @@ type UploadImageInput struct {
 	Content     []byte
 }
 
+// ImageService handles image upload, processing, and URL building.
 type ImageService struct {
 	repo               repository.ImageRepository
 	uploadDir          string
@@ -69,6 +80,7 @@ type ImageService struct {
 	workerOnce         sync.Once
 }
 
+// NewImageService returns a new ImageService.
 func NewImageService(repo repository.ImageRepository, cfg *config.Config) *ImageService {
 	uploadDir := DefaultImageUploadDir
 	maxUploadSizeMB := DefaultImageMaxUploadSizeMB
@@ -89,6 +101,7 @@ func NewImageService(repo repository.ImageRepository, cfg *config.Config) *Image
 	}
 }
 
+// StartBackgroundWorker starts the background image processing worker.
 func (s *ImageService) StartBackgroundWorker(ctx context.Context) {
 	if s.repo == nil {
 		return
@@ -98,6 +111,7 @@ func (s *ImageService) StartBackgroundWorker(ctx context.Context) {
 	})
 }
 
+// Upload processes and stores an uploaded image.
 func (s *ImageService) Upload(ctx context.Context, in UploadImageInput) (*models.Image, error) {
 	if in.UserID == 0 {
 		return nil, models.NewValidationError("Invalid user")
@@ -197,6 +211,7 @@ func (s *ImageService) Upload(ctx context.Context, in UploadImageInput) (*models
 	return record, nil
 }
 
+// GetByHashWithVariants returns an image by hash with variant URLs.
 func (s *ImageService) GetByHashWithVariants(ctx context.Context, hash string) (*models.Image, error) {
 	if strings.TrimSpace(hash) == "" {
 		return nil, models.NewValidationError("Invalid image hash")
@@ -214,14 +229,17 @@ func (s *ImageService) GetByHashWithVariants(ctx context.Context, hash string) (
 	return img, nil
 }
 
+// BuildMasterImageURL returns the URL path for the master image.
 func (s *ImageService) BuildMasterImageURL(hash string) string {
 	return fmt.Sprintf("/media/i/%s/master.jpg", hash)
 }
 
+// BuildVariantURL returns the URL path for a size/format variant.
 func (s *ImageService) BuildVariantURL(hash string, size int, format string) string {
 	return fmt.Sprintf("/media/i/%s/%d.%s", hash, size, format)
 }
 
+// BuildVariantsMap returns a map of variant key to URL.
 func (s *ImageService) BuildVariantsMap(hash string, variants []models.ImageVariant) map[string]string {
 	m := make(map[string]string, len(variants))
 	for _, v := range variants {
@@ -277,6 +295,7 @@ func (s *ImageService) ResolveForServing(_ context.Context, hash string, _ strin
 	return img, fullPath, nil
 }
 
+// UpdateLastAccessed records that the image was accessed (for cleanup policies).
 func (s *ImageService) UpdateLastAccessed(ctx context.Context, imageID uint) {
 	if s.repo == nil || imageID == 0 {
 		return
@@ -284,6 +303,7 @@ func (s *ImageService) UpdateLastAccessed(ctx context.Context, imageID uint) {
 	_ = s.repo.UpdateLastAccessed(ctx, imageID)
 }
 
+// NormalizeImageSize normalizes a size string to a known variant or original.
 func NormalizeImageSize(size string) string {
 	s := strings.ToLower(strings.TrimSpace(size))
 	switch s {
@@ -576,7 +596,7 @@ func writeBytesToFile(path string, data []byte) error {
 	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0o600)
+	return os.WriteFile(path, data, 0o600) // #nosec G703 -- path is validated and scoped to image output dir
 }
 
 func cleanupImageFiles(paths []string) {

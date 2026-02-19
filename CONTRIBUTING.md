@@ -3,8 +3,6 @@
 Thanks for your interest in contributing!  
 This document explains how development is done in this repository, even when working solo.
 
-The goal is to **mirror professional startup workflows** while remaining practical.
-
 ---
 
 ## 📐 Project Philosophy
@@ -19,15 +17,15 @@ The goal is to **mirror professional startup workflows** while remaining practic
 
 ## 🌿 Branching & Workflow
 
-### Protected `main`
+### Protected `master`
 
-- `main` is protected
+- `master` is protected
 - No direct pushes
 - All changes go through pull requests
 
 ### Standard Flow
 
-1. Create a branch from `main`
+1. Create a branch from `master`
 
    ```bash
    git checkout -b feat/<short-description>

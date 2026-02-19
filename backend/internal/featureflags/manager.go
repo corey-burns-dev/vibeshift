@@ -1,3 +1,4 @@
+// Package featureflags provides feature flag evaluation from config.
 package featureflags
 
 import (
