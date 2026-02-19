@@ -1,3 +1,4 @@
+// Package repository implements the data access layer for the application.
 package repository
 
 import (
@@ -12,6 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// UserRepository defines persistence operations for users.
 type UserRepository interface {
 	GetByID(ctx context.Context, id uint) (*models.User, error)
 	GetByIDWithPosts(ctx context.Context, id uint, limit int) (*models.User, error)
@@ -27,6 +29,7 @@ type userRepository struct {
 	db *gorm.DB
 }
 
+// NewUserRepository returns a new UserRepository implementation.
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
 }

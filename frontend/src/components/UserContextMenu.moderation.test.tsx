@@ -140,7 +140,9 @@ describe('UserContextMenu moderation actions', () => {
     )
 
     fireEvent.contextMenu(screen.getByRole('button', { name: 'Open Menu' }))
-    const connect4Item = screen.getByText('Connect 4 (Offline)').closest('[role="menuitem"]')
+    const connect4Item = screen
+      .getByText('Connect 4 (Offline)')
+      .closest('[role="menuitem"]')
     expect(connect4Item).toHaveAttribute('data-disabled')
   })
 })

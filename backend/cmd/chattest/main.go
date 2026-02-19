@@ -110,7 +110,7 @@ func login(host, email, password string) (string, error) {
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) // #nosec G704 -- chattest is a dev CLI that intentionally calls user-provided host
 	if err != nil {
 		return "", err
 	}
@@ -142,7 +142,7 @@ func getTicket(host, token string) (string, error) {
 	req.Header.Set("Authorization", "Bearer "+token)
 
 	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) // #nosec G704 -- chattest is a dev CLI that intentionally calls user-provided host
 	if err != nil {
 		return "", err
 	}
@@ -176,7 +176,7 @@ func authRequest(method, rawURL, token string, body io.Reader) (*http.Response, 
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	return (&http.Client{}).Do(req)
+	return (&http.Client{}).Do(req) // #nosec G704 -- chattest is a dev CLI that intentionally calls user-provided host
 }
 
 func ensureConversation(host, token string) (uint, error) {
@@ -194,8 +194,8 @@ func ensureConversation(host, token string) (uint, error) {
 	var joined []struct {
 		ID uint `json:"id"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&joined); err != nil {
-		return 0, err
+	if decodeErr := json.NewDecoder(resp.Body).Decode(&joined); decodeErr != nil {
+		return 0, decodeErr
 	}
 	if len(joined) > 0 {
 		return joined[0].ID, nil
@@ -214,8 +214,8 @@ func ensureConversation(host, token string) (uint, error) {
 	var allRooms []struct {
 		ID uint `json:"id"`
 	}
-	if err := json.NewDecoder(allResp.Body).Decode(&allRooms); err != nil {
-		return 0, err
+	if decodeErr := json.NewDecoder(allResp.Body).Decode(&allRooms); decodeErr != nil {
+		return 0, decodeErr
 	}
 	if len(allRooms) == 0 {
 		return 0, fmt.Errorf("no chatrooms available")

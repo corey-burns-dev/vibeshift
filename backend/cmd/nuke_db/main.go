@@ -1,3 +1,4 @@
+// Package main provides a CLI to reset the database (destructive).
 package main
 
 import (

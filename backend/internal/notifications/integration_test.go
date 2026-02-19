@@ -15,7 +15,7 @@ import (
 // Redis is unreachable.
 func TestReaperWithRedis(t *testing.T) {
 	rdb := redis.NewClient(&redis.Options{Addr: "127.0.0.1:6379"})
-	defer rdb.Close()
+	defer func() { _ = rdb.Close() }()
 
 	ctx := context.Background()
 	if err := rdb.Ping(ctx).Err(); err != nil {

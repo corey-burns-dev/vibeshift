@@ -13,17 +13,19 @@ interface Participant {
 interface ParticipantsListProps {
   participants: Record<number, Participant>
   onlineUserIds: Set<number>
-  getModerationActions?: (userId: number) => {
-    canModerate: boolean
-    canManageModerators: boolean
-    isMuted?: boolean
-    isBanned?: boolean
-    isModerator?: boolean
-    onKick?: () => void
-    onTimeout?: () => void
-    onToggleBan?: () => void
-    onToggleModerator?: () => void
-  } | undefined
+  getModerationActions?: (userId: number) =>
+    | {
+        canModerate: boolean
+        canManageModerators: boolean
+        isMuted?: boolean
+        isBanned?: boolean
+        isModerator?: boolean
+        onKick?: () => void
+        onTimeout?: () => void
+        onToggleBan?: () => void
+        onToggleModerator?: () => void
+      }
+    | undefined
 }
 
 export const ParticipantsList = memo(function ParticipantsList({

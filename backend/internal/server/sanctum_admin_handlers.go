@@ -13,6 +13,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// SanctumAdminDTO is the API shape for a sanctum admin/membership in admin endpoints.
 type SanctumAdminDTO struct {
 	UserID    uint                         `json:"user_id"`
 	Username  string                       `json:"username"`

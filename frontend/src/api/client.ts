@@ -9,8 +9,8 @@ import type {
   AuthResponse,
   BanUserRequest,
   BulkSanctumMembershipsInput,
-  ChatroomModerator,
   ChatroomBan,
+  ChatroomModerator,
   ChatroomMute,
   Comment,
   Conversation,
@@ -672,9 +672,12 @@ class ApiClient {
     chatroomId: number,
     participantId: number
   ): Promise<{ message: string }> {
-    return this.request(`/chatrooms/${chatroomId}/participants/${participantId}`, {
-      method: 'DELETE',
-    })
+    return this.request(
+      `/chatrooms/${chatroomId}/participants/${participantId}`,
+      {
+        method: 'DELETE',
+      }
+    )
   }
 
   async getChatroomModerators(

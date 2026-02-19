@@ -805,15 +805,15 @@ func (s *Server) cleanupConsumedTickets(ctx context.Context) {
 }
 
 // optionalUserID attempts to extract userID from Authorization header but does not enforce it.
-func (s *Server) optionalUserID(c *fiber.Ctx) (uint, bool) {
+func (s *Server) optionalUserID(c *fiber.Ctx) uint {
 	authHeader := c.Get("Authorization")
 	if authHeader == "" {
-		return 0, false
+		return 0
 	}
 
 	parts := strings.Split(authHeader, " ")
 	if len(parts) != 2 || parts[0] != "Bearer" {
-		return 0, false
+		return 0
 	}
 
 	tokenString := parts[1]
@@ -824,23 +824,23 @@ func (s *Server) optionalUserID(c *fiber.Ctx) (uint, bool) {
 		return []byte(s.config.JWTSecret), nil
 	})
 	if err != nil || !token.Valid {
-		return 0, false
+		return 0
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return 0, false
+		return 0
 	}
 
 	sub, ok := claims["sub"].(string)
 	if !ok {
-		return 0, false
+		return 0
 	}
 	userID, err := strconv.ParseUint(sub, 10, 32)
 	if err != nil {
-		return 0, false
+		return 0
 	}
-	return uint(userID), true
+	return uint(userID)
 }
 
 // Start starts the server

@@ -1,6 +1,7 @@
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { apiClient } from '@/api/client'
 import type { PostType } from '@/api/types'
 import { PostComposerEditor } from '@/components/posts/PostComposerEditor'
@@ -66,9 +67,15 @@ export default function CreatePost() {
     let uploadedImageURL: string | undefined
     if (postType === 'media' && imageFile) {
       setIsUploadingImage(true)
-      const uploaded = await apiClient.uploadImage(imageFile)
-      uploadedImageURL = normalizeImageURL(uploaded.url)
-      setIsUploadingImage(false)
+      try {
+        const uploaded = await apiClient.uploadImage(imageFile)
+        uploadedImageURL = normalizeImageURL(uploaded.url)
+      } catch (_err) {
+        toast.error('Image upload failed. Please try again.')
+        return
+      } finally {
+        setIsUploadingImage(false)
+      }
     }
 
     const resolvedTitle =
@@ -226,7 +233,7 @@ export default function CreatePost() {
               />
               {pollOptions.map((option, index) => (
                 <input
-                  key={`poll-option-${index}`}
+                  key={`poll-option-${index}-${option}`}
                   type='text'
                   value={option}
                   onChange={event =>
@@ -257,7 +264,9 @@ export default function CreatePost() {
             </Button>
             <Button
               onClick={onSubmit}
-              disabled={!canSubmit() || createPost.isPending || isUploadingImage}
+              disabled={
+                !canSubmit() || createPost.isPending || isUploadingImage
+              }
             >
               {createPost.isPending || isUploadingImage ? (
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />

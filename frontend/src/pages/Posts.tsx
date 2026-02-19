@@ -12,8 +12,8 @@ import {
   MessageCircle,
   Send,
   Type,
-  X,
   Video,
+  X,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -42,7 +42,6 @@ import {
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { useReportPost } from '@/hooks/useModeration'
-import { usePresenceStore } from '@/hooks/usePresence'
 // Hooks
 import {
   useCreatePost,
@@ -51,6 +50,7 @@ import {
   useLikePost,
   useMembershipFeedPosts,
 } from '@/hooks/usePosts'
+import { usePresenceStore } from '@/hooks/usePresence'
 import { useSanctums } from '@/hooks/useSanctums'
 import { getCurrentUser, useIsAuthenticated } from '@/hooks/useUsers'
 import { getAvatarUrl } from '@/lib/chat-utils'
@@ -361,7 +361,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
     () => new Map(sanctums.map(sanctum => [sanctum.id, sanctum.name])),
     [sanctums]
   )
-  const membershipSanctums = useMemo(
+  const _membershipSanctums = useMemo(
     () =>
       memberships
         .map(membership => membership.sanctum)
@@ -395,7 +395,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
   }
 
   return (
-    <div className='mx-auto w-full max-w-[1920px] px-3 py-6 md:px-4 lg:px-5'>
+    <div className='mx-auto w-full max-w-480 px-3 py-6 md:px-4 lg:px-5'>
       <div className='grid items-start gap-4 lg:grid-cols-[18rem_minmax(0,1fr)_18rem]'>
         <aside className='sticky top-20 hidden space-y-4 lg:block'>
           <Card className='rounded-2xl border border-border/70 bg-card/70 shadow-lg'>
@@ -507,290 +507,293 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
 
           {isAuthenticated && (
             <Card className='mb-6 overflow-hidden border bg-card/95 shadow-sm transition-shadow hover:shadow-md rounded-2xl'>
-            <CardContent className='p-5'>
-              <div className='flex gap-3 mb-4'>
-                <Avatar className='w-10 h-10 ring-2 ring-primary/5'>
-                  <AvatarImage
-                    src={
-                      currentUser?.avatar ||
-                      getAvatarUrl(currentUser?.username ?? 'user')
-                    }
-                  />
-                  <AvatarFallback>
-                    {currentUser?.username?.[0]?.toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className='flex-1 space-y-3'>
-                  {!isExpandingPost ? (
-                    <button
-                      type='button'
-                      onClick={() => setIsExpandingPost(true)}
-                      className={cn(
-                        'w-full text-left bg-muted px-4 py-2.5 rounded-3xl transition-all hover:bg-muted/80 text-[15px] text-muted-foreground'
-                      )}
-                    >
-                      {`What's on your mind, ${currentUser?.username}?`}
-                    </button>
-                  ) : (
-                    <>
-                      <div className='flex gap-2 flex-wrap'>
-                        {POST_TYPES.map(({ type, label, icon: Icon }) => (
-                          <Button
-                            key={type}
-                            type='button'
-                            variant={
-                              newPostType === type ? 'secondary' : 'ghost'
-                            }
-                            size='sm'
-                            className='gap-1.5'
-                            onClick={() => setNewPostType(type)}
-                          >
-                            <Icon className='w-4 h-4' />
-                            {label}
-                          </Button>
-                        ))}
-                      </div>
-
-                      <div className='grid gap-1'>
-                        <label
-                          htmlFor='post-sanctum-target'
-                          className='text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground'
-                        >
-                          Post destination
-                        </label>
-                        <select
-                          id='post-sanctum-target'
-                          value={
-                            newPostSanctumSelection === 'main'
-                              ? 'main'
-                              : String(newPostSanctumSelection)
-                          }
-                          onChange={event => {
-                            const value = event.target.value
-                            setNewPostSanctumSelection(
-                              value === 'main' ? 'main' : Number(value)
-                            )
-                          }}
-                          className='rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-sm'
-                        >
-                          <option value='main'>Main Feed (No Sanctum)</option>
-                          {sanctums.map(s => (
-                            <option key={s.id} value={s.id}>
-                              {s.name}
-                            </option>
+              <CardContent className='p-5'>
+                <div className='flex gap-3 mb-4'>
+                  <Avatar className='w-10 h-10 ring-2 ring-primary/5'>
+                    <AvatarImage
+                      src={
+                        currentUser?.avatar ||
+                        getAvatarUrl(currentUser?.username ?? 'user')
+                      }
+                    />
+                    <AvatarFallback>
+                      {currentUser?.username?.[0]?.toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className='flex-1 space-y-3'>
+                    {!isExpandingPost ? (
+                      <button
+                        type='button'
+                        onClick={() => setIsExpandingPost(true)}
+                        className={cn(
+                          'w-full text-left bg-muted px-4 py-2.5 rounded-3xl transition-all hover:bg-muted/80 text-[15px] text-muted-foreground'
+                        )}
+                      >
+                        {`What's on your mind, ${currentUser?.username}?`}
+                      </button>
+                    ) : (
+                      <>
+                        <div className='flex gap-2 flex-wrap'>
+                          {POST_TYPES.map(({ type, label, icon: Icon }) => (
+                            <Button
+                              key={type}
+                              type='button'
+                              variant={
+                                newPostType === type ? 'secondary' : 'ghost'
+                              }
+                              size='sm'
+                              className='gap-1.5'
+                              onClick={() => setNewPostType(type)}
+                            >
+                              <Icon className='w-4 h-4' />
+                              {label}
+                            </Button>
                           ))}
-                        </select>
-                      </div>
+                        </div>
 
-                      {newPostType === 'text' && (
-                        <input
-                          type='text'
-                          placeholder='Title (optional)...'
-                          value={newPostTitle}
-                          onChange={e => setNewPostTitle(e.target.value)}
-                          className='w-full text-sm font-semibold bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40'
-                        />
-                      )}
+                        <div className='grid gap-1'>
+                          <label
+                            htmlFor='post-sanctum-target'
+                            className='text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground'
+                          >
+                            Post destination
+                          </label>
+                          <select
+                            id='post-sanctum-target'
+                            value={
+                              newPostSanctumSelection === 'main'
+                                ? 'main'
+                                : String(newPostSanctumSelection)
+                            }
+                            onChange={event => {
+                              const value = event.target.value
+                              setNewPostSanctumSelection(
+                                value === 'main' ? 'main' : Number(value)
+                              )
+                            }}
+                            className='rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-sm'
+                          >
+                            <option value='main'>Main Feed (No Sanctum)</option>
+                            {sanctums.map(s => (
+                              <option key={s.id} value={s.id}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
 
-                      {newPostType === 'text' && (
-                        <PostComposerEditor
-                          value={newPostContent}
-                          onChange={setNewPostContent}
-                          placeholder='Write your post...'
-                          disabled={createPostMutation.isPending}
-                          minRows={4}
-                        />
-                      )}
+                        {newPostType === 'text' && (
+                          <input
+                            type='text'
+                            placeholder='Title (optional)...'
+                            value={newPostTitle}
+                            onChange={e => setNewPostTitle(e.target.value)}
+                            className='w-full text-sm font-semibold bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40'
+                          />
+                        )}
 
-                      {newPostType === 'media' && (
-                        <>
+                        {newPostType === 'text' && (
                           <PostComposerEditor
                             value={newPostContent}
                             onChange={setNewPostContent}
-                            placeholder='Caption (optional)...'
+                            placeholder='Write your post...'
                             disabled={createPostMutation.isPending}
-                            minRows={3}
+                            minRows={4}
                           />
-                          <input
-                            type='file'
-                            accept='image/jpeg,image/png,image/gif,image/webp'
-                            onChange={e =>
-                              setNewPostImageFile(
-                                e.target.files?.[0] ? e.target.files[0] : null
-                              )
-                            }
-                            className='w-full text-sm bg-muted/30 px-4 py-2 rounded-xl focus:outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-medium'
-                          />
-                          {newPostImagePreview && (
-                            <img
-                              src={newPostImagePreview}
-                              alt='Upload preview'
-                              className='max-h-56 w-auto rounded-xl border border-border object-contain'
+                        )}
+
+                        {newPostType === 'media' && (
+                          <>
+                            <PostComposerEditor
+                              value={newPostContent}
+                              onChange={setNewPostContent}
+                              placeholder='Caption (optional)...'
+                              disabled={createPostMutation.isPending}
+                              minRows={3}
                             />
-                          )}
-                        </>
-                      )}
-
-                      {newPostType === 'video' && (
-                        <>
-                          <input
-                            type='url'
-                            placeholder='YouTube URL (required)...'
-                            value={newPostYoutubeUrl}
-                            onChange={e => setNewPostYoutubeUrl(e.target.value)}
-                            className='w-full text-sm bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40'
-                          />
-                          <Textarea
-                            placeholder='Caption (optional)...'
-                            value={newPostContent}
-                            onChange={e => setNewPostContent(e.target.value)}
-                            className='min-h-16 resize-none bg-muted/30'
-                            disabled={createPostMutation.isPending}
-                          />
-                        </>
-                      )}
-
-                      {newPostType === 'link' && (
-                        <>
-                          <input
-                            type='url'
-                            placeholder='Link URL (required)...'
-                            value={newPostLinkUrl}
-                            onChange={e => setNewPostLinkUrl(e.target.value)}
-                            className='w-full text-sm bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40'
-                          />
-                          <Textarea
-                            placeholder='Description (optional)...'
-                            value={newPostContent}
-                            onChange={e => setNewPostContent(e.target.value)}
-                            className='min-h-16 resize-none bg-muted/30'
-                            disabled={createPostMutation.isPending}
-                          />
-                        </>
-                      )}
-
-                      {newPostType === 'poll' && (
-                        <div className='space-y-2'>
-                          <input
-                            type='text'
-                            placeholder='Poll question (required)...'
-                            value={newPollQuestion}
-                            onChange={e => setNewPollQuestion(e.target.value)}
-                            className='w-full text-sm font-medium bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40'
-                          />
-                          <div className='space-y-1.5'>
-                            {newPollOptions.map((opt, i) => (
-                              <div
-                                key={opt.id}
-                                className='flex gap-2 items-center'
-                              >
-                                <input
-                                  type='text'
-                                  placeholder={`Option ${i + 1}`}
-                                  value={opt.value}
-                                  onChange={e => {
-                                    const next = [...newPollOptions]
-                                    next[i] = {
-                                      ...next[i],
-                                      value: e.target.value,
-                                    }
-                                    setNewPollOptions(next)
-                                  }}
-                                  className='flex-1 text-sm bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40'
-                                />
-                                <Button
-                                  type='button'
-                                  variant='ghost'
-                                  size='sm'
-                                  className='shrink-0'
-                                  onClick={() => {
-                                    if (newPollOptions.length > 2) {
-                                      setNewPollOptions(
-                                        newPollOptions.filter(
-                                          option => option.id !== opt.id
-                                        )
-                                      )
-                                    }
-                                  }}
-                                  disabled={newPollOptions.length <= 2}
-                                >
-                                  Remove
-                                </Button>
-                              </div>
-                            ))}
-                            <Button
-                              type='button'
-                              variant='outline'
-                              size='sm'
-                              onClick={() =>
-                                setNewPollOptions([
-                                  ...newPollOptions,
-                                  createPollOption(),
-                                ])
+                            <input
+                              type='file'
+                              accept='image/jpeg,image/png,image/gif,image/webp'
+                              onChange={e =>
+                                setNewPostImageFile(
+                                  e.target.files?.[0] ? e.target.files[0] : null
+                                )
                               }
-                            >
-                              Add option
-                            </Button>
+                              className='w-full text-sm bg-muted/30 px-4 py-2 rounded-xl focus:outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-medium'
+                            />
+                            {newPostImagePreview && (
+                              <img
+                                src={newPostImagePreview}
+                                alt='Upload preview'
+                                className='max-h-56 w-auto rounded-xl border border-border object-contain'
+                              />
+                            )}
+                          </>
+                        )}
+
+                        {newPostType === 'video' && (
+                          <>
+                            <input
+                              type='url'
+                              placeholder='YouTube URL (required)...'
+                              value={newPostYoutubeUrl}
+                              onChange={e =>
+                                setNewPostYoutubeUrl(e.target.value)
+                              }
+                              className='w-full text-sm bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40'
+                            />
+                            <Textarea
+                              placeholder='Caption (optional)...'
+                              value={newPostContent}
+                              onChange={e => setNewPostContent(e.target.value)}
+                              className='min-h-16 resize-none bg-muted/30'
+                              disabled={createPostMutation.isPending}
+                            />
+                          </>
+                        )}
+
+                        {newPostType === 'link' && (
+                          <>
+                            <input
+                              type='url'
+                              placeholder='Link URL (required)...'
+                              value={newPostLinkUrl}
+                              onChange={e => setNewPostLinkUrl(e.target.value)}
+                              className='w-full text-sm bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40'
+                            />
+                            <Textarea
+                              placeholder='Description (optional)...'
+                              value={newPostContent}
+                              onChange={e => setNewPostContent(e.target.value)}
+                              className='min-h-16 resize-none bg-muted/30'
+                              disabled={createPostMutation.isPending}
+                            />
+                          </>
+                        )}
+
+                        {newPostType === 'poll' && (
+                          <div className='space-y-2'>
+                            <input
+                              type='text'
+                              placeholder='Poll question (required)...'
+                              value={newPollQuestion}
+                              onChange={e => setNewPollQuestion(e.target.value)}
+                              className='w-full text-sm font-medium bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40'
+                            />
+                            <div className='space-y-1.5'>
+                              {newPollOptions.map((opt, i) => (
+                                <div
+                                  key={opt.id}
+                                  className='flex gap-2 items-center'
+                                >
+                                  <input
+                                    type='text'
+                                    placeholder={`Option ${i + 1}`}
+                                    value={opt.value}
+                                    onChange={e => {
+                                      const next = [...newPollOptions]
+                                      next[i] = {
+                                        ...next[i],
+                                        value: e.target.value,
+                                      }
+                                      setNewPollOptions(next)
+                                    }}
+                                    className='flex-1 text-sm bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40'
+                                  />
+                                  <Button
+                                    type='button'
+                                    variant='ghost'
+                                    size='sm'
+                                    className='shrink-0'
+                                    onClick={() => {
+                                      if (newPollOptions.length > 2) {
+                                        setNewPollOptions(
+                                          newPollOptions.filter(
+                                            option => option.id !== opt.id
+                                          )
+                                        )
+                                      }
+                                    }}
+                                    disabled={newPollOptions.length <= 2}
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                              ))}
+                              <Button
+                                type='button'
+                                variant='outline'
+                                size='sm'
+                                onClick={() =>
+                                  setNewPollOptions([
+                                    ...newPollOptions,
+                                    createPollOption(),
+                                  ])
+                                }
+                              >
+                                Add option
+                              </Button>
+                            </div>
                           </div>
+                        )}
+
+                        <div className='flex justify-between items-center pt-2'>
+                          <Button
+                            variant='ghost'
+                            size='sm'
+                            type='button'
+                            onClick={() => setIsExpandingPost(false)}
+                            className='text-xs font-semibold text-muted-foreground'
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={handleNewPost}
+                            size='sm'
+                            disabled={
+                              !canSubmitNewPost() ||
+                              createPostMutation.isPending ||
+                              isUploadingImage
+                            }
+                            className='rounded-full px-6 shadow-sm'
+                          >
+                            {createPostMutation.isPending ||
+                            isUploadingImage ? (
+                              <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                            ) : (
+                              <Send className='w-4 h-4 mr-2' />
+                            )}
+                            {isUploadingImage ? 'Uploading...' : 'Post'}
+                          </Button>
                         </div>
-                      )}
-
-                      <div className='flex justify-between items-center pt-2'>
-                        <Button
-                          variant='ghost'
-                          size='sm'
-                          type='button'
-                          onClick={() => setIsExpandingPost(false)}
-                          className='text-xs font-semibold text-muted-foreground'
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          onClick={handleNewPost}
-                          size='sm'
-                          disabled={
-                            !canSubmitNewPost() ||
-                            createPostMutation.isPending ||
-                            isUploadingImage
-                          }
-                          className='rounded-full px-6 shadow-sm'
-                        >
-                          {createPostMutation.isPending || isUploadingImage ? (
-                            <Loader2 className='w-4 h-4 mr-2 animate-spin' />
-                          ) : (
-                            <Send className='w-4 h-4 mr-2' />
-                          )}
-                          {isUploadingImage ? 'Uploading...' : 'Post'}
-                        </Button>
-                      </div>
-                    </>
-                  )}
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              {!isExpandingPost && (
-                <div className='flex border-t pt-3 justify-around flex-wrap gap-1'>
-                  {POST_TYPES.map(({ type, label, icon: Icon }) => (
-                    <Button
-                      key={type}
-                      variant='ghost'
-                      size='sm'
-                      className='gap-2 text-muted-foreground flex-1 min-w-0 hover:bg-muted'
-                      onClick={() => {
-                        setNewPostType(type)
-                        setIsExpandingPost(true)
-                      }}
-                    >
-                      <Icon className='w-4 h-4 shrink-0' />
-                      <span className='text-xs font-semibold truncate'>
-                        {label}
-                      </span>
-                    </Button>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                {!isExpandingPost && (
+                  <div className='flex border-t pt-3 justify-around flex-wrap gap-1'>
+                    {POST_TYPES.map(({ type, label, icon: Icon }) => (
+                      <Button
+                        key={type}
+                        variant='ghost'
+                        size='sm'
+                        className='gap-2 text-muted-foreground flex-1 min-w-0 hover:bg-muted'
+                        onClick={() => {
+                          setNewPostType(type)
+                          setIsExpandingPost(true)
+                        }}
+                      >
+                        <Icon className='w-4 h-4 shrink-0' />
+                        <span className='text-xs font-semibold truncate'>
+                          {label}
+                        </span>
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           )}
 
           {isMembershipFeedError && (
@@ -863,7 +866,8 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                           </span>
                           {post.sanctum_id ? (
                             <span className='rounded-full border border-border/60 px-2 py-0.5 text-[10px] text-muted-foreground'>
-                              {sanctumNameByID.get(post.sanctum_id) ?? 'Sanctum'}
+                              {sanctumNameByID.get(post.sanctum_id) ??
+                                'Sanctum'}
                             </span>
                           ) : null}
                         </button>
@@ -1024,7 +1028,9 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                         cropMode={post.image_crop_mode}
                         loading='lazy'
                       />
-                      {post.content ? <PostCaption content={post.content} /> : null}
+                      {post.content ? (
+                        <PostCaption content={post.content} />
+                      ) : null}
                     </div>
                   ) : (
                     <div className='p-4 bg-muted/30 rounded-xl border border-border/60'>
@@ -1114,97 +1120,100 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
               </Card>
             ))}
 
-          {/* Delete confirmation dialog */}
-          <Dialog
-            open={!!deletingPostId}
-            onOpenChange={open => {
-              if (!open) setDeletingPostId(null)
-            }}
-          >
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Delete post?</DialogTitle>
-                <DialogDescription>
-                  This action cannot be undone. Are you sure you want to delete
-                  this post?
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant='ghost' onClick={() => setDeletingPostId(null)}>
-                  Cancel
-                </Button>
-                <Button
-                  className='text-destructive'
-                  onClick={async () => {
-                    if (!deletingPostId) return
-                    try {
-                      await deletePostMutation.mutateAsync(deletingPostId)
-                      setDeletingPostId(null)
-                    } catch (err) {
-                      logger.error('Failed to delete post:', err)
-                    }
-                  }}
-                >
-                  Delete
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            {/* Delete confirmation dialog */}
+            <Dialog
+              open={!!deletingPostId}
+              onOpenChange={open => {
+                if (!open) setDeletingPostId(null)
+              }}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Delete post?</DialogTitle>
+                  <DialogDescription>
+                    This action cannot be undone. Are you sure you want to
+                    delete this post?
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button
+                    variant='ghost'
+                    onClick={() => setDeletingPostId(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className='text-destructive'
+                    onClick={async () => {
+                      if (!deletingPostId) return
+                      try {
+                        await deletePostMutation.mutateAsync(deletingPostId)
+                        setDeletingPostId(null)
+                      } catch (err) {
+                        logger.error('Failed to delete post:', err)
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
-          {/* Report post dialog */}
-          <Dialog
-            open={!!reportingPostId}
-            onOpenChange={open => {
-              if (!open) setReportingPostId(null)
-            }}
-          >
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Report post</DialogTitle>
-                <DialogDescription>
-                  Please provide a reason for reporting this post.
-                </DialogDescription>
-              </DialogHeader>
-              <div className='space-y-3'>
-                <Textarea
-                  placeholder='Reason for reporting (required)...'
-                  value={reportReason}
-                  onChange={e => setReportReason(e.target.value)}
-                  rows={2}
-                />
-                <Textarea
-                  placeholder='Additional details (optional)...'
-                  value={reportDetails}
-                  onChange={e => setReportDetails(e.target.value)}
-                  rows={2}
-                />
-              </div>
-              <DialogFooter>
-                <Button
-                  variant='ghost'
-                  onClick={() => setReportingPostId(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  disabled={!reportReason.trim()}
-                  onClick={() => {
-                    if (!reportingPostId || !reportReason.trim()) return
-                    reportPostMutation.mutate({
-                      postId: reportingPostId,
-                      payload: {
-                        reason: reportReason.trim(),
-                        details: reportDetails.trim() || undefined,
-                      },
-                    })
-                    setReportingPostId(null)
-                  }}
-                >
-                  Submit Report
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            {/* Report post dialog */}
+            <Dialog
+              open={!!reportingPostId}
+              onOpenChange={open => {
+                if (!open) setReportingPostId(null)
+              }}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Report post</DialogTitle>
+                  <DialogDescription>
+                    Please provide a reason for reporting this post.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className='space-y-3'>
+                  <Textarea
+                    placeholder='Reason for reporting (required)...'
+                    value={reportReason}
+                    onChange={e => setReportReason(e.target.value)}
+                    rows={2}
+                  />
+                  <Textarea
+                    placeholder='Additional details (optional)...'
+                    value={reportDetails}
+                    onChange={e => setReportDetails(e.target.value)}
+                    rows={2}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant='ghost'
+                    onClick={() => setReportingPostId(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    disabled={!reportReason.trim()}
+                    onClick={() => {
+                      if (!reportingPostId || !reportReason.trim()) return
+                      reportPostMutation.mutate({
+                        postId: reportingPostId,
+                        payload: {
+                          reason: reportReason.trim(),
+                          details: reportDetails.trim() || undefined,
+                        },
+                      })
+                      setReportingPostId(null)
+                    }}
+                  >
+                    Submit Report
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {!isMembershipFeed && isFetchingNextPage && (
               <div className='flex justify-center py-4'>

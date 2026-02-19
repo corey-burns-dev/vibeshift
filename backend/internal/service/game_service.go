@@ -21,14 +21,17 @@ func isPendingRoomStale(room models.GameRoom, now time.Time) bool {
 	return now.Sub(room.UpdatedAt) > pendingRoomMaxIdle
 }
 
+// GameService provides game-room business logic.
 type GameService struct {
 	gameRepo repository.GameRepository
 }
 
+// NewGameService returns a new GameService.
 func NewGameService(gameRepo repository.GameRepository) *GameService {
 	return &GameService{gameRepo: gameRepo}
 }
 
+// CreateGameRoom creates or reuses a pending game room for the user.
 func (s *GameService) CreateGameRoom(_ context.Context, userID uint, gameType models.GameType) (*models.GameRoom, bool, error) {
 	existingRooms, err := s.gameRepo.GetActiveRooms(gameType)
 	if err != nil {
@@ -67,6 +70,7 @@ func (s *GameService) CreateGameRoom(_ context.Context, userID uint, gameType mo
 	return room, true, nil
 }
 
+// GetActiveGameRooms returns active game rooms, optionally filtered by type.
 func (s *GameService) GetActiveGameRooms(_ context.Context, gameType *models.GameType) ([]models.GameRoom, error) {
 	var (
 		rooms []models.GameRoom
@@ -101,6 +105,7 @@ func (s *GameService) GetActiveGameRooms(_ context.Context, gameType *models.Gam
 	return filtered, nil
 }
 
+// GetGameStats returns game statistics for the user and game type.
 func (s *GameService) GetGameStats(_ context.Context, userID uint, gameType models.GameType) (*models.GameStats, error) {
 	stats, err := s.gameRepo.GetStats(userID, gameType)
 	if err != nil {
@@ -109,6 +114,7 @@ func (s *GameService) GetGameStats(_ context.Context, userID uint, gameType mode
 	return stats, nil
 }
 
+// GetGameRoom returns a game room by ID.
 func (s *GameService) GetGameRoom(_ context.Context, roomID uint) (*models.GameRoom, error) {
 	room, err := s.gameRepo.GetRoom(roomID)
 	if err != nil {
@@ -120,6 +126,7 @@ func (s *GameService) GetGameRoom(_ context.Context, roomID uint) (*models.GameR
 	return room, nil
 }
 
+// LeaveGameRoom removes the user from the game room and updates state.
 func (s *GameService) LeaveGameRoom(_ context.Context, userID, roomID uint) (*models.GameRoom, bool, error) {
 	room, err := s.gameRepo.GetRoom(roomID)
 	if err != nil {

@@ -1,4 +1,11 @@
-import { Bell, LogOut, PenSquare, Search, ShieldCheck, User } from 'lucide-react'
+import {
+  Bell,
+  LogOut,
+  PenSquare,
+  Search,
+  ShieldCheck,
+  User,
+} from 'lucide-react'
 import { useEffect, useMemo } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ModeToggle } from '@/components/mode-toggle'

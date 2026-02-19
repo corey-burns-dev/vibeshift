@@ -6,21 +6,20 @@ import { apiClient } from '@/api/client'
 import {
   useAddChatroomModerator,
   useAllChatrooms,
-  useBanChatroomUser,
   useConversation,
   useConversations,
   useCreateConversation,
   useDeleteMessage,
-  useKickChatroomParticipant,
   useJoinChatroom,
   useJoinedChatrooms,
+  useKickChatroomParticipant,
   useLeaveConversation,
   useMarkAsRead,
   useMessages,
   useRemoveChatroomModerator,
   useRoomBanUser,
-  useRoomMuteUser,
   useRoomMutes,
+  useRoomMuteUser,
   useRoomUnbanUser,
   useSendMessage,
 } from '@/hooks/useChat'
@@ -391,9 +390,12 @@ describe('useChat hooks', () => {
       const { result: muteResult } = renderHook(() => useRoomMuteUser(9), {
         wrapper: createWrapper(),
       })
-      const { result: kickResult } = renderHook(() => useKickChatroomParticipant(9), {
-        wrapper: createWrapper(),
-      })
+      const { result: kickResult } = renderHook(
+        () => useKickChatroomParticipant(9),
+        {
+          wrapper: createWrapper(),
+        }
+      )
       const { result: addModResult } = renderHook(
         () => useAddChatroomModerator(9),
         {
@@ -423,12 +425,24 @@ describe('useChat hooks', () => {
         await removeModResult.current.mutateAsync(44)
       })
 
-      expect(vi.mocked(apiClient.muteChatroomUser)).toHaveBeenCalledWith(9, 44, {
-        reason: 'timeout',
-      })
-      expect(vi.mocked(apiClient.removeChatroomParticipant)).toHaveBeenCalledWith(9, 44)
-      expect(vi.mocked(apiClient.addChatroomModerator)).toHaveBeenCalledWith(9, 44)
-      expect(vi.mocked(apiClient.removeChatroomModerator)).toHaveBeenCalledWith(9, 44)
+      expect(vi.mocked(apiClient.muteChatroomUser)).toHaveBeenCalledWith(
+        9,
+        44,
+        {
+          reason: 'timeout',
+        }
+      )
+      expect(
+        vi.mocked(apiClient.removeChatroomParticipant)
+      ).toHaveBeenCalledWith(9, 44)
+      expect(vi.mocked(apiClient.addChatroomModerator)).toHaveBeenCalledWith(
+        9,
+        44
+      )
+      expect(vi.mocked(apiClient.removeChatroomModerator)).toHaveBeenCalledWith(
+        9,
+        44
+      )
     })
   })
 })

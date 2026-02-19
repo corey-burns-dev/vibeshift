@@ -149,7 +149,9 @@ export function useRoomMuteUser(chatroomId: number) {
       payload: MuteChatroomUserRequest
     }) => apiClient.muteChatroomUser(chatroomId, userId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: chatKeys.chatroomMutes(chatroomId) })
+      queryClient.invalidateQueries({
+        queryKey: chatKeys.chatroomMutes(chatroomId),
+      })
     },
     onError: error => {
       handleAuthOrFKError(error)
@@ -160,9 +162,12 @@ export function useRoomMuteUser(chatroomId: number) {
 export function useRoomUnmuteUser(chatroomId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (userId: number) => apiClient.unmuteChatroomUser(chatroomId, userId),
+    mutationFn: (userId: number) =>
+      apiClient.unmuteChatroomUser(chatroomId, userId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: chatKeys.chatroomMutes(chatroomId) })
+      queryClient.invalidateQueries({
+        queryKey: chatKeys.chatroomMutes(chatroomId),
+      })
     },
     onError: error => {
       handleAuthOrFKError(error)
@@ -184,9 +189,13 @@ export function useRoomBanUser(chatroomId: number) {
     mutationFn: ({ userId, reason }: { userId: number; reason?: string }) =>
       apiClient.banChatroomUser(chatroomId, userId, { reason }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: chatKeys.chatroomBans(chatroomId) })
+      queryClient.invalidateQueries({
+        queryKey: chatKeys.chatroomBans(chatroomId),
+      })
       queryClient.invalidateQueries({ queryKey: chatKeys.chatrooms() })
-      queryClient.invalidateQueries({ queryKey: chatKeys.conversation(chatroomId) })
+      queryClient.invalidateQueries({
+        queryKey: chatKeys.conversation(chatroomId),
+      })
     },
     onError: error => {
       handleAuthOrFKError(error)
@@ -197,9 +206,12 @@ export function useRoomBanUser(chatroomId: number) {
 export function useRoomUnbanUser(chatroomId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (userId: number) => apiClient.unbanChatroomUser(chatroomId, userId),
+    mutationFn: (userId: number) =>
+      apiClient.unbanChatroomUser(chatroomId, userId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: chatKeys.chatroomBans(chatroomId) })
+      queryClient.invalidateQueries({
+        queryKey: chatKeys.chatroomBans(chatroomId),
+      })
     },
     onError: error => {
       handleAuthOrFKError(error)
@@ -214,7 +226,9 @@ export function useKickChatroomParticipant(chatroomId: number) {
       apiClient.removeChatroomParticipant(chatroomId, participantId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: chatKeys.chatrooms() })
-      queryClient.invalidateQueries({ queryKey: chatKeys.conversation(chatroomId) })
+      queryClient.invalidateQueries({
+        queryKey: chatKeys.conversation(chatroomId),
+      })
     },
     onError: error => {
       handleAuthOrFKError(error)

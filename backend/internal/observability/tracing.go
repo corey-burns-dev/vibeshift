@@ -19,6 +19,7 @@ import (
 // Tracer is the global tracer used for the application.
 var Tracer trace.Tracer = otel.Tracer("sanctum-api")
 
+// TracingConfig holds configuration for initializing the tracer.
 type TracingConfig struct {
 	ServiceName    string
 	ServiceVersion string
@@ -89,12 +90,14 @@ func InitTracing(cfg TracingConfig) (func(context.Context) error, error) {
 	return tp.Shutdown, nil
 }
 
+// Span wraps an OpenTelemetry span and context for convenience.
 type Span struct {
 	span trace.Span
 	ctx  context.Context
 	name string
 }
 
+// NewSpan starts a new span and returns the wrapper and updated context.
 func NewSpan(ctx context.Context, name string, opts ...trace.SpanStartOption) (*Span, context.Context) {
 	s := &Span{name: name}
 	ctx, span := Tracer.Start(ctx, name, opts...)
@@ -103,12 +106,14 @@ func NewSpan(ctx context.Context, name string, opts ...trace.SpanStartOption) (*
 	return s, ctx
 }
 
+// AddAttributes sets attributes on the span.
 func (s *Span) AddAttributes(attrs ...attribute.KeyValue) {
 	if s.span != nil {
 		s.span.SetAttributes(attrs...)
 	}
 }
 
+// SetError records the error on the span and sets span status to Error.
 func (s *Span) SetError(err error) {
 	if s.span != nil && err != nil {
 		s.span.RecordError(err)
@@ -116,12 +121,14 @@ func (s *Span) SetError(err error) {
 	}
 }
 
+// End ends the span.
 func (s *Span) End() {
 	if s.span != nil {
 		s.span.End()
 	}
 }
 
+// TraceID returns the trace ID of the span.
 func (s *Span) TraceID() string {
 	if s.span != nil {
 		return s.span.SpanContext().TraceID().String()
@@ -129,6 +136,7 @@ func (s *Span) TraceID() string {
 	return ""
 }
 
+// SpanID returns the span ID of the span.
 func (s *Span) SpanID() string {
 	if s.span != nil {
 		return s.span.SpanContext().SpanID().String()
@@ -136,14 +144,19 @@ func (s *Span) SpanID() string {
 	return ""
 }
 
+// SpanKind represents the kind of span (internal, server, client).
 type SpanKind string
 
 const (
+	// SpanKindInternal marks a span as internal.
 	SpanKindInternal SpanKind = "internal"
-	SpanKindServer   SpanKind = "server"
-	SpanKindClient   SpanKind = "client"
+	// SpanKindServer marks a span as server.
+	SpanKindServer SpanKind = "server"
+	// SpanKindClient marks a span as client.
+	SpanKindClient SpanKind = "client"
 )
 
+// WithSpanKind returns a span start option that sets the span kind.
 func WithSpanKind(kind SpanKind) trace.SpanStartOption {
 	switch kind {
 	case SpanKindInternal:
@@ -157,14 +170,17 @@ func WithSpanKind(kind SpanKind) trace.SpanStartOption {
 	}
 }
 
+// TraceLayer provides helpers to start spans for repository, Redis, WebSocket, and RPC.
 type TraceLayer struct {
 	tracer trace.Tracer
 }
 
+// NewTraceLayer returns a new TraceLayer for the given tracer.
 func NewTraceLayer(tracer trace.Tracer) *TraceLayer {
 	return &TraceLayer{tracer: tracer}
 }
 
+// TraceRepositoryMethod starts a span for a repository method call.
 func (l *TraceLayer) TraceRepositoryMethod(ctx context.Context, methodName, tableName string) (context.Context, trace.Span) {
 	ctx, span := l.tracer.Start(ctx, "repository."+methodName,
 		trace.WithSpanKind(trace.SpanKindInternal),
@@ -177,6 +193,7 @@ func (l *TraceLayer) TraceRepositoryMethod(ctx context.Context, methodName, tabl
 	return ctx, span
 }
 
+// TraceRedisOperation starts a span for a Redis operation.
 func (l *TraceLayer) TraceRedisOperation(ctx context.Context, operation string) (context.Context, trace.Span) {
 	ctx, span := l.tracer.Start(ctx, "redis."+operation,
 		trace.WithSpanKind(trace.SpanKindClient),
@@ -188,6 +205,7 @@ func (l *TraceLayer) TraceRedisOperation(ctx context.Context, operation string) 
 	return ctx, span
 }
 
+// TraceWebSocket starts a span for a WebSocket event.
 func (l *TraceLayer) TraceWebSocket(ctx context.Context, hubName, eventType string) (context.Context, trace.Span) {
 	ctx, span := l.tracer.Start(ctx, "websocket."+eventType,
 		trace.WithSpanKind(trace.SpanKindServer),
@@ -199,6 +217,7 @@ func (l *TraceLayer) TraceWebSocket(ctx context.Context, hubName, eventType stri
 	return ctx, span
 }
 
+// TraceAPIToServiceCall starts a span for an API-to-service call.
 func (l *TraceLayer) TraceAPIToServiceCall(ctx context.Context, serviceName, method string) (context.Context, trace.Span) {
 	ctx, span := l.tracer.Start(ctx, serviceName+"."+method,
 		trace.WithSpanKind(trace.SpanKindInternal),
@@ -210,6 +229,7 @@ func (l *TraceLayer) TraceAPIToServiceCall(ctx context.Context, serviceName, met
 	return ctx, span
 }
 
+// TraceServiceToRepository starts a span for a service-to-repository call.
 func (l *TraceLayer) TraceServiceToRepository(ctx context.Context, repoName, method string) (context.Context, trace.Span) {
 	ctx, span := l.tracer.Start(ctx, repoName+"."+method,
 		trace.WithSpanKind(trace.SpanKindInternal),
@@ -221,10 +241,12 @@ func (l *TraceLayer) TraceServiceToRepository(ctx context.Context, repoName, met
 	return ctx, span
 }
 
+// GetTraceLayer returns a TraceLayer using the global Tracer.
 func GetTraceLayer() *TraceLayer {
 	return NewTraceLayer(Tracer)
 }
 
+// AddTraceAttributesToContext sets the given attributes on the span in ctx.
 func AddTraceAttributesToContext(ctx context.Context, attrs ...attribute.KeyValue) {
 	span := trace.SpanFromContext(ctx)
 	if span != nil {
@@ -232,6 +254,7 @@ func AddTraceAttributesToContext(ctx context.Context, attrs ...attribute.KeyValu
 	}
 }
 
+// RecordErrorInContext records the error on the span in ctx.
 func RecordErrorInContext(ctx context.Context, err error) {
 	span := trace.SpanFromContext(ctx)
 	if span != nil {
@@ -239,15 +262,21 @@ func RecordErrorInContext(ctx context.Context, err error) {
 	}
 }
 
+// TraceContextKey is the type for request-scoped context keys.
 type TraceContextKey string
 
 const (
+	// RequestIDKey is the context key for request ID.
 	RequestIDKey TraceContextKey = "request_id"
-	UserIDKey    TraceContextKey = "user_id"
-	RoomIDKey    TraceContextKey = "room_id"
+	// UserIDKey is the context key for user ID.
+	UserIDKey TraceContextKey = "user_id"
+	// RoomIDKey is the context key for room ID.
+	RoomIDKey TraceContextKey = "room_id"
+	// OperationKey is the context key for operation name.
 	OperationKey TraceContextKey = "operation"
 )
 
+// ExtractRequestID returns the request ID from the context if set.
 func ExtractRequestID(ctx context.Context) string {
 	if id := ctx.Value(RequestIDKey); id != nil {
 		return id.(string)
@@ -255,6 +284,7 @@ func ExtractRequestID(ctx context.Context) string {
 	return ""
 }
 
+// ExtractUserID returns the user ID from the context if set.
 func ExtractUserID(ctx context.Context) string {
 	if id := ctx.Value(UserIDKey); id != nil {
 		return id.(string)
@@ -262,6 +292,7 @@ func ExtractUserID(ctx context.Context) string {
 	return ""
 }
 
+// ExtractRoomID returns the room ID from the context if set.
 func ExtractRoomID(ctx context.Context) string {
 	if id := ctx.Value(RoomIDKey); id != nil {
 		return id.(string)

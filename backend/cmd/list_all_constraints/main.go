@@ -1,3 +1,4 @@
+// Package main provides a CLI to list all database constraints.
 package main
 
 import (

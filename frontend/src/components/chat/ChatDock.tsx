@@ -351,7 +351,6 @@ export function ChatDock() {
     playFriendOnlineSound,
     subscribeOnPresence,
     open,
-    setActiveConversation,
   ])
 
   // New Friend Online Check: if we just became friends and they are already online, notify.
@@ -411,7 +410,6 @@ export function ChatDock() {
     notifiedUserIds,
     markNotified,
     playFriendOnlineSound,
-    setActiveConversation,
     open,
   ])
 

@@ -1,3 +1,4 @@
+// Package main provides a CLI to run database seed for development/debugging.
 package main
 
 import (

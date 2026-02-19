@@ -183,9 +183,5 @@ func RollbackMigration(ctx context.Context, db *gorm.DB, version int) error {
 	if err := db.WithContext(ctx).Exec(m.DownScript).Error; err != nil {
 		return fmt.Errorf("failed to run rollback SQL for migration %d (%s): %w", version, m.Name, err)
 	}
-	if err := store.RemoveMigration(ctx, version); err != nil {
-		return err
-	}
-
-	return nil
+	return store.RemoveMigration(ctx, version)
 }

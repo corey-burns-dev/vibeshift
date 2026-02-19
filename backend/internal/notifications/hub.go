@@ -33,7 +33,7 @@ type Hub struct {
 // Name returns a human-readable identifier for this hub.
 func (h *Hub) Name() string { return "notification hub" }
 
-// NewHub creates a new Hub instance for managing notifications.
+// UnregisterClient removes the client from the hub and updates presence.
 func (h *Hub) UnregisterClient(client *Client) {
 	h.mu.Lock()
 	removedClient := false
@@ -109,6 +109,7 @@ func NewHub(redisClients ...*redis.Client) *Hub {
 	}
 }
 
+// SetPresenceCallbacks registers callbacks invoked when a user is considered online or offline.
 func (h *Hub) SetPresenceCallbacks(onOnline, onOffline func(userID uint)) {
 	if h.presence == nil {
 		return

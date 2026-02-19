@@ -102,7 +102,9 @@ export function UserMenu({ user, children, moderationActions }: UserMenuProps) {
               >
                 <Timer className='mr-2 h-4 w-4' />
                 <span>
-                  {moderationActions.isMuted ? 'Update Timeout' : 'Timeout User'}
+                  {moderationActions.isMuted
+                    ? 'Update Timeout'
+                    : 'Timeout User'}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -170,7 +172,9 @@ export function UserMenu({ user, children, moderationActions }: UserMenuProps) {
             disabled={!targetOnline}
           >
             <Gamepad2 className='mr-2 h-4 w-4' />
-            <span>{targetOnline ? 'Join Connect 4' : 'Connect 4 (Offline)'}</span>
+            <span>
+              {targetOnline ? 'Join Connect 4' : 'Connect 4 (Offline)'}
+            </span>
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />

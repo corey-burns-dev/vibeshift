@@ -1,3 +1,4 @@
+// Package main is a small test program for WebP encoding.
 package main
 
 import (

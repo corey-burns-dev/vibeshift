@@ -581,11 +581,7 @@ func (s *Server) ApproveSanctumRequest(c *fiber.Ctx) error {
 		approvedRequest.Status = models.SanctumRequestStatusApproved
 		approvedRequest.ReviewedByUserID = &reviewerID
 		approvedRequest.ReviewNotes = strings.TrimSpace(body.ReviewNotes)
-		if err := tx.Save(&approvedRequest).Error; err != nil {
-			return err
-		}
-
-		return nil
+		return tx.Save(&approvedRequest).Error
 	})
 	if txErr != nil {
 		var appErr *models.AppError
@@ -694,12 +690,12 @@ func (s *Server) DeleteSanctumRequest(c *fiber.Ctx) error {
 	}
 
 	var request models.SanctumRequest
-	if err := s.db.WithContext(ctx).First(&request, requestID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	if dbErr := s.db.WithContext(ctx).First(&request, requestID).Error; dbErr != nil {
+		if errors.Is(dbErr, gorm.ErrRecordNotFound) {
 			return models.RespondWithError(c, fiber.StatusNotFound,
 				models.NewNotFoundError("Sanctum request", requestID))
 		}
-		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+		return models.RespondWithError(c, fiber.StatusInternalServerError, dbErr)
 	}
 
 	isAdmin, err := s.isAdmin(c, userID)
@@ -763,10 +759,7 @@ func (s *Server) DeleteSanctum(c *fiber.Ctx) error {
 		}
 
 		// Finally delete the sanctum
-		if err := tx.Delete(&sanctum).Error; err != nil {
-			return err
-		}
-		return nil
+		return tx.Delete(&sanctum).Error
 	})
 
 	if err != nil {

@@ -16,11 +16,13 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// ChatroomCapabilities describes moderation capabilities for a chatroom.
 type ChatroomCapabilities struct {
 	CanModerate         bool `json:"can_moderate"`
 	CanManageModerators bool `json:"can_manage_moderators"`
 }
 
+// ChatroomResponse is the API response shape for a chatroom/conversation.
 type ChatroomResponse struct {
 	*models.Conversation
 	IsJoined     bool                  `json:"is_joined"`
@@ -272,15 +274,12 @@ func (s *Server) MarkConversationRead(c *fiber.Ctx) error {
 			return err
 		}
 
-		if err := tx.Model(&models.Message{}).
+		return tx.Model(&models.Message{}).
 			Where("conversation_id = ? AND sender_id <> ? AND is_read = ?", convID, userID, false).
 			Updates(map[string]interface{}{
 				"is_read": true,
 				"read_at": now,
-			}).Error; err != nil {
-			return err
-		}
-		return nil
+			}).Error
 	})
 	if txErr != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, txErr)

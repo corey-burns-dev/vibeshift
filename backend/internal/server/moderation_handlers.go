@@ -16,6 +16,7 @@ import (
 
 const maxAdminUserSearchLen = 64
 
+// GetMyBlocks returns the list of users blocked by the current user.
 func (s *Server) GetMyBlocks(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	userID := c.Locals("userID").(uint)
@@ -32,6 +33,7 @@ func (s *Server) GetMyBlocks(c *fiber.Ctx) error {
 	return c.JSON(blocks)
 }
 
+// BlockUser blocks the target user for the current user.
 func (s *Server) BlockUser(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	blockerID := c.Locals("userID").(uint)
@@ -60,6 +62,7 @@ func (s *Server) BlockUser(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "User blocked"})
 }
 
+// UnblockUser removes the block of the target user.
 func (s *Server) UnblockUser(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	blockerID := c.Locals("userID").(uint)
@@ -77,6 +80,7 @@ func (s *Server) UnblockUser(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "User unblocked"})
 }
 
+// ReportUser creates a moderation report for the target user.
 func (s *Server) ReportUser(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	reporterID := c.Locals("userID").(uint)
@@ -110,6 +114,7 @@ func (s *Server) ReportUser(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(report)
 }
 
+// ReportPost creates a moderation report for the target post.
 func (s *Server) ReportPost(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	reporterID := c.Locals("userID").(uint)
@@ -143,6 +148,7 @@ func (s *Server) ReportPost(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(report)
 }
 
+// ReportMessage creates a moderation report for the target message.
 func (s *Server) ReportMessage(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	reporterID := c.Locals("userID").(uint)

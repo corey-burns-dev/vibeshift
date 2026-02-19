@@ -7,29 +7,34 @@ import (
 	"sanctum/internal/repository"
 )
 
+// CommentService provides comment business logic.
 type CommentService struct {
 	commentRepo repository.CommentRepository
 	postRepo    repository.PostRepository
 	isAdmin     func(ctx context.Context, userID uint) (bool, error)
 }
 
+// CreateCommentInput is the input for creating a comment.
 type CreateCommentInput struct {
 	UserID  uint
 	PostID  uint
 	Content string
 }
 
+// UpdateCommentInput is the input for updating a comment.
 type UpdateCommentInput struct {
 	UserID    uint
 	CommentID uint
 	Content   string
 }
 
+// DeleteCommentInput is the input for deleting a comment.
 type DeleteCommentInput struct {
 	UserID    uint
 	CommentID uint
 }
 
+// NewCommentService returns a new CommentService.
 func NewCommentService(
 	commentRepo repository.CommentRepository,
 	postRepo repository.PostRepository,
@@ -42,6 +47,7 @@ func NewCommentService(
 	}
 }
 
+// CreateComment creates a new comment on a post.
 func (s *CommentService) CreateComment(ctx context.Context, in CreateCommentInput) (*models.Comment, error) {
 	if _, err := s.postRepo.GetByID(ctx, in.PostID, 0); err != nil {
 		return nil, err
@@ -67,6 +73,7 @@ func (s *CommentService) CreateComment(ctx context.Context, in CreateCommentInpu
 	return s.commentRepo.GetByID(ctx, comment.ID)
 }
 
+// ListComments returns comments for a post.
 func (s *CommentService) ListComments(ctx context.Context, postID uint) ([]*models.Comment, error) {
 	if _, err := s.postRepo.GetByID(ctx, postID, 0); err != nil {
 		return nil, err
@@ -74,6 +81,7 @@ func (s *CommentService) ListComments(ctx context.Context, postID uint) ([]*mode
 	return s.commentRepo.ListByPost(ctx, postID)
 }
 
+// UpdateComment updates a comment (owner or admin).
 func (s *CommentService) UpdateComment(ctx context.Context, in UpdateCommentInput) (*models.Comment, error) {
 	comment, err := s.commentRepo.GetByID(ctx, in.CommentID)
 	if err != nil {
@@ -95,6 +103,7 @@ func (s *CommentService) UpdateComment(ctx context.Context, in UpdateCommentInpu
 	return s.commentRepo.GetByID(ctx, comment.ID)
 }
 
+// DeleteComment deletes a comment (owner or admin).
 func (s *CommentService) DeleteComment(ctx context.Context, in DeleteCommentInput) (*models.Comment, error) {
 	comment, err := s.commentRepo.GetByID(ctx, in.CommentID)
 	if err != nil {

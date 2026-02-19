@@ -10,6 +10,7 @@ import (
 	"sanctum/internal/repository"
 )
 
+// PostService provides post and feed business logic.
 type PostService struct {
 	postRepo repository.PostRepository
 	pollRepo repository.PollRepository
@@ -22,6 +23,7 @@ type CreatePostPollInput struct {
 	Options  []string `json:"options"`
 }
 
+// CreatePostInput is the input for creating a post.
 type CreatePostInput struct {
 	UserID     uint
 	Title      string
@@ -34,6 +36,7 @@ type CreatePostInput struct {
 	Poll       *CreatePostPollInput
 }
 
+// ListPostsInput is the input for listing posts.
 type ListPostsInput struct {
 	Limit         int
 	Offset        int
@@ -41,6 +44,7 @@ type ListPostsInput struct {
 	SanctumID     *uint
 }
 
+// UpdatePostInput is the input for updating a post.
 type UpdatePostInput struct {
 	UserID     uint
 	PostID     uint
@@ -51,11 +55,13 @@ type UpdatePostInput struct {
 	YoutubeURL string
 }
 
+// DeletePostInput is the input for deleting a post.
 type DeletePostInput struct {
 	UserID uint
 	PostID uint
 }
 
+// NewPostService returns a new PostService.
 func NewPostService(
 	postRepo repository.PostRepository,
 	pollRepo repository.PollRepository,
@@ -68,6 +74,7 @@ func NewPostService(
 	}
 }
 
+// SearchPosts searches posts by query.
 func (s *PostService) SearchPosts(ctx context.Context, query string, limit, offset int, currentUserID uint) ([]*models.Post, error) {
 	if query == "" {
 		return nil, models.NewValidationError("Search query is required")
@@ -84,6 +91,7 @@ func (s *PostService) SearchPosts(ctx context.Context, query string, limit, offs
 	return posts, nil
 }
 
+// CreatePost creates a new post.
 func (s *PostService) CreatePost(ctx context.Context, in CreatePostInput) (*models.Post, error) {
 	postType := in.PostType
 	if postType == "" {
@@ -186,6 +194,7 @@ func (s *PostService) CreatePost(ctx context.Context, in CreatePostInput) (*mode
 	return s.getPostWithPollEnriched(ctx, post.ID, in.UserID)
 }
 
+// ListPosts returns posts for the feed with optional sanctum filter.
 func (s *PostService) ListPosts(ctx context.Context, in ListPostsInput) ([]*models.Post, error) {
 	var posts []*models.Post
 	var err error
@@ -239,6 +248,7 @@ func (s *PostService) ListPosts(ctx context.Context, in ListPostsInput) ([]*mode
 	return posts, nil
 }
 
+// GetPost returns a single post by ID with poll enriched if present.
 func (s *PostService) GetPost(ctx context.Context, id uint, currentUserID uint) (*models.Post, error) {
 	post, err := s.postRepo.GetByID(ctx, id, currentUserID)
 	if err != nil {
@@ -307,6 +317,7 @@ func (s *PostService) VotePoll(ctx context.Context, userID, postID, pollOptionID
 	return s.getPostWithPollEnriched(ctx, postID, userID)
 }
 
+// GetUserPosts returns posts by a user.
 func (s *PostService) GetUserPosts(ctx context.Context, userID uint, limit, offset int, currentUserID uint) ([]*models.Post, error) {
 	posts, err := s.postRepo.GetByUserID(ctx, userID, limit, offset, currentUserID)
 	if err != nil {
@@ -320,6 +331,7 @@ func (s *PostService) GetUserPosts(ctx context.Context, userID uint, limit, offs
 	return posts, nil
 }
 
+// UpdatePost updates a post (owner or admin).
 func (s *PostService) UpdatePost(ctx context.Context, in UpdatePostInput) (*models.Post, error) {
 	post, err := s.postRepo.GetByID(ctx, in.PostID, in.UserID)
 	if err != nil {
@@ -353,6 +365,7 @@ func (s *PostService) UpdatePost(ctx context.Context, in UpdatePostInput) (*mode
 	return post, nil
 }
 
+// DeletePost deletes a post (owner or admin).
 func (s *PostService) DeletePost(ctx context.Context, in DeletePostInput) error {
 	post, err := s.postRepo.GetByID(ctx, in.PostID, in.UserID)
 	if err != nil {
@@ -375,6 +388,7 @@ func (s *PostService) DeletePost(ctx context.Context, in DeletePostInput) error 
 	return s.postRepo.Delete(ctx, in.PostID)
 }
 
+// ToggleLike adds or removes a like on a post.
 func (s *PostService) ToggleLike(ctx context.Context, userID, postID uint) (*models.Post, error) {
 	isLiked, err := s.postRepo.IsLiked(ctx, userID, postID)
 	if err != nil {
@@ -394,6 +408,7 @@ func (s *PostService) ToggleLike(ctx context.Context, userID, postID uint) (*mod
 	return s.getPostWithPollEnriched(ctx, postID, userID)
 }
 
+// UnlikePost removes a like from a post.
 func (s *PostService) UnlikePost(ctx context.Context, userID, postID uint) (*models.Post, error) {
 	if err := s.postRepo.Unlike(ctx, userID, postID); err != nil {
 		return nil, err

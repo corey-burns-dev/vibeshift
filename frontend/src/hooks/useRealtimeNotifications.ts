@@ -445,13 +445,7 @@ export function useRealtimeNotifications(enabled = true) {
         }
       }
     },
-    [
-      queryClient,
-      addNotification,
-      setOnline,
-      setOffline,
-      setInitialOnlineUsers,
-    ]
+    [queryClient, addNotification, setOnline, setOffline, setInitialOnlineUsers]
   )
 
   const wsEnabled = enabled && !!accessToken
