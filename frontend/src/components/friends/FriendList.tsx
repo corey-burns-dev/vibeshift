@@ -1,6 +1,7 @@
 import { Link as LinkIcon, MessageCircle, UserX } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -12,6 +13,7 @@ import {
 import { useCreateConversation } from '@/hooks/useChat'
 import { useFriends, useRemoveFriend } from '@/hooks/useFriends'
 import { usePresenceStore } from '@/hooks/usePresence'
+import { getAvatarUrl } from '@/lib/chat-utils'
 
 export function FriendList() {
   const { data: friends, isLoading } = useFriends()
@@ -60,17 +62,15 @@ export function FriendList() {
       {friends.map(friend => (
         <Card key={friend.id}>
           <CardHeader className='flex flex-row items-center gap-4 pb-2'>
-            <div className='h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-lg font-semibold text-primary'>
-              {friend.avatar ? (
-                <img
-                  src={friend.avatar}
-                  alt={friend.username}
-                  className='h-10 w-10 rounded-full object-cover'
-                />
-              ) : (
-                friend.username[0].toUpperCase()
-              )}
-            </div>
+            <Avatar className='h-10 w-10 border border-border/60'>
+              <AvatarImage
+                src={friend.avatar || getAvatarUrl(friend.username)}
+                alt={friend.username}
+              />
+              <AvatarFallback>
+                {friend.username[0].toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
             <div className='flex-1 overflow-hidden'>
               <CardTitle className='text-base truncate'>
                 {friend.username}

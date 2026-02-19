@@ -183,6 +183,13 @@ func (s *ChatService) SendMessage(ctx context.Context, in SendMessageInput) (*mo
 		}
 	}
 	if conv.IsGroup {
+		banned, berr := s.userBannedInRoom(ctx, conv.ID, in.UserID)
+		if berr != nil {
+			return nil, nil, berr
+		}
+		if banned {
+			return nil, nil, models.NewForbiddenError("You are banned from this room")
+		}
 		muted, merr := s.userMutedInRoom(ctx, conv.ID, in.UserID)
 		if merr != nil {
 			return nil, nil, merr
@@ -333,8 +340,15 @@ func (s *ChatService) JoinChatroom(ctx context.Context, roomID, userID uint) (*m
 	if !conv.IsGroup {
 		return nil, models.NewValidationError("Cannot join a 1-on-1 conversation")
 	}
+	banned, err := s.userBannedInRoom(ctx, roomID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if banned {
+		return nil, models.NewForbiddenError("You are banned from this room")
+	}
 
-	err := s.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&models.ConversationParticipant{
+	err = s.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&models.ConversationParticipant{
 		ConversationID: roomID,
 		UserID:         userID,
 	}).Error
@@ -391,6 +405,24 @@ func (s *ChatService) RemoveParticipant(ctx context.Context, roomID, actorUserID
 	}
 
 	return username, nil
+}
+
+func (s *ChatService) userBannedInRoom(ctx context.Context, roomID, userID uint) (bool, error) {
+	if s.db == nil {
+		return false, nil
+	}
+	var count int64
+	err := s.db.WithContext(ctx).
+		Model(&models.ChatroomBan{}).
+		Where("conversation_id = ? AND user_id = ?", roomID, userID).
+		Count(&count).Error
+	if err != nil {
+		if isSchemaMissingError(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func isConversationParticipant(conv *models.Conversation, userID uint) bool {

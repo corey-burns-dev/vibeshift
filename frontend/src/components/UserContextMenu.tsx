@@ -3,9 +3,12 @@ import {
   Flag,
   Gamepad2,
   MessageCircle,
+  Shield,
+  Timer,
   User as UserIcon,
   UserMinus,
   UserPlus,
+  UserX,
 } from 'lucide-react'
 import type { User } from '@/api/types'
 import {
@@ -21,14 +24,30 @@ import { useUserActions } from '@/hooks/useUserActions'
 interface UserContextMenuProps {
   user: User
   children: React.ReactNode
+  moderationActions?: {
+    canModerate: boolean
+    canManageModerators: boolean
+    isMuted?: boolean
+    isBanned?: boolean
+    isModerator?: boolean
+    onKick?: () => void
+    onTimeout?: () => void
+    onToggleBan?: () => void
+    onToggleModerator?: () => void
+  }
 }
 
-export function UserContextMenu({ user, children }: UserContextMenuProps) {
+export function UserContextMenu({
+  user,
+  children,
+  moderationActions,
+}: UserContextMenuProps) {
   const {
     isSelf,
     handleViewProfile,
     handleMessage,
     handleJoinConnect4,
+    targetOnline,
     handleAddFriend,
     handleRemoveFriend,
     canAddFriend,
@@ -62,6 +81,63 @@ export function UserContextMenu({ user, children }: UserContextMenuProps) {
         </ContextMenuLabel>
         <ContextMenuSeparator />
 
+        {moderationActions?.canModerate && (
+          <>
+            <ContextMenuItem
+              onClick={event => {
+                event.stopPropagation()
+                moderationActions.onKick?.()
+              }}
+            >
+              <UserX className='mr-2 h-4 w-4' />
+              <span>Kick from room</span>
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={event => {
+                event.stopPropagation()
+                moderationActions.onTimeout?.()
+              }}
+            >
+              <Timer className='mr-2 h-4 w-4' />
+              <span>
+                {moderationActions.isMuted ? 'Update Timeout' : 'Timeout User'}
+              </span>
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={event => {
+                event.stopPropagation()
+                moderationActions.onToggleBan?.()
+              }}
+              className='text-destructive focus:text-destructive'
+            >
+              <Ban className='mr-2 h-4 w-4' />
+              <span>
+                {moderationActions.isBanned ? 'Unban from Room' : 'Ban from Room'}
+              </span>
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+          </>
+        )}
+
+        {moderationActions?.canManageModerators && (
+          <>
+            <ContextMenuItem
+              onClick={event => {
+                event.stopPropagation()
+                moderationActions.onToggleModerator?.()
+              }}
+            >
+              <Shield className='mr-2 h-4 w-4' />
+              <span>
+                {moderationActions.isModerator
+                  ? 'Remove Room Moderator'
+                  : 'Promote to Room Moderator'}
+              </span>
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+          </>
+        )}
+
         <ContextMenuItem
           onClick={event => {
             event.stopPropagation()
@@ -87,9 +163,10 @@ export function UserContextMenu({ user, children }: UserContextMenuProps) {
             event.stopPropagation()
             void handleJoinConnect4()
           }}
+          disabled={!targetOnline}
         >
           <Gamepad2 className='mr-2 h-4 w-4' />
-          <span>Join Connect 4</span>
+          <span>{targetOnline ? 'Join Connect 4' : 'Connect 4 (Offline)'}</span>
         </ContextMenuItem>
 
         <ContextMenuSeparator />

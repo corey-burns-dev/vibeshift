@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import type { Conversation, Message, User } from '@/api/types'
 import { MessageList } from '@/components/chat/MessageList'
 import { ParticipantsList } from '@/components/chat/ParticipantsList'
@@ -28,14 +29,23 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { useAudio } from '@/hooks/useAudio'
 import {
   useAllChatrooms,
+  useAddChatroomModerator,
+  useRoomBanUser,
+  useRoomBans,
+  useChatroomModerators,
   useConversation,
   useConversations,
+  useKickChatroomParticipant,
   useJoinChatroom,
   useJoinedChatrooms,
   useLeaveConversation,
   useMarkAsRead,
   useMessages,
+  useRoomMuteUser,
+  useRemoveChatroomModerator,
   useSendMessage,
+  useRoomUnbanUser,
+  useRoomMutes,
 } from '@/hooks/useChat'
 import { useFriends } from '@/hooks/useFriends'
 import { useIsMobile } from '@/hooks/useMediaQuery'
@@ -401,6 +411,26 @@ export default function Chat() {
     [selectedConversation, fallbackConversation]
   )
   const isCurrentConversationGroup = currentConversation?.is_group === true
+  const selectedRoomID = isCurrentConversationGroup
+    ? (currentConversation?.id ?? 0)
+    : 0
+  const canModerateCurrentRoom =
+    currentConversation?.capabilities?.can_moderate === true
+  const canManageCurrentRoomModerators =
+    currentConversation?.capabilities?.can_manage_moderators === true
+  const moderatorMgmtRoomID = canManageCurrentRoomModerators
+    ? selectedRoomID
+    : 0
+  const moderationRoomID = canModerateCurrentRoom ? selectedRoomID : 0
+  const roomModeratorsQuery = useChatroomModerators(moderatorMgmtRoomID)
+  const roomMutesQuery = useRoomMutes(moderationRoomID)
+  const roomBansQuery = useRoomBans(moderationRoomID)
+  const kickParticipant = useKickChatroomParticipant(selectedRoomID)
+  const muteParticipant = useRoomMuteUser(selectedRoomID)
+  const banParticipant = useRoomBanUser(selectedRoomID)
+  const unbanParticipant = useRoomUnbanUser(selectedRoomID)
+  const addRoomModerator = useAddChatroomModerator(selectedRoomID)
+  const removeRoomModerator = useRemoveChatroomModerator(selectedRoomID)
 
   const isJoinedViaList = useMemo(
     () => joinedChatrooms.some(c => c.id === selectedChatId),
@@ -437,7 +467,14 @@ export default function Chat() {
   const [participants, setParticipants] = useState<
     Record<
       number,
-      { id: number; username?: string; online?: boolean; typing?: boolean }
+      {
+        id: number
+        username?: string
+        avatar?: string
+        bio?: string
+        online?: boolean
+        typing?: boolean
+      }
     >
   >({})
   const setRoomParticipantsInCache = useCallback(
@@ -500,7 +537,14 @@ export default function Chat() {
     const usersList: User[] = currentConversation.participants || []
     const map: Record<
       number,
-      { id: number; username?: string; online?: boolean; typing?: boolean }
+      {
+        id: number
+        username?: string
+        avatar?: string
+        bio?: string
+        online?: boolean
+        typing?: boolean
+      }
     > = {}
 
     const shouldIncludeCurrentUser =
@@ -511,6 +555,8 @@ export default function Chat() {
       map[currentUser.id] = {
         id: currentUser.id,
         username: currentUser.username,
+        avatar: currentUser.avatar,
+        bio: currentUser.bio,
         online: true,
         typing: false,
       }
@@ -521,6 +567,8 @@ export default function Chat() {
         map[u.id] = {
           id: u.id,
           username: u.username,
+          avatar: u.avatar,
+          bio: u.bio,
           online: onlineUserIds.has(u.id),
           typing: false,
         }
@@ -592,12 +640,21 @@ export default function Chat() {
     (participantsList: User[]) => {
       const map: Record<
         number,
-        { id: number; username?: string; online?: boolean; typing?: boolean }
+        {
+          id: number
+          username?: string
+          avatar?: string
+          bio?: string
+          online?: boolean
+          typing?: boolean
+        }
       > = {}
       if (currentUser && userIsJoined) {
         map[currentUser.id] = {
           id: currentUser.id,
           username: currentUser.username,
+          avatar: currentUser.avatar,
+          bio: currentUser.bio,
           online: true,
           typing: false,
         }
@@ -607,6 +664,8 @@ export default function Chat() {
           map[u.id] = {
             id: u.id,
             username: u.username,
+            avatar: u.avatar,
+            bio: u.bio,
             online: onlineUserIds.has(u.id),
             typing: false,
           }
@@ -1310,6 +1369,113 @@ export default function Chat() {
       .map(p => p.username || 'Someone')
   }, [participants, currentUser?.id])
 
+  const moderatorIDs = useMemo(
+    () => new Set((roomModeratorsQuery.data ?? []).map(mod => mod.user_id)),
+    [roomModeratorsQuery.data]
+  )
+  const mutedIDs = useMemo(
+    () => new Set((roomMutesQuery.data ?? []).map(mute => mute.user_id)),
+    [roomMutesQuery.data]
+  )
+  const bannedIDs = useMemo(
+    () => new Set((roomBansQuery.data ?? []).map(ban => ban.user_id)),
+    [roomBansQuery.data]
+  )
+
+  const getModerationActions = useCallback(
+    (userId: number) => {
+      if (!selectedRoomID || !isCurrentConversationGroup) return undefined
+      if (!currentUser || currentUser.id === userId) return undefined
+      if (!canModerateCurrentRoom && !canManageCurrentRoomModerators) {
+        return undefined
+      }
+      return {
+        canModerate: canModerateCurrentRoom,
+        canManageModerators: canManageCurrentRoomModerators,
+        isMuted: mutedIDs.has(userId),
+        isBanned: bannedIDs.has(userId),
+        isModerator: moderatorIDs.has(userId),
+        onKick: () => {
+          kickParticipant.mutate(userId, {
+            onSuccess: () => toast.success('User removed from room'),
+            onError: () => toast.error('Failed to remove user'),
+          })
+        },
+        onTimeout: () => {
+          const minutesInput = window.prompt('Timeout minutes', '10')
+          if (!minutesInput) return
+          const minutes = Number.parseInt(minutesInput, 10)
+          if (!Number.isFinite(minutes) || minutes <= 0) {
+            toast.error('Enter a positive number of minutes')
+            return
+          }
+          const reason = window.prompt('Timeout reason (optional)') ?? ''
+          const mutedUntil = new Date(Date.now() + minutes * 60 * 1000)
+          muteParticipant.mutate(
+            {
+              userId,
+              payload: {
+                reason: reason.trim() || undefined,
+                muted_until: mutedUntil.toISOString(),
+              },
+            },
+            {
+              onSuccess: () => toast.success('Timeout applied'),
+              onError: () => toast.error('Failed to timeout user'),
+            }
+          )
+        },
+        onToggleBan: () => {
+          if (bannedIDs.has(userId)) {
+            unbanParticipant.mutate(userId, {
+              onSuccess: () => toast.success('User unbanned from room'),
+              onError: () => toast.error('Failed to unban user'),
+            })
+            return
+          }
+          const reason = window.prompt('Ban reason (optional)') ?? ''
+          banParticipant.mutate(
+            { userId, reason: reason.trim() || undefined },
+            {
+              onSuccess: () => toast.success('User banned from room'),
+              onError: () => toast.error('Failed to ban user'),
+            }
+          )
+        },
+        onToggleModerator: () => {
+          if (!canManageCurrentRoomModerators) return
+          if (moderatorIDs.has(userId)) {
+            removeRoomModerator.mutate(userId, {
+              onSuccess: () => toast.success('Room moderator removed'),
+              onError: () => toast.error('Failed to remove moderator'),
+            })
+            return
+          }
+          addRoomModerator.mutate(userId, {
+            onSuccess: () => toast.success('Room moderator added'),
+            onError: () => toast.error('Failed to add moderator'),
+          })
+        },
+      }
+    },
+    [
+      selectedRoomID,
+      isCurrentConversationGroup,
+      currentUser,
+      canModerateCurrentRoom,
+      canManageCurrentRoomModerators,
+      mutedIDs,
+      bannedIDs,
+      moderatorIDs,
+      kickParticipant,
+      muteParticipant,
+      banParticipant,
+      unbanParticipant,
+      addRoomModerator,
+      removeRoomModerator,
+    ]
+  )
+
   return (
     <div className='flex h-full min-h-0 flex-col overflow-hidden bg-background'>
       {allError && (
@@ -1752,6 +1918,7 @@ export default function Chat() {
                 isIRCStyle={isCurrentConversationGroup}
                 showTimestamps={showTimestamps}
                 scrollElement={scrollAreaRef.current}
+                getModerationActions={getModerationActions}
               />
             </div>
           </ScrollArea>
@@ -1896,6 +2063,7 @@ export default function Chat() {
                 <ParticipantsList
                   participants={participants}
                   onlineUserIds={onlineUserIds}
+                  getModerationActions={getModerationActions}
                 />
               </div>
             </ScrollArea>

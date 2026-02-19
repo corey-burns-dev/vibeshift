@@ -23,6 +23,8 @@ func setupSanctumAdminTestDB(t *testing.T) *gorm.DB {
 	if err := db.AutoMigrate(
 		&models.User{},
 		&models.Sanctum{},
+		&models.Conversation{},
+		&models.ChatroomModerator{},
 		&models.SanctumMembership{},
 	); err != nil {
 		t.Fatalf("migrate sqlite: %v", err)
@@ -70,6 +72,8 @@ func TestPromoteSanctumAdmin(t *testing.T) {
 	db.Create(&member)
 	sanctum := models.Sanctum{Name: "The Sanctum", Slug: "sanctum"}
 	db.Create(&sanctum)
+	room := models.Conversation{Name: "The Sanctum", IsGroup: true, CreatedBy: owner.ID, SanctumID: &sanctum.ID}
+	db.Create(&room)
 	db.Create(&models.SanctumMembership{SanctumID: sanctum.ID, UserID: owner.ID, Role: models.SanctumMembershipRoleOwner})
 	db.Create(&models.SanctumMembership{SanctumID: sanctum.ID, UserID: member.ID, Role: models.SanctumMembershipRoleMember})
 
@@ -90,6 +94,11 @@ func TestPromoteSanctumAdmin(t *testing.T) {
 		if membership.Role != models.SanctumMembershipRoleMod {
 			t.Errorf("expected mod role, got %s", membership.Role)
 		}
+
+		var roomMod models.ChatroomModerator
+		if err := db.Where("conversation_id = ? AND user_id = ?", room.ID, member.ID).First(&roomMod).Error; err != nil {
+			t.Fatalf("expected room moderator row: %v", err)
+		}
 	})
 }
 
@@ -105,8 +114,11 @@ func TestDemoteSanctumAdmin(t *testing.T) {
 	db.Create(&mod)
 	sanctum := models.Sanctum{Name: "The Sanctum", Slug: "sanctum"}
 	db.Create(&sanctum)
+	room := models.Conversation{Name: "The Sanctum", IsGroup: true, CreatedBy: owner.ID, SanctumID: &sanctum.ID}
+	db.Create(&room)
 	db.Create(&models.SanctumMembership{SanctumID: sanctum.ID, UserID: owner.ID, Role: models.SanctumMembershipRoleOwner})
 	db.Create(&models.SanctumMembership{SanctumID: sanctum.ID, UserID: mod.ID, Role: models.SanctumMembershipRoleMod})
+	db.Create(&models.ChatroomModerator{ConversationID: room.ID, UserID: mod.ID, GrantedByUserID: owner.ID})
 
 	app.Delete("/sanctums/:slug/admins/:userId", func(c *fiber.Ctx) error {
 		c.Locals("userID", owner.ID)
@@ -124,6 +136,16 @@ func TestDemoteSanctumAdmin(t *testing.T) {
 		db.Where("sanctum_id = ? AND user_id = ?", sanctum.ID, mod.ID).First(&membership)
 		if membership.Role != models.SanctumMembershipRoleMember {
 			t.Errorf("expected member role, got %s", membership.Role)
+		}
+
+		var count int64
+		if err := db.Model(&models.ChatroomModerator{}).
+			Where("conversation_id = ? AND user_id = ?", room.ID, mod.ID).
+			Count(&count).Error; err != nil {
+			t.Fatalf("count room moderator rows: %v", err)
+		}
+		if count != 0 {
+			t.Fatalf("expected room moderator row removed, count=%d", count)
 		}
 	})
 

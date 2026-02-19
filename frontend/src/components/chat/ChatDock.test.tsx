@@ -33,6 +33,7 @@ const chatDockState = {
   setActiveConversation: vi.fn(),
   removeOpenConversation: vi.fn(),
   clearOpenConversations: vi.fn(),
+  incrementUnread: vi.fn(),
 }
 
 vi.mock('@/hooks/useMediaQuery', () => ({

@@ -21,6 +21,17 @@ interface MessageItemProps {
   conversationId?: number
   isIRCStyle?: boolean
   showTimestamps?: boolean
+  moderationActions?: {
+    canModerate: boolean
+    canManageModerators: boolean
+    isMuted?: boolean
+    isBanned?: boolean
+    isModerator?: boolean
+    onKick?: () => void
+    onTimeout?: () => void
+    onToggleBan?: () => void
+    onToggleModerator?: () => void
+  }
 }
 
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '🔥', '😮']
@@ -96,6 +107,7 @@ export const MessageItem = memo(function MessageItem({
   conversationId,
   isIRCStyle = false,
   showTimestamps = true,
+  moderationActions,
 }: MessageItemProps) {
   const sender = message.sender
   const resolvedConversationId = conversationId ?? message.conversation_id
@@ -148,7 +160,7 @@ export const MessageItem = memo(function MessageItem({
     }
 
     return (
-      <UserMenu user={sender}>
+      <UserMenu user={sender} moderationActions={moderationActions}>
         <span
           className={cn(
             'cursor-pointer text-[13px] hover:underline',
@@ -189,7 +201,7 @@ export const MessageItem = memo(function MessageItem({
   return (
     <div className='group relative flex items-start gap-2 py-0.5'>
       {sender ? (
-        <UserMenu user={sender}>
+        <UserMenu user={sender} moderationActions={moderationActions}>
           <Avatar className='h-6 w-6 shrink-0 cursor-pointer transition-opacity hover:opacity-80'>
             <AvatarImage src={sender.avatar || getAvatarUrl(sender.username)} />
             <AvatarFallback className='text-[10px]'>

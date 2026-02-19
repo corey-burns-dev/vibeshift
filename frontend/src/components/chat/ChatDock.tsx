@@ -208,6 +208,12 @@ export function ChatDock() {
     clearOpenConversations,
   } = useChatDockStore()
 
+  // Stable ref always pointing to the latest handleSelectConversation.
+  // Used in toast onClick closures to avoid stale captures of the virtual-DM path.
+  const handleSelectConversationRef = useRef<(id: number | null) => void>(
+    () => {}
+  )
+
   const { data: conversations = [] } = useConversations()
   const { data: friends = [], isSuccess: friendsLoaded } = useFriends()
   const { mutate: createConversation } = useCreateConversation()
@@ -264,10 +270,24 @@ export function ChatDock() {
     unreadByConversation,
     incrementUnread,
     clearUnread,
+    seedUnread,
     subscribeOnMessage,
     subscribeOnTyping,
     subscribeOnPresence,
   } = useChatContext()
+
+  // Restore persisted unread counts into the context state on first mount so the
+  // floating-button badge is correct immediately after a page reload.
+  useEffect(() => {
+    const { unreadCounts } = useChatDockStore.getState()
+    const stringKeyed: Record<string, number> = {}
+    for (const [id, count] of Object.entries(unreadCounts)) {
+      if (count > 0) stringKeyed[String(id)] = count
+    }
+    if (Object.keys(stringKeyed).length > 0) {
+      seedUnread(stringKeyed)
+    }
+  }, [seedUnread]) // seedUnread is stable (useCallback with empty deps)
 
   const notifiedUserIds = usePresenceStore(state => state.notifiedUserIds)
   const markNotified = usePresenceStore(state => state.markNotified)
@@ -295,7 +315,7 @@ export function ChatDock() {
             type='button'
             className='flex w-full items-center gap-3 cursor-pointer border-none bg-transparent p-0 text-left'
             onClick={() => {
-              setActiveConversation(-userId)
+              handleSelectConversationRef.current(-userId)
               open()
             }}
           >
@@ -356,7 +376,7 @@ export function ChatDock() {
             type='button'
             className='flex w-full items-center gap-3 cursor-pointer border-none bg-transparent p-0 text-left'
             onClick={() => {
-              setActiveConversation(-friend.id)
+              handleSelectConversationRef.current(-friend.id)
               open()
             }}
           >
@@ -523,6 +543,8 @@ export function ChatDock() {
       let newUnreadCount = 0
       if (!isCurrentActive) {
         newUnreadCount = incrementUnread(conversationId)
+        // Mirror into the persisted store so the badge survives a page reload.
+        useChatDockStore.getState().incrementUnread(conversationId)
 
         const conv = friendDMConversations.find(c => c.id === conversationId)
         if (
@@ -641,13 +663,14 @@ export function ChatDock() {
     [activeConversationId, ctxSendTyping]
   )
 
-  const totalUnread = useMemo(() => {
-    let count = 0
-    for (const conv of friendDMConversations) {
-      count += unreadByConversation[String(conv.id)] || 0
-    }
-    return count
-  }, [friendDMConversations, unreadByConversation])
+  // Sum every entry in unreadByConversation. incrementUnread is only called for
+  // friend DMs so all entries here are legitimate unread counts; this also fixes
+  // the timing window where a new conversation's real ID is not yet present in
+  // friendDMConversations (virtual vs real ID mismatch).
+  const totalUnread = useMemo(
+    () => Object.values(unreadByConversation).reduce((sum, n) => sum + n, 0),
+    [unreadByConversation]
+  )
 
   const handleSelectConversation = useCallback(
     (id: number | null) => {
@@ -672,6 +695,9 @@ export function ChatDock() {
     },
     [clearUnread, createConversation, setActiveConversation]
   )
+  // Keep the ref current on every render so toast onClick closures always invoke
+  // the latest version without needing it in their effect dependency arrays.
+  handleSelectConversationRef.current = handleSelectConversation
 
   const conversationName = useMemo(() => {
     if (!activeConversationId) return 'Friends'

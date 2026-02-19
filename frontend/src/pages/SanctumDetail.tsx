@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { apiClient } from '@/api/client'
 import { SanctumNav } from '@/components/SanctumNav'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { getCurrentUser } from '@/hooks'
 import {
@@ -32,6 +34,47 @@ export default function SanctumDetail() {
   const sanctumAdminsQuery = useSanctumAdmins(slug, {
     enabled: canManageAdmins,
   })
+  const [sanctumPosts, setSanctumPosts] = useState<
+    Awaited<ReturnType<typeof apiClient.getPosts>>
+  >([])
+  const [sanctumPostsLoading, setSanctumPostsLoading] = useState(false)
+  const [sanctumPostsError, setSanctumPostsError] = useState<string | null>(
+    null
+  )
+
+  useEffect(() => {
+    if (!sanctumQuery.data?.id) return
+    let cancelled = false
+    setSanctumPostsLoading(true)
+    setSanctumPostsError(null)
+    apiClient
+      .getPosts({
+        sanctum_id: sanctumQuery.data.id,
+        limit: 40,
+        offset: 0,
+      })
+      .then(posts => {
+        if (!cancelled) {
+          setSanctumPosts(posts)
+        }
+      })
+      .catch(error => {
+        if (!cancelled) {
+          setSanctumPostsError(
+            error instanceof Error ? error.message : 'Failed to load posts'
+          )
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setSanctumPostsLoading(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [sanctumQuery.data?.id])
   const promoteSanctumAdmin = usePromoteSanctumAdmin(slug)
   const demoteSanctumAdmin = useDemoteSanctumAdmin(slug)
 
@@ -68,13 +111,6 @@ export default function SanctumDetail() {
               {sanctumQuery.data.description || 'No description yet.'}
             </p>
 
-            <div className='mt-5 rounded-xl border border-border/60 bg-background/50 p-4'>
-              <h2 className='font-semibold'>Feed</h2>
-              <p className='mt-1 text-sm text-muted-foreground'>
-                Feed placeholder for this sanctum.
-              </p>
-            </div>
-
             <div className='mt-5 flex flex-wrap gap-2'>
               <Button
                 onClick={() =>
@@ -87,6 +123,40 @@ export default function SanctumDetail() {
                 Room ID: {sanctumQuery.data.default_chat_room_id}
               </p>
             </div>
+
+            <section className='mt-5 rounded-xl border border-border/60 bg-background/50 p-4'>
+              <h2 className='font-semibold'>Posts in {sanctumQuery.data.name}</h2>
+              {sanctumPostsLoading ? (
+                <p className='mt-2 text-sm text-muted-foreground'>Loading posts...</p>
+              ) : sanctumPostsError ? (
+                <p className='mt-2 text-sm text-destructive'>
+                  Failed to load posts for this sanctum.
+                </p>
+              ) : sanctumPosts.length === 0 ? (
+                <p className='mt-2 text-sm text-muted-foreground'>
+                  No posts in this sanctum yet.
+                </p>
+              ) : (
+                <div className='mt-3 space-y-2'>
+                  {sanctumPosts.map(post => (
+                    <Card
+                      key={post.id}
+                      className='cursor-pointer rounded-xl border border-border/60 transition-colors hover:bg-muted/40'
+                      onClick={() => navigate(`/posts/${post.id}`)}
+                    >
+                      <CardContent className='p-3'>
+                        <p className='text-sm font-semibold'>
+                          {post.title || 'Untitled Post'}
+                        </p>
+                        <p className='mt-1 line-clamp-2 text-xs text-muted-foreground'>
+                          {post.content}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </section>
 
             {canManageAdmins ? (
               <section className='mt-5 rounded-xl border border-border/60 bg-background/50 p-4'>

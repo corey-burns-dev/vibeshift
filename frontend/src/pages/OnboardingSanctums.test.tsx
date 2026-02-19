@@ -6,6 +6,7 @@ import OnboardingSanctums from '@/pages/OnboardingSanctums'
 
 const navigateMock = vi.fn()
 const mutateAsyncMock = vi.fn()
+const useIsMobileMock = vi.fn(() => false)
 
 const sanctums = [
   {
@@ -48,6 +49,16 @@ const sanctums = [
     created_at: '',
     updated_at: '',
   },
+  {
+    id: 5,
+    name: 'Movies',
+    slug: 'movies',
+    description: 'Movies',
+    status: 'active',
+    default_chat_room_id: 5,
+    created_at: '',
+    updated_at: '',
+  },
 ]
 
 let sanctumsData = sanctums
@@ -60,6 +71,10 @@ vi.mock('react-router-dom', async () => {
     useNavigate: () => navigateMock,
   }
 })
+
+vi.mock('@/hooks/useMediaQuery', () => ({
+  useIsMobile: () => useIsMobileMock(),
+}))
 
 vi.mock('@/hooks/useSanctums', () => ({
   useSanctums: () => ({
@@ -77,79 +92,62 @@ describe('OnboardingSanctums', () => {
   afterEach(() => {
     mutateAsyncMock.mockReset()
     navigateMock.mockReset()
+    useIsMobileMock.mockReturnValue(false)
     sanctumsData = sanctums
   })
 
-  it('forces Atrium and preselects Atrium + Forge + Game Room', () => {
+  it('starts with no sanctums selected and keeps continue enabled', () => {
     const { container } = render(
       <MemoryRouter>
         <OnboardingSanctums />
       </MemoryRouter>
     )
 
-    const atrium = container.querySelector(
-      '#sanctum-atrium'
-    ) as HTMLInputElement
-    const forge = container.querySelector(
-      '#sanctum-development'
-    ) as HTMLInputElement
-    const gameRoom = container.querySelector(
-      '#sanctum-gaming'
-    ) as HTMLInputElement
-    const continueButton = screen.getByRole('button', { name: 'Continue' })
-
-    expect(atrium.checked).toBe(true)
-    expect(atrium.disabled).toBe(true)
-    expect(forge.checked).toBe(true)
-    expect(gameRoom.checked).toBe(true)
-    expect(continueButton).toBeEnabled()
+    sanctums.forEach(sanctum => {
+      const checkbox = container.querySelector(
+        `#sanctum-${sanctum.slug}`
+      ) as HTMLInputElement
+      expect(checkbox.checked).toBe(false)
+    })
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled()
   })
 
-  it('requires at least 3 sanctums before submit', async () => {
-    const user = userEvent.setup()
-    const { container } = render(
-      <MemoryRouter>
-        <OnboardingSanctums />
-      </MemoryRouter>
-    )
-
-    const forge = container.querySelector('#sanctum-development')
-    const gameRoom = container.querySelector('#sanctum-gaming')
-    await user.click(forge as HTMLInputElement)
-    await user.click(gameRoom as HTMLInputElement)
-
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled()
-  })
-
-  it('submits selected sanctums and redirects home', async () => {
+  it('lets users check sanctums and submits exact selected list', async () => {
     mutateAsyncMock.mockResolvedValue([])
     const user = userEvent.setup()
-
-    render(
+    const { container } = render(
       <MemoryRouter>
         <OnboardingSanctums />
       </MemoryRouter>
     )
 
+    await user.click(container.querySelector('#sanctum-atrium') as HTMLElement)
+    await user.click(
+      container.querySelector('#sanctum-development') as HTMLElement
+    )
+    await user.click(container.querySelector('#sanctum-gaming') as HTMLElement)
     await user.click(screen.getByRole('button', { name: 'Continue' }))
 
     expect(mutateAsyncMock).toHaveBeenCalledWith({
       sanctum_slugs: ['atrium', 'development', 'gaming'],
     })
-    expect(navigateMock).toHaveBeenCalledWith('/posts')
+    expect(navigateMock).toHaveBeenCalledWith('/')
   })
 
-  it('keeps Continue disabled when only two visible sanctums are selected', () => {
-    sanctumsData = sanctums.filter(
-      sanctum => sanctum.slug === 'atrium' || sanctum.slug === 'development'
-    )
-
+  it('shows pagination controls on mobile and changes visible cards', async () => {
+    useIsMobileMock.mockReturnValue(true)
+    const user = userEvent.setup()
     render(
       <MemoryRouter>
         <OnboardingSanctums />
       </MemoryRouter>
     )
 
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled()
+    expect(screen.getByText('1 / 2')).toBeInTheDocument()
+    expect(screen.queryByText('The Game Room')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    expect(screen.getByText('2 / 2')).toBeInTheDocument()
+    expect(screen.getByText('The Game Room')).toBeInTheDocument()
   })
 })

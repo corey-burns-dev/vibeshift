@@ -51,6 +51,7 @@ interface ChatContextValue {
   getUnread: (conversationId: number) => number
   incrementUnread: (conversationId: number) => number
   clearUnread: (conversationId: number) => void
+  seedUnread: (counts: Record<string, number>) => void
   sendTyping: (conversationId: number, isTyping: boolean) => void
   sendMessage: (conversationId: number, content: string) => void
   markAsRead: (conversationId: number) => void
@@ -430,6 +431,21 @@ export function ChatProvider({ children }: ChatProviderProps) {
     }
     unreadByConversationRef.current = nextUnread
     setUnreadByConversation(nextUnread)
+  }, [])
+
+  // Bulk-seed unread counts from a persisted source (e.g. store on page load).
+  // Only seeds entries that are not already tracked and have a positive count.
+  const seedUnread = useCallback((counts: Record<string, number>) => {
+    const toSeed: Record<string, number> = {}
+    for (const [key, val] of Object.entries(counts)) {
+      if (val > 0 && !(key in unreadByConversationRef.current)) {
+        toSeed[key] = val
+      }
+    }
+    if (Object.keys(toSeed).length === 0) return
+    const next = { ...unreadByConversationRef.current, ...toSeed }
+    unreadByConversationRef.current = next
+    setUnreadByConversation(next)
   }, [])
 
   const refreshBlockedUsers = useCallback(async () => {
@@ -960,6 +976,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
       getUnread,
       incrementUnread,
       clearUnread,
+      seedUnread,
       sendTyping,
       sendMessage,
       markAsRead,
@@ -994,6 +1011,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
       getUnread,
       incrementUnread,
       clearUnread,
+      seedUnread,
       sendTyping,
       sendMessage,
       markAsRead,

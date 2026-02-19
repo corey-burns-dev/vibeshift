@@ -569,6 +569,14 @@ func (s *Server) ApproveSanctumRequest(c *fiber.Ctx) error {
 		if err := tx.Create(defaultRoom).Error; err != nil {
 			return err
 		}
+		roomModerator := models.ChatroomModerator{
+			ConversationID:  defaultRoom.ID,
+			UserID:          approvedRequest.RequestedByUserID,
+			GrantedByUserID: approvedRequest.RequestedByUserID,
+		}
+		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&roomModerator).Error; err != nil {
+			return err
+		}
 
 		approvedRequest.Status = models.SanctumRequestStatusApproved
 		approvedRequest.ReviewedByUserID = &reviewerID

@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { apiClient } from '@/api/client'
 import type { SanctumDTO } from '@/api/types'
 import {
   useDemoteSanctumAdmin,
@@ -22,12 +23,19 @@ vi.mock('@/hooks/useSanctums', () => ({
   useDemoteSanctumAdmin: vi.fn(),
 }))
 
+vi.mock('@/api/client', () => ({
+  apiClient: {
+    getPosts: vi.fn(),
+  },
+}))
+
 const mockedUseSanctums = vi.mocked(useSanctums)
 const mockedUseSanctum = vi.mocked(useSanctum)
 const mockedUseMyMemberships = vi.mocked(useMySanctumMemberships)
 const mockedUseSanctumAdmins = vi.mocked(useSanctumAdmins)
 const mockedUsePromoteAdmin = vi.mocked(usePromoteSanctumAdmin)
 const mockedUseDemoteAdmin = vi.mocked(useDemoteSanctumAdmin)
+const mockedGetPosts = vi.mocked(apiClient.getPosts)
 
 function makeSanctum(id: number, name: string, slug: string): SanctumDTO {
   return {
@@ -50,6 +58,7 @@ describe('Sanctum routes', () => {
     mockedUseSanctumAdmins.mockReset()
     mockedUsePromoteAdmin.mockReset()
     mockedUseDemoteAdmin.mockReset()
+    mockedGetPosts.mockReset()
   })
 
   it('loads /sanctums list shell', () => {
@@ -97,7 +106,7 @@ describe('Sanctum routes', () => {
     expect(screen.getAllByText('The Atrium').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('loads /s/:slug detail shell', () => {
+  it('loads /s/:slug detail shell', async () => {
     const all = [
       makeSanctum(1, 'The Atrium', 'atrium'),
       makeSanctum(2, 'The Forge', 'development'),
@@ -145,6 +154,13 @@ describe('Sanctum routes', () => {
       mutate: vi.fn(),
       isPending: false,
     } as never)
+    mockedGetPosts.mockResolvedValue([
+      {
+        id: 100,
+        title: 'Atrium Update',
+        content: 'Only this sanctum',
+      },
+    ] as never)
 
     render(
       <MemoryRouter initialEntries={['/s/atrium']}>
@@ -160,5 +176,11 @@ describe('Sanctum routes', () => {
     expect(
       screen.getByRole('button', { name: 'Open Chat' })
     ).toBeInTheDocument()
+    expect(await screen.findByText('Atrium Update')).toBeInTheDocument()
+    expect(mockedGetPosts).toHaveBeenCalledWith({
+      sanctum_id: 1,
+      limit: 40,
+      offset: 0,
+    })
   })
 })

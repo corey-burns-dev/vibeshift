@@ -6,6 +6,7 @@ import {
   useDeletePost,
   useInfinitePosts,
   useLikePost,
+  useMembershipFeedPosts,
 } from '@/hooks/usePosts'
 import { getCurrentUser, useIsAuthenticated } from '@/hooks/useUsers'
 import Posts from '@/pages/Posts'
@@ -29,6 +30,7 @@ vi.mock('@/hooks/usePosts', () => ({
   useCreatePost: vi.fn(),
   useLikePost: vi.fn(),
   useDeletePost: vi.fn(),
+  useMembershipFeedPosts: vi.fn(),
 }))
 
 vi.mock('@/hooks/useUsers', () => ({
@@ -65,6 +67,14 @@ describe('Posts media upload flow', () => {
     } as never)
     asReturnMock(useLikePost).mockReturnValue({
       mutate: vi.fn(),
+    } as never)
+    asReturnMock(useMembershipFeedPosts).mockReturnValue({
+      memberships: [],
+      posts: [],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      hasMore: false,
     } as never)
     asReturnMock(useCreatePost).mockReturnValue({
       mutateAsync: vi.fn().mockResolvedValue({}),

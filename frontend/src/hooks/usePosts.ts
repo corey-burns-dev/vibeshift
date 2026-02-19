@@ -3,6 +3,7 @@
 import {
   useInfiniteQuery,
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
@@ -15,6 +16,7 @@ import type {
   UpdatePostRequest,
 } from '../api/types'
 import { handleAuthOrFKError } from '../lib/handleAuthOrFKError'
+import { useMySanctumMemberships } from './useSanctums'
 
 // Query keys
 export const postKeys = {
@@ -36,11 +38,15 @@ export function usePosts(params?: PaginationParams) {
 }
 
 // Get all posts with infinite scroll
-export function useInfinitePosts(limit = 10) {
+export function useInfinitePosts(limit = 10, sanctumID?: number) {
   return useInfiniteQuery({
-    queryKey: ['posts', 'infinite', limit],
+    queryKey: ['posts', 'infinite', limit, sanctumID ?? 'all'],
     queryFn: ({ pageParam = 0 }) =>
-      apiClient.getPosts({ offset: pageParam, limit }),
+      apiClient.getPosts({
+        offset: pageParam,
+        limit,
+        sanctum_id: sanctumID,
+      }),
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.length < limit) return undefined
       return allPages.length * limit
@@ -50,6 +56,65 @@ export function useInfinitePosts(limit = 10) {
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   })
+}
+
+export function useMembershipFeedPosts(limitPerSanctum = 10, page = 1) {
+  const membershipsQuery = useMySanctumMemberships()
+  const sanctumIDs = (membershipsQuery.data ?? []).map(m => m.sanctum_id)
+  const cappedPage = Math.max(page, 1)
+  const fetchLimit = limitPerSanctum * cappedPage
+
+  const perSanctumQueries = useQueries({
+    queries: sanctumIDs.map(sanctumID => ({
+      queryKey: ['posts', 'membership-feed', sanctumID, fetchLimit],
+      queryFn: () =>
+        apiClient.getPosts({
+          offset: 0,
+          limit: fetchLimit,
+          sanctum_id: sanctumID,
+        }),
+      staleTime: 60_000,
+      enabled: membershipsQuery.isSuccess,
+    })),
+  })
+
+  const isLoading =
+    membershipsQuery.isLoading ||
+    (membershipsQuery.isSuccess &&
+      perSanctumQueries.some(query => query.isLoading))
+  const isFetching =
+    membershipsQuery.isFetching ||
+    perSanctumQueries.some(query => query.isFetching)
+  const isError =
+    membershipsQuery.isError || perSanctumQueries.some(query => query.isError)
+
+  const seen = new Set<number>()
+  const mergedPosts = perSanctumQueries
+    .flatMap(query => query.data ?? [])
+    .filter(post => {
+      if (!post.sanctum_id || seen.has(post.id)) {
+        return false
+      }
+      seen.add(post.id)
+      return true
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
+
+  const hasMore = perSanctumQueries.some(
+    query => (query.data?.length ?? 0) >= fetchLimit
+  )
+
+  return {
+    memberships: membershipsQuery.data ?? [],
+    posts: mergedPosts,
+    isLoading,
+    isFetching,
+    isError,
+    hasMore,
+  }
 }
 
 // Get single post
