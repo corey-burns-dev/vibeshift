@@ -18,8 +18,9 @@ test.describe('Stress Journeys', () => {
 
   test('User can create a post from feed @smoke', async ({ page }) => {
     const postText = `Stress test post from Playwright ${Date.now()}`
-    await page.goto('/posts')
-    await expect(page).toHaveURL(/\/posts/)
+    // Canonical feed route is "/" ("/posts" redirects to "/").
+    await page.goto('/')
+    await expect(page).toHaveURL(/\/$/)
     await page.evaluate(() => window.scrollTo(0, 0))
     const composerToggle = page
       .getByRole('button', { name: /what's on your mind/i })
