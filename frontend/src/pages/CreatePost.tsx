@@ -29,7 +29,12 @@ export default function CreatePost() {
   const [linkURL, setLinkURL] = useState('')
   const [youtubeURL, setYoutubeURL] = useState('')
   const [pollQuestion, setPollQuestion] = useState('')
-  const [pollOptions, setPollOptions] = useState<string[]>(['', ''])
+  const [pollOptions, setPollOptions] = useState<
+    { id: string; value: string }[]
+  >([
+    { id: crypto.randomUUID(), value: '' },
+    { id: crypto.randomUUID(), value: '' },
+  ])
   const [target, setTarget] = useState<'main' | number>('main')
   const [isUploadingImage, setIsUploadingImage] = useState(false)
 
@@ -54,7 +59,7 @@ export default function CreatePost() {
       case 'poll':
         return (
           Boolean(pollQuestion.trim()) &&
-          pollOptions.filter(option => option.trim()).length >= 2
+          pollOptions.filter(option => option.value.trim()).length >= 2
         )
       default:
         return Boolean(content.trim())
@@ -95,7 +100,9 @@ export default function CreatePost() {
         postType === 'poll'
           ? {
               question: pollQuestion.trim(),
-              options: pollOptions.map(option => option.trim()).filter(Boolean),
+              options: pollOptions
+                .map(option => option.value.trim())
+                .filter(Boolean),
             }
           : undefined,
     }
@@ -233,13 +240,16 @@ export default function CreatePost() {
               />
               {pollOptions.map((option, index) => (
                 <input
-                  key={`poll-option-${index}-${option}`}
+                  key={option.id}
                   type='text'
-                  value={option}
+                  value={option.value}
                   onChange={event =>
                     setPollOptions(prev => {
                       const next = [...prev]
-                      next[index] = event.target.value
+                      next[index] = {
+                        ...next[index],
+                        value: event.target.value,
+                      }
                       return next
                     })
                   }
@@ -251,7 +261,12 @@ export default function CreatePost() {
                 type='button'
                 variant='outline'
                 size='sm'
-                onClick={() => setPollOptions(prev => [...prev, ''])}
+                onClick={() =>
+                  setPollOptions(prev => [
+                    ...prev,
+                    { id: crypto.randomUUID(), value: '' },
+                  ])
+                }
               >
                 Add option
               </Button>
