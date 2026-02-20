@@ -55,6 +55,18 @@ echo "Ensuring e2e compose stack is up..."
 export REDIS_HOST_PORT=${REDIS_HOST_PORT:-6380}
 (cd "$REPO_ROOT" && "$REPO_ROOT/scripts/compose.sh" -f compose.yml -f compose.override.yml -f compose.e2e.override.yml up -d --force-recreate --wait --wait-timeout 120 postgres_test redis app)
 
+# Stop any running Docker frontend container so Playwright's webServer uses the
+# host-side Vite dev server (fresh node_modules). The Docker frontend image may
+# have a stale node_modules volume from before a package update, which causes the
+# React app to render blank pages for all routes.
+if command -v docker >/dev/null 2>&1; then
+  FRONTEND_CID=$(docker ps -q --filter "name=sanctum-frontend" 2>/dev/null || true)
+  if [ -n "$FRONTEND_CID" ]; then
+    echo "Stopping Docker frontend container so host Vite dev server is used..."
+    docker stop "$FRONTEND_CID" >/dev/null
+  fi
+fi
+
 if command -v psql >/dev/null 2>&1; then
   if ! PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -c '\q' >/dev/null 2>&1; then
     echo "Waiting briefly for DB to accept connections..."
