@@ -183,8 +183,8 @@ func (m *ConnectionManager) Touch(ctx context.Context, userID uint) {
 	if err := m.rdb.SAdd(ctx, m.onlineSetKey, uid).Err(); err != nil {
 		log.Printf("presence touch SADD failed for user %d: %v", userID, err)
 	}
-	if err := m.rdb.SetEx(ctx, m.lastSeenKey(userID), strconv.FormatInt(time.Now().Unix(), 10), m.lastSeenTTL).Err(); err != nil {
-		log.Printf("presence touch SETEX failed for user %d: %v", userID, err)
+	if err := m.rdb.Set(ctx, m.lastSeenKey(userID), strconv.FormatInt(time.Now().Unix(), 10), m.lastSeenTTL).Err(); err != nil {
+		log.Printf("presence touch SET failed for user %d: %v", userID, err)
 	}
 }
 
