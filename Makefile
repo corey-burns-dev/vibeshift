@@ -410,7 +410,7 @@ test: test-backend
 
 test-backend:
 	@echo "$(BLUE)Running backend tests...$(NC)"
-	cd backend && $(GO) test -race ./...
+	cd backend && CGO_CFLAGS="$$CGO_CFLAGS -Wno-discarded-qualifiers" $(GO) test -race ./...
 
 test-load:
 	@echo "$(BLUE)Running backend load smoke tests...$(NC)"
@@ -734,7 +734,7 @@ test-down:
 
 test-backend-integration: test-up
 	@echo "$(BLUE)Running backend integration tests (tag=integration)...$(NC)"
-	cd backend && $(GO) test -race -tags=integration ./test/...
+	cd backend && CGO_CFLAGS="$$CGO_CFLAGS -Wno-discarded-qualifiers" $(GO) test -race -tags=integration ./test/...
 	@echo "$(GREEN)✓ Integration tests finished$(NC)"
 
 # Database seeding
