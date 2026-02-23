@@ -699,11 +699,19 @@ verify-githooks:
 test-e2e:
 	@echo "$(BLUE)Running E2E smoke tests...$(NC)"
 	@echo "$(YELLOW)Ensure backend is running (make dev or make test-e2e-up) and frontend (make dev-frontend).$(NC)"
-	PLAYWRIGHT_API_URL=$${PLAYWRIGHT_API_URL:-http://127.0.0.1:8375/api} cd frontend && $(BUN) run test:e2e:smoke
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+	export PLAYWRIGHT_API_URL=$${PLAYWRIGHT_API_URL:-http://127.0.0.1:8375/api}; \
+	export PGHOST=$${PGHOST:-localhost}; \
+	export PGPORT=5433; \
+	export PGUSER=$${POSTGRES_USER:-sanctum_user}; \
+	export PGPASSWORD=$${POSTGRES_PASSWORD:-sanctum_password}; \
+	export PGDATABASE=$${POSTGRES_DB:-sanctum_test}; \
+	cd frontend && $(BUN) run test:e2e:smoke
 
 test-e2e-up:
 	@echo "$(BLUE)Starting e2e test stack (app -> sanctum_test)...$(NC)"
-	@./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.e2e.override.yml up -d --wait --wait-timeout 120 postgres_test redis app
+	@./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.e2e.override.yml up -d --wait --wait-timeout 120 postgres_test redis
+	@./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.e2e.override.yml up -d --force-recreate --wait --wait-timeout 120 app
 	@echo "$(GREEN)✓ e2e stack started$(NC)"
 
 test-e2e-down:

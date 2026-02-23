@@ -11,10 +11,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/health': 'http://app:8375',
-      '/ping': 'http://app:8375',
+      '/health': process.env.VITE_BACKEND_URL || 'http://localhost:8375',
+      '/ping': process.env.VITE_BACKEND_URL || 'http://localhost:8375',
       '/api': {
-        target: 'http://app:8375',
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:8375',
         changeOrigin: true,
         ws: true,
         configure: (proxy, _options) => {
@@ -42,7 +42,7 @@ export default defineConfig({
         },
       },
       '/media': {
-        target: 'http://app:8375',
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:8375',
         changeOrigin: true,
       },
       '/live': {

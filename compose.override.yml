@@ -43,6 +43,7 @@ services:
       - "${VITE_PORT:-5173}:5173"
     environment:
       - VITE_API_URL=http://localhost:8375/api
+      - VITE_BACKEND_URL=http://app:8375
     command: sh -c "bun install && bun run dev"
     volumes:
       - ./frontend:/app
