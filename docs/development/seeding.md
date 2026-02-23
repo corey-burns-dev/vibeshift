@@ -16,6 +16,8 @@ make seed
 This will create:
 
 - **15 test users** with realistic profiles
+- **Sanctum memberships** for seeded users across built-in sanctums
+- **Category-aware sanctum posts** so `/feed` has subscribed content immediately
 - **30-60 posts** with varied content
 - **50+ comments** on posts
 - **Random likes** on posts
@@ -81,7 +83,7 @@ cd backend
 go run cmd/seed/main.go -all-sanctums -count 10
 
 # Seed a single sanctum by slug with 5 posts
-go run cmd/seed/main.go -sanctum pc-gaming -count 5
+go run cmd/seed/main.go -sanctum pcgaming -count 5
 ```
 
 Validate seed distribution (requires `psql` and `DATABASE_URL` env var):

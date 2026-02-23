@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { apiClient } from '@/api/client'
 import type { SanctumDTO } from '@/api/types'
+import { useIsAuthenticated } from '@/hooks'
 import {
   useDemoteSanctumAdmin,
   useMySanctumMemberships,
@@ -22,7 +23,19 @@ vi.mock('@/hooks/useSanctums', () => ({
   useSanctumAdmins: vi.fn(),
   usePromoteSanctumAdmin: vi.fn(),
   useDemoteSanctumAdmin: vi.fn(),
+  useUpsertMySanctumMemberships: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+  })),
 }))
+
+vi.mock('@/hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks')>()
+  return {
+    ...actual,
+    useIsAuthenticated: vi.fn(),
+  }
+})
 
 vi.mock('@/api/client', () => ({
   apiClient: {
@@ -42,6 +55,7 @@ const mockedUseMyMemberships = vi.mocked(useMySanctumMemberships)
 const mockedUseSanctumAdmins = vi.mocked(useSanctumAdmins)
 const mockedUsePromoteAdmin = vi.mocked(usePromoteSanctumAdmin)
 const mockedUseDemoteAdmin = vi.mocked(useDemoteSanctumAdmin)
+const mockedUseIsAuthenticated = vi.mocked(useIsAuthenticated)
 const mockedGetPosts = vi.mocked(apiClient.getPosts)
 
 function makeSanctum(id: number, name: string, slug: string): SanctumDTO {
@@ -65,10 +79,12 @@ describe('Sanctum routes', () => {
     mockedUseSanctumAdmins.mockReset()
     mockedUsePromoteAdmin.mockReset()
     mockedUseDemoteAdmin.mockReset()
+    mockedUseIsAuthenticated.mockReset()
     mockedGetPosts.mockReset()
   })
 
   it('loads /sanctums list shell', () => {
+    mockedUseIsAuthenticated.mockReturnValue(true)
     mockedUseSanctums.mockReturnValue({
       data: [makeSanctum(1, 'The Atrium', 'atrium')],
       isLoading: false,
@@ -114,6 +130,7 @@ describe('Sanctum routes', () => {
   })
 
   it('loads /s/:slug feed shell', async () => {
+    mockedUseIsAuthenticated.mockReturnValue(true)
     const all = [
       makeSanctum(1, 'The Atrium', 'atrium'),
       makeSanctum(2, 'The Forge', 'development'),
@@ -174,14 +191,12 @@ describe('Sanctum routes', () => {
       screen.getByRole('heading', { name: 'The Atrium' })
     ).toBeInTheDocument()
     expect(screen.getByText('Posts scoped to 1')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute(
-      'href',
-      '/sanctums/atrium/manage'
-    )
+    expect(screen.getByRole('button', { name: 'Join' })).toBeInTheDocument()
     expect(mockedGetPosts).not.toHaveBeenCalled()
   })
 
   it('loads /sanctums/:slug/manage legacy detail shell', async () => {
+    mockedUseIsAuthenticated.mockReturnValue(true)
     const all = [
       makeSanctum(1, 'The Atrium', 'atrium'),
       makeSanctum(2, 'The Forge', 'development'),

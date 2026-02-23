@@ -23,8 +23,8 @@ function SanctumSection({
   const location = useLocation()
 
   return (
-    <section className='space-y-1.5'>
-      <p className='flex items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground'>
+    <section className='space-y-2'>
+      <p className='flex items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground'>
         <Icon className='h-3.5 w-3.5' />
         {title}
       </p>
@@ -42,10 +42,10 @@ function SanctumSection({
                 key={item.id}
                 to={path}
                 className={cn(
-                  'block rounded-lg px-2.5 py-2 text-sm transition-colors',
+                  'block rounded-md px-2.5 py-2 text-sm transition-colors',
                   active
-                    ? 'bg-primary/15 text-primary'
-                    : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+                    ? 'bg-primary/12 text-primary'
+                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                 )}
               >
                 {item.name}
@@ -60,8 +60,8 @@ function SanctumSection({
 
 export function SanctumNav({ system, featured, explore }: SanctumNavProps) {
   return (
-    <aside className='w-full rounded-2xl border border-border/70 bg-card/70 p-4 shadow-xl backdrop-blur-xl lg:sticky lg:top-20 lg:w-74 lg:self-start'>
-      <div className='mb-4 flex items-center justify-between'>
+    <aside className='w-full rounded-xl border border-border/70 bg-card p-4 lg:sticky lg:top-20 lg:w-74 lg:self-start'>
+      <div className='mb-5 flex items-center justify-between'>
         <h2 className='text-sm font-semibold'>Sanctums</h2>
         <Link
           to='/sanctums'
@@ -71,7 +71,7 @@ export function SanctumNav({ system, featured, explore }: SanctumNavProps) {
         </Link>
       </div>
 
-      <div className='space-y-4'>
+      <div className='space-y-5'>
         <SanctumSection title='System' icon={Sparkles} items={system} />
         <SanctumSection title='Featured' icon={Star} items={featured} />
         <SanctumSection title='Explore' icon={Compass} items={explore} />

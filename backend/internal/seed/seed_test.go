@@ -13,9 +13,9 @@ func TestComputeCounts_Default(t *testing.T) {
 }
 
 func TestComputeCounts_PCReplace(t *testing.T) {
-	d, ok := CategoryDistributions["pc-gaming"]
+	d, ok := CategoryDistributions["pcgaming"]
 	if !ok {
-		t.Fatalf("pc-gaming distribution not found")
+		t.Fatalf("pcgaming distribution not found")
 	}
 	text, media, link, video := computeCounts(10, d)
 	if text+media+link+video != 10 {

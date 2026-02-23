@@ -18,9 +18,8 @@ type BuiltInSanctum struct {
 
 // BuiltInSanctums defines the permanent system sanctums.
 var BuiltInSanctums = []BuiltInSanctum{
-	{Name: "Atrium", Slug: "atrium", Description: "General community discussions."},
 	{Name: "General", Slug: "general", Description: "Core discussion for Sanctum."},
-	{Name: "Herald Announcements", Slug: "herald", Description: "Announcements and platform updates."},
+	{Name: "Announcements", Slug: "herald", Description: "Announcements and platform updates."},
 	{Name: "Support", Slug: "support", Description: "Help and troubleshooting."},
 	{Name: "Movies", Slug: "movies", Description: "Film discussion and recommendations."},
 	{Name: "Television", Slug: "television", Description: "TV shows and series conversation."},
@@ -37,9 +36,15 @@ var BuiltInSanctums = []BuiltInSanctum{
 	{Name: "Food", Slug: "food", Description: "Food, cooking, and nutrition."},
 }
 
+var removedBuiltInSanctumSlugs = []string{"atrium"}
+
 // Sanctums seeds permanent built-in sanctums and their default chat rooms.
 func Sanctums(db *gorm.DB) error {
 	return db.Transaction(func(tx *gorm.DB) error {
+		if err := removeLegacyBuiltIns(tx); err != nil {
+			return err
+		}
+
 		for _, item := range BuiltInSanctums {
 			var sanctum models.Sanctum
 
@@ -102,4 +107,27 @@ func Sanctums(db *gorm.DB) error {
 		}
 		return nil
 	})
+}
+
+func removeLegacyBuiltIns(tx *gorm.DB) error {
+	for _, slug := range removedBuiltInSanctumSlugs {
+		var sanctum models.Sanctum
+		err := tx.Where("slug = ?", slug).First(&sanctum).Error
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				continue
+			}
+			return err
+		}
+
+		if err := tx.Unscoped().Where("sanctum_id = ?", sanctum.ID).Delete(&models.Conversation{}).Error; err != nil {
+			return fmt.Errorf("failed to delete conversations for legacy sanctum %s: %w", slug, err)
+		}
+
+		if err := tx.Unscoped().Delete(&sanctum).Error; err != nil {
+			return fmt.Errorf("failed to delete legacy sanctum %s: %w", slug, err)
+		}
+	}
+
+	return nil
 }

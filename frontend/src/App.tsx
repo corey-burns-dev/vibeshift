@@ -109,10 +109,10 @@ function HomePage() {
   ]
 
   return (
-    <div className='min-h-screen px-4 py-6 md:px-8 md:py-8'>
-      <div className='mx-auto grid max-w-6xl gap-4 lg:grid-cols-[1.2fr_0.8fr]'>
-        <section className='rounded-3xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl md:p-8'>
-          <p className='mb-2 inline-flex rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary'>
+    <div className='min-h-screen px-4 py-8 md:px-8 md:py-10'>
+      <div className='mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1.2fr_0.8fr]'>
+        <section className='rounded-xl border border-border/70 bg-card p-6 md:p-8'>
+          <p className='mb-2 inline-flex rounded-md border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-primary'>
             Social Gaming Hub
           </p>
           <h1 className='mb-3 text-3xl font-extrabold tracking-tight text-foreground md:text-5xl'>
@@ -122,14 +122,14 @@ function HomePage() {
             Scroll, chat, and queue games from a single workspace. No tab maze,
             no context switching.
           </p>
-          <div className='mt-5 flex flex-wrap items-center gap-2.5'>
-            <Button size='lg' className='rounded-xl px-6' asChild>
+          <div className='mt-6 flex flex-wrap items-center gap-2.5'>
+            <Button size='lg' className='rounded-lg px-6' asChild>
               <Link to='/signup'>Get Started</Link>
             </Button>
             <Button
               size='lg'
               variant='outline'
-              className='rounded-xl px-6'
+              className='rounded-lg px-6'
               asChild
             >
               <Link to='/login'>Login</Link>
@@ -137,7 +137,7 @@ function HomePage() {
           </div>
         </section>
 
-        <section className='rounded-3xl border border-border/70 bg-background/70 p-5 shadow-xl backdrop-blur-xl md:p-6'>
+        <section className='rounded-xl border border-border/70 bg-card p-6'>
           <h2 className='mb-2 text-lg font-bold text-foreground'>
             Quick Start
           </h2>
@@ -145,24 +145,24 @@ function HomePage() {
             A cleaner flow for new users to get value fast.
           </p>
           <ol className='space-y-2 text-sm'>
-            <li className='rounded-xl border border-border/60 bg-card/60 p-2.5'>
+            <li className='rounded-lg border border-border/60 bg-background p-3'>
               Create your profile and set your status.
             </li>
-            <li className='rounded-xl border border-border/60 bg-card/60 p-2.5'>
+            <li className='rounded-lg border border-border/60 bg-background p-3'>
               Join a stream or hop into chatrooms.
             </li>
-            <li className='rounded-xl border border-border/60 bg-card/60 p-2.5'>
+            <li className='rounded-lg border border-border/60 bg-background p-3'>
               Challenge friends in quick games.
             </li>
           </ol>
         </section>
       </div>
 
-      <section className='mx-auto mt-4 grid max-w-6xl gap-3 md:grid-cols-3'>
+      <section className='mx-auto mt-5 grid max-w-6xl gap-4 md:grid-cols-3'>
         {highlights.map(item => (
           <article
             key={item.title}
-            className='rounded-2xl border border-border/70 bg-card/70 p-4 shadow-lg backdrop-blur-xl'
+            className='rounded-xl border border-border/70 bg-card p-5'
           >
             <item.icon className='mb-2 h-5 w-5 text-primary' />
             <h3 className='mb-1 text-base font-bold'>{item.title}</h3>

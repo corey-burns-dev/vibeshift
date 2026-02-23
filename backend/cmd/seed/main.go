@@ -116,10 +116,13 @@ func main() {
 			log.Fatalf("❌ Engagement seeding failed: %v", err)
 		}
 	default:
-		// Default behavior: seed social mesh then engagement
+		// Default behavior: seed social mesh, category-aware sanctum posts, then global engagement.
 		users, err := s.SeedSocialMesh(*numUsers)
 		if err != nil {
 			log.Fatalf("❌ Social mesh seeding failed: %v", err)
+		}
+		if err := s.SeedSanctumsWithDistribution(users, *countPerSanctum); err != nil {
+			log.Fatalf("❌ Sanctum seeding failed: %v", err)
 		}
 		if _, err := s.SeedEngagement(users, *numPosts); err != nil {
 			log.Fatalf("❌ Engagement seeding failed: %v", err)

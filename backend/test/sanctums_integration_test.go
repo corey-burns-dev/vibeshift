@@ -28,7 +28,7 @@ func TestSanctumMembershipsBulkAndMe(t *testing.T) {
 		}
 
 		postReq := jsonReq(t, http.MethodPost, "/api/sanctums/memberships/bulk", map[string]any{
-			"sanctum_slugs": []string{"atrium", "development", "gaming"},
+			"sanctum_slugs": []string{"general", "development", "gaming"},
 		})
 		postResp, postErr := app.Test(postReq, -1)
 		if postErr != nil {
@@ -42,7 +42,7 @@ func TestSanctumMembershipsBulkAndMe(t *testing.T) {
 
 	t.Run("bulk upsert and scoped retrieval", func(t *testing.T) {
 		seedReq := authReq(t, http.MethodPost, "/api/sanctums/memberships/bulk", other.Token, map[string]any{
-			"sanctum_slugs": []string{"atrium", "movies", "television"},
+			"sanctum_slugs": []string{"general", "movies", "television"},
 		})
 		seedResp, seedErr := app.Test(seedReq, -1)
 		if seedErr != nil {
@@ -51,7 +51,7 @@ func TestSanctumMembershipsBulkAndMe(t *testing.T) {
 		_ = seedResp.Body.Close()
 
 		saveReq := authReq(t, http.MethodPost, "/api/sanctums/memberships/bulk", user.Token, map[string]any{
-			"sanctum_slugs": []string{"atrium", "development", "gaming"},
+			"sanctum_slugs": []string{"general", "development", "gaming"},
 		})
 		saveResp, saveErr := app.Test(saveReq, -1)
 		if saveErr != nil {
@@ -105,7 +105,7 @@ func TestSanctumMembershipsBulkAndMe(t *testing.T) {
 			got = append(got, row.Sanctum.Slug)
 		}
 		sort.Strings(got)
-		want := []string{"atrium", "development", "gaming"}
+		want := []string{"general", "development", "gaming"}
 		sort.Strings(want)
 		for i := range want {
 			if got[i] != want[i] {
@@ -114,7 +114,7 @@ func TestSanctumMembershipsBulkAndMe(t *testing.T) {
 		}
 
 		resaveReq := authReq(t, http.MethodPost, "/api/sanctums/memberships/bulk", user.Token, map[string]any{
-			"sanctum_slugs": []string{"atrium", "anime", "development"},
+			"sanctum_slugs": []string{"general", "anime", "development"},
 		})
 		resaveResp, resaveErr := app.Test(resaveReq, -1)
 		if resaveErr != nil {
@@ -142,7 +142,7 @@ func TestSanctumMembershipsBulkAndMe(t *testing.T) {
 			slugsAfter = append(slugsAfter, row.Sanctum.Slug)
 		}
 		sort.Strings(slugsAfter)
-		wantAfter := []string{"anime", "atrium", "development"}
+		wantAfter := []string{"anime", "development", "general"}
 		for i := range wantAfter {
 			if slugsAfter[i] != wantAfter[i] {
 				t.Fatalf("expected slug %s at pos %d got %s", wantAfter[i], i, slugsAfter[i])

@@ -1,3 +1,9 @@
+const TRUSTED_EXTERNAL_IMAGE_HOSTS = new Set([
+  'picsum.photos',
+  'img.youtube.com',
+  'i.ytimg.com',
+])
+
 export function normalizeImageURL(url?: string): string | undefined {
   if (!url) return url
 
@@ -10,6 +16,13 @@ export function normalizeImageURL(url?: string): string | undefined {
 
   try {
     const parsed = new URL(trimmed)
+    if (
+      (parsed.protocol === 'https:' || parsed.protocol === 'http:') &&
+      TRUSTED_EXTERNAL_IMAGE_HOSTS.has(parsed.hostname)
+    ) {
+      return parsed.toString()
+    }
+
     if (
       parsed.pathname.startsWith('/api/images/') ||
       parsed.pathname.startsWith('/media/i/')

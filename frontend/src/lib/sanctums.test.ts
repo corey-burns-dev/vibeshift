@@ -16,9 +16,9 @@ const makeSanctum = (id: number, name: string, slug: string): SanctumDTO => ({
 describe('buildSanctumSections', () => {
   it('keeps fixed System and Featured order, while Explore is alphabetical and deduplicated', () => {
     const sanctums: SanctumDTO[] = [
-      makeSanctum(1, 'The Herald', 'herald'),
+      makeSanctum(1, 'Announcements', 'herald'),
       makeSanctum(2, 'The Forge', 'development'),
-      makeSanctum(3, 'The Atrium', 'atrium'),
+      makeSanctum(3, 'General', 'general'),
       makeSanctum(4, 'The Game Room', 'gaming'),
       makeSanctum(5, 'Sanctum Support', 'support'),
       makeSanctum(6, 'The Anime Hall', 'anime'),
@@ -31,7 +31,7 @@ describe('buildSanctumSections', () => {
     const sections = buildSanctumSections(sanctums)
 
     expect(sections.system.map(s => s.slug)).toEqual([
-      'atrium',
+      'general',
       'herald',
       'support',
     ])

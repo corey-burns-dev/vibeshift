@@ -34,8 +34,8 @@ export function BottomBar() {
   if (!isAuthenticated) return null
 
   return (
-    <nav className='fixed inset-x-0 bottom-3 z-50 px-3 md:hidden'>
-      <div className='mx-auto max-w-lg rounded-2xl border border-border/70 bg-background/78 p-2 shadow-xl backdrop-blur-xl'>
+    <nav className='fixed inset-x-0 bottom-2 z-50 px-3 md:hidden'>
+      <div className='mx-auto max-w-lg rounded-lg border border-border/70 bg-background/94 p-2'>
         <div
           className='grid gap-1'
           style={{
@@ -52,10 +52,10 @@ export function BottomBar() {
                 title={item.label}
                 aria-label={item.label}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition-colors',
+                  'flex flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-[10px] font-semibold transition-colors',
                   active
                     ? 'bg-primary/15 text-primary'
-                    : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                 )}
               >
                 <item.icon className='h-5 w-5' />
@@ -67,12 +67,10 @@ export function BottomBar() {
             type='button'
             onClick={toggle}
             className={cn(
-              'relative flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition-colors',
+              'relative flex flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-[10px] font-semibold transition-colors',
               isOpen && !minimized
                 ? 'bg-primary/15 text-primary'
-                : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground',
-              totalUnread > 0 &&
-                'animate-pulse shadow-[0_0_12px_rgba(59,130,246,0.3)]'
+                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
             )}
           >
             <MessageCircle className='h-5 w-5' />
