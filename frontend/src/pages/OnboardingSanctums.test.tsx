@@ -105,8 +105,8 @@ describe('OnboardingSanctums', () => {
 
     sanctums.forEach(sanctum => {
       expect(
-        screen.getByRole('checkbox', { name: `Toggle ${sanctum.name}` })
-      ).toHaveAttribute('aria-checked', 'false')
+        screen.getByRole('button', { name: `Toggle ${sanctum.name}` })
+      ).toHaveAttribute('aria-pressed', 'false')
     })
     expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled()
   })
@@ -120,12 +120,10 @@ describe('OnboardingSanctums', () => {
       </MemoryRouter>
     )
 
+    await user.click(screen.getByRole('button', { name: 'Toggle The Atrium' }))
+    await user.click(screen.getByRole('button', { name: 'Toggle The Forge' }))
     await user.click(
-      screen.getByRole('checkbox', { name: 'Toggle The Atrium' })
-    )
-    await user.click(screen.getByRole('checkbox', { name: 'Toggle The Forge' }))
-    await user.click(
-      screen.getByRole('checkbox', { name: 'Toggle The Game Room' })
+      screen.getByRole('button', { name: 'Toggle The Game Room' })
     )
     await user.click(screen.getByRole('button', { name: 'Continue' }))
 
