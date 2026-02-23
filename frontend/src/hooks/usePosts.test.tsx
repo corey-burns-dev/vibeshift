@@ -3,7 +3,12 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiClient } from '@/api/client'
-import { useCreatePost, usePost, usePosts } from '@/hooks/usePosts'
+import {
+  sortPostsNewestFirst,
+  useCreatePost,
+  usePost,
+  usePosts,
+} from '@/hooks/usePosts'
 import { createTestQueryClient } from '@/test/test-utils'
 
 vi.mock('@/api/client', () => ({
@@ -106,6 +111,67 @@ describe('usePosts hooks', () => {
         title: 'New',
         content: 'Body',
       })
+    })
+  })
+
+  describe('sortPostsNewestFirst', () => {
+    it('sorts posts by created_at descending with id tie-breaker', () => {
+      const sorted = sortPostsNewestFirst([
+        {
+          id: 7,
+          title: 'older',
+          content: '',
+          likes_count: 0,
+          user_id: 1,
+          created_at: '2026-02-13T12:00:00Z',
+          updated_at: '',
+        },
+        {
+          id: 9,
+          title: 'same time higher id',
+          content: '',
+          likes_count: 0,
+          user_id: 1,
+          created_at: '2026-02-14T12:00:00Z',
+          updated_at: '',
+        },
+        {
+          id: 8,
+          title: 'same time lower id',
+          content: '',
+          likes_count: 0,
+          user_id: 1,
+          created_at: '2026-02-14T12:00:00Z',
+          updated_at: '',
+        },
+      ] as never)
+
+      expect(sorted.map(post => post.id)).toEqual([9, 8, 7])
+    })
+
+    it('pushes invalid timestamps to the end', () => {
+      const sorted = sortPostsNewestFirst([
+        {
+          id: 3,
+          title: 'invalid',
+          content: '',
+          likes_count: 0,
+          user_id: 1,
+          created_at: 'not-a-date',
+          updated_at: '',
+        },
+        {
+          id: 4,
+          title: 'valid',
+          content: '',
+          likes_count: 0,
+          user_id: 1,
+          created_at: '2026-02-20T12:00:00Z',
+          updated_at: '',
+        },
+      ] as never)
+
+      expect(sorted.map(post => post.id)).toEqual([4, 3])
     })
   })
 })

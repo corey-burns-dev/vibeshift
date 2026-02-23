@@ -44,6 +44,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useReportPost } from '@/hooks/useModeration'
 // Hooks
 import {
+  sortPostsNewestFirst,
   useCreatePost,
   useDeletePost,
   useInfinitePosts,
@@ -159,7 +160,10 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
 
   // Flatten pages into single array of posts
   const allPosts = data?.pages.flat() ?? []
-  const posts = isMembershipFeed ? membershipPosts : allPosts
+  const posts = useMemo(
+    () => sortPostsNewestFirst(isMembershipFeed ? membershipPosts : allPosts),
+    [allPosts, isMembershipFeed, membershipPosts]
+  )
   const isLoading = isMembershipFeed
     ? isLoadingMembershipPosts
     : isLoadingAllPosts
@@ -361,7 +365,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
     () => new Map(sanctums.map(sanctum => [sanctum.id, sanctum.name])),
     [sanctums]
   )
-  const _membershipSanctums = useMemo(
+  const membershipSanctums = useMemo(
     () =>
       memberships
         .map(membership => membership.sanctum)
@@ -395,23 +399,23 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
   }
 
   return (
-    <div className='mx-auto w-full max-w-480 px-3 py-6 md:px-4 lg:px-5'>
-      <div className='grid items-start gap-4 lg:grid-cols-[18rem_minmax(0,1fr)_18rem]'>
+    <div className='mx-auto w-full max-w-480 px-3 py-7 md:px-4 lg:px-5'>
+      <div className='grid items-start gap-6 lg:grid-cols-[16rem_minmax(0,1fr)_16rem]'>
         <aside className='sticky top-20 hidden space-y-3 lg:block'>
-          <Card className='rounded-2xl border border-border/70 bg-card/70 shadow-lg'>
+          <Card className='rounded-xl border border-border/70 bg-card'>
             <CardContent className='space-y-2 p-3'>
               <div>
-                <p className='text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground'>
+                <p className='text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground'>
                   Browse
                 </p>
                 <div className='mt-1.5 grid grid-cols-2 gap-1'>
                   <Link
                     to='/'
                     className={cn(
-                      'rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors',
+                      'rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
                       !isMembershipFeed
-                        ? 'bg-primary/15 text-primary'
-                        : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                        ? 'bg-primary/12 text-primary'
+                        : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                     )}
                   >
                     Home
@@ -419,17 +423,17 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                   <Link
                     to='/feed'
                     className={cn(
-                      'rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors',
+                      'rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
                       isMembershipFeed
-                        ? 'bg-primary/15 text-primary'
-                        : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                        ? 'bg-primary/12 text-primary'
+                        : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                     )}
                   >
                     Feed
                   </Link>
                   <Link
                     to='/sanctums'
-                    className='col-span-2 rounded-lg px-2 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground'
+                    className='col-span-2 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground'
                   >
                     All Sanctums
                   </Link>
@@ -437,19 +441,19 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
               </div>
 
               <div className='border-t border-border/60 pt-2'>
-                <p className='text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground'>
+                <p className='text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground'>
                   Sanctums
                 </p>
-                {sanctums.length === 0 ? (
+                {membershipSanctums.length === 0 ? (
                   <p className='mt-1.5 text-xs text-muted-foreground'>
-                    No sanctums available yet.
+                    You have not joined any sanctums yet.
                   </p>
                 ) : (
                   <div
                     className='mt-1.5 grid grid-cols-2 gap-1'
                     data-testid='posts-sidebar-sanctum-links'
                   >
-                    {sanctums.map(sanctum => (
+                    {membershipSanctums.map(sanctum => (
                       <Link
                         key={sanctum.id}
                         to={`/s/${sanctum.slug}`}
@@ -457,10 +461,10 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                           sanctumId === sanctum.id ? 'page' : undefined
                         }
                         className={cn(
-                          'block rounded-lg px-2 py-1.5 text-xs leading-tight transition-colors',
+                          'block rounded-md px-2 py-1.5 text-xs leading-tight transition-colors',
                           sanctumId === sanctum.id
-                            ? 'bg-primary/15 text-primary'
-                            : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                            ? 'bg-primary/12 text-primary'
+                            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                         )}
                       >
                         {sanctum.name}
@@ -489,9 +493,9 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
               <Link
                 to='/'
                 className={cn(
-                  'rounded-full border px-3 py-1.5 text-xs font-semibold',
+                  'rounded-md border px-3 py-1.5 text-xs font-semibold',
                   !isMembershipFeed
-                    ? 'border-primary/40 bg-primary/15 text-primary'
+                    ? 'border-primary/35 bg-primary/12 text-primary'
                     : 'border-border/60 text-muted-foreground'
                 )}
               >
@@ -500,9 +504,9 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
               <Link
                 to='/feed'
                 className={cn(
-                  'rounded-full border px-3 py-1.5 text-xs font-semibold',
+                  'rounded-md border px-3 py-1.5 text-xs font-semibold',
                   isMembershipFeed
-                    ? 'border-primary/40 bg-primary/15 text-primary'
+                    ? 'border-primary/35 bg-primary/12 text-primary'
                     : 'border-border/60 text-muted-foreground'
                 )}
               >
@@ -512,9 +516,9 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
           </div>
 
           {isAuthenticated && (
-            <Card className='mb-6 overflow-hidden border bg-card/95 shadow-sm transition-shadow hover:shadow-md rounded-2xl'>
-              <CardContent className='p-5'>
-                <div className='flex gap-3 mb-4'>
+            <Card className='mb-6 overflow-hidden rounded-xl border border-border/70 bg-card'>
+              <CardContent className='p-5 md:p-6'>
+                <div className='mb-4 flex gap-3'>
                   <Avatar className='w-10 h-10 ring-2 ring-primary/5'>
                     <AvatarImage
                       src={
@@ -532,14 +536,14 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                         type='button'
                         onClick={() => setIsExpandingPost(true)}
                         className={cn(
-                          'w-full text-left bg-muted px-4 py-2.5 rounded-3xl transition-all hover:bg-muted/80 text-[15px] text-muted-foreground'
+                          'w-full rounded-lg border border-border/60 bg-background px-4 py-2.5 text-left text-[15px] text-muted-foreground transition-colors hover:bg-muted/30'
                         )}
                       >
                         {`What's on your mind, ${currentUser?.username}?`}
                       </button>
                     ) : (
                       <>
-                        <div className='flex gap-2 flex-wrap'>
+                        <div className='flex flex-wrap gap-2'>
                           {POST_TYPES.map(({ type, label, icon: Icon }) => (
                             <Button
                               key={type}
@@ -577,7 +581,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                                 value === 'main' ? 'main' : Number(value)
                               )
                             }}
-                            className='rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-sm'
+                            className='rounded-lg border border-border/60 bg-background px-3 py-2 text-sm'
                           >
                             <option value='main'>Main Feed (No Sanctum)</option>
                             {sanctums.map(s => (
@@ -594,7 +598,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                             placeholder='Title (optional)...'
                             value={newPostTitle}
                             onChange={e => setNewPostTitle(e.target.value)}
-                            className='w-full text-sm font-semibold bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40'
+                            className='w-full rounded-lg border border-border/60 bg-background px-4 py-2 text-sm font-semibold focus:outline-none placeholder:text-muted-foreground/40'
                           />
                         )}
 
@@ -625,7 +629,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                                   e.target.files?.[0] ? e.target.files[0] : null
                                 )
                               }
-                              className='w-full text-sm bg-muted/30 px-4 py-2 rounded-xl focus:outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-medium'
+                              className='w-full rounded-lg border border-border/60 bg-background px-4 py-2 text-sm focus:outline-none file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-medium'
                             />
                             {newPostImagePreview && (
                               <img
@@ -646,13 +650,13 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                               onChange={e =>
                                 setNewPostYoutubeUrl(e.target.value)
                               }
-                              className='w-full text-sm bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40'
+                              className='w-full rounded-lg border border-border/60 bg-background px-4 py-2 text-sm focus:outline-none placeholder:text-muted-foreground/40'
                             />
                             <Textarea
                               placeholder='Caption (optional)...'
                               value={newPostContent}
                               onChange={e => setNewPostContent(e.target.value)}
-                              className='min-h-16 resize-none bg-muted/30'
+                              className='min-h-16 resize-none bg-background'
                               disabled={createPostMutation.isPending}
                             />
                           </>
@@ -665,13 +669,13 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                               placeholder='Link URL (required)...'
                               value={newPostLinkUrl}
                               onChange={e => setNewPostLinkUrl(e.target.value)}
-                              className='w-full text-sm bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40'
+                              className='w-full rounded-lg border border-border/60 bg-background px-4 py-2 text-sm focus:outline-none placeholder:text-muted-foreground/40'
                             />
                             <Textarea
                               placeholder='Description (optional)...'
                               value={newPostContent}
                               onChange={e => setNewPostContent(e.target.value)}
-                              className='min-h-16 resize-none bg-muted/30'
+                              className='min-h-16 resize-none bg-background'
                               disabled={createPostMutation.isPending}
                             />
                           </>
@@ -684,7 +688,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                               placeholder='Poll question (required)...'
                               value={newPollQuestion}
                               onChange={e => setNewPollQuestion(e.target.value)}
-                              className='w-full text-sm font-medium bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40'
+                              className='w-full rounded-lg border border-border/60 bg-background px-4 py-2 text-sm font-medium focus:outline-none placeholder:text-muted-foreground/40'
                             />
                             <div className='space-y-1.5'>
                               {newPollOptions.map((opt, i) => (
@@ -704,7 +708,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                                       }
                                       setNewPollOptions(next)
                                     }}
-                                    className='flex-1 text-sm bg-muted/30 px-4 py-2 rounded-xl focus:outline-none placeholder:text-muted-foreground/40'
+                                    className='flex-1 rounded-lg border border-border/60 bg-background px-4 py-2 text-sm focus:outline-none placeholder:text-muted-foreground/40'
                                   />
                                   <Button
                                     type='button'
@@ -761,7 +765,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                               createPostMutation.isPending ||
                               isUploadingImage
                             }
-                            className='rounded-full px-6 shadow-sm'
+                            className='rounded-md px-5'
                           >
                             {createPostMutation.isPending ||
                             isUploadingImage ? (
@@ -803,7 +807,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
           )}
 
           {isMembershipFeedError && (
-            <Card className='mb-5 rounded-2xl border-destructive/40 bg-destructive/5'>
+            <Card className='mb-5 rounded-xl border-destructive/40 bg-destructive/5'>
               <CardContent className='p-4 text-sm text-destructive'>
                 Unable to load your personalized feed right now.
               </CardContent>
@@ -811,7 +815,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
           )}
 
           {isMembershipFeed && memberships.length === 0 && (
-            <Card className='mb-5 rounded-2xl'>
+            <Card className='mb-5 rounded-xl border-border/70'>
               <CardContent className='p-5 text-sm text-muted-foreground'>
                 You are not subscribed to any sanctums yet. Visit{' '}
                 <Link to='/sanctums' className='font-semibold text-primary'>
@@ -835,7 +839,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                     navigate(`/posts/${post.id}`)
                   }
                 }}
-                className='border bg-card/95 shadow-sm rounded-2xl overflow-hidden text-sm transition-shadow hover:shadow-md cursor-pointer'
+                className='cursor-pointer overflow-hidden rounded-xl border border-border/70 bg-card text-sm transition-colors hover:bg-muted/10'
               >
                 <div className='flex items-center justify-between px-4 py-3'>
                   <div className='flex items-center gap-3'>
@@ -871,7 +875,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                             {isUserOnline(post.user.id) ? 'Online' : 'Offline'}
                           </span>
                           {post.sanctum_id ? (
-                            <span className='rounded-full border border-border/60 px-2 py-0.5 text-[10px] text-muted-foreground'>
+                            <span className='rounded-md border border-border/60 px-2 py-0.5 text-[10px] text-muted-foreground'>
                               {sanctumNameByID.get(post.sanctum_id) ??
                                 'Sanctum'}
                             </span>
@@ -933,7 +937,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                       {openMenuPostId === post.id && (
                         <div
                           role='menu'
-                          className='absolute right-0 top-9 z-20 w-36 bg-card border border-border rounded-md shadow-lg'
+                          className='absolute right-0 top-9 z-20 w-36 rounded-md border border-border bg-card shadow-sm'
                           onClick={e => e.stopPropagation()}
                           onKeyDown={e => e.stopPropagation()}
                         >
@@ -967,7 +971,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
 
                 <div className='px-4 pb-3'>
                   {editingPostId === post.id ? (
-                    <div className='p-4 bg-muted/30 rounded-xl border border-border/60 space-y-4'>
+                    <div className='space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4'>
                       {post.post_type === 'text' && (
                         <input
                           type='text'
@@ -999,7 +1003,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                     <div className='space-y-2'>
                       <YouTubeEmbed url={post.youtube_url} />
                       {post.content ? (
-                        <div className='p-4 bg-muted/30 rounded-xl border border-border/60'>
+                        <div className='rounded-lg border border-border/60 bg-muted/20 p-4'>
                           <PostCaption content={post.content} />
                         </div>
                       ) : null}
@@ -1008,7 +1012,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                     <div className='space-y-2'>
                       <LinkCard url={post.link_url} title={post.title} />
                       {post.content ? (
-                        <div className='p-4 bg-muted/30 rounded-xl border border-border/60'>
+                        <div className='rounded-lg border border-border/60 bg-muted/20 p-4'>
                           <PostCaption content={post.content} />
                         </div>
                       ) : null}
@@ -1039,7 +1043,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                       ) : null}
                     </div>
                   ) : (
-                    <div className='p-4 bg-muted/30 rounded-xl border border-border/60'>
+                    <div className='rounded-lg border border-border/60 bg-muted/20 p-4'>
                       <PostCaption title={post.title} content={post.content} />
                     </div>
                   )}
@@ -1270,7 +1274,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
           </div>
 
           <section className='mt-6 space-y-3 lg:hidden'>
-            <Card className='rounded-2xl border border-border/70 bg-card/70'>
+            <Card className='rounded-xl border border-border/70 bg-card'>
               <CardContent className='p-4'>
                 <h3 className='mb-2 text-sm font-semibold'>Newest Posts</h3>
                 <div className='space-y-2'>
@@ -1279,7 +1283,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                       key={post.id}
                       type='button'
                       onClick={() => navigate(`/posts/${post.id}`)}
-                      className='block w-full rounded-lg px-2 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground'
+                      className='block w-full rounded-md px-2 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground'
                     >
                       {post.title || post.content.slice(0, 40)}
                     </button>
@@ -1291,7 +1295,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
         </main>
 
         <aside className='sticky top-20 hidden space-y-3 lg:block'>
-          <Card className='rounded-2xl border border-border/70 bg-card/70'>
+          <Card className='rounded-xl border border-border/70 bg-card'>
             <CardContent className='p-4'>
               <h3 className='mb-2 text-sm font-semibold'>Newest Posts</h3>
               {newestPosts.length === 0 ? (
@@ -1303,7 +1307,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                       key={post.id}
                       type='button'
                       onClick={() => navigate(`/posts/${post.id}`)}
-                      className='block w-full rounded-lg px-2 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground'
+                      className='block w-full rounded-md px-2 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground'
                     >
                       {post.title || post.content.slice(0, 52)}
                     </button>
@@ -1313,7 +1317,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
             </CardContent>
           </Card>
 
-          <Card className='rounded-2xl border border-border/70 bg-card/70'>
+          <Card className='rounded-xl border border-border/70 bg-card'>
             <CardContent className='p-4'>
               <h3 className='mb-2 text-sm font-semibold'>Hot Sanctums</h3>
               {hotSanctums.length === 0 ? (
@@ -1345,7 +1349,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
             onClick={() => setIsSanctumDrawerOpen(false)}
             aria-label='Close sanctums menu'
           />
-          <aside className='absolute left-0 top-0 h-full w-72 max-w-[85vw] border-r border-border bg-background p-4 shadow-xl'>
+          <aside className='absolute left-0 top-0 h-full w-72 max-w-[85vw] border-r border-border bg-background p-4 shadow-sm'>
             <div className='mb-3 flex items-center justify-between'>
               <h3 className='text-sm font-semibold'>Sanctums</h3>
               <Button
@@ -1358,7 +1362,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
               </Button>
             </div>
             <div className='grid grid-cols-2 gap-1 overflow-y-auto'>
-              {sanctums.map(s => (
+              {membershipSanctums.map(s => (
                 <Link
                   key={s.id}
                   to={`/s/${s.slug}`}
@@ -1367,13 +1371,18 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                   className={cn(
                     'block rounded-lg px-2 py-1.5 text-xs leading-tight',
                     sanctumId === s.id
-                      ? 'bg-primary/15 text-primary'
-                      : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                      ? 'bg-primary/12 text-primary'
+                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                   )}
                 >
                   {s.name}
                 </Link>
               ))}
+              {membershipSanctums.length === 0 ? (
+                <p className='col-span-2 text-xs text-muted-foreground'>
+                  Join sanctums from the All Sanctums page.
+                </p>
+              ) : null}
             </div>
           </aside>
         </div>

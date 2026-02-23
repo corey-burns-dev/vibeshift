@@ -13,6 +13,7 @@ const sanctums = Array.from({ length: 18 }, (_, i) => ({
 }))
 
 vi.mock('@/hooks/usePosts', () => ({
+  sortPostsNewestFirst: (posts: unknown[]) => posts,
   useInfinitePosts: () => ({
     data: { pages: [[]] },
     fetchNextPage: vi.fn(),
@@ -21,7 +22,11 @@ vi.mock('@/hooks/usePosts', () => ({
     isLoading: false,
   }),
   useMembershipFeedPosts: () => ({
-    memberships: [],
+    memberships: sanctums.slice(0, 4).map(sanctum => ({
+      sanctum_id: sanctum.id,
+      role: 'member',
+      sanctum,
+    })),
     posts: [],
     isLoading: false,
     isFetching: false,
@@ -66,11 +71,11 @@ vi.mock('@/hooks/useModeration', () => ({
 }))
 
 describe('Posts sidebar sanctum links', () => {
-  it('renders full sanctum list without truncating and highlights active sanctum', () => {
+  it('renders joined sanctums only and highlights active sanctum', () => {
     render(
       <QueryClientProvider client={createTestQueryClient()}>
         <MemoryRouter>
-          <Posts sanctumId={5} />
+          <Posts sanctumId={1} />
         </MemoryRouter>
       </QueryClientProvider>
     )
@@ -78,12 +83,15 @@ describe('Posts sidebar sanctum links', () => {
     const container = screen.getByTestId('posts-sidebar-sanctum-links')
     const sanctumLinks = within(container).getAllByRole('link')
 
-    expect(sanctumLinks).toHaveLength(18)
+    expect(sanctumLinks).toHaveLength(4)
     expect(
-      within(container).getByRole('link', { name: 'Sanctum 18' })
-    ).toHaveAttribute('href', '/s/sanctum-18')
+      within(container).queryByRole('link', { name: 'Sanctum 5' })
+    ).toBeNull()
     expect(
-      within(container).getByRole('link', { name: 'Sanctum 5' })
+      within(container).getByRole('link', { name: 'Sanctum 1' })
+    ).toHaveAttribute('href', '/s/sanctum-1')
+    expect(
+      within(container).getByRole('link', { name: 'Sanctum 1' })
     ).toHaveAttribute('aria-current', 'page')
   })
 })
