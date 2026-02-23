@@ -26,6 +26,7 @@ vi.mock('@/api/client', () => ({
 }))
 
 vi.mock('@/hooks/usePosts', () => ({
+  sortPostsNewestFirst: (posts: unknown[]) => posts,
   useInfinitePosts: vi.fn(),
   useCreatePost: vi.fn(),
   useLikePost: vi.fn(),
