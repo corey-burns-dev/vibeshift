@@ -6,7 +6,7 @@ import {
   ShieldCheck,
   User,
 } from 'lucide-react'
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ModeToggle } from '@/components/mode-toggle'
 import {
@@ -107,15 +107,16 @@ function NavPill({ item, active }: { item: NavItem; active: boolean }) {
 
   const content = (
     <div
+      title={item.label}
       className={cn(
-        'inline-flex h-9 lg:h-8 items-center gap-3 lg:gap-1.5 rounded-lg px-3 lg:px-2.5 text-xs font-semibold transition-colors cursor-pointer',
+        'inline-flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium transition-colors cursor-pointer whitespace-nowrap max-[1080px]:h-11 max-[1080px]:w-11 max-[1080px]:justify-center max-[1080px]:gap-0 max-[1080px]:rounded-xl max-[1080px]:px-0',
         active
-          ? 'bg-primary/15 text-primary'
-          : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+          ? 'bg-primary/12 text-primary'
+          : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
       )}
     >
-      <item.icon className='h-6 w-6 lg:h-5 lg:w-5' />
-      <span className='truncate hidden lg:inline'>{item.label}</span>
+      <item.icon className='h-4 w-4 max-[1080px]:h-5 max-[1080px]:w-5' />
+      <span className='truncate max-[1080px]:hidden'>{item.label}</span>
     </div>
   )
 
@@ -138,10 +139,6 @@ function NavPill({ item, active }: { item: NavItem; active: boolean }) {
 export function TopBar() {
   const location = useLocation()
   const navigate = useNavigate()
-  useEffect(() => {
-    // noop for now - keep effect hook available for future behavior
-    return () => {}
-  }, [])
   const isAuthenticated = useIsAuthenticated()
   const currentUser = getCurrentUser()
   const logout = useLogout()
@@ -182,29 +179,18 @@ export function TopBar() {
 
   return (
     <header className='fixed top-0 left-0 right-0 z-50 hidden md:block'>
-      <div className='border-b border-border/70 bg-background/75 shadow-lg backdrop-blur-xl relative'>
-        <div className='flex h-14 items-center gap-3 px-3 lg:px-4'>
-          <Link
-            to='/'
-            className='mr-4 inline-flex min-w-fit flex-col leading-none'
-          >
-            <span className='bg-linear-to-r from-primary via-emerald-400 to-cyan-400 bg-clip-text text-base font-black tracking-[0.18em] text-transparent uppercase'>
+      <div className='border-b border-border/70 bg-background/92'>
+        <div className='mx-auto flex h-14 w-full max-w-480 items-center gap-3 px-4 lg:px-5'>
+          <Link to='/' className='inline-flex min-w-fit flex-col leading-none'>
+            <span className='text-base font-black tracking-[0.16em] text-foreground uppercase'>
               Sanctum
             </span>
-            <span className='text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground'>
+            <span className='text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground'>
               {pageTitle}
             </span>
           </Link>
 
-          <Link
-            to='/users'
-            className='ml-1 hidden h-9 flex-1 items-center gap-2 rounded-xl border border-border/60 bg-card/60 px-3 text-sm text-muted-foreground transition-colors hover:text-foreground xl:flex'
-          >
-            <Search className='h-5 w-5' />
-            <span>Search people and rooms</span>
-          </Link>
-
-          <div className='absolute left-1/2 top-0 flex h-14 -translate-x-1/2 items-center gap-3 lg:gap-1.5 overflow-x-auto px-1 pointer-events-auto'>
+          <div className='flex min-w-0 flex-1 items-center justify-center gap-1.5 px-1 max-[1080px]:gap-3'>
             {navItems.map(item => (
               <NavPill
                 key={item.path}
@@ -214,8 +200,20 @@ export function TopBar() {
             ))}
           </div>
 
-          <div className='ml-auto flex shrink-0 items-center gap-2'>
-            <Button asChild size='sm' className='hidden xl:inline-flex gap-1.5'>
+          <Link
+            to='/users'
+            className='hidden h-9 min-w-52 items-center gap-2 rounded-lg border border-border/60 bg-card px-3 text-sm text-muted-foreground transition-colors hover:text-foreground xl:flex'
+          >
+            <Search className='h-4 w-4' />
+            <span>Search people and rooms</span>
+          </Link>
+
+          <div className='ml-auto flex shrink-0 items-center gap-1.5'>
+            <Button
+              asChild
+              size='sm'
+              className='hidden rounded-lg xl:inline-flex gap-1.5'
+            >
               <Link to='/submit'>
                 <PenSquare className='h-4 w-4' />
                 Create Post
@@ -225,10 +223,10 @@ export function TopBar() {
               <DropdownMenuTrigger asChild>
                 <button
                   type='button'
-                  className='relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
+                  className='relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border/60 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground'
                   aria-label='Notifications'
                 >
-                  <Bell className='h-5 w-5' />
+                  <Bell className='h-4 w-4' />
                   {unreadCount > 0 && (
                     <span className='absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground'>
                       {unreadCount > 9 ? '9+' : unreadCount}
@@ -322,7 +320,7 @@ export function TopBar() {
                 <DropdownMenuTrigger asChild>
                   <button
                     type='button'
-                    className='inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-background/85 transition-colors hover:bg-card'
+                    className='inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-card transition-colors hover:bg-muted/50'
                   >
                     <Avatar className='h-9 w-9'>
                       <AvatarImage src={currentUser.avatar} />

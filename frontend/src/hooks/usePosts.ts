@@ -29,6 +29,20 @@ export const postKeys = {
     [...postKeys.all, 'search', params] as const,
 }
 
+function parsePostTime(value: string | undefined): number {
+  if (!value) return 0
+  const ts = new Date(value).getTime()
+  return Number.isFinite(ts) ? ts : 0
+}
+
+export function sortPostsNewestFirst(posts: Post[]): Post[] {
+  return [...posts].sort((a, b) => {
+    const byTime = parsePostTime(b.created_at) - parsePostTime(a.created_at)
+    if (byTime !== 0) return byTime
+    return b.id - a.id
+  })
+}
+
 // Get all posts (paginated)
 export function usePosts(params?: PaginationParams) {
   return useQuery({
@@ -98,10 +112,7 @@ export function useMembershipFeedPosts(limitPerSanctum = 10, page = 1) {
       seen.add(post.id)
       return true
     })
-    .sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    )
+  const sortedPosts = sortPostsNewestFirst(mergedPosts)
 
   const hasMore = perSanctumQueries.some(
     query => (query.data?.length ?? 0) >= fetchLimit
@@ -109,7 +120,7 @@ export function useMembershipFeedPosts(limitPerSanctum = 10, page = 1) {
 
   return {
     memberships: membershipsQuery.data ?? [],
-    posts: mergedPosts,
+    posts: sortedPosts,
     isLoading,
     isFetching,
     isError,

@@ -18,6 +18,13 @@ describe('normalizeImageURL', () => {
     ).toBe('/api/images/hash123?size=medium')
   })
 
+  it('allows trusted external seed image hosts', () => {
+    const picsum = 'https://picsum.photos/seed/abc/800/800'
+    const youtubeThumb = 'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg'
+    expect(normalizeImageURL(picsum)).toBe(picsum)
+    expect(normalizeImageURL(youtubeThumb)).toBe(youtubeThumb)
+  })
+
   it('rejects non-api image URLs', () => {
     const external = 'https://cdn.example.com/photos/pic.png'
     expect(normalizeImageURL(external)).toBeUndefined()

@@ -75,6 +75,14 @@ export function isRouteActive(pathname: string, path: string): boolean {
 }
 
 export function getRouteTitle(pathname: string): string {
+  if (pathname.startsWith('/s/')) {
+    const slug = pathname.split('/')[2]
+    if (slug) {
+      const decodedSlug = decodeURIComponent(slug)
+      return decodedSlug.replace(/[-_]+/g, ' ').trim() || 'Sanctum'
+    }
+  }
+
   const matched = routeTitles.find(route => isRouteActive(pathname, route.path))
   return matched?.title ?? 'Workspace'
 }

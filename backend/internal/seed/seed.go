@@ -13,6 +13,7 @@ import (
 	"sanctum/internal/models"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // Seeder provides high-level methods to populate the database with
@@ -44,14 +45,14 @@ type Distribution struct {
 // fractional weights and will be normalized when computing integer counts.
 var CategoryDistributions = map[string]Distribution{
 	// Example: PC Gaming favors link and video content
-	"pc-gaming": {Text: 0.4, Media: 0.0, Link: 0.4, Video: 0.2},
+	"pcgaming": {Text: 0.4, Media: 0.0, Link: 0.4, Video: 0.2},
 }
 
 var defaultDistribution = Distribution{Text: 0.5, Media: 0.3, Link: 0.1, Video: 0.1}
 
 // per-category vocabulary for richer, category-aware content
 var categoryVocab = map[string]map[string][]string{
-	"pc-gaming": {
+	"pcgaming": {
 		"names":  {"Cyberpunk 2077", "Doom Eternal", "Stardew Valley", "Hades", "Baldur's Gate 3"},
 		"tags":   {"fps", "rpg", "indie", "singleplayer", "multiplayer"},
 		"stores": {"https://store.steampowered.com", "https://www.gog.com"},
@@ -287,7 +288,37 @@ func (s *Seeder) SeedSanctumWithExactCounts(users []*models.User, sanctum *model
 // for test/setup workflows only.
 func (s *Seeder) ClearAll() error {
 	log.Println("🗑️  Clearing all existing data...")
-	sql := `TRUNCATE TABLE comments, likes, posts, conversation_participants, messages, conversations, sanctum_memberships, sanctum_requests, sanctums, stream_messages, streams, users, friendships, game_rooms, game_moves RESTART IDENTITY CASCADE;`
+	sql := `
+DO $$
+DECLARE table_list text;
+BEGIN
+  SELECT string_agg(format('%I', tablename), ', ')
+    INTO table_list
+  FROM pg_tables
+  WHERE schemaname = 'public'
+    AND tablename = ANY (ARRAY[
+      'comments',
+      'likes',
+      'posts',
+      'conversation_participants',
+      'messages',
+      'conversations',
+      'sanctum_memberships',
+      'sanctum_requests',
+      'sanctums',
+      'stream_messages',
+      'streams',
+      'users',
+      'friendships',
+      'game_rooms',
+      'game_moves'
+    ]);
+
+  IF table_list IS NOT NULL THEN
+    EXECUTE 'TRUNCATE TABLE ' || table_list || ' RESTART IDENTITY CASCADE';
+  END IF;
+END $$;
+`
 	return s.db.Exec(sql).Error
 }
 
@@ -346,7 +377,48 @@ func (s *Seeder) SeedSocialMesh(userCount int) ([]*models.User, error) {
 		}
 	}
 
+	if err := s.seedMembershipsForUsers(users); err != nil {
+		return nil, err
+	}
+
 	return users, nil
+}
+
+func (s *Seeder) seedMembershipsForUsers(users []*models.User) error {
+	if len(users) == 0 {
+		return nil
+	}
+
+	var sanctums []models.Sanctum
+	if err := s.db.
+		Where("status = ?", models.SanctumStatusActive).
+		Find(&sanctums).Error; err != nil {
+		return fmt.Errorf("failed to list active sanctums for memberships: %w", err)
+	}
+	if len(sanctums) == 0 {
+		return nil
+	}
+
+	memberships := make([]models.SanctumMembership, 0, len(users)*len(sanctums))
+	for _, user := range users {
+		for _, sanctum := range sanctums {
+			memberships = append(memberships, models.SanctumMembership{
+				SanctumID: sanctum.ID,
+				UserID:    user.ID,
+				Role:      models.SanctumMembershipRoleMember,
+			})
+		}
+	}
+
+	if err := s.db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "sanctum_id"}, {Name: "user_id"}},
+		DoNothing: true,
+	}).Create(&memberships).Error; err != nil {
+		return fmt.Errorf("failed to seed sanctum memberships: %w", err)
+	}
+
+	log.Printf("🤝 Seeded %d sanctum memberships for %d users across %d sanctums", len(memberships), len(users), len(sanctums))
+	return nil
 }
 
 // SeedEngagement creates posts, likes and comments to generate feed

@@ -41,7 +41,7 @@ createRoot(rootElement).render(
       <ThemeProvider
         attribute='class'
         defaultTheme='dark'
-        enableSystem
+        enableSystem={false}
         disableTransitionOnChange
       >
         <QueryClientProvider client={queryClient}>

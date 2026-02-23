@@ -11,10 +11,10 @@ export function MobileHeader() {
   const pageTitle = getRouteTitle(location.pathname)
 
   return (
-    <header className='fixed top-0 left-0 right-0 z-50 px-3 pt-3 md:hidden'>
-      <div className='flex h-14 items-center justify-between gap-2 rounded-2xl border border-border/70 bg-background/80 px-3 shadow-lg backdrop-blur-xl'>
+    <header className='fixed top-0 left-0 right-0 z-50 border-b border-border/70 bg-background/92 px-3 py-2 md:hidden'>
+      <div className='flex h-12 items-center justify-between gap-2 rounded-lg border border-border/60 bg-card px-3'>
         <div className='min-w-0'>
-          <p className='text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground'>
+          <p className='text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground'>
             Sanctum
           </p>
           <p className='truncate text-sm font-semibold text-foreground'>
@@ -25,14 +25,14 @@ export function MobileHeader() {
         <div className='flex items-center gap-1'>
           <Link
             to='/users'
-            className='inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
+            className='inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border/60 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground'
             aria-label='Search'
           >
             <Search className='h-4 w-4' />
           </Link>
           <Link
             to='/submit'
-            className='inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
+            className='inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border/60 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground'
             aria-label='Create post'
           >
             <PenSquare className='h-4 w-4' />

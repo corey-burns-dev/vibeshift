@@ -86,7 +86,7 @@ export default function OnboardingSanctums() {
 
   return (
     <div className='h-[calc(100dvh-9rem)] px-4 py-3 md:h-[calc(100dvh-5rem)] md:px-6 md:py-5'>
-      <div className='mx-auto flex h-full max-w-5xl flex-col rounded-2xl border border-border/70 bg-card/60 p-3 shadow-xl backdrop-blur-xl md:p-5'>
+      <div className='mx-auto flex h-full max-w-7xl flex-col rounded-2xl border border-border/70 bg-card/60 p-3 shadow-xl backdrop-blur-xl md:p-4'>
         <div>
           <h1 className='text-xl font-semibold tracking-tight md:text-2xl'>
             Choose your Sanctums
@@ -97,11 +97,15 @@ export default function OnboardingSanctums() {
           </p>
         </div>
 
-        <div className='mt-3 min-h-0 flex-1 overflow-hidden'>
+        <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
           <div
-            className='grid h-full gap-2 sm:grid-cols-2'
+            className={`grid gap-1.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 ${
+              isMobile ? 'h-full' : ''
+            }`}
             style={{
-              gridTemplateRows: isMobile ? 'repeat(4, minmax(0, 1fr))' : 'auto',
+              gridTemplateRows: isMobile
+                ? 'repeat(4, minmax(0, 1fr))'
+                : undefined,
             }}
           >
             {visibleSanctums.map(sanctum => {
@@ -113,14 +117,18 @@ export default function OnboardingSanctums() {
                   aria-pressed={checked}
                   aria-label={`Toggle ${sanctum.name}`}
                   onClick={() => toggle(sanctum.slug)}
-                  className={`flex h-full flex-col justify-between rounded-xl border px-3 py-2 text-left transition-colors ${
+                  className={`flex ${
+                    isMobile
+                      ? 'h-full flex-col justify-between'
+                      : 'min-h-[3rem] flex-col'
+                  } rounded-xl border px-2 py-1.5 text-left transition-colors ${
                     checked
                       ? 'border-primary/60 bg-primary/10'
                       : 'border-border/70 bg-card hover:bg-muted/30'
                   }`}
                 >
                   <div className='flex items-start justify-between gap-2'>
-                    <p className='line-clamp-1 text-sm font-semibold'>
+                    <p className='line-clamp-1 text-xs font-semibold md:text-sm'>
                       {sanctum.name}
                     </p>
                     <span
@@ -134,7 +142,7 @@ export default function OnboardingSanctums() {
                       {checked ? '✓' : ''}
                     </span>
                   </div>
-                  <p className='mt-1 line-clamp-2 text-xs text-muted-foreground'>
+                  <p className='mt-0.5 line-clamp-1 text-[11px] text-muted-foreground'>
                     {sanctum.description || 'No description'}
                   </p>
                 </button>

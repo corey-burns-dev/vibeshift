@@ -30,11 +30,11 @@ export default function Sanctums() {
   const sections = buildSanctumSections(data)
 
   return (
-    <div className='mx-auto grid max-w-6xl gap-4 px-4 py-6 lg:grid-cols-[18rem_1fr] lg:py-8'>
+    <div className='mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[17rem_1fr] lg:py-8'>
       <SanctumNav {...sections} />
 
-      <main className='rounded-2xl border border-border/70 bg-card/60 p-4 shadow-xl backdrop-blur-xl md:p-6'>
-        <div className='mb-5 flex flex-wrap items-center justify-between gap-3'>
+      <main className='rounded-xl border border-border/70 bg-card p-5 md:p-7'>
+        <div className='mb-6 flex flex-wrap items-center justify-between gap-3'>
           <div>
             <h1 className='text-2xl font-bold'>Sanctums</h1>
             <p className='text-sm text-muted-foreground'>
@@ -51,18 +51,18 @@ export default function Sanctums() {
           </div>
         </div>
 
-        <div className='grid gap-3 sm:grid-cols-2'>
+        <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
           {data.map(sanctum => (
             <Link
               key={sanctum.id}
               to={`/s/${sanctum.slug}`}
-              className='rounded-xl border border-border/70 bg-background/60 p-4 transition-colors hover:border-primary/40 hover:bg-muted/40'
+              className='rounded-lg border border-border/70 bg-background px-4 py-4 transition-colors hover:border-primary/35 hover:bg-muted/30'
             >
-              <h2 className='font-semibold'>{sanctum.name}</h2>
-              <p className='mt-1 line-clamp-2 text-sm text-muted-foreground'>
+              <h2 className='text-base font-semibold'>{sanctum.name}</h2>
+              <p className='mt-1.5 line-clamp-2 text-sm text-muted-foreground'>
                 {sanctum.description || 'No description yet.'}
               </p>
-              <p className='mt-2 text-xs uppercase tracking-wide text-muted-foreground'>
+              <p className='mt-3 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground'>
                 {sanctum.status}
               </p>
             </Link>

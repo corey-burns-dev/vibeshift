@@ -1,6 +1,6 @@
 import type { SanctumDTO } from '@/api/types'
 
-const SYSTEM_SLUGS = ['atrium', 'herald', 'support'] as const
+const SYSTEM_SLUGS = ['general', 'herald', 'support'] as const
 const FEATURED_SLUGS = ['development', 'gaming', 'anime', 'movies'] as const
 
 function toSlugMap(sanctums: SanctumDTO[]) {
