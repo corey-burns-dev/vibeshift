@@ -67,6 +67,7 @@ const AdminUserDetail = lazy(() => import('@/pages/admin/AdminUserDetail'))
 const AdminRoomMutes = lazy(() => import('@/pages/admin/AdminRoomMutes'))
 const AdminPlaceholder = lazy(() => import('@/pages/admin/AdminPlaceholder'))
 const OnboardingSanctums = lazy(() => import('@/pages/OnboardingSanctums'))
+const SanctumFeed = lazy(() => import('@/pages/SanctumFeed'))
 
 function PageLoader() {
   return (
@@ -202,7 +203,7 @@ function RoutesWithPrefetch() {
           path='/feed'
           element={
             <ProtectedRoute>
-              <Posts mode='all' />
+              <Posts mode='membership' />
             </ProtectedRoute>
           }
         />
@@ -408,7 +409,8 @@ function RoutesWithPrefetch() {
           }
         />
         <Route path='/sanctums' element={<Sanctums />} />
-        <Route path='/s/:slug' element={<SanctumDetail />} />
+        <Route path='/s/:slug' element={<SanctumFeed />} />
+        <Route path='/sanctums/:slug/manage' element={<SanctumDetail />} />
         <Route
           path='/sanctums/request'
           element={

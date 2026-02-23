@@ -12,6 +12,7 @@ import {
   useSanctums,
 } from '@/hooks/useSanctums'
 import SanctumDetail from '@/pages/SanctumDetail'
+import SanctumFeed from '@/pages/SanctumFeed'
 import Sanctums from '@/pages/Sanctums'
 
 vi.mock('@/hooks/useSanctums', () => ({
@@ -27,6 +28,12 @@ vi.mock('@/api/client', () => ({
   apiClient: {
     getPosts: vi.fn(),
   },
+}))
+
+vi.mock('@/pages/Posts', () => ({
+  default: ({ sanctumId }: { sanctumId?: number }) => (
+    <div>Posts scoped to {sanctumId}</div>
+  ),
 }))
 
 const mockedUseSanctums = vi.mocked(useSanctums)
@@ -106,7 +113,7 @@ describe('Sanctum routes', () => {
     expect(screen.getAllByText('The Atrium').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('loads /s/:slug detail shell', async () => {
+  it('loads /s/:slug feed shell', async () => {
     const all = [
       makeSanctum(1, 'The Atrium', 'atrium'),
       makeSanctum(2, 'The Forge', 'development'),
@@ -115,6 +122,69 @@ describe('Sanctum routes', () => {
       makeSanctum(5, 'The Game Room', 'gaming'),
       makeSanctum(6, 'The Anime Hall', 'anime'),
       makeSanctum(7, 'The Silver Screen', 'movies'),
+    ]
+
+    mockedUseSanctums.mockReturnValue({
+      data: all,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never)
+
+    mockedUseSanctum.mockReturnValue({
+      data: makeSanctum(1, 'The Atrium', 'atrium'),
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never)
+    mockedUseMyMemberships.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never)
+    mockedUseSanctumAdmins.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never)
+    mockedUsePromoteAdmin.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as never)
+    mockedUseDemoteAdmin.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as never)
+
+    render(
+      <MemoryRouter initialEntries={['/s/atrium']}>
+        <Routes>
+          <Route path='/s/:slug' element={<SanctumFeed />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(
+      screen.getByRole('heading', { name: 'The Atrium' })
+    ).toBeInTheDocument()
+    expect(screen.getByText('Posts scoped to 1')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute(
+      'href',
+      '/sanctums/atrium/manage'
+    )
+    expect(mockedGetPosts).not.toHaveBeenCalled()
+  })
+
+  it('loads /sanctums/:slug/manage legacy detail shell', async () => {
+    const all = [
+      makeSanctum(1, 'The Atrium', 'atrium'),
+      makeSanctum(2, 'The Forge', 'development'),
     ]
 
     mockedUseSanctums.mockReturnValue({
@@ -163,16 +233,13 @@ describe('Sanctum routes', () => {
     ] as never)
 
     render(
-      <MemoryRouter initialEntries={['/s/atrium']}>
+      <MemoryRouter initialEntries={['/sanctums/atrium/manage']}>
         <Routes>
-          <Route path='/s/:slug' element={<SanctumDetail />} />
+          <Route path='/sanctums/:slug/manage' element={<SanctumDetail />} />
         </Routes>
       </MemoryRouter>
     )
 
-    expect(
-      screen.getByRole('heading', { name: 'The Atrium' })
-    ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Open Chat' })
     ).toBeInTheDocument()

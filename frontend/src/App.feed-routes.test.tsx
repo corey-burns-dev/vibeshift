@@ -64,7 +64,7 @@ describe('feed routes', () => {
     expect(await screen.findByText('Posts mode: all')).toBeInTheDocument()
   })
 
-  it('renders /feed with all-feed mode', async () => {
+  it('renders /feed with membership-feed mode', async () => {
     window.history.pushState({}, '', '/feed')
 
     render(
@@ -73,6 +73,8 @@ describe('feed routes', () => {
       </QueryClientProvider>
     )
 
-    expect(await screen.findByText('Posts mode: all')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Posts mode: membership')
+    ).toBeInTheDocument()
   })
 })

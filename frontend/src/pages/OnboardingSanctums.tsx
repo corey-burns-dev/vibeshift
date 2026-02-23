@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useSanctums, useUpsertMySanctumMemberships } from '@/hooks/useSanctums'
 
@@ -101,7 +99,7 @@ export default function OnboardingSanctums() {
 
         <div className='mt-3 min-h-0 flex-1 overflow-hidden'>
           <div
-            className='grid h-full gap-3 sm:grid-cols-2'
+            className='grid h-full gap-2 sm:grid-cols-2'
             style={{
               gridTemplateRows: isMobile ? 'repeat(4, minmax(0, 1fr))' : 'auto',
             }}
@@ -109,33 +107,37 @@ export default function OnboardingSanctums() {
             {visibleSanctums.map(sanctum => {
               const checked = selected.has(sanctum.slug)
               return (
-                <Card
+                <button
                   key={sanctum.id}
-                  className='flex h-full flex-col justify-between border-border/70'
+                  type='button'
+                  aria-pressed={checked}
+                  aria-label={`Toggle ${sanctum.name}`}
+                  onClick={() => toggle(sanctum.slug)}
+                  className={`flex h-full flex-col justify-between rounded-xl border px-3 py-2 text-left transition-colors ${
+                    checked
+                      ? 'border-primary/60 bg-primary/10'
+                      : 'border-border/70 bg-card hover:bg-muted/30'
+                  }`}
                 >
-                  <CardHeader className='pb-2'>
-                    <CardTitle className='line-clamp-1 text-sm md:text-base'>
+                  <div className='flex items-start justify-between gap-2'>
+                    <p className='line-clamp-1 text-sm font-semibold'>
                       {sanctum.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className='space-y-2'>
-                    <p className='line-clamp-2 text-xs text-muted-foreground md:text-sm'>
-                      {sanctum.description || 'No description'}
                     </p>
-                    <div className='flex items-center gap-2'>
-                      <input
-                        className='h-4 w-4 rounded border-input'
-                        type='checkbox'
-                        id={`sanctum-${sanctum.slug}`}
-                        checked={checked}
-                        onChange={() => toggle(sanctum.slug)}
-                      />
-                      <Label htmlFor={`sanctum-${sanctum.slug}`}>
-                        Join sanctum
-                      </Label>
-                    </div>
-                  </CardContent>
-                </Card>
+                    <span
+                      aria-hidden='true'
+                      className={`mt-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded border text-[10px] font-semibold ${
+                        checked
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border/70 text-muted-foreground'
+                      }`}
+                    >
+                      {checked ? '✓' : ''}
+                    </span>
+                  </div>
+                  <p className='mt-1 line-clamp-2 text-xs text-muted-foreground'>
+                    {sanctum.description || 'No description'}
+                  </p>
+                </button>
               )
             })}
           </div>

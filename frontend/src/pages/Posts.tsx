@@ -397,18 +397,18 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
   return (
     <div className='mx-auto w-full max-w-480 px-3 py-6 md:px-4 lg:px-5'>
       <div className='grid items-start gap-4 lg:grid-cols-[18rem_minmax(0,1fr)_18rem]'>
-        <aside className='sticky top-20 hidden space-y-4 lg:block'>
+        <aside className='sticky top-20 hidden space-y-3 lg:block'>
           <Card className='rounded-2xl border border-border/70 bg-card/70 shadow-lg'>
-            <CardContent className='space-y-3 p-4'>
+            <CardContent className='space-y-2 p-3'>
               <div>
                 <p className='text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground'>
                   Browse
                 </p>
-                <div className='mt-2 flex flex-col gap-1.5'>
+                <div className='mt-1.5 grid grid-cols-2 gap-1'>
                   <Link
                     to='/'
                     className={cn(
-                      'rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
+                      'rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors',
                       !isMembershipFeed
                         ? 'bg-primary/15 text-primary'
                         : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
@@ -419,7 +419,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                   <Link
                     to='/feed'
                     className={cn(
-                      'rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
+                      'rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors',
                       isMembershipFeed
                         ? 'bg-primary/15 text-primary'
                         : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
@@ -429,29 +429,35 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                   </Link>
                   <Link
                     to='/sanctums'
-                    className='rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground'
+                    className='col-span-2 rounded-lg px-2 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground'
                   >
                     All Sanctums
                   </Link>
                 </div>
               </div>
 
-              <div className='border-t border-border/60 pt-3'>
+              <div className='border-t border-border/60 pt-2'>
                 <p className='text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground'>
                   Sanctums
                 </p>
                 {sanctums.length === 0 ? (
-                  <p className='mt-2 text-xs text-muted-foreground'>
+                  <p className='mt-1.5 text-xs text-muted-foreground'>
                     No sanctums available yet.
                   </p>
                 ) : (
-                  <div className='mt-2 space-y-1.5'>
-                    {sanctums.slice(0, 14).map(sanctum => (
+                  <div
+                    className='mt-1.5 grid grid-cols-2 gap-1'
+                    data-testid='posts-sidebar-sanctum-links'
+                  >
+                    {sanctums.map(sanctum => (
                       <Link
                         key={sanctum.id}
                         to={`/s/${sanctum.slug}`}
+                        aria-current={
+                          sanctumId === sanctum.id ? 'page' : undefined
+                        }
                         className={cn(
-                          'block rounded-lg px-2.5 py-2 text-sm transition-colors',
+                          'block rounded-lg px-2 py-1.5 text-xs leading-tight transition-colors',
                           sanctumId === sanctum.id
                             ? 'bg-primary/15 text-primary'
                             : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
@@ -1351,14 +1357,15 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                 <X className='h-4 w-4' />
               </Button>
             </div>
-            <div className='space-y-1.5 overflow-y-auto'>
+            <div className='grid grid-cols-2 gap-1 overflow-y-auto'>
               {sanctums.map(s => (
                 <Link
                   key={s.id}
                   to={`/s/${s.slug}`}
                   onClick={() => setIsSanctumDrawerOpen(false)}
+                  aria-current={sanctumId === s.id ? 'page' : undefined}
                   className={cn(
-                    'block rounded-lg px-2.5 py-2 text-sm',
+                    'block rounded-lg px-2 py-1.5 text-xs leading-tight',
                     sanctumId === s.id
                       ? 'bg-primary/15 text-primary'
                       : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'

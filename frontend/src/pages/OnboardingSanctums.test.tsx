@@ -97,35 +97,36 @@ describe('OnboardingSanctums', () => {
   })
 
   it('starts with no sanctums selected and keeps continue enabled', () => {
-    const { container } = render(
+    render(
       <MemoryRouter>
         <OnboardingSanctums />
       </MemoryRouter>
     )
 
     sanctums.forEach(sanctum => {
-      const checkbox = container.querySelector(
-        `#sanctum-${sanctum.slug}`
-      ) as HTMLInputElement
-      expect(checkbox.checked).toBe(false)
+      expect(
+        screen.getByRole('checkbox', { name: `Toggle ${sanctum.name}` })
+      ).toHaveAttribute('aria-checked', 'false')
     })
     expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled()
   })
 
-  it('lets users check sanctums and submits exact selected list', async () => {
+  it('lets users toggle sanctums by clicking full capsule and submits exact selected list', async () => {
     mutateAsyncMock.mockResolvedValue([])
     const user = userEvent.setup()
-    const { container } = render(
+    render(
       <MemoryRouter>
         <OnboardingSanctums />
       </MemoryRouter>
     )
 
-    await user.click(container.querySelector('#sanctum-atrium') as HTMLElement)
     await user.click(
-      container.querySelector('#sanctum-development') as HTMLElement
+      screen.getByRole('checkbox', { name: 'Toggle The Atrium' })
     )
-    await user.click(container.querySelector('#sanctum-gaming') as HTMLElement)
+    await user.click(screen.getByRole('checkbox', { name: 'Toggle The Forge' }))
+    await user.click(
+      screen.getByRole('checkbox', { name: 'Toggle The Game Room' })
+    )
     await user.click(screen.getByRole('button', { name: 'Continue' }))
 
     expect(mutateAsyncMock).toHaveBeenCalledWith({
