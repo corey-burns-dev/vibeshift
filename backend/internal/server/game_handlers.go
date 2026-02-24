@@ -210,10 +210,9 @@ func (s *Server) WebSocketGameHandler() fiber.Handler {
 			action.UserID = userID
 			action.RoomID = roomID
 
-			// Handle the action through the hub
-			s.gameHub.HandleAction(userID, action)
-
-			if action.Type == "join_room" || action.Type == "make_move" {
+			// Handle the action through the hub; only publish room-updated when
+			// the action actually mutated state (join succeeded, move accepted).
+			if mutated := s.gameHub.HandleAction(userID, action); mutated {
 				opCtx, cancel := context.WithTimeout(wsCtx, 3*time.Second)
 				updatedRoom, err := s.gameSvc().GetGameRoom(opCtx, action.RoomID)
 				cancel()

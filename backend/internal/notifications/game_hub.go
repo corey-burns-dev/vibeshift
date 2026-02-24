@@ -147,40 +147,43 @@ func (h *GameHub) BroadcastToRoom(roomID uint, action GameAction) {
 	}
 }
 
-// HandleAction processes an incoming game action
-func (h *GameHub) HandleAction(userID uint, action GameAction) {
+// HandleAction processes an incoming game action and returns true if the room
+// state was mutated (i.e. the action succeeded), false otherwise.
+func (h *GameHub) HandleAction(userID uint, action GameAction) bool {
 	switch action.Type {
 	case "join_room":
-		h.handleJoin(userID, action)
+		return h.handleJoin(userID, action)
 	case "make_move":
-		h.handleMove(userID, action)
+		return h.handleMove(userID, action)
 	case "chat":
 		h.handleChat(userID, action)
+		return false
 	default:
 		log.Printf("GameHub: Unknown action type %s from user %d", action.Type, userID)
+		return false
 	}
 }
 
-func (h *GameHub) handleJoin(userID uint, action GameAction) {
+func (h *GameHub) handleJoin(userID uint, action GameAction) bool {
 	var room models.GameRoom
 	if err := h.db.First(&room, action.RoomID).Error; err != nil {
 		h.sendError(userID, action.RoomID, "Game room not found")
-		return
+		return false
 	}
 
 	if room.Status != models.GamePending {
 		h.sendError(userID, action.RoomID, "Game already started or finished")
-		return
+		return false
 	}
 
 	if room.CreatorID != nil && *room.CreatorID == userID {
 		h.sendError(userID, action.RoomID, "You are the creator")
-		return
+		return false
 	}
 
 	if room.CreatorID == nil {
 		h.sendError(userID, action.RoomID, "Game creator no longer exists")
-		return
+		return false
 	}
 
 	// Join as opponent
@@ -190,7 +193,7 @@ func (h *GameHub) handleJoin(userID uint, action GameAction) {
 
 	if err := h.db.Save(&room).Error; err != nil {
 		h.sendError(userID, action.RoomID, "Failed to start game")
-		return
+		return false
 	}
 
 	started := GameAction{
@@ -218,18 +221,19 @@ func (h *GameHub) handleJoin(userID uint, action GameAction) {
 			`{"type": "game_started", "payload": {"status": "active", "next_turn": `+fmt.Sprint(room.NextTurnID)+`}}`,
 		)
 	}
+	return true
 }
 
-func (h *GameHub) handleMove(userID uint, action GameAction) {
+func (h *GameHub) handleMove(userID uint, action GameAction) bool {
 	var room models.GameRoom
 	if err := h.db.First(&room, action.RoomID).Error; err != nil {
 		h.sendError(userID, action.RoomID, "Game room not found")
-		return
+		return false
 	}
 
 	if room.Status != models.GameActive || room.NextTurnID != userID {
 		h.sendError(userID, action.RoomID, "Not your turn")
-		return
+		return false
 	}
 
 	moveBytes, _ := json.Marshal(action.Payload)
@@ -251,13 +255,13 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 		var moveData models.ConnectFourMove
 		if err := json.Unmarshal(moveBytes, &moveData); err != nil {
 			h.sendError(userID, action.RoomID, "Invalid move format")
-			return
+			return false
 		}
 
 		c4Board := room.GetConnectFourState()
 		if moveData.Column < 0 || moveData.Column > 6 || c4Board[0][moveData.Column] != "" {
 			h.sendError(userID, action.RoomID, "Invalid move location or column full")
-			return
+			return false
 		}
 
 		// Gravity: find lowest empty row
@@ -272,7 +276,7 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 
 		if !found {
 			h.sendError(userID, action.RoomID, "Column is full")
-			return
+			return false
 		}
 
 		board = c4Board
@@ -281,13 +285,13 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 		var moveData models.OthelloMove
 		if err := json.Unmarshal(moveBytes, &moveData); err != nil {
 			h.sendError(userID, action.RoomID, "Invalid move format")
-			return
+			return false
 		}
 
 		othelloBoard := room.GetOthelloState()
 		if !applyOthelloMove(&othelloBoard, moveData.Row, moveData.Column, symbol) {
 			h.sendError(userID, action.RoomID, "Invalid move location")
-			return
+			return false
 		}
 
 		board = othelloBoard
@@ -330,7 +334,7 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 		}
 	default:
 		h.sendError(userID, action.RoomID, "Unsupported game type")
-		return
+		return false
 	}
 
 	// Determine move number by counting existing moves for this room
@@ -462,6 +466,7 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 		actionJSON, _ := json.Marshal(action)
 		_ = h.notifier.PublishGameAction(context.Background(), action.RoomID, string(actionJSON))
 	}
+	return true
 }
 
 var othelloDirs = [8][2]int{
