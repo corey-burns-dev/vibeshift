@@ -2,17 +2,48 @@
  * Extract YouTube video ID from watch or embed URL and return embed URL.
  */
 export function getYouTubeEmbedUrl(url: string): string | null {
+  const extractVideoID = (candidate: string): string | null => {
+    const id = candidate.trim()
+    return /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null
+  }
+
+  const toEmbed = (videoID: string): string =>
+    `https://www.youtube.com/embed/${videoID}`
+
   try {
-    const u = new URL(url.trim())
-    const host = u.hostname.toLowerCase()
-    let videoId: string | null = null
-    if (host.includes('youtube.com')) {
-      videoId = u.searchParams.get('v')
-    } else if (host.includes('youtu.be')) {
-      videoId = u.pathname.slice(1).split('/')[0] || null
+    const raw = url.trim()
+    if (!raw) return null
+
+    // Support raw IDs.
+    const rawID = extractVideoID(raw)
+    if (rawID) {
+      return toEmbed(rawID)
     }
-    if (videoId) {
-      return `https://www.youtube.com/embed/${videoId}`
+
+    const parsedInput =
+      /^https?:\/\//i.test(raw) || raw.startsWith('//') ? raw : `https://${raw}`
+
+    const u = new URL(parsedInput)
+    const host = u.hostname.toLowerCase()
+
+    let videoID: string | null = extractVideoID(u.searchParams.get('v') ?? '')
+
+    if (!videoID && host.includes('youtu.be')) {
+      videoID = extractVideoID(u.pathname.split('/').filter(Boolean)[0] ?? '')
+    }
+
+    if (
+      !videoID &&
+      (host.includes('youtube.com') || host.includes('youtube-nocookie.com'))
+    ) {
+      const [first, second] = u.pathname.split('/').filter(Boolean)
+      if (first === 'embed' || first === 'shorts' || first === 'live') {
+        videoID = extractVideoID(second ?? '')
+      }
+    }
+
+    if (videoID) {
+      return toEmbed(videoID)
     }
   } catch {
     // ignore

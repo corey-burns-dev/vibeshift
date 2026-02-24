@@ -25,8 +25,16 @@ describe('normalizeImageURL', () => {
     expect(normalizeImageURL(youtubeThumb)).toBe(youtubeThumb)
   })
 
-  it('rejects non-api image URLs', () => {
+  it('accepts external image URLs for legacy post compatibility', () => {
     const external = 'https://cdn.example.com/photos/pic.png'
-    expect(normalizeImageURL(external)).toBeUndefined()
+    expect(normalizeImageURL(external)).toBe(external)
+  })
+
+  it('keeps root-relative legacy image URLs', () => {
+    expect(normalizeImageURL('/uploads/pic.jpg')).toBe('/uploads/pic.jpg')
+  })
+
+  it('rejects non-http schemes', () => {
+    expect(normalizeImageURL('javascript:alert(1)')).toBeUndefined()
   })
 })
