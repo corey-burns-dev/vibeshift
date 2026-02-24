@@ -1,9 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect } from 'react'
 import { toast } from 'sonner'
 import { create } from 'zustand'
-import { useManagedWebSocket } from '@/hooks/useManagedWebSocket'
+import {
+  DEFAULT_RECONNECT_DELAYS,
+  useManagedWebSocket,
+} from '@/hooks/useManagedWebSocket'
 import { usePresenceStore } from '@/hooks/usePresence'
+import { useTokenRefreshReconnect } from '@/hooks/useTokenRefreshReconnect'
 import { dispatchGameRoomRealtimeUpdate } from '@/lib/game-realtime-events'
 import { logger } from '@/lib/logger'
 import { createTicketedWS } from '@/lib/ws-utils'
@@ -124,7 +128,6 @@ function asString(v: unknown): string | null {
 
 export function useRealtimeNotifications(enabled = true) {
   const queryClient = useQueryClient()
-  const previousAccessTokenRef = useRef<string | null>(null)
   const addNotification = useNotificationStore(state => state.add)
   const setOnline = usePresenceStore(state => state.setOnline)
   const setOffline = usePresenceStore(state => state.setOffline)
@@ -491,7 +494,7 @@ export function useRealtimeNotifications(enabled = true) {
       }
       logger.error('[realtime] websocket error', error)
     },
-    reconnectDelaysMs: [2000, 5000, 10000],
+    reconnectDelaysMs: DEFAULT_RECONNECT_DELAYS,
   })
 
   useEffect(() => {
@@ -500,19 +503,10 @@ export function useRealtimeNotifications(enabled = true) {
     }
   }, [wsEnabled, setInitialOnlineUsers])
 
-  useEffect(() => {
-    if (!wsEnabled) {
-      previousAccessTokenRef.current = accessToken
-      return
-    }
-
-    const previousToken = previousAccessTokenRef.current
-    previousAccessTokenRef.current = accessToken
-    if (!previousToken || !accessToken || previousToken === accessToken) {
-      return
-    }
-
-    setPlannedReconnect(true)
-    reconnect(true)
-  }, [wsEnabled, accessToken, reconnect, setPlannedReconnect])
+  useTokenRefreshReconnect({
+    token: accessToken,
+    wsEnabled,
+    reconnect,
+    setPlannedReconnect,
+  })
 }

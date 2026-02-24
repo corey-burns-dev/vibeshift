@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
 import type { PaginationParams, ReportRequest } from '@/api/types'
 import { handleAuthOrFKError } from '@/lib/handleAuthOrFKError'
+import { chatKeys } from './useChat'
 
 export const moderationKeys = {
   all: ['moderation'] as const,
@@ -33,7 +34,7 @@ export function useBlockUser() {
     mutationFn: (userId: number) => apiClient.blockUser(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: moderationKeys.blocks() })
-      queryClient.invalidateQueries({ queryKey: ['chat', 'conversations'] })
+      queryClient.invalidateQueries({ queryKey: chatKeys.conversations() })
     },
     onError: error => {
       handleAuthOrFKError(error)
@@ -47,7 +48,7 @@ export function useUnblockUser() {
     mutationFn: (userId: number) => apiClient.unblockUser(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: moderationKeys.blocks() })
-      queryClient.invalidateQueries({ queryKey: ['chat', 'conversations'] })
+      queryClient.invalidateQueries({ queryKey: chatKeys.conversations() })
     },
     onError: error => {
       handleAuthOrFKError(error)

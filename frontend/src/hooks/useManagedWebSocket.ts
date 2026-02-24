@@ -32,7 +32,7 @@ interface UseManagedWebSocketOptions {
   handshakeTimeoutMs?: number
 }
 
-const DEFAULT_RECONNECT_DELAYS = [2000, 5000, 10000]
+export const DEFAULT_RECONNECT_DELAYS = [2000, 5000, 10000]
 const WS_READY_CONNECTING = 0
 const WS_READY_OPEN = 1
 

@@ -48,7 +48,9 @@ export function useResolveAdminReport() {
       payload: ResolveModerationReportRequest
     }) => apiClient.resolveAdminReport(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminModerationKeys.all })
+      queryClient.invalidateQueries({
+        queryKey: [...adminModerationKeys.all, 'reports'],
+      })
     },
     onError: error => {
       handleAuthOrFKError(error)
@@ -91,7 +93,12 @@ export function useBanAdminUser() {
     mutationFn: ({ id, payload }: { id: number; payload?: BanUserRequest }) =>
       apiClient.banAdminUser(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminModerationKeys.all })
+      queryClient.invalidateQueries({
+        queryKey: [...adminModerationKeys.all, 'users'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: [...adminModerationKeys.all, 'ban-requests'],
+      })
     },
     onError: error => {
       handleAuthOrFKError(error)
@@ -104,7 +111,9 @@ export function useUnbanAdminUser() {
   return useMutation({
     mutationFn: (id: number) => apiClient.unbanAdminUser(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminModerationKeys.all })
+      queryClient.invalidateQueries({
+        queryKey: [...adminModerationKeys.all, 'users'],
+      })
     },
     onError: error => {
       handleAuthOrFKError(error)
