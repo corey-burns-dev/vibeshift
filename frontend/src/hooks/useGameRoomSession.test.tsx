@@ -444,6 +444,31 @@ describe('useGameRoomSession', () => {
     expect(onAction).toHaveBeenCalledWith(gameStatePayload)
   })
 
+  it('invokes onSocketOpen when the websocket connects', async () => {
+    const socket = new MockSocket()
+    vi.mocked(createTicketedWS).mockResolvedValue(
+      socket as unknown as WebSocket
+    )
+
+    const onSocketOpen = vi.fn()
+
+    renderHook(() =>
+      useGameRoomSession({
+        roomId: 61,
+        token: 'token-a',
+        onSocketOpen,
+      })
+    )
+
+    await act(async () => {
+      await flushAsync()
+      socket.triggerOpen()
+      await flushAsync()
+    })
+
+    expect(onSocketOpen).toHaveBeenCalledTimes(1)
+  })
+
   it('performs planned reconnect when token rotates', async () => {
     const firstSocket = new MockSocket()
     const secondSocket = new MockSocket()
@@ -500,5 +525,58 @@ describe('useGameRoomSession', () => {
     })
 
     expect(result.current.isSocketReady).toBe(true)
+  })
+
+  it('does not leave the room when token rotates for an active participant', async () => {
+    const firstSocket = new MockSocket()
+    const secondSocket = new MockSocket()
+    const sockets = [firstSocket, secondSocket]
+
+    vi.mocked(createTicketedWS).mockImplementation(async () => {
+      const next = sockets.shift()
+      if (!next) {
+        throw new Error('no socket left')
+      }
+      return next as unknown as WebSocket
+    })
+
+    const { rerender } = renderHook(
+      ({ token }) =>
+        useGameRoomSession({
+          roomId: 88,
+          token,
+          room: {
+            id: 88,
+            status: 'active',
+            creator_id: 10,
+            opponent_id: 20,
+          },
+          currentUserId: 10,
+        }),
+      {
+        initialProps: { token: 'token-a' },
+      }
+    )
+
+    await act(async () => {
+      await flushAsync()
+      firstSocket.triggerOpen()
+      await flushAsync()
+      await vi.advanceTimersByTimeAsync(1)
+    })
+
+    await act(async () => {
+      rerender({ token: 'token-b' })
+      await flushAsync()
+    })
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000)
+      await flushAsync()
+      secondSocket.triggerOpen()
+      await flushAsync()
+    })
+
+    expect(apiClient.leaveGameRoom).not.toHaveBeenCalled()
   })
 })

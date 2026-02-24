@@ -305,7 +305,7 @@ function runGameFlow(user, partner) {
 
     const createRes = http.post(
         `${BASE_URL}/api/games/rooms`,
-        JSON.stringify({ type: 'tictactoe' }),
+        JSON.stringify({ type: 'othello' }),
         authHeaders(user.token)
     );
 
@@ -325,7 +325,7 @@ function runGameFlow(user, partner) {
         socket.on('open', function () {
             socket.send(JSON.stringify({ type: 'join_room', payload: {} }));
             socket.send(JSON.stringify({ type: 'chat', payload: { content: `game chat ${__VU}-${__ITER}` } }));
-            socket.send(JSON.stringify({ type: 'make_move', payload: { x: 0, y: 0 } }));
+            socket.send(JSON.stringify({ type: 'make_move', payload: { row: 2, column: 3 } }));
         });
 
         socket.setTimeout(function () {

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log"
 	"time"
@@ -62,6 +63,12 @@ func (s *GameService) CreateGameRoom(_ context.Context, userID uint, gameType mo
 		CreatorID:     &userID,
 		CurrentState:  "{}",
 		Configuration: "{}",
+	}
+	if gameType == models.Othello {
+		initialBoard := models.InitialOthelloBoard()
+		if bytes, marshalErr := json.Marshal(initialBoard); marshalErr == nil {
+			room.CurrentState = string(bytes)
+		}
 	}
 	if err := s.gameRepo.CreateRoom(room); err != nil {
 		return nil, false, models.NewInternalError(err)

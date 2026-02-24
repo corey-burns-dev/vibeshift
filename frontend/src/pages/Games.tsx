@@ -7,12 +7,17 @@ import {
   UserCircle,
   Users,
 } from 'lucide-react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiClient } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { gameKeys, getCurrentUser } from '@/hooks'
+import {
+  getResumableGameRooms,
+  removeResumableGameRoom,
+} from '@/lib/game-room-presence'
 
 const GAME_CATEGORIES = [
   {
@@ -45,7 +50,6 @@ const GAME_CATEGORIES = [
         name: 'Othello',
         description: 'Reversi Strategy',
         reward: '+25 VP',
-        status: 'coming-soon',
       },
       {
         id: 'battleship',
@@ -153,6 +157,7 @@ export default function Games() {
   const closeRoom = async (roomId: number) => {
     try {
       await apiClient.leaveGameRoom(roomId)
+      removeResumableGameRoom(currentUser?.id, roomId)
       await queryClient.invalidateQueries({ queryKey: gameKeys.roomsActive() })
       toast.success('Room closed')
     } catch (error) {
@@ -162,7 +167,7 @@ export default function Games() {
   }
 
   const handlePlayNow = async (type: string) => {
-    if (type === 'connect4') {
+    if (type === 'connect4' || type === 'othello') {
       try {
         // Fetch fresh rooms at click time to avoid stale cache races.
         const freshRooms = await apiClient.getActiveGameRooms(type)
@@ -208,7 +213,6 @@ export default function Games() {
         'draw-guess': '/games/draw-guess',
         snake: '/games/snake',
         battleship: '/games/battleship',
-        othello: '/games/othello',
       }
       navigate(routeMap[type] || '/games')
     }
@@ -231,6 +235,13 @@ export default function Games() {
         room.creator_id === currentUser?.id &&
         !room.opponent_id
     ) ?? []
+
+  const resumableRooms = useMemo(() => {
+    const pendingRoomIds = new Set(myPendingRooms.map(room => room.id))
+    return getResumableGameRooms(currentUser?.id).filter(
+      room => !pendingRoomIds.has(room.roomId)
+    )
+  }, [currentUser?.id, myPendingRooms])
 
   return (
     <div className='flex-1 overflow-y-auto bg-background'>
@@ -337,6 +348,43 @@ export default function Games() {
                 </div>
               ) : (
                 <div className='space-y-4'>
+                  {resumableRooms.length > 0 && (
+                    <div className='space-y-3'>
+                      <p className='text-[10px] font-black uppercase tracking-wider text-muted-foreground'>
+                        Resume Matches
+                      </p>
+                      {resumableRooms.map(room => (
+                        <div
+                          key={`${room.type}-${room.roomId}`}
+                          className='flex items-center justify-between rounded-xl border border-emerald-300/30 bg-emerald-500/5 p-3'
+                        >
+                          <div className='flex flex-col'>
+                            <span className='text-xs font-black uppercase tracking-tighter text-emerald-600'>
+                              {room.type === 'connect4'
+                                ? 'Connect Four'
+                                : 'Othello'}
+                            </span>
+                            <span className='text-sm font-bold truncate max-w-30'>
+                              {room.status === 'active'
+                                ? 'In progress'
+                                : 'Waiting for opponent'}
+                            </span>
+                          </div>
+                          <Button
+                            size='sm'
+                            variant='ghost'
+                            className='h-8 text-[10px] font-black uppercase'
+                            onClick={() =>
+                              navigate(`/games/${room.type}/${room.roomId}`)
+                            }
+                          >
+                            Resume
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {myPendingRooms.length > 0 && (
                     <div className='space-y-3'>
                       <p className='text-[10px] font-black uppercase tracking-wider text-muted-foreground'>
@@ -413,7 +461,8 @@ export default function Games() {
                     </div>
                   )}
 
-                  {myPendingRooms.length === 0 &&
+                  {resumableRooms.length === 0 &&
+                    myPendingRooms.length === 0 &&
                     joinableRooms.length === 0 && (
                       <div
                         key='no-active-rooms'

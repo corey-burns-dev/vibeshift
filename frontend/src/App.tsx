@@ -14,6 +14,7 @@ import {
 import { BottomBar } from '@/components/BottomBar'
 import { ChatDock } from '@/components/chat/ChatDock'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { GameCapsuleDock } from '@/components/games/GameCapsuleDock'
 import { MobileHeader } from '@/components/MobileHeader'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { TopBar } from '@/components/TopBar'
@@ -21,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { useIsAuthenticated } from '@/hooks'
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications'
+import { parseGameRoomPath } from '@/lib/game-routes'
 import { cn } from '@/lib/utils'
 import { ChatProvider } from '@/providers/ChatProvider'
 import { routePrefetchMap } from '@/utils/prefetch'
@@ -378,7 +380,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path='/games/othello'
+          path='/games/othello/:id'
           element={
             <ProtectedRoute>
               <Othello />
@@ -524,7 +526,7 @@ function MainLayout({ children }: { children: ReactNode }) {
   const location = useLocation()
   const isChatRoute =
     location.pathname === '/chat' || location.pathname.startsWith('/chat/')
-  const isGameRoomRoute = /^\/games\/connect4\/[^/]+$/.test(location.pathname)
+  const isGameRoomRoute = parseGameRoomPath(location.pathname) !== null
   const isViewportLockedRoute = isChatRoute || isGameRoomRoute
 
   return (
@@ -561,6 +563,7 @@ function MainLayout({ children }: { children: ReactNode }) {
 
       {isAuthenticated && <BottomBar />}
       {isAuthenticated && <ChatDock />}
+      {isAuthenticated && <GameCapsuleDock />}
     </div>
   )
 }

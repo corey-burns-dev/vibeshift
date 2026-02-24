@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
-import { apiClient } from '@/api/client'
 import { useManagedWebSocket } from '@/hooks/useManagedWebSocket'
 import { createTicketedWS } from '@/lib/ws-utils'
 
@@ -27,6 +26,7 @@ interface UseGameRoomSessionOptions {
   joinPendingTitle?: string
   joinPendingDescription?: string
   onAction?: (action: Record<string, unknown>) => void
+  onSocketOpen?: () => void
 }
 
 interface SendActionOptions {
@@ -44,34 +44,22 @@ export function useGameRoomSession({
   joinPendingTitle = 'Connecting...',
   joinPendingDescription = 'Joining the match as soon as the game socket is ready.',
   onAction,
+  onSocketOpen,
 }: UseGameRoomSessionOptions) {
   const previousTokenRef = useRef<string | null>(null)
   const previousRoomIdRef = useRef<number | null | undefined>(roomId)
   const onActionRef = useRef(onAction)
+  const onSocketOpenRef = useRef(onSocketOpen)
   const shouldAutoJoinRef = useRef(false)
   const hasJoinedRef = useRef(false)
-  const allowLeaveOnUnmountRef = useRef(false)
-  const isParticipantRef = useRef(false)
 
   useEffect(() => {
     onActionRef.current = onAction
   }, [onAction])
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      allowLeaveOnUnmountRef.current = true
-    }, 0)
-    return () => window.clearTimeout(timer)
-  }, [])
-
-  useEffect(() => {
-    if (!room || !currentUserId) {
-      isParticipantRef.current = false
-      return
-    }
-    isParticipantRef.current =
-      room.creator_id === currentUserId || room.opponent_id === currentUserId
-  }, [room, currentUserId])
+    onSocketOpenRef.current = onSocketOpen
+  }, [onSocketOpen])
 
   const wsEnabled = !!roomId && !!token
 
@@ -87,6 +75,8 @@ export function useGameRoomSession({
         })
       },
       onOpen: ws => {
+        onSocketOpenRef.current?.()
+
         // Recover join intent after reconnect — only if the join
         // hasn't been sent yet. Re-sending after a successful join
         // causes "Game already started" errors on every reconnect.
@@ -257,37 +247,6 @@ export function useGameRoomSession({
     setPlannedReconnect(true)
     reconnect(true)
   }, [wsEnabled, token, reconnect, setPlannedReconnect])
-
-  useEffect(() => {
-    if (!roomId || !token) return
-
-    const leaveWithKeepalive = () => {
-      if (!isParticipantRef.current) return
-      void fetch(`/api/games/rooms/${roomId}/leave`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        keepalive: true,
-      })
-    }
-
-    const handleBeforeUnload = () => {
-      leaveWithKeepalive()
-    }
-
-    window.addEventListener('beforeunload', handleBeforeUnload)
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload)
-      if (!allowLeaveOnUnmountRef.current || !isParticipantRef.current) return
-      void apiClient.leaveGameRoom(roomId).catch((error: unknown) => {
-        if (error instanceof Error && error.message.includes('403')) return
-        console.error('Failed to leave room cleanly:', error)
-      })
-    }
-  }, [roomId, token])
 
   return {
     isSocketReady,

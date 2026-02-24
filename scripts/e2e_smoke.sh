@@ -22,7 +22,7 @@ if [ "$t2" = "null" ] || [ -z "$t2" ]; then
 fi
 
 echo "Creating room as user1"
-room=$(curl -s -X POST "$API_BASE/games/rooms" -H "Authorization: Bearer $t1" -H 'Content-Type: application/json' -d '{"type":"tictactoe"}')
+room=$(curl -s -X POST "$API_BASE/games/rooms" -H "Authorization: Bearer $t1" -H 'Content-Type: application/json' -d '{"type":"othello"}')
 room_id=$(echo "$room" | jq -r .id)
 if [ -z "$room_id" ] || [ "$room_id" = "null" ]; then
   echo "create room failed: $room"; exit 1
@@ -31,7 +31,7 @@ fi
 echo "Room created: $room_id"
 
 echo "Fetching active rooms"
-active=$(curl -s -H "Authorization: Bearer $t1" "$API_BASE/games/rooms/active?type=tictactoe")
+active=$(curl -s -H "Authorization: Bearer $t1" "$API_BASE/games/rooms/active?type=othello")
 
 echo "$active" | jq '.'
 

@@ -41,16 +41,27 @@ func TestGameHub_RegisterUnregister(t *testing.T) {
 	assert.Contains(t, hub.userRooms[userID], roomID)
 	hub.mu.RUnlock()
 
-	// Unregister checks DB for creator cleanup
-	mock.ExpectQuery(`^SELECT \* FROM "game_rooms" WHERE "game_rooms"\."id" = \$1.*`).
-		WithArgs(roomID, 1).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(roomID))
-
 	hub.UnregisterClient(client)
 	hub.mu.RLock()
 	assert.Empty(t, hub.rooms[roomID])
 	assert.Empty(t, hub.userRooms[userID])
 	hub.mu.RUnlock()
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGameHub_UnregisterDoesNotHitDBForPendingCreatorDisconnect(t *testing.T) {
+	db, mock := setupGameMockDB(t)
+	hub := NewGameHub(db, nil)
+	userID := uint(33)
+	roomID := uint(404)
+
+	client := &Client{UserID: userID, Conn: &websocket.Conn{}}
+	err := hub.RegisterClient(roomID, client)
+	require.NoError(t, err)
+
+	hub.UnregisterClient(client)
+
+	// Disconnect no longer triggers pending-room cancellation queries.
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -119,11 +130,6 @@ func TestGameHub_MultipleSocketsSameUserUnregisterBehavior(t *testing.T) {
 	_, ok = hub.userRooms[userID][roomID]
 	require.True(t, ok)
 	hub.mu.RUnlock()
-
-	// Now when the active client unregisters, expect DB cleanup query when appropriate
-	mock.ExpectQuery(`^SELECT \* FROM "game_rooms" WHERE "game_rooms"\."id" = \$1.*`).
-		WithArgs(roomID, 1).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(roomID))
 
 	hub.UnregisterClient(clientB)
 

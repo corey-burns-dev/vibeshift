@@ -469,7 +469,7 @@ func (s *Seeder) SeedActiveGames(users []*models.User) error {
 	// #nosec G404: Non-cryptographic randomness is acceptable for seeding test data
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	gameTypes := []models.GameType{models.TicTacToe, models.ConnectFour}
+	gameTypes := []models.GameType{models.ConnectFour, models.Othello}
 
 	for _, gType := range gameTypes {
 		// One pending, one active, one finished

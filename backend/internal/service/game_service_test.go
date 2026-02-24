@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -85,7 +86,7 @@ func TestGameServiceCreateGameRoomReturnsExistingPending(t *testing.T) {
 	}
 
 	svc := NewGameService(repo)
-	room, created, err := svc.CreateGameRoom(context.Background(), 9, models.TicTacToe)
+	room, created, err := svc.CreateGameRoom(context.Background(), 9, models.ConnectFour)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -176,5 +177,36 @@ func TestGameServiceGetActiveGameRoomsWrapsInternalError(t *testing.T) {
 	var appErr *models.AppError
 	if !errors.As(err, &appErr) || appErr.Code != "INTERNAL_ERROR" {
 		t.Fatalf("expected INTERNAL_ERROR app error, got %#v", err)
+	}
+}
+
+func TestGameServiceCreateGameRoomInitializesOthelloBoard(t *testing.T) {
+	repo := noopGameRepo()
+	var createdRoom *models.GameRoom
+	repo.createRoomFn = func(room *models.GameRoom) error {
+		copied := *room
+		createdRoom = &copied
+		return nil
+	}
+
+	svc := NewGameService(repo)
+	room, created, err := svc.CreateGameRoom(context.Background(), 9, models.Othello)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !created {
+		t.Fatal("expected room creation")
+	}
+	if room == nil || createdRoom == nil {
+		t.Fatal("expected created room to be present")
+	}
+
+	var board [8][8]string
+	if err := json.Unmarshal([]byte(createdRoom.CurrentState), &board); err != nil {
+		t.Fatalf("failed to parse othello board: %v", err)
+	}
+
+	if board[3][3] != "O" || board[3][4] != "X" || board[4][3] != "X" || board[4][4] != "O" {
+		t.Fatalf("unexpected initial othello board center pieces: %#v", board)
 	}
 }

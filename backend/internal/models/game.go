@@ -11,10 +11,10 @@ import (
 type GameType string
 
 const (
-	// TicTacToe game type constant
-	TicTacToe GameType = "tictactoe"
 	// ConnectFour game type constant
 	ConnectFour GameType = "connect4"
+	// Othello game type constant
+	Othello GameType = "othello"
 )
 
 // GameStatus defines the current state of a game
@@ -58,16 +58,6 @@ func (r *GameRoom) SetState(board interface{}) {
 	r.CurrentState = string(bytes)
 }
 
-// GetTicTacToeState returns the board state as a 3x3 array
-func (r *GameRoom) GetTicTacToeState() [3][3]string {
-	var board [3][3]string
-	if r.CurrentState == "" || r.CurrentState == "{}" {
-		return board
-	}
-	_ = json.Unmarshal([]byte(r.CurrentState), &board)
-	return board
-}
-
 // GetConnectFourState returns the board state as a 6x7 array (rows x cols)
 func (r *GameRoom) GetConnectFourState() [6][7]string {
 	var board [6][7]string
@@ -78,58 +68,34 @@ func (r *GameRoom) GetConnectFourState() [6][7]string {
 	return board
 }
 
+// InitialOthelloBoard returns the default 8x8 Othello board.
+func InitialOthelloBoard() [8][8]string {
+	var board [8][8]string
+	board[3][3] = "O"
+	board[3][4] = "X"
+	board[4][3] = "X"
+	board[4][4] = "O"
+	return board
+}
+
+// GetOthelloState returns the board state as an 8x8 array.
+func (r *GameRoom) GetOthelloState() [8][8]string {
+	var board [8][8]string
+	if r.CurrentState == "" || r.CurrentState == "{}" {
+		return InitialOthelloBoard()
+	}
+	_ = json.Unmarshal([]byte(r.CurrentState), &board)
+	return board
+}
+
 // CheckWin checks if there is a winner based on game type
 func (r *GameRoom) CheckWin() (string, bool) {
 	switch r.Type {
-	case TicTacToe:
-		return r.CheckTicTacToeWin()
 	case ConnectFour:
 		return r.CheckConnectFourWin()
+	case Othello:
+		return r.CheckOthelloWin()
 	}
-	return "", false
-}
-
-// CheckTicTacToeWin checks for a winner in Tic-Tac-Toe
-func (r *GameRoom) CheckTicTacToeWin() (string, bool) {
-	board := r.GetTicTacToeState()
-
-	// Rows
-	for i := 0; i < 3; i++ {
-		if board[i][0] != "" && board[i][0] == board[i][1] && board[i][1] == board[i][2] {
-			return board[i][0], true
-		}
-	}
-
-	// Columns
-	for i := 0; i < 3; i++ {
-		if board[0][i] != "" && board[0][i] == board[1][i] && board[1][i] == board[2][i] {
-			return board[0][i], true
-		}
-	}
-
-	// Diagonals
-	if board[0][0] != "" && board[0][0] == board[1][1] && board[1][1] == board[2][2] {
-		return board[0][0], true
-	}
-	if board[0][2] != "" && board[0][2] == board[1][1] && board[1][1] == board[2][0] {
-		return board[0][2], true
-	}
-
-	// Check Draw
-	isDraw := true
-	for i := 0; i < 3; i++ {
-		for j := 0; j < 3; j++ {
-			if board[i][j] == "" {
-				isDraw = false
-				break
-			}
-		}
-	}
-
-	if isDraw {
-		return "", true
-	}
-
 	return "", false
 }
 
@@ -203,6 +169,87 @@ func (r *GameRoom) CheckConnectFourWin() (string, bool) {
 	return "", false
 }
 
+var othelloDirections = [8][2]int{
+	{-1, -1}, {-1, 0}, {-1, 1},
+	{0, -1}, {0, 1},
+	{1, -1}, {1, 0}, {1, 1},
+}
+
+func inOthelloBounds(row, col int) bool {
+	return row >= 0 && row < 8 && col >= 0 && col < 8
+}
+
+func canOthelloMove(board [8][8]string, row, col int, symbol string) bool {
+	if !inOthelloBounds(row, col) || board[row][col] != "" {
+		return false
+	}
+
+	opponent := "O"
+	if symbol == "O" {
+		opponent = "X"
+	}
+
+	for _, dir := range othelloDirections {
+		r := row + dir[0]
+		c := col + dir[1]
+		seenOpponent := false
+
+		for inOthelloBounds(r, c) && board[r][c] == opponent {
+			seenOpponent = true
+			r += dir[0]
+			c += dir[1]
+		}
+
+		if seenOpponent && inOthelloBounds(r, c) && board[r][c] == symbol {
+			return true
+		}
+	}
+
+	return false
+}
+
+func hasAnyOthelloMove(board [8][8]string, symbol string) bool {
+	for row := 0; row < 8; row++ {
+		for col := 0; col < 8; col++ {
+			if canOthelloMove(board, row, col, symbol) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// CheckOthelloWin checks for a winner in Othello.
+func (r *GameRoom) CheckOthelloWin() (string, bool) {
+	board := r.GetOthelloState()
+
+	if hasAnyOthelloMove(board, "X") || hasAnyOthelloMove(board, "O") {
+		return "", false
+	}
+
+	xCount := 0
+	oCount := 0
+	for row := 0; row < 8; row++ {
+		for col := 0; col < 8; col++ {
+			switch board[row][col] {
+			case "X":
+				xCount++
+			case "O":
+				oCount++
+			}
+		}
+	}
+
+	switch {
+	case xCount > oCount:
+		return "X", true
+	case oCount > xCount:
+		return "O", true
+	default:
+		return "", true
+	}
+}
+
 // GameMove represents a single move made in a game
 type GameMove struct {
 	ID         uint      `gorm:"primaryKey" json:"id"`
@@ -225,13 +272,13 @@ type GameStats struct {
 	Points     int      `gorm:"default:0" json:"points"`
 }
 
-// TicTacToeMove represents a move in Tic-Tac-Toe game.
-type TicTacToeMove struct {
-	X int `json:"x"`
-	Y int `json:"y"`
-}
-
 // ConnectFourMove represents a move in Connect Four game.
 type ConnectFourMove struct {
+	Column int `json:"column"`
+}
+
+// OthelloMove represents a move in Othello.
+type OthelloMove struct {
+	Row    int `json:"row"`
 	Column int `json:"column"`
 }

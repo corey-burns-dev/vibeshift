@@ -55,7 +55,7 @@
   },
   "overrides": [
     {
-      "includes": ["src/pages/ConnectFour.tsx", "src/pages/TicTacToe.tsx"],
+      "includes": ["src/pages/ConnectFour.tsx", "src/pages/games/Othello.tsx"],
       "linter": {
         "rules": {
           "suspicious": {

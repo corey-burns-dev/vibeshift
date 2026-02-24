@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { create } from 'zustand'
 import { useManagedWebSocket } from '@/hooks/useManagedWebSocket'
 import { usePresenceStore } from '@/hooks/usePresence'
+import { dispatchGameRoomRealtimeUpdate } from '@/lib/game-realtime-events'
 import { logger } from '@/lib/logger'
 import { createTicketedWS } from '@/lib/ws-utils'
 import { useAuthSessionStore } from '@/stores/useAuthSessionStore'
@@ -28,6 +29,7 @@ type RealtimeEventType =
   | 'sanctum_request_created'
   | 'sanctum_request_reviewed'
   | 'chat_mention'
+  | 'game_room_updated'
 
 interface RealtimeEvent {
   type?: RealtimeEventType
@@ -443,6 +445,13 @@ export function useRealtimeNotifications(enabled = true) {
           }
           break
         }
+        case 'game_room_updated': {
+          const roomId = asNumber(payload.room_id)
+          dispatchGameRoomRealtimeUpdate({
+            roomId: roomId ?? undefined,
+          })
+          break
+        }
       }
     },
     [queryClient, addNotification, setOnline, setOffline, setInitialOnlineUsers]
@@ -471,6 +480,7 @@ export function useRealtimeNotifications(enabled = true) {
     },
     onOpen: () => {
       logger.debug('[realtime] notifications websocket opened')
+      dispatchGameRoomRealtimeUpdate()
     },
     onMessage: (_ws, event) => {
       handleRealtimeMessage(event)
