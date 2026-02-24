@@ -13,6 +13,22 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// SearchUsers handles GET /api/users/search?q=...
+func (s *Server) SearchUsers(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	q := strings.TrimSpace(c.Query("q"))
+	page := parsePagination(c, 20)
+
+	users, err := s.userSvc().SearchUsers(ctx, q, page.Limit, page.Offset)
+	if err != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	}
+
+	return c.JSON(users)
+}
+
 // GetAllUsers handles GET /api/users
 func (s *Server) GetAllUsers(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)

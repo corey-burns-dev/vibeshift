@@ -149,10 +149,13 @@ export interface UpdateProfileRequest {
   avatar?: string
 }
 
+export type PostSort = 'new' | 'hot' | 'top' | 'rising' | 'best'
+
 export interface PaginationParams {
   offset?: number
   limit?: number
   sanctum_id?: number
+  sort?: PostSort
 }
 
 export interface SearchParams extends PaginationParams {

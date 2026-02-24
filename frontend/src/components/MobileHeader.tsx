@@ -24,9 +24,10 @@ export function MobileHeader() {
 
         <div className='flex items-center gap-1'>
           <Link
-            to='/users'
-            className='inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border/60 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground'
+            to='/search'
+            className='inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
             aria-label='Search'
+            title='Search'
           >
             <Search className='h-4 w-4' />
           </Link>

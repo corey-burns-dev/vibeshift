@@ -30,6 +30,11 @@ func (s *UserService) ListUsers(ctx context.Context, limit, offset int) ([]model
 	return s.userRepo.List(ctx, limit, offset)
 }
 
+// SearchUsers returns users whose username or bio matches q.
+func (s *UserService) SearchUsers(ctx context.Context, q string, limit, offset int) ([]models.User, error) {
+	return s.userRepo.Search(ctx, q, limit, offset)
+}
+
 // GetUserByID returns a user by ID.
 func (s *UserService) GetUserByID(ctx context.Context, id uint) (*models.User, error) {
 	return s.userRepo.GetByID(ctx, id)

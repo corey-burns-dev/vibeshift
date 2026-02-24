@@ -71,11 +71,15 @@ func toSanctumMembershipDTO(m models.SanctumMembership, sanctum models.Sanctum, 
 func (s *Server) GetSanctums(c *fiber.Ctx) error {
 	ctx := c.Context()
 
+	q := strings.TrimSpace(c.Query("q"))
+	db := s.db.WithContext(ctx).Where("status = ?", models.SanctumStatusActive)
+	if q != "" {
+		like := "%" + strings.ToLower(q) + "%"
+		db = db.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ?", like, like)
+	}
+
 	var sanctums []models.Sanctum
-	if err := s.db.WithContext(ctx).
-		Where("status = ?", models.SanctumStatusActive).
-		Order("name ASC").
-		Find(&sanctums).Error; err != nil {
+	if err := db.Order("name ASC").Find(&sanctums).Error; err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 

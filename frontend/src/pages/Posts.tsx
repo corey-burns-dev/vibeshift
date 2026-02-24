@@ -10,21 +10,24 @@ import {
   Loader2,
   Menu,
   MessageCircle,
+  PanelLeft,
+  PanelRight,
   Send,
   Type,
   Video,
   X,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { apiClient } from '@/api/client'
 // Types
-import type { Post, PostType, UpdatePostRequest } from '@/api/types'
+import type { Post, PostSort, PostType, UpdatePostRequest } from '@/api/types'
 import { LinkCard } from '@/components/posts/LinkCard'
 import { PollBlock } from '@/components/posts/PollBlock'
 import { PostCaption } from '@/components/posts/PostCaption'
 import { PostComposerEditor } from '@/components/posts/PostComposerEditor'
+import { PostSortBar } from '@/components/posts/PostSortBar'
 import { ResponsiveImage } from '@/components/posts/ResponsiveImage'
 import { YouTubeEmbed } from '@/components/posts/YouTubeEmbed'
 // Components
@@ -44,7 +47,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { useReportPost } from '@/hooks/useModeration'
 // Hooks
 import {
-  sortPostsNewestFirst,
   useCreatePost,
   useDeletePost,
   useInfinitePosts,
@@ -118,13 +120,59 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
   )
   const isMembershipFeed = mode === 'membership' && sanctumId === undefined
   const [membershipPage, setMembershipPage] = useState(1)
+
+  // Sort state — persisted in the URL so links are shareable
+  const [searchParams, setSearchParams] = useSearchParams()
+  const validSorts: PostSort[] = ['new', 'hot', 'top', 'rising', 'best']
+  const rawSort = searchParams.get('sort') as PostSort | null
+  const activeSort: PostSort =
+    rawSort && validSorts.includes(rawSort) ? rawSort : 'new'
+  const handleSortChange = (newSort: PostSort) => {
+    setMembershipPage(1)
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      next.set('sort', newSort)
+      return next
+    })
+  }
+
+  // Sidebar open/closed state — persisted in localStorage
+  const [showLeftSidebar, setShowLeftSidebar] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('posts_left_sidebar') !== 'false'
+    } catch {
+      return true
+    }
+  })
+  const [showRightSidebar, setShowRightSidebar] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('posts_right_sidebar') !== 'false'
+    } catch {
+      return true
+    }
+  })
+  useEffect(() => {
+    try {
+      localStorage.setItem('posts_left_sidebar', String(showLeftSidebar))
+    } catch {
+      /* ignore */
+    }
+  }, [showLeftSidebar])
+  useEffect(() => {
+    try {
+      localStorage.setItem('posts_right_sidebar', String(showRightSidebar))
+    } catch {
+      /* ignore */
+    }
+  }, [showRightSidebar])
+
   const {
     data,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
     isLoading: isLoadingAllPosts,
-  } = useInfinitePosts(10, sanctumId)
+  } = useInfinitePosts(10, sanctumId, activeSort)
   const {
     memberships,
     posts: membershipPosts,
@@ -132,7 +180,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
     isFetching: isFetchingMembershipPosts,
     isError: isMembershipFeedError,
     hasMore: hasMoreMembershipPosts,
-  } = useMembershipFeedPosts(10, membershipPage)
+  } = useMembershipFeedPosts(10, membershipPage, activeSort)
   const { data: sanctums = [] } = useSanctums()
   const createPostMutation = useCreatePost()
   const likePostMutation = useLikePost()
@@ -160,10 +208,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
 
   // Flatten pages into single array of posts
   const allPosts = data?.pages.flat() ?? []
-  const posts = useMemo(
-    () => sortPostsNewestFirst(isMembershipFeed ? membershipPosts : allPosts),
-    [allPosts, isMembershipFeed, membershipPosts]
-  )
+  const posts = isMembershipFeed ? membershipPosts : allPosts
   const isLoading = isMembershipFeed
     ? isLoadingMembershipPosts
     : isLoadingAllPosts
@@ -399,85 +444,92 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
   }
 
   return (
-    <div className='mx-auto w-full max-w-480 px-3 py-7 md:px-4 lg:px-5'>
-      <div className='grid items-start gap-6 lg:grid-cols-[16rem_minmax(0,1fr)_16rem]'>
-        <aside className='sticky top-20 hidden space-y-3 lg:block'>
-          <Card className='rounded-xl border border-border/70 bg-card'>
-            <CardContent className='space-y-2 p-3'>
-              <div>
-                <p className='text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground'>
-                  Browse
-                </p>
-                <div className='mt-1.5 grid grid-cols-2 gap-1'>
-                  <Link
-                    to='/'
-                    className={cn(
-                      'rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
-                      !isMembershipFeed
-                        ? 'bg-primary/12 text-primary'
-                        : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-                    )}
-                  >
-                    Home
-                  </Link>
-                  <Link
-                    to='/feed'
-                    className={cn(
-                      'rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
-                      isMembershipFeed
-                        ? 'bg-primary/12 text-primary'
-                        : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-                    )}
-                  >
-                    Feed
-                  </Link>
-                  <Link
-                    to='/sanctums'
-                    className='col-span-2 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground'
-                  >
-                    All Sanctums
-                  </Link>
-                </div>
-              </div>
-
-              <div className='border-t border-border/60 pt-2'>
-                <p className='text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground'>
-                  Sanctums
-                </p>
-                {membershipSanctums.length === 0 ? (
-                  <p className='mt-1.5 text-xs text-muted-foreground'>
-                    You have not joined any sanctums yet.
+    <div className='mx-auto w-full max-w-480 px-3 py-6 md:px-4 lg:px-5'>
+      <div className='flex items-start gap-4'>
+        <div
+          className={cn(
+            'hidden lg:block shrink-0 overflow-hidden transition-[width] duration-300',
+            showLeftSidebar ? 'w-72' : 'w-0'
+          )}
+        >
+          <aside className='sticky top-20 w-72 space-y-3'>
+            <Card className='rounded-2xl border border-border/70 bg-card/70 shadow-lg'>
+              <CardContent className='space-y-2 p-3'>
+                <div>
+                  <p className='text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground'>
+                    Browse
                   </p>
-                ) : (
-                  <div
-                    className='mt-1.5 grid grid-cols-2 gap-1'
-                    data-testid='posts-sidebar-sanctum-links'
-                  >
-                    {membershipSanctums.map(sanctum => (
-                      <Link
-                        key={sanctum.id}
-                        to={`/s/${sanctum.slug}`}
-                        aria-current={
-                          sanctumId === sanctum.id ? 'page' : undefined
-                        }
-                        className={cn(
-                          'block rounded-md px-2 py-1.5 text-xs leading-tight transition-colors',
-                          sanctumId === sanctum.id
-                            ? 'bg-primary/12 text-primary'
-                            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-                        )}
-                      >
-                        {sanctum.name}
-                      </Link>
-                    ))}
+                  <div className='mt-1.5 grid grid-cols-2 gap-1'>
+                    <Link
+                      to='/'
+                      className={cn(
+                        'rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors',
+                        !isMembershipFeed
+                          ? 'bg-primary/15 text-primary'
+                          : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                      )}
+                    >
+                      Home
+                    </Link>
+                    <Link
+                      to='/feed'
+                      className={cn(
+                        'rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors',
+                        isMembershipFeed
+                          ? 'bg-primary/15 text-primary'
+                          : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                      )}
+                    >
+                      Feed
+                    </Link>
+                    <Link
+                      to='/sanctums'
+                      className='col-span-2 rounded-lg px-2 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground'
+                    >
+                      All Sanctums
+                    </Link>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </aside>
+                </div>
 
-        <main className='min-w-0'>
+                <div className='border-t border-border/60 pt-2'>
+                  <p className='text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground'>
+                    Sanctums
+                  </p>
+                  {sanctums.length === 0 ? (
+                    <p className='mt-1.5 text-xs text-muted-foreground'>
+                      No sanctums available yet.
+                    </p>
+                  ) : (
+                    <div
+                      className='mt-1.5 grid grid-cols-2 gap-1'
+                      data-testid='posts-sidebar-sanctum-links'
+                    >
+                      {sanctums.map(sanctum => (
+                        <Link
+                          key={sanctum.id}
+                          to={`/s/${sanctum.slug}`}
+                          aria-current={
+                            sanctumId === sanctum.id ? 'page' : undefined
+                          }
+                          className={cn(
+                            'block rounded-lg px-2 py-1.5 text-xs leading-tight transition-colors',
+                            sanctumId === sanctum.id
+                              ? 'bg-primary/15 text-primary'
+                              : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                          )}
+                        >
+                          {sanctum.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </aside>
+        </div>
+
+        <main className='min-w-0 flex-1'>
           <div className='mb-4 flex items-center justify-between gap-2 lg:hidden'>
             <Button
               type='button'
@@ -514,6 +566,56 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
               </Link>
             </div>
           </div>
+
+          {/* Desktop: sidebar toggles + sort bar in one row */}
+          <div className='mb-4 hidden lg:flex items-center gap-2'>
+            <button
+              type='button'
+              onClick={() => setShowLeftSidebar(prev => !prev)}
+              aria-label={
+                showLeftSidebar
+                  ? 'Collapse left sidebar'
+                  : 'Expand left sidebar'
+              }
+              title={
+                showLeftSidebar
+                  ? 'Collapse left sidebar'
+                  : 'Expand left sidebar'
+              }
+              className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
+            >
+              <PanelLeft className='h-4 w-4' />
+            </button>
+            <PostSortBar
+              sort={activeSort}
+              onChange={handleSortChange}
+              className='flex-1'
+            />
+            <button
+              type='button'
+              onClick={() => setShowRightSidebar(prev => !prev)}
+              aria-label={
+                showRightSidebar
+                  ? 'Collapse right sidebar'
+                  : 'Expand right sidebar'
+              }
+              title={
+                showRightSidebar
+                  ? 'Collapse right sidebar'
+                  : 'Expand right sidebar'
+              }
+              className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
+            >
+              <PanelRight className='h-4 w-4' />
+            </button>
+          </div>
+
+          {/* Mobile: sort bar only (sidebar toggle not needed on mobile) */}
+          <PostSortBar
+            sort={activeSort}
+            onChange={handleSortChange}
+            className='mb-4 lg:hidden'
+          />
 
           {isAuthenticated && (
             <Card className='mb-6 overflow-hidden rounded-xl border border-border/70 bg-card'>
@@ -1294,52 +1396,59 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
           </section>
         </main>
 
-        <aside className='sticky top-20 hidden space-y-3 lg:block'>
-          <Card className='rounded-xl border border-border/70 bg-card'>
-            <CardContent className='p-4'>
-              <h3 className='mb-2 text-sm font-semibold'>Newest Posts</h3>
-              {newestPosts.length === 0 ? (
-                <p className='text-xs text-muted-foreground'>No posts yet.</p>
-              ) : (
-                <div className='space-y-1.5'>
-                  {newestPosts.map(post => (
-                    <button
-                      key={post.id}
-                      type='button'
-                      onClick={() => navigate(`/posts/${post.id}`)}
-                      className='block w-full rounded-md px-2 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground'
-                    >
-                      {post.title || post.content.slice(0, 52)}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <div
+          className={cn(
+            'hidden lg:block shrink-0 overflow-hidden transition-[width] duration-300',
+            showRightSidebar ? 'w-72' : 'w-0'
+          )}
+        >
+          <aside className='sticky top-20 w-72 space-y-3'>
+            <Card className='rounded-2xl border border-border/70 bg-card/70'>
+              <CardContent className='p-4'>
+                <h3 className='mb-2 text-sm font-semibold'>Newest Posts</h3>
+                {newestPosts.length === 0 ? (
+                  <p className='text-xs text-muted-foreground'>No posts yet.</p>
+                ) : (
+                  <div className='space-y-1.5'>
+                    {newestPosts.map(post => (
+                      <button
+                        key={post.id}
+                        type='button'
+                        onClick={() => navigate(`/posts/${post.id}`)}
+                        className='block w-full rounded-lg px-2 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground'
+                      >
+                        {post.title || post.content.slice(0, 52)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-          <Card className='rounded-xl border border-border/70 bg-card'>
-            <CardContent className='p-4'>
-              <h3 className='mb-2 text-sm font-semibold'>Hot Sanctums</h3>
-              {hotSanctums.length === 0 ? (
-                <p className='text-xs text-muted-foreground'>
-                  Hot sanctums will appear as activity grows.
-                </p>
-              ) : (
-                <div className='space-y-1.5'>
-                  {hotSanctums.map(item => (
-                    <div
-                      key={item.id}
-                      className='flex items-center justify-between rounded-lg px-2 py-2 text-xs text-muted-foreground'
-                    >
-                      <span className='truncate'>{item.name}</span>
-                      <span className='font-semibold'>{item.count}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </aside>
+            <Card className='rounded-2xl border border-border/70 bg-card/70'>
+              <CardContent className='p-4'>
+                <h3 className='mb-2 text-sm font-semibold'>Hot Sanctums</h3>
+                {hotSanctums.length === 0 ? (
+                  <p className='text-xs text-muted-foreground'>
+                    Hot sanctums will appear as activity grows.
+                  </p>
+                ) : (
+                  <div className='space-y-1.5'>
+                    {hotSanctums.map(item => (
+                      <div
+                        key={item.id}
+                        className='flex items-center justify-between rounded-lg px-2 py-2 text-xs text-muted-foreground'
+                      >
+                        <span className='truncate'>{item.name}</span>
+                        <span className='font-semibold'>{item.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </aside>
+        </div>
       </div>
       {isSanctumDrawerOpen && (
         <div className='fixed inset-0 z-50 lg:hidden'>

@@ -12,6 +12,7 @@ import type {
   CreatePostRequest,
   PaginationParams,
   Post,
+  PostSort,
   SearchParams,
   UpdatePostRequest,
 } from '../api/types'
@@ -52,14 +53,19 @@ export function usePosts(params?: PaginationParams) {
 }
 
 // Get all posts with infinite scroll
-export function useInfinitePosts(limit = 10, sanctumID?: number) {
+export function useInfinitePosts(
+  limit = 10,
+  sanctumID?: number,
+  sort: PostSort = 'new'
+) {
   return useInfiniteQuery({
-    queryKey: ['posts', 'infinite', limit, sanctumID ?? 'all'],
+    queryKey: ['posts', 'infinite', limit, sanctumID ?? 'all', sort],
     queryFn: ({ pageParam = 0 }) =>
       apiClient.getPosts({
         offset: pageParam,
         limit,
         sanctum_id: sanctumID,
+        sort,
       }),
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.length < limit) return undefined
@@ -72,7 +78,53 @@ export function useInfinitePosts(limit = 10, sanctumID?: number) {
   })
 }
 
-export function useMembershipFeedPosts(limitPerSanctum = 10, page = 1) {
+// Client-side sort for the membership feed (merged from multiple sanctums)
+function sortPosts(posts: Post[], sort: PostSort): Post[] {
+  const now = Date.now()
+  switch (sort) {
+    case 'hot': {
+      const score = (p: Post) => {
+        const ageHours = (now - new Date(p.created_at).getTime()) / 3_600_000
+        const engagement = (p.likes_count ?? 0) + (p.comments_count ?? 0) * 2
+        return engagement / (ageHours + 2) ** 1.5
+      }
+      return [...posts].sort((a, b) => score(b) - score(a))
+    }
+    case 'top':
+      return [...posts].sort(
+        (a, b) =>
+          (b.likes_count ?? 0) - (a.likes_count ?? 0) ||
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+    case 'rising':
+      return [...posts]
+        .filter(p => now - new Date(p.created_at).getTime() < 48 * 3_600_000)
+        .sort(
+          (a, b) =>
+            (b.likes_count ?? 0) +
+            (b.comments_count ?? 0) * 2 -
+            ((a.likes_count ?? 0) + (a.comments_count ?? 0) * 2)
+        )
+    case 'best':
+      return [...posts].sort(
+        (a, b) =>
+          (b.likes_count ?? 0) +
+          (b.comments_count ?? 0) * 1.5 -
+          ((a.likes_count ?? 0) + (a.comments_count ?? 0) * 1.5)
+      )
+    default: // 'new'
+      return [...posts].sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+  }
+}
+
+export function useMembershipFeedPosts(
+  limitPerSanctum = 10,
+  page = 1,
+  sort: PostSort = 'new'
+) {
   const membershipsQuery = useMySanctumMemberships()
   const sanctumIDs = (membershipsQuery.data ?? []).map(m => m.sanctum_id)
   const cappedPage = Math.max(page, 1)
@@ -80,12 +132,13 @@ export function useMembershipFeedPosts(limitPerSanctum = 10, page = 1) {
 
   const perSanctumQueries = useQueries({
     queries: sanctumIDs.map(sanctumID => ({
-      queryKey: ['posts', 'membership-feed', sanctumID, fetchLimit],
+      queryKey: ['posts', 'membership-feed', sanctumID, fetchLimit, sort],
       queryFn: () =>
         apiClient.getPosts({
           offset: 0,
           limit: fetchLimit,
           sanctum_id: sanctumID,
+          sort,
         }),
       staleTime: 60_000,
       enabled: membershipsQuery.isSuccess,
@@ -103,7 +156,7 @@ export function useMembershipFeedPosts(limitPerSanctum = 10, page = 1) {
     membershipsQuery.isError || perSanctumQueries.some(query => query.isError)
 
   const seen = new Set<number>()
-  const mergedPosts = perSanctumQueries
+  const merged = perSanctumQueries
     .flatMap(query => query.data ?? [])
     .filter(post => {
       if (!post.sanctum_id || seen.has(post.id)) {
@@ -112,7 +165,8 @@ export function useMembershipFeedPosts(limitPerSanctum = 10, page = 1) {
       seen.add(post.id)
       return true
     })
-  const sortedPosts = sortPostsNewestFirst(mergedPosts)
+
+  const mergedPosts = sortPosts(merged, sort)
 
   const hasMore = perSanctumQueries.some(
     query => (query.data?.length ?? 0) >= fetchLimit
@@ -120,7 +174,7 @@ export function useMembershipFeedPosts(limitPerSanctum = 10, page = 1) {
 
   return {
     memberships: membershipsQuery.data ?? [],
-    posts: sortedPosts,
+    posts: mergedPosts,
     isLoading,
     isFetching,
     isError,

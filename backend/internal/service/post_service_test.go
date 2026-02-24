@@ -17,8 +17,8 @@ type postRepoStub struct {
 	createFn          func(context.Context, *models.Post) error
 	getByIDFn         func(context.Context, uint, uint) (*models.Post, error)
 	getByUserIDFn     func(context.Context, uint, int, int, uint) ([]*models.Post, error)
-	getBySanctumIDFn  func(context.Context, uint, int, int, uint) ([]*models.Post, error)
-	listFn            func(context.Context, int, int, uint) ([]*models.Post, error)
+	getBySanctumIDFn  func(context.Context, uint, int, int, uint, string) ([]*models.Post, error)
+	listFn            func(context.Context, int, int, uint, string) ([]*models.Post, error)
 	searchFn          func(context.Context, string, int, int, uint) ([]*models.Post, error)
 	updateFn          func(context.Context, *models.Post) error
 	deleteFn          func(context.Context, uint) error
@@ -37,11 +37,11 @@ func (s *postRepoStub) GetByID(ctx context.Context, id, currentUserID uint) (*mo
 func (s *postRepoStub) GetByUserID(ctx context.Context, userID uint, limit, offset int, currentUserID uint) ([]*models.Post, error) {
 	return s.getByUserIDFn(ctx, userID, limit, offset, currentUserID)
 }
-func (s *postRepoStub) GetBySanctumID(ctx context.Context, sanctumID uint, limit, offset int, currentUserID uint) ([]*models.Post, error) {
-	return s.getBySanctumIDFn(ctx, sanctumID, limit, offset, currentUserID)
+func (s *postRepoStub) GetBySanctumID(ctx context.Context, sanctumID uint, limit, offset int, currentUserID uint, sort string) ([]*models.Post, error) {
+	return s.getBySanctumIDFn(ctx, sanctumID, limit, offset, currentUserID, sort)
 }
-func (s *postRepoStub) List(ctx context.Context, limit, offset int, currentUserID uint) ([]*models.Post, error) {
-	return s.listFn(ctx, limit, offset, currentUserID)
+func (s *postRepoStub) List(ctx context.Context, limit, offset int, currentUserID uint, sort string) ([]*models.Post, error) {
+	return s.listFn(ctx, limit, offset, currentUserID, sort)
 }
 func (s *postRepoStub) Search(ctx context.Context, query string, limit, offset int, currentUserID uint) ([]*models.Post, error) {
 	return s.searchFn(ctx, query, limit, offset, currentUserID)
@@ -70,8 +70,8 @@ func noopPostRepo() *postRepoStub {
 		createFn:          func(_ context.Context, _ *models.Post) error { return nil },
 		getByIDFn:         func(_ context.Context, _, _ uint) (*models.Post, error) { return &models.Post{}, nil },
 		getByUserIDFn:     func(_ context.Context, _ uint, _, _ int, _ uint) ([]*models.Post, error) { return nil, nil },
-		getBySanctumIDFn:  func(_ context.Context, _ uint, _, _ int, _ uint) ([]*models.Post, error) { return nil, nil },
-		listFn:            func(_ context.Context, _, _ int, _ uint) ([]*models.Post, error) { return nil, nil },
+		getBySanctumIDFn:  func(_ context.Context, _ uint, _, _ int, _ uint, _ string) ([]*models.Post, error) { return nil, nil },
+		listFn:            func(_ context.Context, _, _ int, _ uint, _ string) ([]*models.Post, error) { return nil, nil },
 		searchFn:          func(_ context.Context, _ string, _, _ int, _ uint) ([]*models.Post, error) { return nil, nil },
 		updateFn:          func(_ context.Context, _ *models.Post) error { return nil },
 		deleteFn:          func(_ context.Context, _ uint) error { return nil },

@@ -39,13 +39,13 @@ func (m *MockPostRepository) GetByUserID(ctx context.Context, userID uint, limit
 	return args.Get(0).([]*models.Post), args.Error(1)
 }
 
-func (m *MockPostRepository) GetBySanctumID(ctx context.Context, sanctumID uint, limit, offset int, currentUserID uint) ([]*models.Post, error) {
-	args := m.Called(ctx, sanctumID, limit, offset, currentUserID)
+func (m *MockPostRepository) GetBySanctumID(ctx context.Context, sanctumID uint, limit, offset int, currentUserID uint, sort string) ([]*models.Post, error) {
+	args := m.Called(ctx, sanctumID, limit, offset, currentUserID, sort)
 	return args.Get(0).([]*models.Post), args.Error(1)
 }
 
-func (m *MockPostRepository) List(ctx context.Context, limit, offset int, currentUserID uint) ([]*models.Post, error) {
-	args := m.Called(ctx, limit, offset, currentUserID)
+func (m *MockPostRepository) List(ctx context.Context, limit, offset int, currentUserID uint, sort string) ([]*models.Post, error) {
+	args := m.Called(ctx, limit, offset, currentUserID, sort)
 	return args.Get(0).([]*models.Post), args.Error(1)
 }
 

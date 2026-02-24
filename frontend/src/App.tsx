@@ -68,6 +68,7 @@ const AdminRoomMutes = lazy(() => import('@/pages/admin/AdminRoomMutes'))
 const AdminPlaceholder = lazy(() => import('@/pages/admin/AdminPlaceholder'))
 const OnboardingSanctums = lazy(() => import('@/pages/OnboardingSanctums'))
 const SanctumFeed = lazy(() => import('@/pages/SanctumFeed'))
+const SearchPage = lazy(() => import('@/pages/Search'))
 
 function PageLoader() {
   return (
@@ -405,6 +406,14 @@ function RoutesWithPrefetch() {
           element={
             <ProtectedRoute>
               <VideoChat />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/search'
+          element={
+            <ProtectedRoute>
+              <SearchPage />
             </ProtectedRoute>
           }
         />

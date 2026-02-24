@@ -403,6 +403,7 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	users.Put("/me", s.UpdateMyProfile)
 	users.Get("/me/mentions", s.GetMyMentions)
 	users.Get("/blocks/me", s.GetMyBlocks)
+	users.Get("/search", s.SearchUsers)
 	users.Get("/", s.GetAllUsers)
 
 	// WebSocket ticket issuance

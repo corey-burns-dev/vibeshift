@@ -23,6 +23,7 @@ type UserRepository interface {
 	Update(ctx context.Context, user *models.User) error
 	Delete(ctx context.Context, id uint) error
 	List(ctx context.Context, limit, offset int) ([]models.User, error)
+	Search(ctx context.Context, q string, limit, offset int) ([]models.User, error)
 }
 
 type userRepository struct {
@@ -159,6 +160,23 @@ func (r *userRepository) List(ctx context.Context, limit, offset int) ([]models.
 		readDB = r.db
 	}
 	if err := readDB.WithContext(ctx).Limit(limit).Offset(offset).Find(&users).Error; err != nil {
+		return nil, models.NewInternalError(err)
+	}
+	return users, nil
+}
+
+func (r *userRepository) Search(ctx context.Context, q string, limit, offset int) ([]models.User, error) {
+	var users []models.User
+	readDB := database.GetReadDB()
+	if readDB == nil {
+		readDB = r.db
+	}
+	db := readDB.WithContext(ctx)
+	if q != "" {
+		like := "%" + strings.ToLower(q) + "%"
+		db = db.Where("LOWER(username) LIKE ? OR LOWER(bio) LIKE ?", like, like)
+	}
+	if err := db.Limit(limit).Offset(offset).Find(&users).Error; err != nil {
 		return nil, models.NewInternalError(err)
 	}
 	return users, nil

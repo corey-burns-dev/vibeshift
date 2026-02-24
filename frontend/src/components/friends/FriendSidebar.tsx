@@ -40,7 +40,7 @@ export function FriendSidebar({
   ]
 
   return (
-    <div className='w-full md:w-[360px] shrink-0 bg-background md:border-r h-full flex flex-col'>
+    <div className='w-full md:w-90 shrink-0 bg-background md:border-r h-full flex flex-col'>
       <div className='p-4 pt-5 pb-2 flex items-center justify-between'>
         <h2 className='text-2xl font-bold tracking-tight'>Friends</h2>
         <Button
@@ -83,7 +83,7 @@ export function FriendSidebar({
                   {item.label}
                 </span>
                 {item.badge && (
-                  <div className='flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full ml-auto'>
+                  <div className='flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full ml-auto'>
                     {item.badge}
                   </div>
                 )}

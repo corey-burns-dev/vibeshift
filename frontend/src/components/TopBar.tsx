@@ -1,11 +1,4 @@
-import {
-  Bell,
-  LogOut,
-  PenSquare,
-  Search,
-  ShieldCheck,
-  User,
-} from 'lucide-react'
+import { Bell, LogOut, Search, ShieldCheck, User } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ModeToggle } from '@/components/mode-toggle'
@@ -17,7 +10,6 @@ import {
   topServiceNav,
 } from '@/components/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -190,7 +182,16 @@ export function TopBar() {
             </span>
           </Link>
 
-          <div className='flex min-w-0 flex-1 items-center justify-center gap-1.5 px-1 max-[1080px]:gap-3'>
+          <Link
+            to='/search'
+            className='ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
+            aria-label='Search'
+            title='Search'
+          >
+            <Search className='h-4 w-4' />
+          </Link>
+
+          <div className='absolute left-1/2 top-0 flex h-14 -translate-x-1/2 items-center gap-3 lg:gap-1.5 overflow-x-auto px-1 pointer-events-auto'>
             {navItems.map(item => (
               <NavPill
                 key={item.path}
@@ -200,25 +201,7 @@ export function TopBar() {
             ))}
           </div>
 
-          <Link
-            to='/users'
-            className='hidden h-9 min-w-52 items-center gap-2 rounded-lg border border-border/60 bg-card px-3 text-sm text-muted-foreground transition-colors hover:text-foreground xl:flex'
-          >
-            <Search className='h-4 w-4' />
-            <span>Search people and rooms</span>
-          </Link>
-
-          <div className='ml-auto flex shrink-0 items-center gap-1.5'>
-            <Button
-              asChild
-              size='sm'
-              className='hidden rounded-lg xl:inline-flex gap-1.5'
-            >
-              <Link to='/submit'>
-                <PenSquare className='h-4 w-4' />
-                Create Post
-              </Link>
-            </Button>
+          <div className='ml-auto flex shrink-0 items-center gap-2'>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button

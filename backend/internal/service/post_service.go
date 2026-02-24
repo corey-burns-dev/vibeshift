@@ -42,6 +42,7 @@ type ListPostsInput struct {
 	Offset        int
 	CurrentUserID uint
 	SanctumID     *uint
+	Sort          string // "new" | "hot" | "top" | "rising" | "best"; defaults to "new"
 }
 
 // UpdatePostInput is the input for updating a post.
@@ -196,15 +197,22 @@ func (s *PostService) CreatePost(ctx context.Context, in CreatePostInput) (*mode
 
 // ListPosts returns posts for the feed with optional sanctum filter.
 func (s *PostService) ListPosts(ctx context.Context, in ListPostsInput) ([]*models.Post, error) {
+	sort := in.Sort
+	if sort == "" {
+		sort = "new"
+	}
+
 	var posts []*models.Post
 	var err error
 
+	// Only cache the first page of the default "new" sort (global feed).
+	// Non-new sorts are dynamic and skip the cache.
 	switch {
-	case in.SanctumID == nil && in.Offset == 0 && in.Limit <= 20:
+	case in.SanctumID == nil && in.Offset == 0 && in.Limit <= 20 && sort == "new":
 		key := cache.PostsListKey(ctx)
 		err = cache.Aside(ctx, key, &posts, cache.ListTTL, func() error {
 			var fetchErr error
-			posts, fetchErr = s.postRepo.List(ctx, in.Limit, in.Offset, 0)
+			posts, fetchErr = s.postRepo.List(ctx, in.Limit, in.Offset, 0, "new")
 			return fetchErr
 		})
 		if err != nil {
@@ -232,9 +240,9 @@ func (s *PostService) ListPosts(ctx context.Context, in ListPostsInput) ([]*mode
 			}
 		}
 	case in.SanctumID != nil:
-		posts, err = s.postRepo.GetBySanctumID(ctx, *in.SanctumID, in.Limit, in.Offset, in.CurrentUserID)
+		posts, err = s.postRepo.GetBySanctumID(ctx, *in.SanctumID, in.Limit, in.Offset, in.CurrentUserID, sort)
 	default:
-		posts, err = s.postRepo.List(ctx, in.Limit, in.Offset, in.CurrentUserID)
+		posts, err = s.postRepo.List(ctx, in.Limit, in.Offset, in.CurrentUserID, sort)
 	}
 
 	if err != nil {

@@ -330,6 +330,7 @@ class ApiClient {
     if (params?.limit !== undefined) query.set('limit', params.limit.toString())
     if (params?.sanctum_id !== undefined)
       query.set('sanctum_id', params.sanctum_id.toString())
+    if (params?.sort) query.set('sort', params.sort)
     const queryString = query.toString() ? `?${query.toString()}` : ''
     return this.request(`/posts${queryString}`)
   }
@@ -438,6 +439,11 @@ class ApiClient {
   }
 
   // Users
+  async searchUsers(q: string, limit = 20): Promise<User[]> {
+    const query = new URLSearchParams({ q, limit: limit.toString() })
+    return this.request(`/users/search?${query.toString()}`)
+  }
+
   async getUsers(params?: PaginationParams): Promise<User[]> {
     const query = new URLSearchParams()
     if (params?.offset !== undefined)
@@ -755,6 +761,11 @@ class ApiClient {
   // Sanctums
   async getSanctums(): Promise<SanctumDTO[]> {
     return this.request('/sanctums')
+  }
+
+  async searchSanctums(q: string): Promise<SanctumDTO[]> {
+    const query = new URLSearchParams({ q })
+    return this.request(`/sanctums?${query.toString()}`)
   }
 
   async getSanctum(slug: string): Promise<SanctumDTO> {

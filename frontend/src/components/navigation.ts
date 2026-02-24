@@ -53,6 +53,7 @@ const routeTitles: Array<{ path: string; title: string }> = [
   { path: '/sanctums/request', title: 'Request Sanctum' },
   { path: '/sanctums', title: 'Sanctums' },
   { path: '/s', title: 'Sanctum' },
+  { path: '/search', title: 'Search' },
   { path: '/friends', title: 'Friends' },
 
   { path: '/games', title: 'Games' },

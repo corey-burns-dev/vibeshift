@@ -57,6 +57,7 @@ type userRepoStub struct {
 	updateFn           func(context.Context, *models.User) error
 	deleteFn           func(context.Context, uint) error
 	listFn             func(context.Context, int, int) ([]models.User, error)
+	searchFn           func(context.Context, string, int, int) ([]models.User, error)
 }
 
 func (s *userRepoStub) GetByID(ctx context.Context, id uint) (*models.User, error) {
@@ -83,6 +84,9 @@ func (s *userRepoStub) Delete(ctx context.Context, id uint) error {
 func (s *userRepoStub) List(ctx context.Context, limit, offset int) ([]models.User, error) {
 	return s.listFn(ctx, limit, offset)
 }
+func (s *userRepoStub) Search(ctx context.Context, q string, limit, offset int) ([]models.User, error) {
+	return s.searchFn(ctx, q, limit, offset)
+}
 
 func noopUserRepo() *userRepoStub {
 	return &userRepoStub{
@@ -94,6 +98,7 @@ func noopUserRepo() *userRepoStub {
 		updateFn:           func(context.Context, *models.User) error { return nil },
 		deleteFn:           func(context.Context, uint) error { return nil },
 		listFn:             func(context.Context, int, int) ([]models.User, error) { return nil, nil },
+		searchFn:           func(context.Context, string, int, int) ([]models.User, error) { return nil, nil },
 	}
 }
 

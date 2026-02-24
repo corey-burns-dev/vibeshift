@@ -75,6 +75,11 @@ func (m *MockUserRepository) List(ctx context.Context, limit, offset int) ([]mod
 	return args.Get(0).([]models.User), args.Error(1)
 }
 
+func (m *MockUserRepository) Search(ctx context.Context, q string, limit, offset int) ([]models.User, error) {
+	args := m.Called(ctx, q, limit, offset)
+	return args.Get(0).([]models.User), args.Error(1)
+}
+
 func TestSignup(t *testing.T) {
 	app := fiber.New()
 	mockRepo := new(MockUserRepository)

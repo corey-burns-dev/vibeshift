@@ -97,11 +97,18 @@ func (s *Server) GetPosts(c *fiber.Ctx) error {
 		}
 	}
 
+	sort := c.Query("sort", "new")
+	validSorts := map[string]bool{"new": true, "hot": true, "top": true, "rising": true, "best": true}
+	if !validSorts[sort] {
+		sort = "new"
+	}
+
 	posts, err := s.postSvc().ListPosts(ctx, service.ListPostsInput{
 		Limit:         page.Limit,
 		Offset:        page.Offset,
 		CurrentUserID: userID,
 		SanctumID:     sanctumID,
+		Sort:          sort,
 	})
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)

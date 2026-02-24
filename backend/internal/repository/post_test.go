@@ -70,7 +70,7 @@ func TestPostRepository_Integration(t *testing.T) {
 		assert.NoError(t, err)
 		assert.GreaterOrEqual(t, len(posts), 2)
 
-		all, err := repo.List(ctx, 10, 0, user.ID)
+		all, err := repo.List(ctx, 10, 0, user.ID, "new")
 		assert.NoError(t, err)
 		assert.GreaterOrEqual(t, len(all), 2)
 	})

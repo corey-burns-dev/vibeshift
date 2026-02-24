@@ -71,7 +71,7 @@ vi.mock('@/hooks/useModeration', () => ({
 }))
 
 describe('Posts sidebar sanctum links', () => {
-  it('renders joined sanctums only and highlights active sanctum', () => {
+  it('renders full sanctum list and highlights active sanctum', () => {
     render(
       <QueryClientProvider client={createTestQueryClient()}>
         <MemoryRouter>
@@ -83,10 +83,10 @@ describe('Posts sidebar sanctum links', () => {
     const container = screen.getByTestId('posts-sidebar-sanctum-links')
     const sanctumLinks = within(container).getAllByRole('link')
 
-    expect(sanctumLinks).toHaveLength(4)
+    expect(sanctumLinks).toHaveLength(18)
     expect(
-      within(container).queryByRole('link', { name: 'Sanctum 5' })
-    ).toBeNull()
+      within(container).getByRole('link', { name: 'Sanctum 5' })
+    ).toHaveAttribute('href', '/s/sanctum-5')
     expect(
       within(container).getByRole('link', { name: 'Sanctum 1' })
     ).toHaveAttribute('href', '/s/sanctum-1')

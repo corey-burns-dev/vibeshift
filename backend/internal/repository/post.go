@@ -17,8 +17,8 @@ type PostRepository interface {
 	Create(ctx context.Context, post *models.Post) error
 	GetByID(ctx context.Context, id uint, currentUserID uint) (*models.Post, error)
 	GetByUserID(ctx context.Context, userID uint, limit, offset int, currentUserID uint) ([]*models.Post, error)
-	GetBySanctumID(ctx context.Context, sanctumID uint, limit, offset int, currentUserID uint) ([]*models.Post, error)
-	List(ctx context.Context, limit, offset int, currentUserID uint) ([]*models.Post, error)
+	GetBySanctumID(ctx context.Context, sanctumID uint, limit, offset int, currentUserID uint, sort string) ([]*models.Post, error)
+	List(ctx context.Context, limit, offset int, currentUserID uint, sort string) ([]*models.Post, error)
 	Search(ctx context.Context, query string, limit, offset int, currentUserID uint) ([]*models.Post, error)
 	Update(ctx context.Context, post *models.Post) error
 	Delete(ctx context.Context, id uint) error
@@ -97,14 +97,14 @@ func (r *postRepository) GetByUserID(ctx context.Context, userID uint, limit, of
 	return posts, err
 }
 
-func (r *postRepository) GetBySanctumID(ctx context.Context, sanctumID uint, limit, offset int, currentUserID uint) ([]*models.Post, error) {
+func (r *postRepository) GetBySanctumID(ctx context.Context, sanctumID uint, limit, offset int, currentUserID uint, sort string) ([]*models.Post, error) {
 	var posts []*models.Post
-	err := r.applyPostDetails(r.db.WithContext(ctx), currentUserID).
+	base := r.applyPostDetails(r.db.WithContext(ctx), currentUserID).
 		Preload("User").
 		Preload("Poll").
 		Preload("Poll.Options").
-		Where("sanctum_id = ?", sanctumID).
-		Order("created_at DESC").
+		Where("sanctum_id = ?", sanctumID)
+	err := r.applySort(base, sort).
 		Limit(limit).
 		Offset(offset).
 		Find(&posts).Error
@@ -117,13 +117,13 @@ func (r *postRepository) GetBySanctumID(ctx context.Context, sanctumID uint, lim
 	return posts, nil
 }
 
-func (r *postRepository) List(ctx context.Context, limit, offset int, currentUserID uint) ([]*models.Post, error) {
+func (r *postRepository) List(ctx context.Context, limit, offset int, currentUserID uint, sort string) ([]*models.Post, error) {
 	var posts []*models.Post
-	err := r.applyPostDetails(r.db.WithContext(ctx), currentUserID).
+	base := r.applyPostDetails(r.db.WithContext(ctx), currentUserID).
 		Preload("User").
 		Preload("Poll").
-		Preload("Poll.Options").
-		Order("created_at DESC").
+		Preload("Poll.Options")
+	err := r.applySort(base, sort).
 		Limit(limit).
 		Offset(offset).
 		Find(&posts).Error
@@ -134,6 +134,28 @@ func (r *postRepository) List(ctx context.Context, limit, offset int, currentUse
 		return nil, enrichErr
 	}
 	return posts, nil
+}
+
+// applySort appends the ORDER BY (and optional WHERE) clause for the requested sort type.
+// likes_count and comments_count are SELECT aliases from applyPostDetails; PostgreSQL
+// allows referencing them in ORDER BY within the same query level.
+func (r *postRepository) applySort(db *gorm.DB, sort string) *gorm.DB {
+	switch sort {
+	case "hot":
+		return db.Order(gorm.Expr(
+			"(likes_count + comments_count * 2.0) / POWER(EXTRACT(EPOCH FROM (NOW() - posts.created_at)) / 3600.0 + 2, 1.5) DESC",
+		))
+	case "top":
+		return db.Order("likes_count DESC, created_at DESC")
+	case "rising":
+		return db.
+			Where("posts.created_at > NOW() - INTERVAL '48 hours'").
+			Order("(likes_count + comments_count * 2) DESC")
+	case "best":
+		return db.Order(gorm.Expr("(likes_count + comments_count * 1.5) DESC, created_at DESC"))
+	default: // "new" and anything unrecognized
+		return db.Order("created_at DESC")
+	}
 }
 
 func (r *postRepository) Search(ctx context.Context, query string, limit, offset int, currentUserID uint) ([]*models.Post, error) {
