@@ -242,6 +242,34 @@ func (s *Server) WebSocketGameHandler() fiber.Handler {
 	})
 }
 
+// GetGameRoomMessages returns the most recent chat messages for a game room.
+func (s *Server) GetGameRoomMessages(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	roomID, err := s.parseID(c, "id")
+	if err != nil {
+		return nil
+	}
+
+	// Verify room exists.
+	if _, err := s.gameSvc().GetGameRoom(ctx, roomID); err != nil {
+		status := fiber.StatusInternalServerError
+		var appErr *models.AppError
+		if errors.As(err, &appErr) && appErr.Code == "NOT_FOUND" {
+			status = fiber.StatusNotFound
+		}
+		return models.RespondWithError(c, status, err)
+	}
+
+	var messages []models.GameRoomMessage
+	if err := s.db.Where("game_room_id = ?", roomID).
+		Order("created_at ASC").
+		Limit(models.MaxGameRoomMessages).
+		Find(&messages).Error; err != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	}
+	return c.JSON(messages)
+}
+
 func (s *Server) gameSvc() *service.GameService {
 	return s.gameService
 }

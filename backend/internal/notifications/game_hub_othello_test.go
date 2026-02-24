@@ -43,6 +43,7 @@ func setupGameSQLiteDB(t *testing.T) *gorm.DB {
 		&models.GameRoom{},
 		&models.GameMove{},
 		&models.GameStats{},
+		&models.GameRoomMessage{},
 	))
 
 	return db

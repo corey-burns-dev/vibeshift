@@ -6,9 +6,13 @@ import App from '@/App'
 import { createTestQueryClient } from '@/test/test-utils'
 
 const mockUseIsAuthenticated = vi.fn(() => true)
+const mockSignupMutate = vi.fn()
 
 vi.mock('@/hooks', () => ({
   useIsAuthenticated: () => mockUseIsAuthenticated(),
+  useSignup: () => ({
+    mutate: mockSignupMutate,
+  }),
 }))
 
 vi.mock('@/components/ProtectedRoute', () => ({

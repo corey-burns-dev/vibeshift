@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { Gamepad2, Radio, Users as UsersIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import {
   Link,
   Navigate,
@@ -20,7 +20,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { TopBar } from '@/components/TopBar'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
-import { useIsAuthenticated } from '@/hooks'
+import { useIsAuthenticated, useSignup } from '@/hooks'
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications'
 import { parseGameRoomPath } from '@/lib/game-routes'
 import { cn } from '@/lib/utils'
@@ -85,9 +85,24 @@ function PageLoader() {
 
 function HomePage() {
   const isAuthenticated = useIsAuthenticated()
+  const signupMutation = useSignup()
+  const [isQuickStarting, setIsQuickStarting] = useState(false)
 
   if (isAuthenticated) {
     return <Posts mode='all' />
+  }
+
+  function handleQuickStart() {
+    const id = Math.random().toString(36).slice(2, 8)
+    setIsQuickStarting(true)
+    signupMutation.mutate(
+      {
+        username: `dev_${id}`,
+        email: `dev_${id}@test.local`,
+        password: `DevTest1_${id}`,
+      },
+      { onSettled: () => setIsQuickStarting(false) }
+    )
   }
 
   const highlights = [
@@ -136,6 +151,15 @@ function HomePage() {
               asChild
             >
               <Link to='/login'>Login</Link>
+            </Button>
+            <Button
+              size='lg'
+              variant='secondary'
+              className='rounded-lg px-6'
+              onClick={handleQuickStart}
+              disabled={isQuickStarting}
+            >
+              {isQuickStarting ? 'Creating...' : 'Quick Start'}
             </Button>
           </div>
         </section>

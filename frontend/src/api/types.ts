@@ -351,6 +351,15 @@ export interface SendMessageRequest {
 }
 
 // Game types (match backend models/game.go)
+export interface GameRoomChatMessage {
+  id: number
+  created_at: string
+  game_room_id: number
+  user_id: number
+  username: string
+  text: string
+}
+
 export interface GameRoom {
   id: number
   type: string

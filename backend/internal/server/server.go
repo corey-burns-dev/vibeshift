@@ -492,6 +492,7 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	games.Post("/rooms/:id/leave", s.LeaveGameRoom)
 	games.Get("/stats/:type", s.GetGameStats)
 	games.Get("/rooms/:id", s.GetGameRoom)
+	games.Get("/rooms/:id/messages", s.GetGameRoomMessages)
 
 	// Stream routes - public browse
 	publicStreams := api.Group("/streams")

@@ -102,3 +102,38 @@ describe('apiClient uploadImage', () => {
     }
   })
 })
+
+describe('apiClient game room chat', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    localStorage.clear()
+  })
+
+  it('fetches game room messages from the expected endpoint', async () => {
+    const payload = [
+      {
+        id: 1,
+        created_at: '2026-02-24T00:00:00Z',
+        game_room_id: 42,
+        user_id: 7,
+        username: 'alice',
+        text: 'hello',
+      },
+    ]
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(okJson(payload))
+
+    const result = await apiClient.getGameRoomMessages(42)
+
+    expect(result).toEqual(payload)
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    const [url] = fetchSpy.mock.calls[0]
+    expect(String(url)).toContain('/games/rooms/42/messages')
+  })
+})
