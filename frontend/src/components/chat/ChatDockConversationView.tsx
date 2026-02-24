@@ -42,8 +42,8 @@ export function ChatDockConversationView({
   const sendMessage = useSendMessage(conversationId)
   const markAsRead = useMarkAsRead()
 
-  const [inputValue, setInputValue] = useState(
-    useChatDockStore.getState().drafts[conversationId] || ''
+  const inputValue = useChatDockStore(
+    state => state.drafts[conversationId] ?? ''
   )
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -85,7 +85,6 @@ export function ChatDockConversationView({
         el.scrollTop = savedScroll
       }
     }
-    setInputValue(useChatDockStore.getState().drafts[conversationId] || '')
   }, [conversationId, scrollToBottom, messages.length])
 
   // Handle scroll events
@@ -148,7 +147,6 @@ export function ChatDockConversationView({
       { content: text, message_type: 'text', metadata: { tempId } },
       {
         onSuccess: () => {
-          setInputValue('')
           setShowEmojiPicker(false)
           clearDraft(conversationId)
           sendTyping(false)
@@ -163,7 +161,6 @@ export function ChatDockConversationView({
 
   const handleInputChange = useCallback(
     (value: string) => {
-      setInputValue(value)
       updateDraft(conversationId, value)
 
       if (typingDebounceRef.current) {
@@ -290,11 +287,9 @@ export function ChatDockConversationView({
                     key={`dock-emoji-${emoji}`}
                     type='button'
                     onClick={() => {
-                      setInputValue(prev => {
-                        const next = `${prev}${emoji}`
-                        updateDraft(conversationId, next)
-                        return next
-                      })
+                      const current =
+                        useChatDockStore.getState().drafts[conversationId] ?? ''
+                      updateDraft(conversationId, `${current}${emoji}`)
                       setShowEmojiPicker(false)
                     }}
                     className='inline-flex h-6 w-6 items-center justify-center rounded text-sm transition-colors hover:bg-muted'

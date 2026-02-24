@@ -27,6 +27,49 @@ import { cn } from '@/lib/utils'
 import { useChatContext } from '@/providers/ChatProvider'
 import { useChatDockStore } from '@/stores/useChatDockStore'
 
+function showUserToast({
+  avatar,
+  initials,
+  title,
+  subtitle,
+  onClick,
+  duration,
+}: {
+  avatar?: string
+  initials: string
+  title: string
+  subtitle: string
+  onClick: () => void
+  duration?: number
+}) {
+  toast(
+    <button
+      type='button'
+      className='flex w-full items-center gap-3 cursor-pointer border-none bg-transparent p-0 text-left'
+      onClick={onClick}
+    >
+      <Avatar className='h-9 w-9 border-2 border-primary/20'>
+        <AvatarImage src={avatar} />
+        <AvatarFallback className='bg-primary/10 text-[10px] font-bold text-primary'>
+          {initials}
+        </AvatarFallback>
+      </Avatar>
+      <div className='flex flex-col min-w-0'>
+        <span className='truncate text-[13px] font-bold text-foreground'>
+          {title}
+        </span>
+        <span className='line-clamp-1 text-[11px] text-muted-foreground'>
+          {subtitle}
+        </span>
+      </div>
+    </button>,
+    {
+      duration,
+      className: 'border-border/50 bg-background/95 backdrop-blur-md shadow-xl',
+    }
+  )
+}
+
 interface ChatDockPanelContentProps {
   view: 'list' | 'conversation'
   conversationName: string
@@ -67,8 +110,10 @@ function ChatDockPanelContent({
   return (
     <div className='flex flex-1 flex-col overflow-hidden'>
       <div
-        className='flex items-center justify-between border-b border-border/50 px-4 py-2.5'
-        style={isDraggable ? { cursor: 'move' } : undefined}
+        className={cn(
+          'flex items-center justify-between border-b border-border/50 px-4 py-2.5',
+          isDraggable && 'cursor-move'
+        )}
       >
         <div className='flex min-w-0 items-center gap-2'>
           {isDraggable && (
@@ -424,36 +469,17 @@ export function ChatDock() {
 
         const friend = friends.find(f => f.id === userId)
 
-        toast(
-          <button
-            type='button'
-            className='flex w-full items-center gap-3 cursor-pointer border-none bg-transparent p-0 text-left'
-            onClick={() => {
-              handleSelectConversationRef.current(-userId)
-              open()
-            }}
-          >
-            <Avatar className='h-9 w-9 border-2 border-primary/20'>
-              <AvatarImage src={friend?.avatar} />
-              <AvatarFallback className='bg-primary/10 text-[10px] font-bold text-primary'>
-                {username.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className='flex flex-col min-w-0'>
-              <span className='truncate text-[13px] font-bold text-foreground'>
-                {username} is online!
-              </span>
-              <span className='text-[11px] text-muted-foreground'>
-                Jump in and say hi
-              </span>
-            </div>
-          </button>,
-          {
-            duration: 4000,
-            className:
-              'border-border/50 bg-background/95 backdrop-blur-md shadow-xl',
-          }
-        )
+        showUserToast({
+          avatar: friend?.avatar,
+          initials: username.slice(0, 2).toUpperCase(),
+          title: `${username} is online!`,
+          subtitle: 'Jump in and say hi',
+          onClick: () => {
+            handleSelectConversationRef.current(-userId)
+            open()
+          },
+          duration: 4000,
+        })
       }
     })
     return () => unsub()
@@ -484,36 +510,17 @@ export function ChatDock() {
         markNotified(friend.id)
         playFriendOnlineSound()
 
-        toast(
-          <button
-            type='button'
-            className='flex w-full items-center gap-3 cursor-pointer border-none bg-transparent p-0 text-left'
-            onClick={() => {
-              handleSelectConversationRef.current(-friend.id)
-              open()
-            }}
-          >
-            <Avatar className='h-9 w-9 border-2 border-primary/20'>
-              <AvatarImage src={friend.avatar} />
-              <AvatarFallback className='bg-primary/10 text-[10px] font-bold text-primary'>
-                {friend.username.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className='flex flex-col min-w-0'>
-              <span className='truncate text-[13px] font-bold text-foreground'>
-                {friend.username} is online!
-              </span>
-              <span className='text-[11px] text-muted-foreground'>
-                Your new friend is ready to chat
-              </span>
-            </div>
-          </button>,
-          {
-            duration: 4000,
-            className:
-              'border-border/50 bg-background/95 backdrop-blur-md shadow-xl',
-          }
-        )
+        showUserToast({
+          avatar: friend.avatar,
+          initials: friend.username.slice(0, 2).toUpperCase(),
+          title: `${friend.username} is online!`,
+          subtitle: 'Your new friend is ready to chat',
+          onClick: () => {
+            handleSelectConversationRef.current(-friend.id)
+            open()
+          },
+          duration: 4000,
+        })
       }
       checkedFriendIdsRef.current.add(friend.id)
     }
@@ -691,35 +698,16 @@ export function ChatDock() {
           ? getDirectMessageAvatar(conv, currentUser?.id)
           : friend?.avatar
 
-        toast(
-          <button
-            type='button'
-            className='flex w-full items-center gap-3 cursor-pointer border-none bg-transparent p-0 text-left'
-            onClick={() => {
-              setActiveConversation(conversationId)
-              open()
-            }}
-          >
-            <Avatar className='h-9 w-9 border-2 border-primary/20'>
-              <AvatarImage src={avatar} />
-              <AvatarFallback className='bg-primary/10 text-[10px] font-bold text-primary'>
-                {conversationName.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className='flex flex-col min-w-0'>
-              <span className='truncate text-[13px] font-bold text-foreground'>
-                {conversationName}
-              </span>
-              <span className='line-clamp-1 text-[11px] text-muted-foreground'>
-                {message.content}
-              </span>
-            </div>
-          </button>,
-          {
-            className:
-              'border-border/50 bg-background/95 backdrop-blur-md shadow-xl',
-          }
-        )
+        showUserToast({
+          avatar,
+          initials: conversationName.slice(0, 2).toUpperCase(),
+          title: conversationName,
+          subtitle: message.content,
+          onClick: () => {
+            setActiveConversation(conversationId)
+            open()
+          },
+        })
       }
     }
 

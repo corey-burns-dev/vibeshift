@@ -1,4 +1,5 @@
 import { Loader2 } from 'lucide-react'
+import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import type { User } from '@/api/types'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -15,7 +16,7 @@ interface FriendCardProps {
   isLoading?: boolean
 }
 
-export function FriendCard({
+export const FriendCard = memo(function FriendCard({
   user,
   actionType,
   onAction,
@@ -142,4 +143,4 @@ export function FriendCard({
       </div>
     </Card>
   )
-}
+})

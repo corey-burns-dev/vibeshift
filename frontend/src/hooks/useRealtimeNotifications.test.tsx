@@ -13,6 +13,7 @@ import {
 
 vi.mock('@/hooks/useManagedWebSocket', () => ({
   useManagedWebSocket: vi.fn(),
+  DEFAULT_RECONNECT_DELAYS: [2000, 5000, 10000],
 }))
 
 vi.mock('sonner', () => ({

@@ -18,6 +18,7 @@ import {
 } from '@/hooks/useModeration'
 import { usePresenceStore } from '@/hooks/usePresence'
 import { getCurrentUser, useIsAuthenticated } from '@/hooks/useUsers'
+import { logger } from '@/lib/logger'
 
 export function useUserActions(user: User) {
   const navigate = useNavigate()
@@ -85,7 +86,7 @@ export function useUserActions(user: User) {
       const room = await apiClient.createGameRoom('connect4')
       navigate(`/games/connect4/${room.id}`)
     } catch (error) {
-      console.error('Failed to join or create Connect 4 game', error)
+      logger.error('Failed to join or create Connect 4 game', error)
       toast.error('Could not open Connect 4 right now')
     }
   }

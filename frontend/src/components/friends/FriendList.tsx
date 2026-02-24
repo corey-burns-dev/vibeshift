@@ -1,4 +1,5 @@
 import { Link as LinkIcon, MessageCircle, UserX } from 'lucide-react'
+import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -22,6 +23,20 @@ export function FriendList() {
   const createConversation = useCreateConversation()
   const navigate = useNavigate()
 
+  const handleMessage = useCallback(
+    (friendId: number) => {
+      createConversation.mutate(
+        { participant_ids: [friendId] },
+        {
+          onSuccess: conv => {
+            navigate(`/chat/${conv.id}`)
+          },
+        }
+      )
+    },
+    [createConversation, navigate]
+  )
+
   if (isLoading) {
     return (
       <div className='p-4 text-center text-muted-foreground'>
@@ -43,17 +58,6 @@ export function FriendList() {
           Find People
         </Button>
       </div>
-    )
-  }
-
-  const handleMessage = (friendId: number) => {
-    createConversation.mutate(
-      { participant_ids: [friendId] },
-      {
-        onSuccess: conv => {
-          navigate(`/chat/${conv.id}`)
-        },
-      }
     )
   }
 

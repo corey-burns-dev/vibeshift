@@ -118,13 +118,14 @@ export function useVideoChat({ roomId, enabled = true }: UseVideoChatOptions) {
 
       // Send ICE candidates to the remote peer via signaling
       pc.onicecandidate = event => {
-        if (event.candidate && wsRef.current?.readyState === WebSocket.OPEN) {
+        const ws = wsRef.current
+        if (event.candidate && ws?.readyState === WebSocket.OPEN) {
           const signal: VideoChatSignal = {
             type: 'ice-candidate',
             target_id: userId,
             payload: event.candidate.toJSON(),
           }
-          wsRef.current.send(JSON.stringify(signal))
+          ws.send(JSON.stringify(signal))
         }
       }
 
@@ -150,13 +151,14 @@ export function useVideoChat({ roomId, enabled = true }: UseVideoChatOptions) {
         const offer = await pc.createOffer()
         await pc.setLocalDescription(offer)
 
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
+        const ws = wsRef.current
+        if (ws?.readyState === WebSocket.OPEN) {
           const signal: VideoChatSignal = {
             type: 'offer',
             target_id: userId,
             payload: pc.localDescription,
           }
-          wsRef.current.send(JSON.stringify(signal))
+          ws.send(JSON.stringify(signal))
         }
       } catch (err) {
         console.error('Failed to create offer for peer', userId, err)
@@ -218,13 +220,14 @@ export function useVideoChat({ roomId, enabled = true }: UseVideoChatOptions) {
             const answer = await pc.createAnswer()
             await pc.setLocalDescription(answer)
 
-            if (wsRef.current?.readyState === WebSocket.OPEN) {
+            const ws = wsRef.current
+            if (ws?.readyState === WebSocket.OPEN) {
               const resp: VideoChatSignal = {
                 type: 'answer',
                 target_id: fromId,
                 payload: pc.localDescription,
               }
-              wsRef.current.send(JSON.stringify(resp))
+              ws.send(JSON.stringify(resp))
             }
           } catch (err) {
             console.error('Failed to handle offer from', fromId, err)

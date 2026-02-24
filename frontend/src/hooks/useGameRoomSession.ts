@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
-import { useManagedWebSocket } from '@/hooks/useManagedWebSocket'
+import {
+  DEFAULT_RECONNECT_DELAYS,
+  useManagedWebSocket,
+} from '@/hooks/useManagedWebSocket'
+import { useTokenRefreshReconnect } from '@/hooks/useTokenRefreshReconnect'
 import { createTicketedWS } from '@/lib/ws-utils'
 
 type RoomSession = {
@@ -46,7 +50,6 @@ export function useGameRoomSession({
   onAction,
   onSocketOpen,
 }: UseGameRoomSessionOptions) {
-  const previousTokenRef = useRef<string | null>(null)
   const previousRoomIdRef = useRef<number | null | undefined>(roomId)
   const onActionRef = useRef(onAction)
   const onSocketOpenRef = useRef(onSocketOpen)
@@ -112,7 +115,7 @@ export function useGameRoomSession({
           ws.close()
         }
       },
-      reconnectDelaysMs: [2000, 5000, 10000],
+      reconnectDelaysMs: DEFAULT_RECONNECT_DELAYS,
     })
 
   // When roomId changes (e.g. "Play Again" navigates to a new room),
@@ -230,23 +233,12 @@ export function useGameRoomSession({
     shouldAutoJoinRef.current = false
   }, [autoJoinPendingRoom, room, currentUserId, sendJoinNow])
 
-  useEffect(() => {
-    if (!wsEnabled) {
-      previousTokenRef.current = token ?? null
-      return
-    }
-
-    const previousToken = previousTokenRef.current
-    const currentToken = token ?? null
-    previousTokenRef.current = currentToken
-
-    if (!previousToken || !currentToken || previousToken === currentToken) {
-      return
-    }
-
-    setPlannedReconnect(true)
-    reconnect(true)
-  }, [wsEnabled, token, reconnect, setPlannedReconnect])
+  useTokenRefreshReconnect({
+    token,
+    wsEnabled,
+    reconnect,
+    setPlannedReconnect,
+  })
 
   return {
     isSocketReady,

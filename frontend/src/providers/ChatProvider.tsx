@@ -11,7 +11,10 @@ import {
 } from 'react'
 import { apiClient } from '@/api/client'
 import type { Message, User } from '@/api/types'
-import { useManagedWebSocket } from '@/hooks/useManagedWebSocket'
+import {
+  DEFAULT_RECONNECT_DELAYS,
+  useManagedWebSocket,
+} from '@/hooks/useManagedWebSocket'
 import { useMyBlocks } from '@/hooks/useModeration'
 import { useIsAuthenticated } from '@/hooks/useUsers'
 import { logger } from '@/lib/logger'
@@ -500,6 +503,64 @@ export function ChatProvider({ children }: ChatProviderProps) {
             : false
         }
 
+        /**
+         * Deduplicates and applies an incoming message to the cache,
+         * then notifies all message handlers. Returns false if the
+         * message was a duplicate and was dropped.
+         */
+        const applyIncomingMessage = (
+          message: Message,
+          convId: number
+        ): boolean => {
+          const key = `${convId}:${message.id}`
+          const now = Date.now()
+          const recent = recentMessageMapRef.current
+          if (recent.size > 2000) {
+            for (const [k, ts] of recent) {
+              if (now - ts > 1000 * 60 * 5) recent.delete(k)
+            }
+          }
+          if (recent.has(key)) return false
+          recent.set(key, now)
+
+          queryClient.setQueryData<Message[]>(
+            ['chat', 'messages', convId],
+            old => {
+              if (!old) return [message]
+              if (old.some(m => m.id === message.id)) return old
+
+              const tempId = (message.metadata as Record<string, unknown>)
+                ?.tempId
+              if (tempId) {
+                const hasOptimistic = old.some(
+                  m =>
+                    (m.metadata as Record<string, unknown>)?.tempId === tempId
+                )
+                if (hasOptimistic) {
+                  return old.map(m =>
+                    (m.metadata as Record<string, unknown>)?.tempId === tempId
+                      ? message
+                      : m
+                  )
+                }
+              }
+
+              return [...old, message]
+            }
+          )
+
+          scheduleConversationsInvalidate()
+
+          for (const cb of messageHandlersRef.current) {
+            try {
+              cb(message, convId)
+            } catch (e) {
+              logger.error('message handler failed', e)
+            }
+          }
+          return true
+        }
+
         switch (data.type) {
           case 'connected': {
             // Handshake is tracked by useManagedWebSocket base hook
@@ -527,53 +588,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
             ) {
               break
             }
-
-            const key = `${convId}:${message.id}`
-            const now = Date.now()
-            const recent = recentMessageMapRef.current
-            if (recent.size > 2000) {
-              for (const [k, ts] of recent) {
-                if (now - ts > 1000 * 60 * 5) recent.delete(k)
-              }
-            }
-            if (recent.has(key)) break
-            recent.set(key, now)
-
-            queryClient.setQueryData<Message[]>(
-              ['chat', 'messages', convId],
-              old => {
-                if (!old) return [message]
-                if (old.some(m => m.id === message.id)) return old
-
-                const tempId = (message.metadata as Record<string, unknown>)
-                  ?.tempId
-                if (tempId) {
-                  const hasOptimistic = old.some(
-                    m =>
-                      (m.metadata as Record<string, unknown>)?.tempId === tempId
-                  )
-                  if (hasOptimistic) {
-                    return old.map(m =>
-                      (m.metadata as Record<string, unknown>)?.tempId === tempId
-                        ? message
-                        : m
-                    )
-                  }
-                }
-
-                return [...old, message]
-              }
-            )
-
-            scheduleConversationsInvalidate()
-
-            for (const cb of messageHandlersRef.current) {
-              try {
-                cb(message, convId)
-              } catch (e) {
-                logger.error('message handler failed', e)
-              }
-            }
+            applyIncomingMessage(message, convId)
             break
           }
           case 'room_message': {
@@ -588,53 +603,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
             ) {
               break
             }
-
-            const key = `${convId}:${message.id}`
-            const now = Date.now()
-            const recent = recentMessageMapRef.current
-            if (recent.size > 2000) {
-              for (const [k, ts] of recent) {
-                if (now - ts > 1000 * 60 * 5) recent.delete(k)
-              }
-            }
-            if (recent.has(key)) break
-            recent.set(key, now)
-
-            queryClient.setQueryData<Message[]>(
-              ['chat', 'messages', convId],
-              old => {
-                if (!old) return [message]
-                if (old.some(m => m.id === message.id)) return old
-
-                const tempId = (message.metadata as Record<string, unknown>)
-                  ?.tempId
-                if (tempId) {
-                  const hasOptimistic = old.some(
-                    m =>
-                      (m.metadata as Record<string, unknown>)?.tempId === tempId
-                  )
-                  if (hasOptimistic) {
-                    return old.map(m =>
-                      (m.metadata as Record<string, unknown>)?.tempId === tempId
-                        ? message
-                        : m
-                    )
-                  }
-                }
-
-                return [...old, message]
-              }
-            )
-
-            scheduleConversationsInvalidate()
-
-            for (const cb of messageHandlersRef.current) {
-              try {
-                cb(message, convId)
-              } catch (e) {
-                logger.error('message handler failed', e)
-              }
-            }
+            applyIncomingMessage(message, convId)
             break
           }
 
@@ -849,7 +818,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
       if (meta.planned) return
       logger.error('WebSocket error:', error)
     },
-    reconnectDelaysMs: [2000, 5000, 10000],
+    reconnectDelaysMs: DEFAULT_RECONNECT_DELAYS,
   })
 
   const isConnected = connectionState === 'connected'
@@ -881,44 +850,39 @@ export function ChatProvider({ children }: ChatProviderProps) {
     }
   }, [])
 
-  const joinRoom = useCallback(
-    (conversationId: number) => {
-      // Always record the intent to join this room so we can re-join when
-      // the WebSocket connects. If the socket is open, send the join.
-      if (!joinedRoomsRef.current.has(conversationId)) {
-        joinedRoomsRef.current.add(conversationId)
-        setJoinedRooms(new Set(joinedRoomsRef.current))
-      }
+  // biome-ignore lint/correctness/useExhaustiveDependencies: wsRef is a stable React ref; reading .current at call time is intentional
+  const joinRoom = useCallback((conversationId: number) => {
+    // Always record the intent to join this room so we can re-join when
+    // the WebSocket connects. If the socket is open, send the join.
+    if (!joinedRoomsRef.current.has(conversationId)) {
+      joinedRoomsRef.current.add(conversationId)
+      setJoinedRooms(new Set(joinedRoomsRef.current))
+    }
 
-      const ws = wsRef.current
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(
-          JSON.stringify({ type: 'join', conversation_id: conversationId })
-        )
-      }
-    },
-    [wsRef.current]
-  )
+    const ws = wsRef.current
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'join', conversation_id: conversationId }))
+    }
+  }, [])
 
-  const leaveRoom = useCallback(
-    (conversationId: number) => {
-      // Always remove from requested joins immediately. If the socket is open,
-      // also send the leave message to the server.
-      if (joinedRoomsRef.current.has(conversationId)) {
-        joinedRoomsRef.current.delete(conversationId)
-        setJoinedRooms(new Set(joinedRoomsRef.current))
-      }
+  // biome-ignore lint/correctness/useExhaustiveDependencies: wsRef is a stable React ref; reading .current at call time is intentional
+  const leaveRoom = useCallback((conversationId: number) => {
+    // Always remove from requested joins immediately. If the socket is open,
+    // also send the leave message to the server.
+    if (joinedRoomsRef.current.has(conversationId)) {
+      joinedRoomsRef.current.delete(conversationId)
+      setJoinedRooms(new Set(joinedRoomsRef.current))
+    }
 
-      const ws = wsRef.current
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(
-          JSON.stringify({ type: 'leave', conversation_id: conversationId })
-        )
-      }
-    },
-    [wsRef.current]
-  )
+    const ws = wsRef.current
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({ type: 'leave', conversation_id: conversationId })
+      )
+    }
+  }, [])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: wsRef is a stable React ref; reading .current at call time is intentional
   const sendTyping = useCallback(
     (conversationId: number, isTyping: boolean) => {
       const ws = wsRef.current
@@ -932,39 +896,35 @@ export function ChatProvider({ children }: ChatProviderProps) {
         })
       )
     },
-    [wsRef.current]
+    []
   )
 
-  const sendMessage = useCallback(
-    (conversationId: number, content: string) => {
-      const ws = wsRef.current
-      if (!ws || ws.readyState !== WebSocket.OPEN) return
+  // biome-ignore lint/correctness/useExhaustiveDependencies: wsRef is a stable React ref; reading .current at call time is intentional
+  const sendMessage = useCallback((conversationId: number, content: string) => {
+    const ws = wsRef.current
+    if (!ws || ws.readyState !== WebSocket.OPEN) return
 
-      ws.send(
-        JSON.stringify({
-          type: 'message',
-          conversation_id: conversationId,
-          content,
-        })
-      )
-    },
-    [wsRef.current]
-  )
+    ws.send(
+      JSON.stringify({
+        type: 'message',
+        conversation_id: conversationId,
+        content,
+      })
+    )
+  }, [])
 
-  const markAsRead = useCallback(
-    (conversationId: number) => {
-      const ws = wsRef.current
-      if (!ws || ws.readyState !== WebSocket.OPEN) return
+  // biome-ignore lint/correctness/useExhaustiveDependencies: wsRef is a stable React ref; reading .current at call time is intentional
+  const markAsRead = useCallback((conversationId: number) => {
+    const ws = wsRef.current
+    if (!ws || ws.readyState !== WebSocket.OPEN) return
 
-      ws.send(
-        JSON.stringify({
-          type: 'read',
-          conversation_id: conversationId,
-        })
-      )
-    },
-    [wsRef.current]
-  )
+    ws.send(
+      JSON.stringify({
+        type: 'read',
+        conversation_id: conversationId,
+      })
+    )
+  }, [])
 
   const value = useMemo<ChatContextValue>(
     () => ({
