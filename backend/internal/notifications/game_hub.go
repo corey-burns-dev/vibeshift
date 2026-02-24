@@ -90,16 +90,8 @@ func (h *GameHub) RegisterClient(roomID uint, client *Client) error {
 	return nil
 }
 
-// pendingRoomCancel is a deferred DB operation collected under the lock.
-type pendingRoomCancel struct {
-	roomID uint
-	userID uint
-}
-
 // UnregisterClient removes a user's client from all rooms
 func (h *GameHub) UnregisterClient(client *Client) {
-	var toCancel []pendingRoomCancel
-
 	h.mu.Lock()
 	userID := client.UserID
 	rooms, ok := h.userRooms[userID]
@@ -123,8 +115,6 @@ func (h *GameHub) UnregisterClient(client *Client) {
 				// Also remove the room from the user's tracked set
 				delete(h.userRooms[userID], roomID)
 
-				// Collect room IDs for deferred DB cleanup
-				toCancel = append(toCancel, pendingRoomCancel{roomID: roomID, userID: userID})
 			}
 		}
 	}
@@ -134,21 +124,6 @@ func (h *GameHub) UnregisterClient(client *Client) {
 		delete(h.userRooms, userID)
 	}
 	h.mu.Unlock()
-
-	// Database cleanup OUTSIDE the lock: If the creator leaves a pending room, cancel it
-	for _, pc := range toCancel {
-		var gRoom models.GameRoom
-		if err := h.db.First(&gRoom, pc.roomID).Error; err == nil {
-			if gRoom.Status == models.GamePending && gRoom.CreatorID != nil && *gRoom.CreatorID == pc.userID {
-				gRoom.Status = models.GameCancelled
-				if err := h.db.Save(&gRoom).Error; err != nil {
-					log.Printf("GameHub: failed to cancel pending room %d: %v", pc.roomID, err)
-				} else {
-					log.Printf("GameHub: Pending room %d cancelled because creator (User %d) disconnected", pc.roomID, pc.userID)
-				}
-			}
-		}
-	}
 }
 
 // BroadcastToRoom sends a message to all users in a game room
@@ -261,28 +236,18 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 
 	var board interface{}
 	var symbol string
+	var winnerSym string
+	finished := false
+	skipDefaultTurnSwitch := false
+
 	if room.OpponentID != nil && userID == *room.OpponentID {
 		symbol = "O"
 	} else {
 		symbol = "X"
 	}
 
-	if room.Type == models.TicTacToe {
-		var moveData models.TicTacToeMove
-		if err := json.Unmarshal(moveBytes, &moveData); err != nil {
-			h.sendError(userID, action.RoomID, "Invalid move format")
-			return
-		}
-
-		tttBoard := room.GetTicTacToeState()
-		if moveData.X < 0 || moveData.X > 2 || moveData.Y < 0 || moveData.Y > 2 || tttBoard[moveData.X][moveData.Y] != "" {
-			h.sendError(userID, action.RoomID, "Invalid move location")
-			return
-		}
-		tttBoard[moveData.X][moveData.Y] = symbol
-		board = tttBoard
-		room.SetState(tttBoard)
-	} else if room.Type == models.ConnectFour {
+	switch room.Type {
+	case models.ConnectFour:
 		var moveData models.ConnectFourMove
 		if err := json.Unmarshal(moveBytes, &moveData); err != nil {
 			h.sendError(userID, action.RoomID, "Invalid move format")
@@ -312,6 +277,60 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 
 		board = c4Board
 		room.SetState(c4Board)
+	case models.Othello:
+		var moveData models.OthelloMove
+		if err := json.Unmarshal(moveBytes, &moveData); err != nil {
+			h.sendError(userID, action.RoomID, "Invalid move format")
+			return
+		}
+
+		othelloBoard := room.GetOthelloState()
+		if !applyOthelloMove(&othelloBoard, moveData.Row, moveData.Column, symbol) {
+			h.sendError(userID, action.RoomID, "Invalid move location")
+			return
+		}
+
+		board = othelloBoard
+		room.SetState(othelloBoard)
+
+		opponentSymbol := "O"
+		if symbol == "O" {
+			opponentSymbol = "X"
+		}
+
+		hasCurrentMoves := hasAnyOthelloMove(othelloBoard, symbol)
+		hasOpponentMoves := hasAnyOthelloMove(othelloBoard, opponentSymbol)
+
+		if !hasCurrentMoves && !hasOpponentMoves {
+			finished = true
+			xCount, oCount := countOthelloPieces(othelloBoard)
+			switch {
+			case xCount > oCount:
+				winnerSym = "X"
+			case oCount > xCount:
+				winnerSym = "O"
+			default:
+				winnerSym = ""
+			}
+		} else {
+			skipDefaultTurnSwitch = true
+			if hasOpponentMoves {
+				switch {
+				case symbol == "X" && room.OpponentID != nil:
+					room.NextTurnID = *room.OpponentID
+				case symbol == "O" && room.CreatorID != nil:
+					room.NextTurnID = *room.CreatorID
+				default:
+					room.Status = models.GameCancelled
+				}
+			} else {
+				// Opponent has no legal move; current player moves again.
+				room.NextTurnID = userID
+			}
+		}
+	default:
+		h.sendError(userID, action.RoomID, "Unsupported game type")
+		return
 	}
 
 	// Determine move number by counting existing moves for this room
@@ -329,8 +348,11 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 		log.Printf("GameHub: failed to persist move for room %d: %v", room.ID, err)
 	}
 
+	if room.Type != models.Othello {
+		winnerSym, finished = room.CheckWin()
+	}
+
 	// Check for win/draw
-	winnerSym, finished := room.CheckWin()
 	if finished {
 		room.Status = models.GameFinished
 		if winnerSym != "" {
@@ -343,8 +365,11 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 			// Award points if winner still exists (upsert to handle missing rows)
 			if winID != nil {
 				points := 10
-				if room.Type == models.ConnectFour {
+				switch room.Type {
+				case models.ConnectFour:
 					points = 15
+				case models.Othello:
+					points = 25
 				}
 				winStats := models.GameStats{UserID: *winID, GameType: room.Type, Wins: 1, TotalGames: 1, Points: points}
 				if err := h.db.Clauses(clause.OnConflict{
@@ -399,7 +424,7 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 				}
 			}
 		}
-	} else {
+	} else if !skipDefaultTurnSwitch {
 		// Switch turn
 		switch {
 		case room.CreatorID != nil && userID == *room.CreatorID && room.OpponentID != nil:
@@ -437,6 +462,98 @@ func (h *GameHub) handleMove(userID uint, action GameAction) {
 		actionJSON, _ := json.Marshal(action)
 		_ = h.notifier.PublishGameAction(context.Background(), action.RoomID, string(actionJSON))
 	}
+}
+
+var othelloDirs = [8][2]int{
+	{-1, -1}, {-1, 0}, {-1, 1},
+	{0, -1}, {0, 1},
+	{1, -1}, {1, 0}, {1, 1},
+}
+
+func inOthelloBounds(row, col int) bool {
+	return row >= 0 && row < 8 && col >= 0 && col < 8
+}
+
+func canCaptureOthelloDirection(board [8][8]string, row, col, dRow, dCol int, symbol string) bool {
+	opponent := "O"
+	if symbol == "O" {
+		opponent = "X"
+	}
+
+	r := row + dRow
+	c := col + dCol
+	seenOpponent := false
+
+	for inOthelloBounds(r, c) && board[r][c] == opponent {
+		seenOpponent = true
+		r += dRow
+		c += dCol
+	}
+
+	return seenOpponent && inOthelloBounds(r, c) && board[r][c] == symbol
+}
+
+func applyOthelloMove(board *[8][8]string, row, col int, symbol string) bool {
+	if !inOthelloBounds(row, col) || board[row][col] != "" {
+		return false
+	}
+
+	captured := false
+	for _, dir := range othelloDirs {
+		if !canCaptureOthelloDirection(*board, row, col, dir[0], dir[1], symbol) {
+			continue
+		}
+
+		captured = true
+		r := row + dir[0]
+		c := col + dir[1]
+		for inOthelloBounds(r, c) && board[r][c] != symbol {
+			board[r][c] = symbol
+			r += dir[0]
+			c += dir[1]
+		}
+	}
+
+	if !captured {
+		return false
+	}
+
+	board[row][col] = symbol
+	return true
+}
+
+func hasAnyOthelloMove(board [8][8]string, symbol string) bool {
+	for row := 0; row < 8; row++ {
+		for col := 0; col < 8; col++ {
+			if board[row][col] != "" {
+				continue
+			}
+			for _, dir := range othelloDirs {
+				if canCaptureOthelloDirection(board, row, col, dir[0], dir[1], symbol) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func countOthelloPieces(board [8][8]string) (int, int) {
+	xCount := 0
+	oCount := 0
+
+	for row := 0; row < 8; row++ {
+		for col := 0; col < 8; col++ {
+			switch board[row][col] {
+			case "X":
+				xCount++
+			case "O":
+				oCount++
+			}
+		}
+	}
+
+	return xCount, oCount
 }
 
 func (h *GameHub) handleChat(_ uint, action GameAction) {

@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input'
 import { getCurrentUser, useAudio } from '@/hooks'
 import { useAuthToken } from '@/hooks/useAuth'
 import { useGameRoomSession } from '@/hooks/useGameRoomSession'
+import { useResumableGameRoomPresence } from '@/hooks/useResumableGameRoomPresence'
 import { getAvatarUrl } from '@/lib/chat-utils'
 
 type GameState = {
@@ -303,6 +304,10 @@ export default function ConnectFour() {
       : null,
     currentUserId: currentUser?.id,
     onAction: handleGameSocketAction,
+    onSocketOpen: () => {
+      movePendingRef.current = false
+      void queryClient.invalidateQueries({ queryKey: ['gameRoom', id] })
+    },
   })
   const isSocketReady = gameSession.isSocketReady
 
@@ -373,11 +378,13 @@ export default function ConnectFour() {
       return
     if (gameState.board[0][col] !== '') return
 
-    movePendingRef.current = true
-    gameSession.sendAction({
+    const sent = gameSession.sendAction({
       type: 'make_move',
       payload: { column: col },
     })
+    if (sent) {
+      movePendingRef.current = true
+    }
   }
 
   const joinGame = () => {
@@ -449,6 +456,14 @@ export default function ConnectFour() {
     room.status === 'pending' &&
     gameState.status === 'pending'
 
+  useResumableGameRoomPresence({
+    userId: currentUser?.id,
+    roomId,
+    type: 'connect4',
+    status: gameState?.status,
+    isParticipant: isCreator || isOpponent,
+  })
+
   // Auto-attempt to join pending rooms when the current user is not a player.
   // This makes the rematch flow smoother so a challenger doesn't need to
   // manually click "Join Match" after navigating to a pending room.
@@ -475,9 +490,10 @@ export default function ConnectFour() {
       ? getAvatarUrl(room.opponent.username, 80)
       : ''
   const didIWin = !gameState.is_draw && gameState.winner_id === currentUser?.id
+  const boardWidthClass = 'w-[min(100%,calc(100dvh-20rem))] max-w-[30rem]'
 
   return (
-    <div className='h-full overflow-hidden bg-background text-foreground'>
+    <div className='h-full overflow-y-auto bg-background text-foreground'>
       {showVictoryBlast && (
         <div className='pointer-events-none fixed inset-0 z-40 overflow-hidden'>
           <style>
@@ -541,15 +557,15 @@ export default function ConnectFour() {
         </div>
       )}
 
-      <div className='mx-auto grid h-full w-full max-w-300 gap-3 px-3 py-2 lg:grid-cols-12 lg:gap-4'>
+      <div className='mx-auto grid h-full w-full max-w-300 gap-2 px-2 py-1.5 lg:grid-cols-12 lg:gap-3'>
         {/* Game Area */}
         <div className='min-h-0 overflow-hidden lg:col-span-9'>
           <Card className='flex h-full flex-col border-2 border-blue-500/20 bg-blue-900/10 shadow-xl'>
-            <CardHeader className='border-b border-blue-500/10 bg-blue-500/5 px-3 py-1.5'>
+            <CardHeader className='border-b border-blue-500/10 bg-blue-500/5 px-2.5 py-1.5'>
               <div className='grid w-full grid-cols-1 items-center gap-2 md:grid-cols-[1fr_auto_1fr]'>
                 <div className='flex items-center gap-2 md:justify-self-start'>
-                  <CardTitle className='flex shrink-0 items-center gap-2 text-lg font-black text-blue-500 italic uppercase'>
-                    <div className='flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-sm text-white'>
+                  <CardTitle className='flex shrink-0 items-center gap-1.5 text-base font-black text-blue-500 italic uppercase sm:text-lg'>
+                    <div className='flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-xs text-white sm:h-6 sm:w-6 sm:text-sm'>
                       4
                     </div>
                     Connect Four
@@ -560,7 +576,7 @@ export default function ConnectFour() {
                 </div>
                 <div className='flex min-w-0 items-center justify-center gap-2 overflow-x-auto whitespace-nowrap md:justify-self-center'>
                   <div className='flex shrink-0 items-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-2 py-1'>
-                    <Avatar className='h-7 w-7 border border-red-500/30'>
+                    <Avatar className='h-6 w-6 border border-red-500/30 sm:h-7 sm:w-7'>
                       <AvatarImage src={playerOneAvatar} />
                       <AvatarFallback className='text-[10px] font-black'>
                         {playerOneName.slice(0, 1).toUpperCase()}
@@ -574,7 +590,7 @@ export default function ConnectFour() {
                     </div>
                   </div>
                   <div className='flex shrink-0 items-center gap-2 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-2 py-1'>
-                    <Avatar className='h-7 w-7 border border-yellow-500/30'>
+                    <Avatar className='h-6 w-6 border border-yellow-500/30 sm:h-7 sm:w-7'>
                       <AvatarImage src={playerTwoAvatar} />
                       <AvatarFallback className='text-[10px] font-black'>
                         {playerTwoName.slice(0, 1).toUpperCase()}
@@ -611,31 +627,19 @@ export default function ConnectFour() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className='flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden px-3 py-2'>
-              {gameState.status === 'active' && (
-                <div
-                  className={`mb-2 flex w-full max-w-150 items-center justify-center rounded-xl border px-3 py-2 text-center text-xl font-black uppercase tracking-wide ${
-                    isMyTurn
-                      ? 'border-emerald-300/60 bg-emerald-500/20 text-emerald-100 shadow-[0_0_24px_rgba(16,185,129,0.35)]'
-                      : 'border-amber-300/60 bg-amber-500/20 text-amber-100 shadow-[0_0_24px_rgba(245,158,11,0.35)]'
-                  }`}
-                >
-                  {isMyTurn
-                    ? 'Your Turn - Drop A Piece'
-                    : "Opponent's Turn - Stand By"}
-                </div>
-              )}
-
+            <CardContent className='flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden px-2 py-1.5'>
               {/* Column Selection indicators */}
-              <div className='mb-2 grid w-full max-w-150 grid-cols-7 gap-2 px-2'>
+              <div
+                className={`mb-1 grid ${boardWidthClass} grid-cols-7 gap-1.5 px-1.5`}
+              >
                 {[...Array(7)].map((_, i) => {
                   const colId = `indicator-${i}`
                   return (
-                    <div key={colId} className='flex h-7 justify-center'>
+                    <div key={colId} className='flex h-4 justify-center sm:h-5'>
                       {hoverColumn === i &&
                         isMyTurn &&
                         gameState.status === 'active' && (
-                          <ChevronDown className='text-blue-500 animate-bounce' />
+                          <ChevronDown className='h-4 w-4 animate-bounce text-blue-500 sm:h-5 sm:w-5' />
                         )}
                     </div>
                   )
@@ -643,8 +647,10 @@ export default function ConnectFour() {
               </div>
 
               {/* The Board */}
-              <div className='relative rounded-2xl border-6 border-blue-700 bg-blue-600 p-2.5 shadow-[0_20px_50px_rgba(37,99,235,0.3)]'>
-                <div className='grid grid-cols-7 gap-2 rounded-xl bg-blue-800 p-2 shadow-inner md:gap-2.5'>
+              <div
+                className={`relative ${boardWidthClass} rounded-2xl border-6 border-blue-700 bg-blue-600 p-1.5 shadow-[0_20px_50px_rgba(37,99,235,0.3)] sm:p-2`}
+              >
+                <div className='grid grid-cols-7 gap-1.5 rounded-xl bg-blue-800 p-1.5 shadow-inner sm:gap-2 sm:p-2'>
                   {gameState.board.map((row, r) =>
                     row.map((cell, c) => {
                       const cellId = `c4-cell-${r}-${c}`
@@ -660,7 +666,7 @@ export default function ConnectFour() {
                             !isMyTurn ||
                             gameState.board[0][c] !== ''
                           }
-                          className={`relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full transition-all duration-300 md:h-12 md:w-12
+                          className={`relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-full transition-all duration-300
                                                         ${cell === '' ? 'bg-blue-950/50 shadow-inner' : ''}
                                                         ${gameState.status === 'active' && isMyTurn && gameState.board[0][c] === '' ? 'cursor-pointer hover:bg-blue-900/50' : 'cursor-default'}
                                                     `}
@@ -682,13 +688,13 @@ export default function ConnectFour() {
               </div>
 
               {canJoin && (
-                <div className='mt-6 flex flex-col items-center gap-3'>
+                <div className='mt-2 flex flex-col items-center gap-2'>
                   <p className='text-muted-foreground font-medium'>
                     Room waiting for a challenger...
                   </p>
                   <Button
                     size='lg'
-                    className='rounded-xl bg-blue-600 px-12 py-4 text-lg shadow-lg shadow-blue-500/20 hover:bg-blue-700'
+                    className='rounded-xl bg-blue-600 px-8 py-3 text-sm shadow-lg shadow-blue-500/20 hover:bg-blue-700 sm:px-10'
                     onClick={joinGame}
                     disabled={!isSocketReady}
                   >
@@ -698,7 +704,7 @@ export default function ConnectFour() {
               )}
 
               {gameState.status === 'pending' && isCreator && (
-                <div className='mt-6 text-center'>
+                <div className='mt-2 text-center'>
                   <p className='text-muted-foreground font-medium'>
                     Waiting for an opponent to join...
                   </p>
@@ -706,9 +712,9 @@ export default function ConnectFour() {
               )}
 
               {gameState.status === 'finished' && (
-                <div className='mt-6 flex flex-col items-center'>
-                  <div className='mb-4 text-center'>
-                    <h3 className='mb-1 text-2xl font-black italic uppercase text-blue-500'>
+                <div className='mt-2 flex flex-col items-center'>
+                  <div className='mb-2 text-center'>
+                    <h3 className='mb-1 text-xl font-black italic uppercase text-blue-500'>
                       Game Over
                     </h3>
                     <p className='text-muted-foreground font-bold'>
@@ -717,7 +723,7 @@ export default function ConnectFour() {
                   </div>
                   <Button
                     variant='outline'
-                    className='px-10 border-blue-500/20 hover:bg-blue-500/5'
+                    className='border-blue-500/20 px-8 hover:bg-blue-500/5'
                     onClick={() => navigate('/games')}
                   >
                     Return to Lobby

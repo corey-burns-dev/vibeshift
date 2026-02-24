@@ -10,7 +10,7 @@ USER2="e2e_p2_$TIMESTAMP"
 USER1_EMAIL="$USER1@test.com"
 USER2_EMAIL="$USER2@test.com"
 PASSWORD="testpass123"
-GAME_TYPE="tictactoe"
+GAME_TYPE="othello"
 
 log() {
   echo "[E2E] $*"
@@ -108,13 +108,14 @@ else
   log "WARNING: Room status may not be active. Response: $ROOM_STATUS"
 fi
 
-# 7. Make a move (User 1 plays move 0 on tictactoe board)
-log "User 1 making a move (position 0)..."
+# 7. Make a move (User 1 places at row 2, column 3 on Othello board)
+log "User 1 making a move (2,3)..."
 MOVE=$(curl -s -X POST "$API_BASE/games/rooms/$ROOM_ID/move" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $USER1_TOKEN" \
   -d '{
-    "move": 0
+    "row": 2,
+    "column": 3
   }')
 
 if echo "$MOVE" | grep -q '"status"'; then

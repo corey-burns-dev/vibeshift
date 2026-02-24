@@ -110,6 +110,16 @@ func (s *Server) LeaveGameRoom(c *fiber.Ctx) error {
 		return nil
 	}
 
+	participantIDs := make([]uint, 0, 2)
+	if currentRoom, getErr := s.gameSvc().GetGameRoom(ctx, roomID); getErr == nil && currentRoom != nil {
+		if currentRoom.CreatorID != nil {
+			participantIDs = append(participantIDs, *currentRoom.CreatorID)
+		}
+		if currentRoom.OpponentID != nil {
+			participantIDs = append(participantIDs, *currentRoom.OpponentID)
+		}
+	}
+
 	room, alreadyClosed, err := s.gameSvc().LeaveGameRoom(ctx, userID, roomID)
 	if err != nil {
 		status := fiber.StatusInternalServerError
@@ -126,7 +136,12 @@ func (s *Server) LeaveGameRoom(c *fiber.Ctx) error {
 	}
 
 	if !alreadyClosed && room.Status == models.GameCancelled && s.notifier != nil {
-		_ = s.notifier.PublishGameAction(context.Background(), room.ID, `{"type":"game_cancelled","payload":{"message":"A player left the room"}}`)
+		if err := s.notifier.PublishGameAction(context.Background(), room.ID, `{"type":"game_cancelled","payload":{"message":"A player left the room"}}`); err != nil {
+			log.Printf("failed to publish game_cancelled for room %d: %v", room.ID, err)
+		}
+	}
+	if !alreadyClosed && room.Status == models.GameCancelled {
+		s.publishGameRoomUpdatedToParticipants(room, participantIDs...)
 	}
 	message := "Room closed"
 	if alreadyClosed {
@@ -197,6 +212,17 @@ func (s *Server) WebSocketGameHandler() fiber.Handler {
 
 			// Handle the action through the hub
 			s.gameHub.HandleAction(userID, action)
+
+			if action.Type == "join_room" || action.Type == "make_move" {
+				opCtx, cancel := context.WithTimeout(wsCtx, 3*time.Second)
+				updatedRoom, err := s.gameSvc().GetGameRoom(opCtx, action.RoomID)
+				cancel()
+				if err != nil {
+					log.Printf("GameWS: failed to fetch room %d after %s: %v", action.RoomID, action.Type, err)
+					return
+				}
+				s.publishGameRoomUpdated(updatedRoom)
+			}
 		}
 
 		// Send connected message to signal handshake completion

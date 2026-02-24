@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Comprehensive E2E test for Tic-Tac-Toe game
+# Comprehensive E2E test for Othello game
 API_BASE="http://localhost:${GO_PORT:-8375}/api"
 TS=$(date +%s)
 USER1_NAME="e2e_p1_${TS}"
@@ -47,7 +47,7 @@ echo "[E2E] User 1 creating game room..."
 CREATE_ROOM=$(curl -s -X POST "$API_BASE/games/rooms" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $USER1_TOKEN" \
-  -d '{"game_type":"tictactoe","configuration":{}}')
+  -d '{"type":"othello"}')
 
 ROOM_ID=$(echo "$CREATE_ROOM" | jq -r '.id // empty')
 if [ -z "$ROOM_ID" ]; then
@@ -59,7 +59,7 @@ echo "[E2E] ✓ Room created (ID: $ROOM_ID)"
 
 # 4. Verify room is in active list
 echo "[E2E] Verifying room appears in active list..."
-ACTIVE_ROOMS=$(curl -s -X GET "$API_BASE/games/rooms/active?game_type=tictactoe" \
+ACTIVE_ROOMS=$(curl -s -X GET "$API_BASE/games/rooms/active?type=othello" \
   -H "Authorization: Bearer $USER1_TOKEN")
 
 echo "[E2E] DEBUG: Active rooms response: $ACTIVE_ROOMS" | head -c 200
@@ -103,6 +103,6 @@ echo "==========================================="
 echo "Summary:"
 echo "  User 1: $USER1_NAME (ID: $USER1_ID)"
 echo "  User 2: $USER2_NAME (ID: $USER2_ID)"
-echo "  Room: $ROOM_ID (tictactoe)"
+echo "  Room: $ROOM_ID (othello)"
 echo "  Status: Room created, user joined, move made, chat sent"
 echo "==========================================="

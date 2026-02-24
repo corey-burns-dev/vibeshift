@@ -3,6 +3,7 @@ import { act, renderHook } from '@testing-library/react'
 import type React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useManagedWebSocket } from '@/hooks/useManagedWebSocket'
+import { GAME_ROOM_REALTIME_EVENT } from '@/lib/game-realtime-events'
 import { useAuthSessionStore } from '@/stores/useAuthSessionStore'
 import { usePresenceStore } from './usePresence'
 import {
@@ -27,6 +28,9 @@ describe('useRealtimeNotifications', () => {
   let qc: QueryClient
   const reconnectMock = vi.fn()
   const setPlannedReconnectMock = vi.fn()
+  let capturedOnMessage:
+    | ((ws: WebSocket, event: MessageEvent) => void)
+    | undefined
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={qc}>{children}</QueryClientProvider>
@@ -36,13 +40,20 @@ describe('useRealtimeNotifications', () => {
     qc = new QueryClient()
     reconnectMock.mockReset()
     setPlannedReconnectMock.mockReset()
-    vi.mocked(useManagedWebSocket).mockReturnValue({
-      reconnect: reconnectMock,
-      setPlannedReconnect: setPlannedReconnectMock,
-      wsRef: { current: null },
-      connectionState: 'disconnected',
-      plannedReconnect: false,
-      close: vi.fn(),
+    capturedOnMessage = undefined
+    vi.mocked(useManagedWebSocket).mockImplementation(options => {
+      const managedOptions = options as {
+        onMessage?: (ws: WebSocket, event: MessageEvent) => void
+      }
+      capturedOnMessage = managedOptions.onMessage
+      return {
+        reconnect: reconnectMock,
+        setPlannedReconnect: setPlannedReconnectMock,
+        wsRef: { current: null },
+        connectionState: 'disconnected',
+        plannedReconnect: false,
+        close: vi.fn(),
+      }
     })
 
     useAuthSessionStore.getState().clear()
@@ -85,5 +96,37 @@ describe('useRealtimeNotifications', () => {
 
     expect(setPlannedReconnectMock).toHaveBeenCalledWith(true)
     expect(reconnectMock).toHaveBeenCalledWith(true)
+  })
+
+  it('dispatches game room realtime events for capsule updates', async () => {
+    act(() => {
+      useAuthSessionStore.getState().setAccessToken('token-a')
+    })
+
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent')
+
+    renderHook(() => useRealtimeNotifications(true), { wrapper })
+
+    await act(async () => {})
+
+    expect(capturedOnMessage).toBeDefined()
+
+    await act(async () => {
+      capturedOnMessage?.(
+        {} as WebSocket,
+        new MessageEvent('message', {
+          data: JSON.stringify({
+            type: 'game_room_updated',
+            payload: { room_id: 42 },
+          }),
+        })
+      )
+    })
+
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: GAME_ROOM_REALTIME_EVENT,
+      })
+    )
   })
 })

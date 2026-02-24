@@ -27,6 +27,7 @@ const (
 	EventFriendPresenceChanged  = "friend_presence_changed"
 	EventSanctumRequestCreated  = "sanctum_request_created"
 	EventSanctumRequestReviewed = "sanctum_request_reviewed"
+	EventGameRoomUpdated        = "game_room_updated"
 )
 
 func (s *Server) publishAdminEvent(eventType string, payload map[string]interface{}) {
@@ -82,6 +83,51 @@ func (s *Server) publishBroadcastEvent(eventType string, payload map[string]inte
 			log.Printf("failed to publish %s broadcast event: %v", eventType, err)
 		}
 	}
+}
+
+func gameRoomRealtimePayload(room *models.GameRoom) map[string]interface{} {
+	return map[string]interface{}{
+		"room_id":      room.ID,
+		"type":         room.Type,
+		"status":       room.Status,
+		"next_turn_id": room.NextTurnID,
+		"winner_id":    room.WinnerID,
+		"is_draw":      room.IsDraw,
+		"updated_at":   room.UpdatedAt,
+	}
+}
+
+func (s *Server) publishGameRoomUpdatedToParticipants(room *models.GameRoom, extraParticipantIDs ...uint) {
+	if room == nil {
+		return
+	}
+
+	participantIDs := map[uint]struct{}{}
+	if room.CreatorID != nil {
+		participantIDs[*room.CreatorID] = struct{}{}
+	}
+	if room.OpponentID != nil {
+		participantIDs[*room.OpponentID] = struct{}{}
+	}
+	for _, participantID := range extraParticipantIDs {
+		if participantID == 0 {
+			continue
+		}
+		participantIDs[participantID] = struct{}{}
+	}
+
+	if len(participantIDs) == 0 {
+		return
+	}
+
+	payload := gameRoomRealtimePayload(room)
+	for participantID := range participantIDs {
+		s.publishUserEvent(participantID, EventGameRoomUpdated, payload)
+	}
+}
+
+func (s *Server) publishGameRoomUpdated(room *models.GameRoom) {
+	s.publishGameRoomUpdatedToParticipants(room)
 }
 
 func userSummary(user models.User) map[string]interface{} {
