@@ -13,8 +13,7 @@ vi.mock('@/api/client', () => ({
   },
 }))
 
-function createWrapper() {
-  const queryClient = createTestQueryClient()
+function createWrapper(queryClient = createTestQueryClient()) {
   return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   )
@@ -130,6 +129,86 @@ describe('useGameChat', () => {
       expect(result.current.messages).toEqual([
         { user_id: 7, username: 'alice', text: 'same-message' },
         { user_id: 8, username: 'bob', text: 'other-message' },
+      ])
+    })
+  })
+
+  it('keeps repeated same-text websocket messages when only one overlaps history', async () => {
+    const pending = deferred<GameRoomChatMessage[]>()
+    vi.mocked(apiClient.getGameRoomMessages).mockReturnValueOnce(
+      pending.promise
+    )
+
+    const { result } = renderHook(() => useGameChat(99), {
+      wrapper: createWrapper(),
+    })
+
+    act(() => {
+      result.current.addMessage({
+        user_id: 7,
+        username: 'alice',
+        text: 'same-message',
+      })
+      result.current.addMessage({
+        user_id: 7,
+        username: 'alice',
+        text: 'same-message',
+      })
+    })
+
+    act(() => {
+      pending.resolve(
+        buildHistory([
+          { user_id: 7, username: 'alice', text: 'same-message' },
+          { user_id: 8, username: 'bob', text: 'other-message' },
+        ])
+      )
+    })
+
+    await waitFor(() => {
+      expect(result.current.messages).toEqual([
+        { user_id: 7, username: 'alice', text: 'same-message' },
+        { user_id: 8, username: 'bob', text: 'other-message' },
+        { user_id: 7, username: 'alice', text: 'same-message' },
+      ])
+    })
+  })
+
+  it('refetches persisted history when remounting the same room', async () => {
+    const queryClient = createTestQueryClient()
+    const wrapper = createWrapper(queryClient)
+
+    vi.mocked(apiClient.getGameRoomMessages)
+      .mockResolvedValueOnce(
+        buildHistory([{ user_id: 1, username: 'a', text: 'before-away' }])
+      )
+      .mockResolvedValueOnce(
+        buildHistory([
+          { user_id: 1, username: 'a', text: 'before-away' },
+          { user_id: 2, username: 'b', text: 'while-away' },
+        ])
+      )
+
+    const firstMount = renderHook(() => useGameChat(44), { wrapper })
+
+    await waitFor(() => {
+      expect(firstMount.result.current.messages).toEqual([
+        { user_id: 1, username: 'a', text: 'before-away' },
+      ])
+    })
+
+    firstMount.unmount()
+
+    const secondMount = renderHook(() => useGameChat(44), { wrapper })
+
+    await waitFor(() => {
+      expect(apiClient.getGameRoomMessages).toHaveBeenCalledTimes(2)
+    })
+
+    await waitFor(() => {
+      expect(secondMount.result.current.messages).toEqual([
+        { user_id: 1, username: 'a', text: 'before-away' },
+        { user_id: 2, username: 'b', text: 'while-away' },
       ])
     })
   })
