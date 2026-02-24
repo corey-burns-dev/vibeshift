@@ -41,6 +41,7 @@ const DEFAULT_CHAT_DOCK_STATE = {
   drafts: {} as Record<number, string>,
   unreadCounts: {} as Record<number, number>,
   scrollPositions: {} as Record<number, number>,
+  dockPos: null as { x: number; y: number } | null,
 }
 
 interface ChatDockState {
@@ -53,6 +54,7 @@ interface ChatDockState {
   drafts: Record<number, string>
   unreadCounts: Record<number, number>
   scrollPositions: Record<number, number>
+  dockPos: { x: number; y: number } | null
 
   toggle: () => void
   open: () => void
@@ -70,6 +72,7 @@ interface ChatDockState {
   incrementUnread: (conversationId: number) => void
   resetUnread: (conversationId: number) => void
   resetUnreadBulk: (conversationIds: number[]) => void
+  setDockPos: (pos: { x: number; y: number } | null) => void
   resetSessionState: () => void
 }
 
@@ -189,6 +192,9 @@ export const useChatDockStore = create<ChatDockState>()(
           }
           return { unreadCounts: next }
         }),
+      setDockPos: (pos: { x: number; y: number } | null) =>
+        set({ dockPos: pos }),
+
       resetSessionState: () => set({ ...DEFAULT_CHAT_DOCK_STATE }),
     }),
     {
@@ -200,6 +206,7 @@ export const useChatDockStore = create<ChatDockState>()(
         drafts: state.drafts,
         unreadCounts: state.unreadCounts,
         scrollPositions: state.scrollPositions,
+        dockPos: state.dockPos,
       }),
     }
   )

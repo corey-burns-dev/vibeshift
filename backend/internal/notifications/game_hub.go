@@ -561,8 +561,42 @@ func countOthelloPieces(board [8][8]string) (int, int) {
 	return xCount, oCount
 }
 
-func (h *GameHub) handleChat(_ uint, action GameAction) {
-	// Simple chat broadcast
+func (h *GameHub) handleChat(userID uint, action GameAction) {
+	// Persist the message so players who navigate away can fetch it on return.
+	payload, _ := action.Payload.(map[string]interface{})
+	text, _ := payload["text"].(string)
+	username, _ := payload["username"].(string)
+	if text != "" && username != "" {
+		msg := models.GameRoomMessage{
+			GameRoomID: action.RoomID,
+			UserID:     userID,
+			Username:   username,
+			Text:       text,
+		}
+		if err := h.db.Create(&msg).Error; err != nil {
+			log.Printf("GameHub: failed to persist chat message for room %d: %v", action.RoomID, err)
+		} else {
+			// Trim to keep at most MaxGameRoomMessages per room.
+			var total int64
+			if err := h.db.Model(&models.GameRoomMessage{}).
+				Where("game_room_id = ?", action.RoomID).
+				Count(&total).Error; err != nil {
+				log.Printf("GameHub: failed to count chat messages for room %d: %v", action.RoomID, err)
+			} else if total > models.MaxGameRoomMessages {
+				excess := total - models.MaxGameRoomMessages
+				oldestIDs := h.db.Model(&models.GameRoomMessage{}).
+					Select("id").
+					Where("game_room_id = ?", action.RoomID).
+					Order("created_at ASC, id ASC").
+					Limit(int(excess))
+				if err := h.db.Where("id IN (?)", oldestIDs).
+					Delete(&models.GameRoomMessage{}).Error; err != nil {
+					log.Printf("GameHub: failed to trim chat messages for room %d: %v", action.RoomID, err)
+				}
+			}
+		}
+	}
+
 	h.BroadcastToRoom(action.RoomID, action)
 }
 

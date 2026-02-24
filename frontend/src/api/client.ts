@@ -22,6 +22,7 @@ import type {
   FriendRequest,
   FriendshipStatus,
   GameRoom,
+  GameRoomChatMessage,
   LoginRequest,
   Message,
   MessageMention,
@@ -937,6 +938,10 @@ class ApiClient {
     return this.request(`/games/rooms/${id}/leave`, {
       method: 'POST',
     })
+  }
+
+  async getGameRoomMessages(id: number): Promise<GameRoomChatMessage[]> {
+    return this.request(`/games/rooms/${id}/messages`)
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: dynamic stats object

@@ -272,6 +272,19 @@ type GameStats struct {
 	Points     int      `gorm:"default:0" json:"points"`
 }
 
+// MaxGameRoomMessages is the number of recent chat messages retained per room.
+const MaxGameRoomMessages = 100
+
+// GameRoomMessage represents a chat message in a game room.
+type GameRoomMessage struct {
+	ID         uint      `gorm:"primaryKey" json:"id"`
+	CreatedAt  time.Time `json:"created_at"`
+	GameRoomID uint      `gorm:"index;not null" json:"game_room_id"`
+	UserID     uint      `gorm:"not null" json:"user_id"`
+	Username   string    `gorm:"not null" json:"username"`
+	Text       string    `gorm:"not null" json:"text"`
+}
+
 // ConnectFourMove represents a move in Connect Four game.
 type ConnectFourMove struct {
 	Column int `json:"column"`

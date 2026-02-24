@@ -1,4 +1,4 @@
-import { MessageCircle, Minus, X } from 'lucide-react'
+import { GripHorizontal, MessageCircle, Minus, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -43,6 +43,7 @@ interface ChatDockPanelContentProps {
   onClearAll: () => void
   sendTyping: (isTyping: boolean) => void
   unreadByConversation: Record<string, number>
+  isDraggable?: boolean
 }
 
 function ChatDockPanelContent({
@@ -61,11 +62,18 @@ function ChatDockPanelContent({
   onClearAll,
   sendTyping,
   unreadByConversation,
+  isDraggable,
 }: ChatDockPanelContentProps) {
   return (
     <div className='flex flex-1 flex-col overflow-hidden'>
-      <div className='flex items-center justify-between border-b border-border/50 px-4 py-2.5'>
+      <div
+        className='flex items-center justify-between border-b border-border/50 px-4 py-2.5'
+        style={isDraggable ? { cursor: 'move' } : undefined}
+      >
         <div className='flex min-w-0 items-center gap-2'>
+          {isDraggable && (
+            <GripHorizontal className='h-3.5 w-3.5 shrink-0 text-muted-foreground/50' />
+          )}
           <h2 className='truncate text-sm font-semibold'>
             {view === 'conversation' ? conversationName : 'Friends'}
           </h2>
@@ -206,7 +214,113 @@ export function ChatDock() {
     setActiveConversation,
     removeOpenConversation,
     clearOpenConversations,
+    dockPos,
+    setDockPos,
   } = useChatDockStore()
+
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const dragOffsetRef = useRef({ x: 0, y: 0 })
+  // Set to true when a drag gesture (with movement > threshold) actually occurred.
+  // Allows the button's onClick to distinguish click vs drag-release.
+  const didDragRef = useRef(false)
+
+  const handleDragStart = useCallback(
+    (e: React.MouseEvent) => {
+      if (isMobile) return
+
+      const wrapper = wrapperRef.current
+      if (!wrapper) return
+
+      // Don't start drag on interactive controls inside the panel (inputs, etc.)
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+
+      const rect = wrapper.getBoundingClientRect()
+      const startX = e.clientX
+      const startY = e.clientY
+      dragOffsetRef.current = { x: startX - rect.left, y: startY - rect.top }
+
+      let hasMoved = false
+
+      const handleMouseMove = (ev: MouseEvent) => {
+        if (!hasMoved) {
+          const dx = ev.clientX - startX
+          const dy = ev.clientY - startY
+          if (Math.sqrt(dx * dx + dy * dy) < 5) return
+          hasMoved = true
+        }
+        const w = wrapperRef.current
+        if (!w) return
+        const newX = Math.max(
+          0,
+          Math.min(
+            ev.clientX - dragOffsetRef.current.x,
+            window.innerWidth - w.offsetWidth
+          )
+        )
+        const newY = Math.max(
+          0,
+          Math.min(
+            ev.clientY - dragOffsetRef.current.y,
+            window.innerHeight - w.offsetHeight
+          )
+        )
+        w.style.left = `${newX}px`
+        w.style.top = `${newY}px`
+        w.style.bottom = 'auto'
+        w.style.right = 'auto'
+      }
+
+      const handleMouseUp = (ev: MouseEvent) => {
+        window.removeEventListener('mousemove', handleMouseMove)
+        window.removeEventListener('mouseup', handleMouseUp)
+
+        if (!hasMoved) return
+
+        didDragRef.current = true
+        const w = wrapperRef.current
+        if (!w) return
+        const newX = Math.max(
+          0,
+          Math.min(
+            ev.clientX - dragOffsetRef.current.x,
+            window.innerWidth - w.offsetWidth
+          )
+        )
+        const newY = Math.max(
+          0,
+          Math.min(
+            ev.clientY - dragOffsetRef.current.y,
+            window.innerHeight - w.offsetHeight
+          )
+        )
+        setDockPos({ x: newX, y: newY })
+      }
+
+      window.addEventListener('mousemove', handleMouseMove)
+      window.addEventListener('mouseup', handleMouseUp)
+    },
+    [isMobile, setDockPos]
+  )
+
+  // onClick for the floating button: ignore if drag just finished
+  const handleButtonClick = useCallback(() => {
+    if (didDragRef.current) {
+      didDragRef.current = false
+      return
+    }
+    toggle()
+  }, [toggle])
+
+  const handleDragReset = useCallback(() => {
+    if (wrapperRef.current) {
+      wrapperRef.current.style.left = ''
+      wrapperRef.current.style.top = ''
+      wrapperRef.current.style.bottom = ''
+      wrapperRef.current.style.right = ''
+    }
+    setDockPos(null)
+  }, [setDockPos])
 
   // Stable ref always pointing to the latest handleSelectConversation.
   // Used in toast onClick closures to avoid stale captures of the virtual-DM path.
@@ -711,48 +825,19 @@ export function ChatDock() {
 
   return (
     <>
-      {/* Floating button */}
-      <button
-        type='button'
-        aria-label='Open messages'
-        onClick={toggle}
-        className={cn(
-          'fixed bottom-6 right-6 z-60 h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 md:flex',
-          isMobile ? 'hidden' : 'flex',
-          totalUnread > 0 &&
-            'animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.5)]'
-        )}
-      >
-        <MessageCircle className='h-5 w-5' />
-        {totalUnread > 0 && (
-          <span
-            data-testid='chat-dock-unread-badge'
-            className='absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground'
-          >
-            {totalUnread > 99 ? '99+' : totalUnread}
-          </span>
-        )}
-      </button>
-
-      {/* Panel: mobile = full-screen sheet, desktop = floating panel */}
-      {isOpen &&
-        !minimized &&
-        (isMobile ? (
-          <Dialog
-            open={isOpen && !minimized}
-            onOpenChange={open => {
-              if (!open) close()
-            }}
-          >
-            <DialogContent
-              className={cn(
-                'bottom-0 left-0 right-0 top-auto z-60 flex h-[90dvh] max-h-[90dvh] translate-x-0 translate-y-0 flex-col gap-0 rounded-t-xl border-t p-0',
-                'data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom',
-                '[&>button]:hidden'
-              )}
-              aria-describedby={undefined}
-            >
-              <DialogTitle className='sr-only'>Friends</DialogTitle>
+      {/* Desktop: button + panel share a single fixed wrapper so dragging moves both */}
+      {!isMobile && (
+        // biome-ignore lint/a11y/noStaticElementInteractions: this container captures mouse drag gestures for dock positioning
+        <div
+          ref={wrapperRef}
+          onMouseDown={handleDragStart}
+          onDoubleClick={handleDragReset}
+          className={cn('fixed z-60', !dockPos && 'bottom-6 left-6')}
+          style={dockPos ? { left: dockPos.x, top: dockPos.y } : undefined}
+        >
+          {/* Panel: absolutely above the button when open */}
+          {isOpen && !minimized && (
+            <div className='absolute bottom-full mb-2 left-0 flex h-125 w-95 flex-col rounded-xl border border-border bg-background shadow-2xl 2xl:h-150 2xl:w-105'>
               <ChatDockPanelContent
                 view={view}
                 conversationName={conversationName}
@@ -769,15 +854,52 @@ export function ChatDock() {
                 onClearAll={clearOpenConversations}
                 sendTyping={sendTyping}
                 unreadByConversation={unreadByConversation}
+                isDraggable
               />
-            </DialogContent>
-          </Dialog>
-        ) : (
-          <div
+            </div>
+          )}
+
+          {/* Floating button */}
+          <button
+            type='button'
+            aria-label='Open messages'
+            onClick={handleButtonClick}
             className={cn(
-              'fixed bottom-20 right-6 z-60 flex h-125 w-95 flex-col rounded-xl border border-border bg-background shadow-2xl 2xl:h-150 2xl:w-105'
+              'flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95',
+              totalUnread > 0 &&
+                'animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.5)]'
             )}
           >
+            <MessageCircle className='h-5 w-5' />
+            {totalUnread > 0 && (
+              <span
+                data-testid='chat-dock-unread-badge'
+                className='absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground'
+              >
+                {totalUnread > 99 ? '99+' : totalUnread}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Mobile: full-screen sheet dialog */}
+      {isMobile && isOpen && !minimized && (
+        <Dialog
+          open={isOpen && !minimized}
+          onOpenChange={open => {
+            if (!open) close()
+          }}
+        >
+          <DialogContent
+            className={cn(
+              'bottom-0 left-0 right-0 top-auto z-60 flex h-[90dvh] max-h-[90dvh] translate-x-0 translate-y-0 flex-col gap-0 rounded-t-xl border-t p-0',
+              'data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom',
+              '[&>button]:hidden'
+            )}
+            aria-describedby={undefined}
+          >
+            <DialogTitle className='sr-only'>Friends</DialogTitle>
             <ChatDockPanelContent
               view={view}
               conversationName={conversationName}
@@ -795,8 +917,9 @@ export function ChatDock() {
               sendTyping={sendTyping}
               unreadByConversation={unreadByConversation}
             />
-          </div>
-        ))}
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   )
 }

@@ -29,6 +29,7 @@ func PersistentModels() []interface{} {
 		&models.GameRoom{},
 		&models.GameMove{},
 		&models.GameStats{},
+		&models.GameRoomMessage{},
 		&models.Sanctum{},
 		&models.SanctumRequest{},
 		&models.SanctumMembership{},

@@ -317,7 +317,7 @@ export function GameCapsuleDock() {
   }
 
   return (
-    <div className='pointer-events-none fixed bottom-20 right-3 z-[55] flex max-w-[min(92vw,24rem)] flex-col gap-2 md:bottom-6 md:right-6'>
+    <div className='pointer-events-none fixed bottom-20 right-3 z-55 flex max-w-[min(92vw,24rem)] flex-col gap-2 md:bottom-6 md:right-6'>
       <style>
         {`@keyframes game-capsule-shake {
             0% { transform: translateX(0); }
