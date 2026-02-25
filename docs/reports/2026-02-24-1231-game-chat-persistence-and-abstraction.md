@@ -46,20 +46,20 @@
   - Added authenticated endpoint `GET /games/rooms/:id/messages`.
 - Frontend:
   - Added API type `GameRoomChatMessage` and client method `getGameRoomMessages`.
-  - Added reusable [GameChat.tsx](/home/cburns/apps/sanctum/frontend/src/components/games/GameChat.tsx).
-  - Added reusable [useGameChat.ts](/home/cburns/apps/sanctum/frontend/src/hooks/useGameChat.ts).
-  - Updated [ConnectFour.tsx](/home/cburns/apps/sanctum/frontend/src/pages/games/ConnectFour.tsx) and [Othello.tsx](/home/cburns/apps/sanctum/frontend/src/pages/games/Othello.tsx) to use shared hook/component.
-  - Resolved frontend lint debt on touched surfaces (import ordering/formatting, dead-symbol cleanup) and documented intentional drag-wrapper accessibility exception in [ChatDock.tsx](/home/cburns/apps/sanctum/frontend/src/components/chat/ChatDock.tsx).
-  - Updated [App.feed-routes.test.tsx](/home/cburns/apps/sanctum/frontend/src/App.feed-routes.test.tsx) mock to include `useSignup` after `App` route logic began using that hook.
+  - Added reusable [GameChat.tsx](/frontend/src/components/games/GameChat.tsx).
+  - Added reusable [useGameChat.ts](/frontend/src/hooks/useGameChat.ts).
+  - Updated [ConnectFour.tsx](/frontend/src/pages/games/ConnectFour.tsx) and [Othello.tsx](/frontend/src/pages/games/Othello.tsx) to use shared hook/component.
+  - Resolved frontend lint debt on touched surfaces (import ordering/formatting, dead-symbol cleanup) and documented intentional drag-wrapper accessibility exception in [ChatDock.tsx](/frontend/src/components/chat/ChatDock.tsx).
+  - Updated [App.feed-routes.test.tsx](/frontend/src/App.feed-routes.test.tsx) mock to include `useSignup` after `App` route logic began using that hook.
   - Added test coverage for the new reusable chat abstraction and API endpoint client wiring.
 
 - Tests added:
-  - [game_hub_chat_test.go](/home/cburns/apps/sanctum/backend/internal/notifications/game_hub_chat_test.go)
-  - [game_handlers_messages_test.go](/home/cburns/apps/sanctum/backend/internal/server/game_handlers_messages_test.go)
-  - [models_registry_test.go](/home/cburns/apps/sanctum/backend/internal/database/models_registry_test.go)
-  - [useGameChat.test.tsx](/home/cburns/apps/sanctum/frontend/src/hooks/useGameChat.test.tsx)
-  - [GameChat.test.tsx](/home/cburns/apps/sanctum/frontend/src/components/games/GameChat.test.tsx)
-  - API client test extension in [client.test.ts](/home/cburns/apps/sanctum/frontend/src/api/client.test.ts)
+  - [game_hub_chat_test.go](/backend/internal/notifications/game_hub_chat_test.go)
+  - [game_handlers_messages_test.go](/backend/internal/server/game_handlers_messages_test.go)
+  - [models_registry_test.go](/backend/internal/database/models_registry_test.go)
+  - [useGameChat.test.tsx](/frontend/src/hooks/useGameChat.test.tsx)
+  - [GameChat.test.tsx](/frontend/src/components/games/GameChat.test.tsx)
+  - API client test extension in [client.test.ts](/frontend/src/api/client.test.ts)
 
 ## Validation
 
