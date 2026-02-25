@@ -31,7 +31,9 @@ test.describe('Stress Journeys', () => {
       page.locator('textarea[placeholder*="Write your post"]')
     ).toBeVisible()
     await page.fill('textarea[placeholder*="Write your post"]', postText)
-    await page.getByRole('button', { name: /^Post$/ }).click()
+    await page
+      .getByRole('button', { name: /^(Create Post|Post)$/ })
+      .click()
 
     await expect(
       page.locator('p').filter({ hasText: postText }).first()
