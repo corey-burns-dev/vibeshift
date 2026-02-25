@@ -51,12 +51,7 @@ func (s *Server) CreateConversation(c *fiber.Ctx) error {
 		ParticipantIDs: req.ParticipantIDs,
 	})
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) && appErr.Code == "VALIDATION_ERROR" {
-			status = fiber.StatusBadRequest
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(conv)
@@ -92,14 +87,7 @@ func (s *Server) GetConversation(c *fiber.Ctx) error {
 
 	conv, err := s.chatSvc().GetConversationForUser(ctx, convID, userID)
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) && appErr.Code == "UNAUTHORIZED" {
-			status = fiber.StatusForbidden
-		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			status = fiber.StatusNotFound
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	if conv.IsGroup {
@@ -147,19 +135,7 @@ func (s *Server) SendMessage(c *fiber.Ctx) error {
 		Metadata:       req.Metadata,
 	})
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) {
-			switch appErr.Code {
-			case "VALIDATION_ERROR":
-				status = fiber.StatusBadRequest
-			case "UNAUTHORIZED":
-				status = fiber.StatusForbidden
-			}
-		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			status = fiber.StatusNotFound
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	senderUsername := ""
@@ -225,14 +201,7 @@ func (s *Server) GetMessages(c *fiber.Ctx) error {
 
 	messages, err := s.chatSvc().GetMessagesForUser(ctx, convID, userID, page.Limit, page.Offset)
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) && appErr.Code == "UNAUTHORIZED" {
-			status = fiber.StatusForbidden
-		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			status = fiber.StatusNotFound
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	return c.JSON(messages)
@@ -249,14 +218,7 @@ func (s *Server) MarkConversationRead(c *fiber.Ctx) error {
 
 	conv, err := s.chatSvc().GetConversationForUser(ctx, convID, userID)
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) && appErr.Code == "UNAUTHORIZED" {
-			status = fiber.StatusForbidden
-		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			status = fiber.StatusNotFound
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 	if conv.IsGroup {
 		return models.RespondWithError(c, fiber.StatusBadRequest,
@@ -319,22 +281,10 @@ func (s *Server) AddParticipant(c *fiber.Ctx) error {
 	}
 
 	if err := s.chatSvc().AddParticipant(ctx, convID, userID, req.UserID); err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) {
-			switch appErr.Code {
-			case "UNAUTHORIZED":
-				status = fiber.StatusForbidden
-			case "VALIDATION_ERROR":
-				status = fiber.StatusBadRequest
-			}
-		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			status = fiber.StatusNotFound
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.SendStatus(fiber.StatusCreated)
 }
 
 // LeaveConversation handles DELETE /api/conversations/:id
@@ -349,14 +299,7 @@ func (s *Server) LeaveConversation(c *fiber.Ctx) error {
 
 	conv, err := s.chatSvc().LeaveConversation(ctx, convID, userID)
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) && appErr.Code == "UNAUTHORIZED" {
-			status = fiber.StatusForbidden
-		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			status = fiber.StatusNotFound
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	if conv.IsGroup {
@@ -432,19 +375,7 @@ func (s *Server) JoinChatroom(c *fiber.Ctx) error {
 	}
 
 	if _, err := s.chatSvc().JoinChatroom(ctx, roomID, userID); err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) {
-			switch appErr.Code {
-			case "NOT_FOUND":
-				status = fiber.StatusNotFound
-			case "VALIDATION_ERROR":
-				status = fiber.StatusBadRequest
-			}
-		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			status = fiber.StatusNotFound
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	s.broadcastChatroomPresenceSnapshot(ctx, roomID, userID, "", "joined_room")
@@ -469,19 +400,7 @@ func (s *Server) RemoveParticipant(c *fiber.Ctx) error {
 
 	username, err := s.chatSvc().RemoveParticipant(ctx, roomID, userID, participantID)
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) {
-			switch appErr.Code {
-			case "NOT_FOUND":
-				status = fiber.StatusNotFound
-			case "UNAUTHORIZED":
-				status = fiber.StatusForbidden
-			}
-		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			status = fiber.StatusNotFound
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	s.broadcastChatroomPresenceSnapshot(ctx, roomID, userID, username, "removed_participant")

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"sanctum/internal/cache"
-	"sanctum/internal/database"
 	"sanctum/internal/models"
 
 	"gorm.io/gorm"
@@ -40,11 +39,7 @@ func (r *userRepository) GetByID(ctx context.Context, id uint) (*models.User, er
 	key := cache.UserKey(id)
 
 	err := cache.Aside(ctx, key, &user, cache.UserTTL, func() error {
-		readDB := database.GetReadDB()
-		if readDB == nil {
-			readDB = r.db
-		}
-		if err := readDB.WithContext(ctx).First(&user, id).Error; err != nil {
+		if err := readDB(r.db).WithContext(ctx).First(&user, id).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return models.NewNotFoundError("User", id)
 			}
@@ -68,11 +63,7 @@ func (r *userRepository) GetByIDWithPosts(ctx context.Context, id uint, limit in
 		limit = 100
 	}
 
-	readDB := database.GetReadDB()
-	if readDB == nil {
-		readDB = r.db
-	}
-	if err := readDB.WithContext(ctx).
+	if err := readDB(r.db).WithContext(ctx).
 		Preload("Posts", func(db *gorm.DB) *gorm.DB {
 			return db.Order("created_at DESC").Limit(limit)
 		}).
@@ -87,11 +78,7 @@ func (r *userRepository) GetByIDWithPosts(ctx context.Context, id uint, limit in
 
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
-	readDB := database.GetReadDB()
-	if readDB == nil {
-		readDB = r.db
-	}
-	if err := readDB.WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
+	if err := readDB(r.db).WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
@@ -102,11 +89,7 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*models.
 
 func (r *userRepository) GetByUsername(ctx context.Context, username string) (*models.User, error) {
 	var user models.User
-	readDB := database.GetReadDB()
-	if readDB == nil {
-		readDB = r.db
-	}
-	if err := readDB.WithContext(ctx).Where("username = ?", username).First(&user).Error; err != nil {
+	if err := readDB(r.db).WithContext(ctx).Where("username = ?", username).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
@@ -155,11 +138,7 @@ func (r *userRepository) Delete(ctx context.Context, id uint) error {
 
 func (r *userRepository) List(ctx context.Context, limit, offset int) ([]models.User, error) {
 	var users []models.User
-	readDB := database.GetReadDB()
-	if readDB == nil {
-		readDB = r.db
-	}
-	if err := readDB.WithContext(ctx).Limit(limit).Offset(offset).Find(&users).Error; err != nil {
+	if err := readDB(r.db).WithContext(ctx).Limit(limit).Offset(offset).Find(&users).Error; err != nil {
 		return nil, models.NewInternalError(err)
 	}
 	return users, nil
@@ -167,11 +146,7 @@ func (r *userRepository) List(ctx context.Context, limit, offset int) ([]models.
 
 func (r *userRepository) Search(ctx context.Context, q string, limit, offset int) ([]models.User, error) {
 	var users []models.User
-	readDB := database.GetReadDB()
-	if readDB == nil {
-		readDB = r.db
-	}
-	db := readDB.WithContext(ctx)
+	db := readDB(r.db).WithContext(ctx)
 	if q != "" {
 		like := "%" + strings.ToLower(q) + "%"
 		db = db.Where("LOWER(username) LIKE ? OR LOWER(bio) LIKE ?", like, like)

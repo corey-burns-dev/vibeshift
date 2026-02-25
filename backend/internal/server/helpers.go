@@ -28,6 +28,29 @@ const (
 	maxPaginationLimit = 100
 )
 
+// mapServiceError returns the HTTP status code for a service-layer error.
+func mapServiceError(err error) int {
+	var appErr *models.AppError
+	if errors.As(err, &appErr) {
+		switch appErr.Code {
+		case "VALIDATION_ERROR":
+			return fiber.StatusBadRequest
+		case "UNAUTHORIZED":
+			return fiber.StatusForbidden
+		case "FORBIDDEN":
+			return fiber.StatusForbidden
+		case "NOT_FOUND":
+			return fiber.StatusNotFound
+		case "CONFLICT":
+			return fiber.StatusConflict
+		}
+	}
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return fiber.StatusNotFound
+	}
+	return fiber.StatusInternalServerError
+}
+
 // parsePagination extracts limit and offset query parameters with the given default limit.
 func parsePagination(c *fiber.Ctx, defaultLimit int) Pagination {
 	limit := c.QueryInt("limit", defaultLimit)
@@ -99,11 +122,6 @@ func (s *Server) isAdmin(c *fiber.Ctx, userID uint) (bool, error) {
 	return s.isAdminByUserID(c.Context(), userID)
 }
 
-// isMasterAdminByUserID checks whether the given user has global admin privileges.
-func (s *Server) isMasterAdminByUserID(ctx context.Context, userID uint) (bool, error) {
-	return s.isAdminByUserID(ctx, userID)
-}
-
 func (s *Server) isAdminByUserID(ctx context.Context, userID uint) (bool, error) {
 	var user models.User
 	if err := s.db.WithContext(ctx).Select("is_admin").First(&user, userID).Error; err != nil {
@@ -118,22 +136,12 @@ func (s *Server) isBannedByUserID(ctx context.Context, userID uint) (bool, error
 	}
 	var user models.User
 	if err := s.db.WithContext(ctx).Select("is_banned").First(&user, userID).Error; err != nil {
-		if isSchemaMissingError(err) {
+		if models.IsSchemaMissingError(err) {
 			return false, nil
 		}
 		return false, err
 	}
 	return user.IsBanned, nil
-}
-
-func isSchemaMissingError(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "no such table") ||
-		strings.Contains(msg, "no such column") ||
-		strings.Contains(msg, "does not exist")
 }
 
 func (s *Server) getSanctumRoleByUserID(ctx context.Context, userID, sanctumID uint) (models.SanctumMembershipRole, bool, error) {
@@ -152,7 +160,7 @@ func (s *Server) getSanctumRoleByUserID(ctx context.Context, userID, sanctumID u
 }
 
 func (s *Server) canManageSanctumByUserID(ctx context.Context, userID, sanctumID uint) (bool, error) {
-	master, err := s.isMasterAdminByUserID(ctx, userID)
+	master, err := s.isAdminByUserID(ctx, userID)
 	if err != nil {
 		return false, err
 	}
@@ -169,7 +177,7 @@ func (s *Server) canManageSanctumByUserID(ctx context.Context, userID, sanctumID
 }
 
 func (s *Server) canManageSanctumAsOwnerByUserID(ctx context.Context, userID, sanctumID uint) (bool, error) {
-	master, err := s.isMasterAdminByUserID(ctx, userID)
+	master, err := s.isAdminByUserID(ctx, userID)
 	if err != nil {
 		return false, err
 	}
@@ -196,7 +204,7 @@ func (s *Server) isChatroomModeratorByUserID(ctx context.Context, userID, roomID
 }
 
 func (s *Server) canManageChatroomModeratorsByUserID(ctx context.Context, userID, roomID uint) (bool, error) {
-	master, err := s.isMasterAdminByUserID(ctx, userID)
+	master, err := s.isAdminByUserID(ctx, userID)
 	if err != nil {
 		return false, err
 	}
@@ -221,7 +229,7 @@ func (s *Server) canManageChatroomModeratorsByUserID(ctx context.Context, userID
 }
 
 func (s *Server) canModerateChatroomByUserID(ctx context.Context, userID, roomID uint) (bool, error) {
-	master, err := s.isMasterAdminByUserID(ctx, userID)
+	master, err := s.isAdminByUserID(ctx, userID)
 	if err != nil {
 		return false, err
 	}

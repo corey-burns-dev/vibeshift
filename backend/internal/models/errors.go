@@ -4,6 +4,7 @@ package models
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -73,6 +74,17 @@ func NewForbiddenError(message string) *AppError {
 		Code:    "FORBIDDEN",
 		Message: message,
 	}
+}
+
+// IsSchemaMissingError reports whether err indicates a missing table/column relation.
+func IsSchemaMissingError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "no such table") ||
+		strings.Contains(msg, "no such column") ||
+		strings.Contains(msg, "does not exist")
 }
 
 // RespondWithError creates a standardized error response

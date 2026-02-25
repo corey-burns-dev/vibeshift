@@ -11,6 +11,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	testEventuallyTimeout = time.Second
+	testPollInterval      = 10 * time.Millisecond
+)
+
 func TestHub_GracePeriodSuppressesOfflineOnRapidReconnect(t *testing.T) {
 	hub := NewHub()
 	hub.presence.SetOfflineGracePeriod(40 * time.Millisecond)
@@ -19,16 +24,14 @@ func TestHub_GracePeriodSuppressesOfflineOnRapidReconnect(t *testing.T) {
 	assert.NoError(t, err)
 
 	hub.UnregisterClient(clientA)
-	time.Sleep(10 * time.Millisecond)
-
 	_, err = hub.Register(10, nil)
 	assert.NoError(t, err)
 
-	time.Sleep(80 * time.Millisecond)
-	hub.presence.mu.RLock()
-	notified := hub.presence.offlineNotified[10]
-	hub.presence.mu.RUnlock()
-	assert.False(t, notified)
+	assert.Never(t, func() bool {
+		hub.presence.mu.RLock()
+		defer hub.presence.mu.RUnlock()
+		return hub.presence.offlineNotified[10]
+	}, 20*testPollInterval, testPollInterval)
 	assert.True(t, hub.IsOnline(10))
 
 	_ = hub.Shutdown(context.Background())
@@ -44,18 +47,18 @@ func TestHub_MultiConnectionLastDisconnectTriggersOfflineOnce(t *testing.T) {
 	assert.NoError(t, err)
 
 	hub.UnregisterClient(clientA)
-	time.Sleep(60 * time.Millisecond)
-	hub.presence.mu.RLock()
-	notified := hub.presence.offlineNotified[15]
-	hub.presence.mu.RUnlock()
-	assert.False(t, notified)
+	assert.Never(t, func() bool {
+		hub.presence.mu.RLock()
+		defer hub.presence.mu.RUnlock()
+		return hub.presence.offlineNotified[15]
+	}, 30*testPollInterval, testPollInterval)
 
 	hub.UnregisterClient(clientB)
 	assert.Eventually(t, func() bool {
 		hub.presence.mu.RLock()
 		defer hub.presence.mu.RUnlock()
 		return hub.presence.offlineNotified[15]
-	}, time.Second, 10*time.Millisecond)
+	}, testEventuallyTimeout, testPollInterval)
 	assert.False(t, hub.IsOnline(15))
 
 	_ = hub.Shutdown(context.Background())

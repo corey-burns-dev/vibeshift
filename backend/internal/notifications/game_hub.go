@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"sync"
 
 	"sanctum/internal/models"
+	"sanctum/internal/observability"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -76,7 +77,10 @@ func (h *GameHub) RegisterClient(roomID uint, client *Client) error {
 			return fmt.Errorf("room is full")
 		}
 	} else {
-		log.Printf("GameHub: User %d reconnecting in room %d (replacing old client)", client.UserID, roomID)
+		observability.GlobalLogger.InfoContext(context.Background(), "game hub user reconnecting in room",
+			slog.Uint64("user_id", uint64(client.UserID)),
+			slog.Uint64("room_id", uint64(roomID)),
+		)
 	}
 
 	h.rooms[roomID][client.UserID] = client
@@ -86,7 +90,10 @@ func (h *GameHub) RegisterClient(roomID uint, client *Client) error {
 	}
 	h.userRooms[client.UserID][roomID] = struct{}{}
 
-	log.Printf("GameHub: User %d registered in room %d", client.UserID, roomID)
+	observability.GlobalLogger.InfoContext(context.Background(), "game hub user registered in room",
+		slog.Uint64("user_id", uint64(client.UserID)),
+		slog.Uint64("room_id", uint64(roomID)),
+	)
 	return nil
 }
 
@@ -138,7 +145,9 @@ func (h *GameHub) BroadcastToRoom(roomID uint, action GameAction) {
 
 	actionJSON, err := json.Marshal(action)
 	if err != nil {
-		log.Printf("GameHub: Failed to marshal action: %v", err)
+		observability.GlobalLogger.ErrorContext(context.Background(), "game hub failed to marshal action",
+			slog.String("error", err.Error()),
+		)
 		return
 	}
 
@@ -159,7 +168,10 @@ func (h *GameHub) HandleAction(userID uint, action GameAction) bool {
 		h.handleChat(userID, action)
 		return false
 	default:
-		log.Printf("GameHub: Unknown action type %s from user %d", action.Type, userID)
+		observability.GlobalLogger.InfoContext(context.Background(), "game hub unknown action type",
+			slog.String("action_type", action.Type),
+			slog.Uint64("user_id", uint64(userID)),
+		)
 		return false
 	}
 }
@@ -349,7 +361,10 @@ func (h *GameHub) handleMove(userID uint, action GameAction) bool {
 		MoveNumber: int(moveCount) + 1,
 	}
 	if err := h.db.Create(&moveRecord).Error; err != nil {
-		log.Printf("GameHub: failed to persist move for room %d: %v", room.ID, err)
+		observability.GlobalLogger.ErrorContext(context.Background(), "game hub failed to persist move",
+			slog.Uint64("room_id", uint64(room.ID)),
+			slog.String("error", err.Error()),
+		)
 	}
 
 	if room.Type != models.Othello {
@@ -384,7 +399,10 @@ func (h *GameHub) handleMove(userID uint, action GameAction) bool {
 						"total_games": gorm.Expr("game_stats.total_games + ?", 1),
 					}),
 				}).Create(&winStats).Error; err != nil {
-					log.Printf("GameHub: failed to award points to winner %d: %v", *winID, err)
+					observability.GlobalLogger.ErrorContext(context.Background(), "game hub failed to award winner points",
+						slog.Uint64("winner_id", uint64(*winID)),
+						slog.String("error", err.Error()),
+					)
 				}
 			}
 
@@ -402,7 +420,10 @@ func (h *GameHub) handleMove(userID uint, action GameAction) bool {
 						"total_games": gorm.Expr("game_stats.total_games + ?", 1),
 					}),
 				}).Create(&lossStats).Error; err != nil {
-					log.Printf("GameHub: failed to update stats for loser %d: %v", *lossID, err)
+					observability.GlobalLogger.ErrorContext(context.Background(), "game hub failed to update loser stats",
+						slog.Uint64("loser_id", uint64(*lossID)),
+						slog.String("error", err.Error()),
+					)
 				}
 			}
 		} else {
@@ -424,7 +445,10 @@ func (h *GameHub) handleMove(userID uint, action GameAction) bool {
 						"total_games": gorm.Expr("game_stats.total_games + ?", 1),
 					}),
 				}).Create(&drawStats).Error; err != nil {
-					log.Printf("GameHub: failed to update stats for draw for user %d: %v", uid, err)
+					observability.GlobalLogger.ErrorContext(context.Background(), "game hub failed to update draw stats",
+						slog.Uint64("user_id", uint64(uid)),
+						slog.String("error", err.Error()),
+					)
 				}
 			}
 		}
@@ -445,7 +469,10 @@ func (h *GameHub) handleMove(userID uint, action GameAction) bool {
 	}
 
 	if err := h.db.Save(&room).Error; err != nil {
-		log.Printf("GameHub: failed to save room state for room %d: %v", room.ID, err)
+		observability.GlobalLogger.ErrorContext(context.Background(), "game hub failed to save room state",
+			slog.Uint64("room_id", uint64(room.ID)),
+			slog.String("error", err.Error()),
+		)
 	}
 
 	// Broadcast update
@@ -574,14 +601,20 @@ func (h *GameHub) handleChat(userID uint, action GameAction) {
 			Text:       text,
 		}
 		if err := h.db.Create(&msg).Error; err != nil {
-			log.Printf("GameHub: failed to persist chat message for room %d: %v", action.RoomID, err)
+			observability.GlobalLogger.ErrorContext(context.Background(), "game hub failed to persist room chat message",
+				slog.Uint64("room_id", uint64(action.RoomID)),
+				slog.String("error", err.Error()),
+			)
 		} else {
 			// Trim to keep at most MaxGameRoomMessages per room.
 			var total int64
 			if err := h.db.Model(&models.GameRoomMessage{}).
 				Where("game_room_id = ?", action.RoomID).
 				Count(&total).Error; err != nil {
-				log.Printf("GameHub: failed to count chat messages for room %d: %v", action.RoomID, err)
+				observability.GlobalLogger.ErrorContext(context.Background(), "game hub failed to count room chat messages",
+					slog.Uint64("room_id", uint64(action.RoomID)),
+					slog.String("error", err.Error()),
+				)
 			} else if total > models.MaxGameRoomMessages {
 				excess := total - models.MaxGameRoomMessages
 				oldestIDs := h.db.Model(&models.GameRoomMessage{}).
@@ -591,7 +624,10 @@ func (h *GameHub) handleChat(userID uint, action GameAction) {
 					Limit(int(excess))
 				if err := h.db.Where("id IN (?)", oldestIDs).
 					Delete(&models.GameRoomMessage{}).Error; err != nil {
-					log.Printf("GameHub: failed to trim chat messages for room %d: %v", action.RoomID, err)
+					observability.GlobalLogger.ErrorContext(context.Background(), "game hub failed to trim room chat messages",
+						slog.Uint64("room_id", uint64(action.RoomID)),
+						slog.String("error", err.Error()),
+					)
 				}
 			}
 		}
@@ -660,7 +696,11 @@ func (h *GameHub) Shutdown(_ context.Context) error {
 				client.TrySend(msgJSON)
 			}
 			if err := client.Conn.Close(); err != nil {
-				log.Printf("failed to close websocket in room %d for user %d: %v", roomID, userID, err)
+				observability.GlobalLogger.ErrorContext(context.Background(), "game hub failed to close websocket",
+					slog.Uint64("room_id", uint64(roomID)),
+					slog.Uint64("user_id", uint64(userID)),
+					slog.String("error", err.Error()),
+				)
 			}
 		}
 	}

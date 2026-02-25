@@ -2,7 +2,6 @@
 package server
 
 import (
-	"errors"
 	"time"
 
 	"sanctum/internal/models"
@@ -34,17 +33,7 @@ func (s *Server) CreateComment(c *fiber.Ctx) error {
 		Content: req.Content,
 	})
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) {
-			switch appErr.Code {
-			case "VALIDATION_ERROR":
-				status = fiber.StatusBadRequest
-			case "NOT_FOUND":
-				status = fiber.StatusNotFound
-			}
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	commentsCount := 0
@@ -72,12 +61,7 @@ func (s *Server) GetComments(c *fiber.Ctx) error {
 
 	comments, err := s.commentSvc().ListComments(ctx, postID)
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) && appErr.Code == "NOT_FOUND" {
-			status = fiber.StatusNotFound
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	return c.JSON(comments)
@@ -106,19 +90,7 @@ func (s *Server) UpdateComment(c *fiber.Ctx) error {
 		Content:   req.Content,
 	})
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) {
-			switch appErr.Code {
-			case "VALIDATION_ERROR":
-				status = fiber.StatusBadRequest
-			case "NOT_FOUND":
-				status = fiber.StatusNotFound
-			case "UNAUTHORIZED":
-				status = fiber.StatusForbidden
-			}
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	commentsCount := 0
@@ -150,17 +122,7 @@ func (s *Server) DeleteComment(c *fiber.Ctx) error {
 		CommentID: commentID,
 	})
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) {
-			switch appErr.Code {
-			case "NOT_FOUND":
-				status = fiber.StatusNotFound
-			case "UNAUTHORIZED":
-				status = fiber.StatusForbidden
-			}
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	commentsCount := 0
@@ -174,7 +136,7 @@ func (s *Server) DeleteComment(c *fiber.Ctx) error {
 		"updated_at":     time.Now().UTC().Format(time.RFC3339Nano),
 	})
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (s *Server) commentSvc() *service.CommentService {

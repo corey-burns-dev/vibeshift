@@ -44,8 +44,8 @@ func toSanctumDTO(s models.Sanctum, defaultRoomID *uint) SanctumDTO {
 		Description:       s.Description,
 		CreatedByUserID:   s.CreatedByUserID,
 		Status:            s.Status,
-		CreatedAt:         s.CreatedAt.UTC().Format("2006-01-02T15:04:05.999999999Z07:00"),
-		UpdatedAt:         s.UpdatedAt.UTC().Format("2006-01-02T15:04:05.999999999Z07:00"),
+		CreatedAt:         s.CreatedAt.UTC().Format(time.RFC3339Nano),
+		UpdatedAt:         s.UpdatedAt.UTC().Format(time.RFC3339Nano),
 		DefaultChatRoomID: defaultRoomID,
 	}
 }
@@ -55,8 +55,8 @@ func toSanctumMembershipDTO(m models.SanctumMembership, sanctum models.Sanctum, 
 		SanctumID: m.SanctumID,
 		UserID:    m.UserID,
 		Role:      m.Role,
-		CreatedAt: m.CreatedAt.UTC().Format("2006-01-02T15:04:05.999999999Z07:00"),
-		UpdatedAt: m.UpdatedAt.UTC().Format("2006-01-02T15:04:05.999999999Z07:00"),
+		CreatedAt: m.CreatedAt.UTC().Format(time.RFC3339Nano),
+		UpdatedAt: m.UpdatedAt.UTC().Format(time.RFC3339Nano),
 		Sanctum:   toSanctumDTO(sanctum, defaultRoomID),
 	}
 }

@@ -27,8 +27,6 @@ func TestSecurityMiddleware(t *testing.T) {
 		req := httptest.NewRequest("GET", "/test", nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
-		defer func() { _ = resp.Body.Close() }()
-		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, fiber.StatusOK, resp.StatusCode)
 		// Check for some common helmet headers
@@ -39,7 +37,6 @@ func TestSecurityMiddleware(t *testing.T) {
 	t.Run("Structured Logging", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/test", nil)
 		resp, _ := app.Test(req)
-		defer func() { _ = resp.Body.Close() }()
 		defer func() { _ = resp.Body.Close() }()
 		assert.Equal(t, fiber.StatusOK, resp.StatusCode)
 	})

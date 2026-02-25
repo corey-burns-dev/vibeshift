@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"strings"
 	"time"
 
 	"sanctum/internal/cache"
@@ -434,7 +433,7 @@ func (s *ChatService) userBannedInRoom(ctx context.Context, roomID, userID uint)
 		Where("conversation_id = ? AND user_id = ?", roomID, userID).
 		Count(&count).Error
 	if err != nil {
-		if isSchemaMissingError(err) {
+		if models.IsSchemaMissingError(err) {
 			return false, nil
 		}
 		return false, err
@@ -463,7 +462,7 @@ func (s *ChatService) usersBlocked(ctx context.Context, userID, otherUserID uint
 			userID, otherUserID, otherUserID, userID,
 		).
 		Count(&count).Error; err != nil {
-		if isSchemaMissingError(err) {
+		if models.IsSchemaMissingError(err) {
 			return false, nil
 		}
 		return false, err
@@ -483,7 +482,7 @@ func (s *ChatService) userMutedInRoom(ctx context.Context, roomID, userID uint) 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, nil
 		}
-		if isSchemaMissingError(err) {
+		if models.IsSchemaMissingError(err) {
 			return false, nil
 		}
 		return false, err
@@ -503,7 +502,7 @@ func (s *ChatService) blockedUserIDs(ctx context.Context, userID uint) (map[uint
 		Model(&models.UserBlock{}).
 		Where("blocker_id = ?", userID).
 		Pluck("blocked_id", &blocked).Error; err != nil {
-		if isSchemaMissingError(err) {
+		if models.IsSchemaMissingError(err) {
 			return map[uint]bool{}, nil
 		}
 		return nil, err
@@ -513,14 +512,4 @@ func (s *ChatService) blockedUserIDs(ctx context.Context, userID uint) (map[uint
 		result[id] = true
 	}
 	return result, nil
-}
-
-func isSchemaMissingError(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "no such table") ||
-		strings.Contains(msg, "no such column") ||
-		strings.Contains(msg, "does not exist")
 }

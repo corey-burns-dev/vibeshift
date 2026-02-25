@@ -4,8 +4,10 @@ package middleware
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
+
+	"sanctum/internal/observability"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
@@ -89,7 +91,12 @@ func RateLimitWithPolicy(rdb *redis.Client, env string, limit int, window time.D
 		allowed, err := CheckRateLimit(ctx, rdb, env, resource, id, limit, window)
 		if err != nil {
 			if policy == FailClosed {
-				log.Printf("WARNING: Rate limit fail-closed for route %s (resource: %s, policy: FailClosed): %v", c.Path(), resource, err)
+				observability.GlobalLogger.WarnContext(c.UserContext(), "rate limit fail-closed",
+					slog.String("route", c.Path()),
+					slog.String("resource", resource),
+					slog.String("policy", "FailClosed"),
+					slog.String("error", err.Error()),
+				)
 				return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
 					"error": "rate limit unavailable",
 				})

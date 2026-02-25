@@ -157,7 +157,8 @@ func TestSignup(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockSetup()
-			body, _ := json.Marshal(tt.body)
+			body, err := json.Marshal(tt.body)
+			require.NoError(t, err)
 			req := httptest.NewRequest(http.MethodPost, "/signup", bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
 
@@ -231,7 +232,8 @@ func TestLogin(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockSetup()
-			body, _ := json.Marshal(tt.body)
+			body, err := json.Marshal(tt.body)
+			require.NoError(t, err)
 			req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
 
@@ -302,7 +304,8 @@ func TestRefresh(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockSetup()
-			body, _ := json.Marshal(tt.body)
+			body, err := json.Marshal(tt.body)
+			require.NoError(t, err)
 			req := httptest.NewRequest(http.MethodPost, "/refresh", bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
 
@@ -332,7 +335,8 @@ func TestLogout(t *testing.T) {
 	app.Post("/logout", s.Logout)
 
 	t.Run("Success", func(t *testing.T) {
-		body, _ := json.Marshal(map[string]string{"refresh_token": "some-token"})
+		body, err := json.Marshal(map[string]string{"refresh_token": "some-token"})
+		require.NoError(t, err)
 		req := httptest.NewRequest(http.MethodPost, "/logout", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 
@@ -343,7 +347,8 @@ func TestLogout(t *testing.T) {
 	})
 
 	t.Run("Empty Token", func(t *testing.T) {
-		body, _ := json.Marshal(map[string]string{"refresh_token": ""})
+		body, err := json.Marshal(map[string]string{"refresh_token": ""})
+		require.NoError(t, err)
 		req := httptest.NewRequest(http.MethodPost, "/logout", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 

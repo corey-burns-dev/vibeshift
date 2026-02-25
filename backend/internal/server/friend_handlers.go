@@ -22,13 +22,10 @@ func (s *Server) SendFriendRequest(c *fiber.Ctx) error {
 
 	friendship, err := s.friendSvc().SendFriendRequest(ctx, userID, targetUserID)
 	if err != nil {
-		status := fiber.StatusInternalServerError
+		status := mapServiceError(err)
 		var appErr *models.AppError
 		if errors.As(err, &appErr) {
-			switch appErr.Code {
-			case "NOT_FOUND":
-				status = fiber.StatusNotFound
-			case "VALIDATION_ERROR":
+			if appErr.Code == "VALIDATION_ERROR" {
 				status = fiber.StatusConflict
 				if appErr.Message == "Cannot send friend request to yourself" {
 					status = fiber.StatusBadRequest
@@ -90,17 +87,10 @@ func (s *Server) AcceptFriendRequest(c *fiber.Ctx) error {
 
 	friendship, err := s.friendSvc().AcceptFriendRequest(ctx, userID, requestID)
 	if err != nil {
-		status := fiber.StatusInternalServerError
+		status := mapServiceError(err)
 		var appErr *models.AppError
-		if errors.As(err, &appErr) {
-			switch appErr.Code {
-			case "NOT_FOUND":
-				status = fiber.StatusNotFound
-			case "UNAUTHORIZED":
-				status = fiber.StatusForbidden
-			case "VALIDATION_ERROR":
-				status = fiber.StatusConflict
-			}
+		if errors.As(err, &appErr) && appErr.Code == "VALIDATION_ERROR" {
+			status = fiber.StatusConflict
 		}
 		return models.RespondWithError(c, status, err)
 	}
@@ -130,17 +120,10 @@ func (s *Server) RejectFriendRequest(c *fiber.Ctx) error {
 
 	friendship, err := s.friendSvc().RejectFriendRequest(ctx, userID, requestID)
 	if err != nil {
-		status := fiber.StatusInternalServerError
+		status := mapServiceError(err)
 		var appErr *models.AppError
-		if errors.As(err, &appErr) {
-			switch appErr.Code {
-			case "NOT_FOUND":
-				status = fiber.StatusNotFound
-			case "UNAUTHORIZED":
-				status = fiber.StatusForbidden
-			case "VALIDATION_ERROR":
-				status = fiber.StatusConflict
-			}
+		if errors.As(err, &appErr) && appErr.Code == "VALIDATION_ERROR" {
+			status = fiber.StatusConflict
 		}
 		return models.RespondWithError(c, status, err)
 	}
@@ -187,12 +170,7 @@ func (s *Server) GetFriendshipStatus(c *fiber.Ctx) error {
 
 	status, requestID, friendship, err := s.friendSvc().GetFriendshipStatus(ctx, userID, targetUserID)
 	if err != nil {
-		httpStatus := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) && appErr.Code == "NOT_FOUND" {
-			httpStatus = fiber.StatusNotFound
-		}
-		return models.RespondWithError(c, httpStatus, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -213,12 +191,7 @@ func (s *Server) RemoveFriend(c *fiber.Ctx) error {
 
 	_, err = s.friendSvc().RemoveFriend(ctx, userID, targetUserID)
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) && appErr.Code == "NOT_FOUND" {
-			status = fiber.StatusNotFound
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	s.publishUserEvent(userID, EventFriendRemoved, map[string]interface{}{
@@ -230,7 +203,7 @@ func (s *Server) RemoveFriend(c *fiber.Ctx) error {
 		"removed_at": time.Now().UTC().Format(time.RFC3339Nano),
 	})
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (s *Server) friendSvc() *service.FriendService {

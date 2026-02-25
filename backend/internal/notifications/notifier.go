@@ -233,8 +233,17 @@ func (n *Notifier) StartVideoChatSubscriber(
 	ch := sub.Channel()
 
 	go func() {
-		for msg := range ch {
-			onMessage(msg.Channel, msg.Payload)
+		defer func() { _ = sub.Close() }()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg, ok := <-ch:
+				if !ok {
+					return
+				}
+				onMessage(msg.Channel, msg.Payload)
+			}
 		}
 	}()
 

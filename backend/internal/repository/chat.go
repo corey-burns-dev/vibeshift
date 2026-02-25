@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"sanctum/internal/cache"
-	"sanctum/internal/database"
 	"sanctum/internal/models"
 	"sanctum/internal/observability"
 
@@ -62,11 +61,7 @@ func (r *chatRepository) GetConversation(ctx context.Context, id uint) (*models.
 	key := cache.RoomKey(id)
 
 	err := cache.Aside(ctx, key, &conv, cache.MessageHistoryTTL, func() error {
-		readDB := database.GetReadDB()
-		if readDB == nil {
-			readDB = r.db
-		}
-		err := readDB.WithContext(ctx).
+		err := readDB(r.db).WithContext(ctx).
 			Preload("Participants").
 			Preload("Messages", func(db *gorm.DB) *gorm.DB {
 				return db.Order("created_at ASC").Limit(50)
@@ -92,11 +87,7 @@ func (r *chatRepository) GetUserConversations(ctx context.Context, userID uint) 
 	key := cache.UserConversationsKey(userID)
 
 	err := cache.Aside(ctx, key, &conversations, cache.ListTTL, func() error {
-		readDB := database.GetReadDB()
-		if readDB == nil {
-			readDB = r.db
-		}
-		return readDB.WithContext(ctx).
+		return readDB(r.db).WithContext(ctx).
 			Joins("JOIN conversation_participants cp ON conversations.id = cp.conversation_id").
 			Where("cp.user_id = ?", userID).
 			Select("conversations.*, COALESCE(cp.unread_count, 0) as unread_count").
@@ -192,14 +183,11 @@ func (r *chatRepository) GetMessages(ctx context.Context, convID uint, limit, of
 
 	result := &messagesResult{}
 	err := cache.Aside(ctx, histKey, result, cache.MessageHistoryTTL, func() error {
-		readDB := database.GetReadDB()
-		if readDB == nil {
-			readDB = r.db
-		}
-		query := readDB.WithContext(ctx).
+		rdb := readDB(r.db)
+		query := rdb.WithContext(ctx).
 			Where("conversation_id = ?", convID).
 			Preload("Sender")
-		if readDB.Migrator().HasTable(&models.MessageReaction{}) {
+		if rdb.Migrator().HasTable(&models.MessageReaction{}) {
 			query = query.Preload("Reactions")
 		}
 		err := query.

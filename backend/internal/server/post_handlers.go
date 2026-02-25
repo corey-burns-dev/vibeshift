@@ -2,7 +2,6 @@
 package server
 
 import (
-	"errors"
 	"strconv"
 	"time"
 
@@ -21,12 +20,7 @@ func (s *Server) SearchPosts(c *fiber.Ctx) error {
 
 	posts, err := s.postSvc().SearchPosts(ctx, q, page.Limit, page.Offset, userID)
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) && appErr.Code == "VALIDATION_ERROR" {
-			status = fiber.StatusBadRequest
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	return c.JSON(posts)
@@ -64,12 +58,7 @@ func (s *Server) CreatePost(c *fiber.Ctx) error {
 		Poll:       req.Poll,
 	})
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) && appErr.Code == "VALIDATION_ERROR" {
-			status = fiber.StatusBadRequest
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	s.publishBroadcastEvent(EventPostCreated, map[string]interface{}{
@@ -185,17 +174,7 @@ func (s *Server) UpdatePost(c *fiber.Ctx) error {
 		YoutubeURL: req.YoutubeURL,
 	})
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) {
-			switch appErr.Code {
-			case "UNAUTHORIZED":
-				status = fiber.StatusForbidden
-			case "NOT_FOUND":
-				status = fiber.StatusNotFound
-			}
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	return c.JSON(post)
@@ -214,17 +193,7 @@ func (s *Server) DeletePost(c *fiber.Ctx) error {
 		UserID: userID,
 		PostID: postID,
 	}); err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) {
-			switch appErr.Code {
-			case "UNAUTHORIZED":
-				status = fiber.StatusForbidden
-			case "NOT_FOUND":
-				status = fiber.StatusNotFound
-			}
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
@@ -302,17 +271,7 @@ func (s *Server) VotePoll(c *fiber.Ctx) error {
 
 	post, err := s.postSvc().VotePoll(ctx, userID, postID, req.PollOptionID)
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) {
-			switch appErr.Code {
-			case "VALIDATION_ERROR":
-				status = fiber.StatusBadRequest
-			case "NOT_FOUND":
-				status = fiber.StatusNotFound
-			}
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	return c.JSON(post)

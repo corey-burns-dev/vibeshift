@@ -10,119 +10,17 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"sanctum/internal/config"
-	"sanctum/internal/models"
-	"sanctum/internal/repository"
-
-	"gorm.io/gorm"
+	"sanctum/internal/testutil"
 )
 
-type imageRepoStub struct {
-	items  map[string]*models.Image
-	nextID uint
-}
-
-func newImageRepoStub() *imageRepoStub {
-	return &imageRepoStub{items: make(map[string]*models.Image), nextID: 1}
-}
-
-func (s *imageRepoStub) Create(_ context.Context, image *models.Image) error {
-	if image.ID == 0 {
-		image.ID = s.nextID
-		s.nextID++
-	}
-	now := time.Now().UTC()
-	image.CreatedAt = now
-	image.UpdatedAt = now
-	s.items[image.Hash] = image
-	return nil
-}
-
-func (s *imageRepoStub) GetByHash(_ context.Context, hash string) (*models.Image, error) {
-	item, ok := s.items[hash]
-	if !ok {
-		return nil, gorm.ErrRecordNotFound
-	}
-	return item, nil
-}
-
-func (s *imageRepoStub) GetByHashWithVariants(ctx context.Context, hash string) (*models.Image, error) {
-	return s.GetByHash(ctx, hash)
-}
-
-func (s *imageRepoStub) UpdateLastAccessed(_ context.Context, id uint) error {
-	for _, item := range s.items {
-		if item.ID == id {
-			now := time.Now().UTC()
-			item.LastAccessedAt = &now
-			return nil
-		}
-	}
-	return gorm.ErrRecordNotFound
-}
-
-func (s *imageRepoStub) UpsertVariant(_ context.Context, v *models.ImageVariant) error {
-	for _, item := range s.items {
-		if item.ID == v.ImageID {
-			item.Variants = append(item.Variants, *v)
-			return nil
-		}
-	}
-	return gorm.ErrRecordNotFound
-}
-
-func (s *imageRepoStub) GetVariantsByImageID(_ context.Context, imageID uint) ([]models.ImageVariant, error) {
-	for _, item := range s.items {
-		if item.ID == imageID {
-			return item.Variants, nil
-		}
-	}
-	return nil, gorm.ErrRecordNotFound
-}
-
-func (s *imageRepoStub) ClaimNextQueued(_ context.Context) (*models.Image, error) {
-	for _, item := range s.items {
-		if item.Status == repository.ImageStatusQueued {
-			item.Status = repository.ImageStatusProcessing
-			return item, nil
-		}
-	}
-	return nil, gorm.ErrRecordNotFound
-}
-
-func (s *imageRepoStub) MarkReady(_ context.Context, imageID uint) error {
-	for _, item := range s.items {
-		if item.ID == imageID {
-			item.Status = repository.ImageStatusReady
-			return nil
-		}
-	}
-	return gorm.ErrRecordNotFound
-}
-
-func (s *imageRepoStub) MarkFailed(_ context.Context, imageID uint, errMsg string) error {
-	for _, item := range s.items {
-		if item.ID == imageID {
-			item.Status = repository.ImageStatusFailed
-			item.Error = errMsg
-			return nil
-		}
-	}
-	return gorm.ErrRecordNotFound
-}
-
-func (s *imageRepoStub) RequeueStaleProcessing(_ context.Context, _ time.Duration) (int64, error) {
-	return 0, nil
-}
-
 func TestImageServiceUploadAndResolve(t *testing.T) {
-	repo := newImageRepoStub()
+	repo := testutil.NewImageRepoStub()
 	cfg := &config.Config{ImageUploadDir: t.TempDir(), ImageMaxUploadSizeMB: 1}
 	svc := NewImageService(repo, cfg)
 
-	content := tinyPNG(t, 1200, 800)
+	content := testutil.TinyPNG(t, 1200, 800)
 	img, err := svc.Upload(context.Background(), UploadImageInput{
 		UserID:      42,
 		Filename:    "avatar.png",
@@ -170,7 +68,7 @@ func TestImageServiceUploadAndResolve(t *testing.T) {
 }
 
 func TestImageServiceNormalizesResolutionAndCompressesOpaqueUploads(t *testing.T) {
-	repo := newImageRepoStub()
+	repo := testutil.NewImageRepoStub()
 	cfg := &config.Config{ImageUploadDir: t.TempDir(), ImageMaxUploadSizeMB: 10}
 	svc := NewImageService(repo, cfg)
 
@@ -199,7 +97,7 @@ func TestImageServiceNormalizesResolutionAndCompressesOpaqueUploads(t *testing.T
 }
 
 func TestImageServiceNormalizesTransparencyToJPEG(t *testing.T) {
-	repo := newImageRepoStub()
+	repo := testutil.NewImageRepoStub()
 	cfg := &config.Config{ImageUploadDir: t.TempDir(), ImageMaxUploadSizeMB: 10}
 	svc := NewImageService(repo, cfg)
 
@@ -222,7 +120,7 @@ func TestImageServiceNormalizesTransparencyToJPEG(t *testing.T) {
 }
 
 func TestImageServiceUploadValidation(t *testing.T) {
-	repo := newImageRepoStub()
+	repo := testutil.NewImageRepoStub()
 	cfg := &config.Config{ImageUploadDir: t.TempDir(), ImageMaxUploadSizeMB: 1}
 	svc := NewImageService(repo, cfg)
 
@@ -260,16 +158,6 @@ func TestBuildImageURLIsRelative(t *testing.T) {
 	if thumbnail != "/api/images/abc123?size=thumbnail" {
 		t.Fatalf("expected relative thumbnail URL, got %q", thumbnail)
 	}
-}
-
-func tinyPNG(t *testing.T, w, h int) []byte {
-	t.Helper()
-	img := image.NewRGBA(image.Rect(0, 0, w, h))
-	buf := bytes.NewBuffer(nil)
-	if err := png.Encode(buf, img); err != nil {
-		t.Fatalf("encode tiny png: %v", err)
-	}
-	return buf.Bytes()
 }
 
 func noisyPNG(t *testing.T, w, h int) []byte {
