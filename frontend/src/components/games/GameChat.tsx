@@ -16,7 +16,7 @@ interface GameChatProps {
   chatInput: string
   onChatInputChange: (value: string) => void
   onSend: () => void
-  accentColor?: 'blue' | 'emerald'
+  accentColor?: 'blue' | 'emerald' | 'teal'
   placeholder?: string
   chatScrollRef: RefObject<HTMLDivElement | null>
 }
@@ -37,6 +37,14 @@ const ACCENT = {
     border: 'border-emerald-500/10',
     ownBubble: 'bg-emerald-600 text-white rounded-tr-none',
     button: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/10',
+  },
+  teal: {
+    header: 'bg-teal-500/5',
+    dot: 'bg-teal-500',
+    ring: 'focus-visible:ring-teal-500/30',
+    border: 'border-teal-500/10',
+    ownBubble: 'bg-teal-600 text-white rounded-tr-none',
+    button: 'bg-teal-600 hover:bg-teal-700 shadow-teal-500/10',
   },
 } as const
 

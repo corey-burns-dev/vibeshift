@@ -16,12 +16,17 @@ describe('game-routes helpers', () => {
       type: 'othello',
       roomId: 9,
     })
+    expect(parseGameRoomPath('/games/battleship/7')).toEqual({
+      type: 'battleship',
+      roomId: 7,
+    })
   })
 
   it('rejects unsupported or invalid routes', () => {
     expect(parseGameRoomPath('/games/chess/1')).toBeNull()
     expect(parseGameRoomPath('/games/connect4/not-a-number')).toBeNull()
     expect(parseGameRoomPath('/games')).toBeNull()
+    expect(parseGameRoomPath('/games/battleship/1')).not.toBeNull()
   })
 
   it('builds room paths and labels', () => {
@@ -29,5 +34,8 @@ describe('game-routes helpers', () => {
     expect(getGameTypeLabel('othello')).toBe('Othello')
     expect(isSupportedGameType('connect4')).toBe(true)
     expect(isSupportedGameType('chess')).toBe(false)
+    expect(buildGameRoomPath('battleship', 5)).toBe('/games/battleship/5')
+    expect(getGameTypeLabel('battleship')).toBe('Battleship')
+    expect(isSupportedGameType('battleship')).toBe(true)
   })
 })

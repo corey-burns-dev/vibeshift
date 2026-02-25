@@ -15,6 +15,8 @@ const (
 	ConnectFour GameType = "connect4"
 	// Othello game type constant
 	Othello GameType = "othello"
+	// Battleship game type constant
+	Battleship GameType = "battleship"
 )
 
 // GameStatus defines the current state of a game
@@ -95,6 +97,8 @@ func (r *GameRoom) CheckWin() (string, bool) {
 		return r.CheckConnectFourWin()
 	case Othello:
 		return r.CheckOthelloWin()
+	case Battleship:
+		return r.CheckBattleshipWin()
 	}
 	return "", false
 }
@@ -294,4 +298,100 @@ type ConnectFourMove struct {
 type OthelloMove struct {
 	Row    int `json:"row"`
 	Column int `json:"column"`
+}
+
+// BattleshipShip represents a single ship placement on a player's grid.
+type BattleshipShip struct {
+	Name       string `json:"name"`
+	Size       int    `json:"size"`
+	Row        int    `json:"row"`
+	Col        int    `json:"col"`
+	Horizontal bool   `json:"horizontal"`
+}
+
+// BattleshipPlaceShipsMove is the payload for the place_ships action.
+type BattleshipPlaceShipsMove struct {
+	Ships []BattleshipShip `json:"ships"`
+}
+
+// BattleshipShotMove is the payload for a make_move action during battle phase.
+type BattleshipShotMove struct {
+	Row int `json:"row"`
+	Col int `json:"col"`
+}
+
+// BattleshipState is the full persistent state for a Battleship game room.
+type BattleshipState struct {
+	Phase         string           `json:"phase"` // "setup" | "battle"
+	CreatorReady  bool             `json:"creator_ready"`
+	OpponentReady bool             `json:"opponent_ready"`
+	CreatorShips  []BattleshipShip `json:"creator_ships"`
+	OpponentShips []BattleshipShip `json:"opponent_ships"`
+	CreatorShots  [][2]int         `json:"creator_shots"`  // shots fired BY the creator
+	OpponentShots [][2]int         `json:"opponent_shots"` // shots fired BY the opponent
+}
+
+// InitialBattleshipState returns a zeroed-out setup-phase state.
+func InitialBattleshipState() BattleshipState {
+	return BattleshipState{
+		Phase:         "setup",
+		CreatorShips:  []BattleshipShip{},
+		OpponentShips: []BattleshipShip{},
+		CreatorShots:  [][2]int{},
+		OpponentShots: [][2]int{},
+	}
+}
+
+// GetBattleshipState deserializes CurrentState into a BattleshipState.
+func (r *GameRoom) GetBattleshipState() BattleshipState {
+	if r.CurrentState == "" || r.CurrentState == "{}" {
+		return InitialBattleshipState()
+	}
+	var state BattleshipState
+	if err := json.Unmarshal([]byte(r.CurrentState), &state); err != nil {
+		return InitialBattleshipState()
+	}
+	return state
+}
+
+// CheckBattleshipWin returns ("X", true) when creator wins, ("O", true) when
+// opponent wins, or ("", false) when the game is ongoing.
+// "X" = creator, "O" = opponent — matching the existing winnerSym convention.
+func (r *GameRoom) CheckBattleshipWin() (string, bool) {
+	state := r.GetBattleshipState()
+	if state.Phase != "battle" {
+		return "", false
+	}
+	if allBattleshipShipsSunk(state.OpponentShips, state.CreatorShots) {
+		return "X", true
+	}
+	if allBattleshipShipsSunk(state.CreatorShips, state.OpponentShots) {
+		return "O", true
+	}
+	return "", false
+}
+
+// allBattleshipShipsSunk returns true when every cell of every ship has been hit.
+func allBattleshipShipsSunk(ships []BattleshipShip, shots [][2]int) bool {
+	if len(ships) == 0 {
+		return false
+	}
+	hitSet := make(map[[2]int]bool, len(shots))
+	for _, s := range shots {
+		hitSet[s] = true
+	}
+	for _, ship := range ships {
+		for i := 0; i < ship.Size; i++ {
+			var cell [2]int
+			if ship.Horizontal {
+				cell = [2]int{ship.Row, ship.Col + i}
+			} else {
+				cell = [2]int{ship.Row + i, ship.Col}
+			}
+			if !hitSet[cell] {
+				return false
+			}
+		}
+	}
+	return true
 }

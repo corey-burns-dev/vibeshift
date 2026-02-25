@@ -23,7 +23,7 @@ interface RematchDialogProps {
   isStartingRematch: boolean
   onPlayAgain: () => void
   onLobby: () => void
-  accentColor?: 'blue' | 'emerald'
+  accentColor?: 'blue' | 'emerald' | 'teal'
   showIcon?: boolean
   descriptions?: RematchDescriptions
 }
@@ -40,6 +40,12 @@ const ACCENT_STYLES = {
       'border-2 border-emerald-400/30 bg-linear-to-br from-background to-emerald-950/20',
     title: 'text-emerald-500',
     outline: 'border-emerald-500/30 hover:bg-emerald-500/10',
+  },
+  teal: {
+    content:
+      'border-2 border-teal-400/30 bg-linear-to-br from-background to-teal-950/20',
+    title: 'text-teal-500',
+    outline: 'border-teal-500/20 hover:bg-teal-500/5',
   },
 } as const
 

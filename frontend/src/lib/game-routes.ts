@@ -1,4 +1,8 @@
-export const SUPPORTED_GAME_TYPES = ['connect4', 'othello'] as const
+export const SUPPORTED_GAME_TYPES = [
+  'connect4',
+  'othello',
+  'battleship',
+] as const
 
 export type SupportedGameType = (typeof SUPPORTED_GAME_TYPES)[number]
 
@@ -15,6 +19,8 @@ export function getGameTypeLabel(type: SupportedGameType): string {
       return 'Connect Four'
     case 'othello':
       return 'Othello'
+    case 'battleship':
+      return 'Battleship'
   }
 }
 

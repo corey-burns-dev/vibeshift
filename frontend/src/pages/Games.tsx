@@ -56,7 +56,6 @@ const GAME_CATEGORIES = [
         name: 'Battleship',
         description: 'Naval Warfare',
         reward: '+30 VP',
-        status: 'coming-soon',
       },
     ],
   },
@@ -167,7 +166,7 @@ export default function Games() {
   }
 
   const handlePlayNow = async (type: string) => {
-    if (type === 'connect4' || type === 'othello') {
+    if (type === 'connect4' || type === 'othello' || type === 'battleship') {
       try {
         // Fetch fresh rooms at click time to avoid stale cache races.
         const freshRooms = await apiClient.getActiveGameRooms(type)
@@ -212,7 +211,6 @@ export default function Games() {
         president: '/games/president',
         'draw-guess': '/games/draw-guess',
         snake: '/games/snake',
-        battleship: '/games/battleship',
       }
       navigate(routeMap[type] || '/games')
     }
@@ -362,7 +360,9 @@ export default function Games() {
                             <span className='text-xs font-black uppercase tracking-tighter text-emerald-600'>
                               {room.type === 'connect4'
                                 ? 'Connect Four'
-                                : 'Othello'}
+                                : room.type === 'othello'
+                                  ? 'Othello'
+                                  : 'Battleship'}
                             </span>
                             <span className='text-sm font-bold truncate max-w-30'>
                               {room.status === 'active'

@@ -164,6 +164,8 @@ func (h *GameHub) HandleAction(userID uint, action GameAction) bool {
 		return h.handleJoin(userID, action)
 	case "make_move":
 		return h.handleMove(userID, action)
+	case "place_ships":
+		return h.handlePlaceShips(userID, action)
 	case "chat":
 		h.handleChat(userID, action)
 		return false
@@ -202,6 +204,13 @@ func (h *GameHub) handleJoin(userID uint, action GameAction) bool {
 	room.OpponentID = &userID
 	room.Status = models.GameActive
 	room.NextTurnID = *room.CreatorID // Creator goes first
+
+	// For Battleship, initialise the setup-phase state so both players can
+	// place ships simultaneously before the battle begins.
+	if room.Type == models.Battleship {
+		initialState := models.InitialBattleshipState()
+		room.SetState(initialState)
+	}
 
 	if err := h.db.Save(&room).Error; err != nil {
 		h.sendError(userID, action.RoomID, "Failed to start game")
@@ -344,6 +353,48 @@ func (h *GameHub) handleMove(userID uint, action GameAction) bool {
 				room.NextTurnID = userID
 			}
 		}
+	case models.Battleship:
+		var moveData models.BattleshipShotMove
+		if err := json.Unmarshal(moveBytes, &moveData); err != nil {
+			h.sendError(userID, action.RoomID, "Invalid move format")
+			return false
+		}
+
+		bsState := room.GetBattleshipState()
+		if bsState.Phase != "battle" {
+			h.sendError(userID, action.RoomID, "Game is still in setup phase")
+			return false
+		}
+
+		if moveData.Row < 0 || moveData.Row > 9 || moveData.Col < 0 || moveData.Col > 9 {
+			h.sendError(userID, action.RoomID, "Shot out of bounds")
+			return false
+		}
+
+		shot := [2]int{moveData.Row, moveData.Col}
+		isCreatorShot := room.CreatorID != nil && userID == *room.CreatorID
+
+		if isCreatorShot {
+			for _, s := range bsState.CreatorShots {
+				if s == shot {
+					h.sendError(userID, action.RoomID, "Already shot that cell")
+					return false
+				}
+			}
+			bsState.CreatorShots = append(bsState.CreatorShots, shot)
+		} else {
+			for _, s := range bsState.OpponentShots {
+				if s == shot {
+					h.sendError(userID, action.RoomID, "Already shot that cell")
+					return false
+				}
+			}
+			bsState.OpponentShots = append(bsState.OpponentShots, shot)
+		}
+
+		board = bsState
+		room.SetState(bsState)
+
 	default:
 		h.sendError(userID, action.RoomID, "Unsupported game type")
 		return false
@@ -389,6 +440,8 @@ func (h *GameHub) handleMove(userID uint, action GameAction) bool {
 					points = 15
 				case models.Othello:
 					points = 25
+				case models.Battleship:
+					points = 30
 				}
 				winStats := models.GameStats{UserID: *winID, GameType: room.Type, Wins: 1, TotalGames: 1, Points: points}
 				if err := h.db.Clauses(clause.OnConflict{
@@ -586,6 +639,151 @@ func countOthelloPieces(board [8][8]string) (int, int) {
 	}
 
 	return xCount, oCount
+}
+
+func (h *GameHub) handlePlaceShips(userID uint, action GameAction) bool {
+	var room models.GameRoom
+	if err := h.db.First(&room, action.RoomID).Error; err != nil {
+		h.sendError(userID, action.RoomID, "Game room not found")
+		return false
+	}
+
+	if room.Status != models.GameActive {
+		h.sendError(userID, action.RoomID, "Game is not active")
+		return false
+	}
+
+	if room.Type != models.Battleship {
+		h.sendError(userID, action.RoomID, "Not a Battleship game")
+		return false
+	}
+
+	moveBytes, _ := json.Marshal(action.Payload)
+	var moveData models.BattleshipPlaceShipsMove
+	if err := json.Unmarshal(moveBytes, &moveData); err != nil {
+		h.sendError(userID, action.RoomID, "Invalid ship placement format")
+		return false
+	}
+
+	if err := validateBattleshipFleet(moveData.Ships); err != nil {
+		h.sendError(userID, action.RoomID, err.Error())
+		return false
+	}
+
+	state := room.GetBattleshipState()
+	if state.Phase != "setup" {
+		h.sendError(userID, action.RoomID, "Ships already placed")
+		return false
+	}
+
+	isCreator := room.CreatorID != nil && userID == *room.CreatorID
+	isOpponent := room.OpponentID != nil && userID == *room.OpponentID
+
+	if !isCreator && !isOpponent {
+		h.sendError(userID, action.RoomID, "You are not a player in this room")
+		return false
+	}
+
+	if isCreator {
+		if state.CreatorReady {
+			h.sendError(userID, action.RoomID, "Ships already placed")
+			return false
+		}
+		state.CreatorShips = moveData.Ships
+		state.CreatorReady = true
+	} else {
+		if state.OpponentReady {
+			h.sendError(userID, action.RoomID, "Ships already placed")
+			return false
+		}
+		state.OpponentShips = moveData.Ships
+		state.OpponentReady = true
+	}
+
+	// Transition to battle when both players have placed their ships.
+	if state.CreatorReady && state.OpponentReady {
+		state.Phase = "battle"
+		if room.CreatorID != nil {
+			room.NextTurnID = *room.CreatorID
+		}
+	}
+
+	room.SetState(state)
+	if err := h.db.Save(&room).Error; err != nil {
+		observability.GlobalLogger.ErrorContext(context.Background(), "game hub failed to save battleship placement",
+			slog.Uint64("room_id", uint64(room.ID)),
+			slog.String("error", err.Error()),
+		)
+		h.sendError(userID, action.RoomID, "Failed to save ship placement")
+		return false
+	}
+
+	action.Type = "game_state"
+	action.Payload = map[string]interface{}{
+		"board":     state,
+		"status":    room.Status,
+		"winner_id": room.WinnerID,
+		"next_turn": room.NextTurnID,
+		"is_draw":   room.IsDraw,
+	}
+	h.BroadcastToRoom(action.RoomID, action)
+
+	if h.notifier != nil {
+		actionJSON, _ := json.Marshal(action)
+		_ = h.notifier.PublishGameAction(context.Background(), action.RoomID, string(actionJSON))
+	}
+	return true
+}
+
+// validateBattleshipFleet checks that ships is the standard Battleship fleet
+// (Carrier 5, Battleship 4, Cruiser 3, Submarine 3, Destroyer 2) and that
+// every ship fits within the 10×10 grid with no overlaps.
+func validateBattleshipFleet(ships []models.BattleshipShip) error {
+	expected := map[string]int{
+		"Carrier":    5,
+		"Battleship": 4,
+		"Cruiser":    3,
+		"Submarine":  3,
+		"Destroyer":  2,
+	}
+
+	if len(ships) != len(expected) {
+		return fmt.Errorf("invalid fleet: expected %d ships", len(expected))
+	}
+
+	seen := make(map[string]bool)
+	occupied := make(map[[2]int]bool)
+
+	for _, ship := range ships {
+		size, ok := expected[ship.Name]
+		if !ok {
+			return fmt.Errorf("unknown ship: %s", ship.Name)
+		}
+		if seen[ship.Name] {
+			return fmt.Errorf("duplicate ship: %s", ship.Name)
+		}
+		if ship.Size != size {
+			return fmt.Errorf("wrong size for %s: expected %d", ship.Name, size)
+		}
+		seen[ship.Name] = true
+
+		for i := 0; i < ship.Size; i++ {
+			var cell [2]int
+			if ship.Horizontal {
+				cell = [2]int{ship.Row, ship.Col + i}
+			} else {
+				cell = [2]int{ship.Row + i, ship.Col}
+			}
+			if cell[0] < 0 || cell[0] > 9 || cell[1] < 0 || cell[1] > 9 {
+				return fmt.Errorf("ship %s extends out of bounds", ship.Name)
+			}
+			if occupied[cell] {
+				return fmt.Errorf("ships overlap at row %d col %d", cell[0], cell[1])
+			}
+			occupied[cell] = true
+		}
+	}
+	return nil
 }
 
 func (h *GameHub) handleChat(userID uint, action GameAction) {

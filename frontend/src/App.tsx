@@ -396,7 +396,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path='/games/battleship'
+          path='/games/battleship/:id'
           element={
             <ProtectedRoute>
               <Battleship />
