@@ -162,5 +162,19 @@ describe('useUsers hooks', () => {
       expect(result.current.data).toBe(true)
       expect(vi.mocked(apiClient).getCurrentUser).toHaveBeenCalled()
     })
+
+    it('preserves session on request timeout', async () => {
+      useAuthSessionStore.getState().setAccessToken('some-token')
+      vi.mocked(apiClient).getCurrentUser.mockRejectedValue(
+        new Error('Request timeout after 5000ms')
+      )
+
+      const { result } = renderHook(() => useValidateToken(), {
+        wrapper: createWrapper(),
+      })
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true))
+      expect(result.current.data).toBe(true)
+    })
   })
 })

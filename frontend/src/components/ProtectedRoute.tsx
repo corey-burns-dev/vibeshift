@@ -14,6 +14,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { data: tokenValid, isLoading, error, refetch } = useValidateToken()
   const location = useLocation()
   const clearAuth = useAuthSessionStore(s => s.clear)
+  const shouldShowValidationGate =
+    !hasHydrated || (isAuthenticated && isLoading && tokenValid === undefined)
 
   // Log state transitions for debugging
   useEffect(() => {
@@ -36,7 +38,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   // any redirect decisions. Without this gate the initial `accessToken: null`
   // would cause an immediate redirect to /login on every protected route.
   // We also wait for token validation if we are authenticated.
-  if (!hasHydrated || (isAuthenticated && isLoading)) {
+  if (shouldShowValidationGate) {
     return (
       <div className='min-h-screen bg-background flex items-center justify-center'>
         <div className='text-center'>

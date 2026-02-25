@@ -70,4 +70,15 @@ describe('ProtectedRoute', () => {
     renderProtected('/')
     expect(screen.getByText('Validating session...')).toBeInTheDocument()
   })
+
+  it('renders children while background validation runs with optimistic token state', () => {
+    vi.mocked(useIsAuthenticatedHook).mockReturnValue(true)
+    vi.mocked(useValidateTokenHook).mockReturnValue({
+      data: true,
+      isLoading: true,
+    } as never)
+
+    renderProtected('/')
+    expect(screen.getByText('Protected content')).toBeInTheDocument()
+  })
 })

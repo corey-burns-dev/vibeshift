@@ -192,11 +192,9 @@ export function useValidateToken() {
 
         if (isTimeout) {
           logger.debug(`Token validation failed (timeout) in ${duration}ms`)
-          // Treat timeout as invalid token to prevent infinite hang
-          useAuthSessionStore.getState().clear()
-          localStorage.removeItem('user')
-          clearCachedUser()
-          return false
+          // Preserve session on timeout; connectivity/cold-start issues should
+          // not hard-logout a valid user on page refresh.
+          return true
         }
 
         logger.debug(
@@ -210,6 +208,8 @@ export function useValidateToken() {
     staleTime: 30 * 1000, // 30 seconds (reduced from 60s)
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: false,
+    // Avoid queries being paused indefinitely by online/offline detection on refresh.
+    networkMode: 'always',
     refetchOnMount: true, // Ensure fresh validation on navigation
     refetchOnWindowFocus: false, // Prevent redundant re-validation on HMR focus events
     // Optimistically assume the token is valid if it hasn't expired locally.
