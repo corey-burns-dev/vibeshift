@@ -45,6 +45,12 @@ type wireableHub interface {
 	Shutdown(ctx context.Context) error
 }
 
+const (
+	wsConsumedTicketTTL       = 10 * time.Second
+	wsConsumedTicketSweepTTL  = 15 * time.Second
+	wsConsumedTicketKeyPrefix = "ws_ticket_consumed:"
+)
+
 // consumedTicketEntry is an in-process cache entry for consumed WebSocket tickets.
 // Fiber's websocket upgrade may call AuthRequired twice during the multi-pass
 // handshake, so we cache the consumed ticket briefly to allow the second pass
@@ -618,7 +624,7 @@ func (s *Server) AuthRequired() fiber.Handler {
 		// 1. Try WebSocket ticket first (short-lived, single-use)
 		ticket := c.Query("ticket")
 		if ticket != "" && s.redis != nil {
-			key := fmt.Sprintf("ws_ticket:%s", ticket)
+			key := wsTicketKey(ticket)
 
 			var userID uint
 			var ticketValid bool
@@ -631,25 +637,16 @@ func (s *Server) AuthRequired() fiber.Handler {
 					userID = uint(parsed)
 					ticketValid = true
 					log.Printf("[WS Auth] Ticket validated from Redis for user %d, path=%s", userID, path)
-					// Cache the consumed ticket in-process for 10s to allow
-					// Fiber's websocket upgrade multi-pass handshake to succeed.
-					s.consumedTicketsMu.Lock()
-					if s.consumedTickets != nil {
-						s.consumedTickets[ticket] = consumedTicketEntry{userID: userID, consumeAt: time.Now()}
-					}
-					s.consumedTicketsMu.Unlock()
+					// Cache the consumed ticket briefly so multi-pass upgrade retries
+					// can validate even if a subsequent pass lands on another instance.
+					s.cacheConsumedWSTicket(c.Context(), ticket, userID)
 				} else {
 					log.Printf("[WS Auth] Ticket found in Redis but userID parse failed: %v, path=%s", parseErr, path)
 				}
-			} else if s.consumedTickets != nil {
-				// Ticket not in Redis -- check in-process cache for multi-pass handshake
-				s.consumedTicketsMu.Lock()
-				if entry, ok := s.consumedTickets[ticket]; ok && time.Since(entry.consumeAt) < 10*time.Second {
-					userID = entry.userID
-					ticketValid = true
-					log.Printf("[WS Auth] Ticket validated from in-process cache for user %d (multi-pass handshake), path=%s", userID, path)
-				}
-				s.consumedTicketsMu.Unlock()
+			} else if cachedUserID, source, ok := s.getConsumedWSTicketUserID(c.Context(), ticket); ok {
+				userID = cachedUserID
+				ticketValid = true
+				log.Printf("[WS Auth] Ticket validated from %s for user %d (multi-pass handshake), path=%s", source, userID, path)
 			}
 
 			if ticketValid {
@@ -771,7 +768,7 @@ func (s *Server) AuthRequired() fiber.Handler {
 // consumeWSTicket removes the ticket from the in-process cache after the
 // WebSocket connection is fully established. The ticket was already atomically
 // removed from Redis by GETDEL during auth.
-func (s *Server) consumeWSTicket(_ context.Context, ticketVal any) {
+func (s *Server) consumeWSTicket(ctx context.Context, ticketVal any) {
 	if ticketVal == nil {
 		return
 	}
@@ -779,9 +776,17 @@ func (s *Server) consumeWSTicket(_ context.Context, ticketVal any) {
 	if !ok || ticket == "" {
 		return
 	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	s.consumedTicketsMu.Lock()
 	delete(s.consumedTickets, ticket)
 	s.consumedTicketsMu.Unlock()
+	if s.redis != nil {
+		if err := s.redis.Del(ctx, wsConsumedTicketKey(ticket)).Err(); err != nil {
+			log.Printf("[WS Auth] Failed to clear consumed ticket cache for %s: %v", ticket, err)
+		}
+	}
 }
 
 // cleanupConsumedTickets periodically removes stale entries from the in-process
@@ -797,13 +802,66 @@ func (s *Server) cleanupConsumedTickets(ctx context.Context) {
 			s.consumedTicketsMu.Lock()
 			now := time.Now()
 			for k, v := range s.consumedTickets {
-				if now.Sub(v.consumeAt) > 15*time.Second {
+				if now.Sub(v.consumeAt) > wsConsumedTicketSweepTTL {
 					delete(s.consumedTickets, k)
 				}
 			}
 			s.consumedTicketsMu.Unlock()
 		}
 	}
+}
+
+func wsTicketKey(ticket string) string {
+	return fmt.Sprintf("ws_ticket:%s", ticket)
+}
+
+func wsConsumedTicketKey(ticket string) string {
+	return wsConsumedTicketKeyPrefix + ticket
+}
+
+func (s *Server) cacheConsumedWSTicket(ctx context.Context, ticket string, userID uint) {
+	s.consumedTicketsMu.Lock()
+	if s.consumedTickets != nil {
+		s.consumedTickets[ticket] = consumedTicketEntry{
+			userID:    userID,
+			consumeAt: time.Now(),
+		}
+	}
+	s.consumedTicketsMu.Unlock()
+
+	if s.redis != nil {
+		if err := s.redis.Set(
+			ctx,
+			wsConsumedTicketKey(ticket),
+			strconv.FormatUint(uint64(userID), 10),
+			wsConsumedTicketTTL,
+		).Err(); err != nil {
+			log.Printf("[WS Auth] Failed to set cross-instance consumed ticket cache for %s: %v", ticket, err)
+		}
+	}
+}
+
+func (s *Server) getConsumedWSTicketUserID(ctx context.Context, ticket string) (uint, string, bool) {
+	s.consumedTicketsMu.Lock()
+	if entry, ok := s.consumedTickets[ticket]; ok && time.Since(entry.consumeAt) < wsConsumedTicketTTL {
+		s.consumedTicketsMu.Unlock()
+		return entry.userID, "in-process cache", true
+	}
+	s.consumedTicketsMu.Unlock()
+
+	if s.redis == nil {
+		return 0, "", false
+	}
+	userIDStr, err := s.redis.Get(ctx, wsConsumedTicketKey(ticket)).Result()
+	if err != nil {
+		return 0, "", false
+	}
+	parsed, parseErr := strconv.ParseUint(userIDStr, 10, 32)
+	if parseErr != nil {
+		log.Printf("[WS Auth] Consumed ticket cache parse error for %s: %v", ticket, parseErr)
+		return 0, "", false
+	}
+	return uint(parsed), "redis consumed cache", true
 }
 
 // optionalUserID attempts to extract userID from Authorization header but does not enforce it.

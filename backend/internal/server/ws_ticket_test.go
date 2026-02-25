@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -37,33 +36,15 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 		consumedTickets: make(map[string]consumedTicketEntry),
 	}
 
-	app := fiber.New()
-
-	// Define a WS route and a regular route both using AuthRequired
-	app.Get("/api/ws/test", s.AuthRequired(), func(c *fiber.Ctx) error {
-		userID := c.Locals("userID")
-		wsTicket := c.Locals("wsTicket")
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"userID":   userID,
-			"wsTicket": wsTicket,
-		})
-	})
-
-	app.Get("/api/other", s.AuthRequired(), func(c *fiber.Ctx) error {
-		userID := c.Locals("userID")
-		wsTicket := c.Locals("wsTicket")
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"userID":   userID,
-			"wsTicket": wsTicket,
-		})
-	})
+	app := newAuthRequiredTestApp(s)
 
 	ctx := context.Background()
 
 	t.Run("WS Path - Ticket consumed from Redis but cached in-process", func(t *testing.T) {
 		ticket := "ws-test-ticket-1"
 		userID := "123"
-		key := fmt.Sprintf("ws_ticket:%s", ticket)
+		key := wsTicketKey(ticket)
+		consumedKey := wsConsumedTicketKey(ticket)
 
 		// Set ticket in Redis
 		err := rdb.Set(ctx, key, userID, time.Minute).Err()
@@ -85,6 +66,9 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 		_, inCache := s.consumedTickets[ticket]
 		s.consumedTicketsMu.Unlock()
 		assert.True(t, inCache, "Ticket should be cached in-process after GETDEL")
+		consumedExists, err := rdb.Exists(ctx, consumedKey).Result()
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), consumedExists, "Ticket should be cached in Redis for cross-instance handshakes")
 
 		// Verify locals
 		var body map[string]interface{}
@@ -97,7 +81,7 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 	t.Run("WS Path - Second pass uses in-process cache", func(t *testing.T) {
 		ticket := "ws-test-ticket-2"
 		userID := "789"
-		key := fmt.Sprintf("ws_ticket:%s", ticket)
+		key := wsTicketKey(ticket)
 
 		// Set ticket in Redis
 		err := rdb.Set(ctx, key, userID, time.Minute).Err()
@@ -120,12 +104,47 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 		_ = json.NewDecoder(resp2.Body).Decode(&body)
 		assert.Equal(t, float64(789), body["userID"])
 		_ = resp2.Body.Close()
+		exists, err := rdb.Exists(ctx, key).Result()
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), exists)
+	})
+
+	t.Run("WS Path - Second pass on another instance uses Redis consumed cache", func(t *testing.T) {
+		ticket := "ws-test-ticket-3"
+		userID := "321"
+		key := wsTicketKey(ticket)
+
+		otherServer := &Server{
+			config:          &config.Config{JWTSecret: "test-secret"},
+			redis:           rdb,
+			consumedTickets: make(map[string]consumedTicketEntry),
+		}
+		otherApp := newAuthRequiredTestApp(otherServer)
+
+		err := rdb.Set(ctx, key, userID, time.Minute).Err()
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
+		resp, err := app.Test(req)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		_ = resp.Body.Close()
+
+		req2 := httptest.NewRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
+		resp2, err := otherApp.Test(req2)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp2.StatusCode, "Second pass should succeed from Redis consumed cache")
+
+		var body map[string]interface{}
+		_ = json.NewDecoder(resp2.Body).Decode(&body)
+		assert.Equal(t, float64(321), body["userID"])
+		_ = resp2.Body.Close()
 	})
 
 	t.Run("Non-WS Path - Ticket SHOULD be consumed by middleware", func(t *testing.T) {
 		ticket := "other-test-ticket-1"
 		userID := "456"
-		key := fmt.Sprintf("ws_ticket:%s", ticket)
+		key := wsTicketKey(ticket)
 
 		// Set ticket in Redis
 		err := rdb.Set(ctx, key, userID, time.Minute).Err()
@@ -181,4 +200,50 @@ func TestServer_ConsumeWSTicket(t *testing.T) {
 	t.Run("Consume empty ticket - noop", func(_ *testing.T) {
 		s.consumeWSTicket(ctx, "")
 	})
+
+	t.Run("Consume valid ticket removes redis consumed cache", func(t *testing.T) {
+		mr, err := miniredis.Run()
+		assert.NoError(t, err)
+		defer mr.Close()
+
+		rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+		server := &Server{
+			redis:           rdb,
+			consumedTickets: make(map[string]consumedTicketEntry),
+		}
+		ticket := "consume-cross-instance"
+
+		err = rdb.Set(ctx, wsConsumedTicketKey(ticket), "42", time.Minute).Err()
+		assert.NoError(t, err)
+
+		server.consumeWSTicket(ctx, ticket)
+
+		exists, err := rdb.Exists(ctx, wsConsumedTicketKey(ticket)).Result()
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), exists)
+	})
+}
+
+func newAuthRequiredTestApp(s *Server) *fiber.App {
+	app := fiber.New()
+
+	app.Get("/api/ws/test", s.AuthRequired(), func(c *fiber.Ctx) error {
+		userID := c.Locals("userID")
+		wsTicket := c.Locals("wsTicket")
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"userID":   userID,
+			"wsTicket": wsTicket,
+		})
+	})
+
+	app.Get("/api/other", s.AuthRequired(), func(c *fiber.Ctx) error {
+		userID := c.Locals("userID")
+		wsTicket := c.Locals("wsTicket")
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"userID":   userID,
+			"wsTicket": wsTicket,
+		})
+	})
+
+	return app
 }
