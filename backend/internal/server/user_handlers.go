@@ -99,12 +99,7 @@ func (s *Server) UpdateMyProfile(c *fiber.Ctx) error {
 		Avatar:   req.Avatar,
 	})
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) && appErr.Code == "NOT_FOUND" {
-			status = fiber.StatusNotFound
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	return c.JSON(user)
@@ -121,12 +116,7 @@ func (s *Server) PromoteToAdmin(c *fiber.Ctx) error {
 
 	target, err := s.userSvc().SetAdmin(ctx, targetID, true)
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) && appErr.Code == "NOT_FOUND" {
-			status = fiber.StatusNotFound
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	return c.JSON(fiber.Map{"message": "User promoted to admin", "user": target})
@@ -147,12 +137,7 @@ func (s *Server) DemoteFromAdmin(c *fiber.Ctx) error {
 
 	target, err := s.userSvc().SetAdmin(ctx, targetID, false)
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) && appErr.Code == "NOT_FOUND" {
-			status = fiber.StatusNotFound
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	return c.JSON(fiber.Map{"message": "User demoted from admin", "user": target})

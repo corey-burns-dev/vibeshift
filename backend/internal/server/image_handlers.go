@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"io"
 	"strings"
 
@@ -59,17 +58,7 @@ func (s *Server) UploadImage(c *fiber.Ctx) error {
 		Content:     content,
 	})
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) {
-			switch appErr.Code {
-			case "VALIDATION_ERROR":
-				status = fiber.StatusBadRequest
-			case "NOT_FOUND":
-				status = fiber.StatusNotFound
-			}
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	return c.JSON(toImageUploadResponse(s.imageSvc(), uploaded))
@@ -80,17 +69,7 @@ func (s *Server) GetImageStatus(c *fiber.Ctx) error {
 	hash := strings.TrimSpace(c.Params("hash"))
 	img, err := s.imageSvc().GetByHashWithVariants(c.UserContext(), hash)
 	if err != nil {
-		status := fiber.StatusInternalServerError
-		var appErr *models.AppError
-		if errors.As(err, &appErr) {
-			switch appErr.Code {
-			case "VALIDATION_ERROR":
-				status = fiber.StatusBadRequest
-			case "NOT_FOUND":
-				status = fiber.StatusNotFound
-			}
-		}
-		return models.RespondWithError(c, status, err)
+		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
 	return c.JSON(ImageStatusResponse{

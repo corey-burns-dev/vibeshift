@@ -118,7 +118,8 @@ func TestCreateConversation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockSetup()
-			body, _ := json.Marshal(tt.body)
+			body, err := json.Marshal(tt.body)
+			assert.NoError(t, err)
 			req := httptest.NewRequest(http.MethodPost, "/conversations", bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
 

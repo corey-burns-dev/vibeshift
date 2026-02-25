@@ -3,9 +3,10 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 
 	"sanctum/internal/models"
+	"sanctum/internal/observability"
 )
 
 // Event type constants prevent typos in event names.
@@ -34,7 +35,10 @@ func (s *Server) publishAdminEvent(eventType string, payload map[string]interfac
 	// Find all admin IDs
 	var adminIDs []uint
 	if err := s.db.Model(&models.User{}).Where("is_admin = ?", true).Pluck("id", &adminIDs).Error; err != nil {
-		log.Printf("failed to fetch admin IDs for %s event: %v", eventType, err)
+		observability.GlobalLogger.ErrorContext(context.Background(), "failed to fetch admin IDs",
+			slog.String("event_type", eventType),
+			slog.String("error", err.Error()),
+		)
 		return
 	}
 
@@ -50,7 +54,10 @@ func (s *Server) publishUserEvent(userID uint, eventType string, payload map[str
 	}
 	eventJSON, err := json.Marshal(event)
 	if err != nil {
-		log.Printf("failed to marshal %s event: %v", eventType, err)
+		observability.GlobalLogger.ErrorContext(context.Background(), "failed to marshal user event",
+			slog.String("event_type", eventType),
+			slog.String("error", err.Error()),
+		)
 		return
 	}
 	message := string(eventJSON)
@@ -59,7 +66,11 @@ func (s *Server) publishUserEvent(userID uint, eventType string, payload map[str
 	}
 	if s.notifier != nil {
 		if err := s.notifier.PublishUser(context.Background(), userID, message); err != nil {
-			log.Printf("failed to publish %s event to user %d: %v", eventType, userID, err)
+			observability.GlobalLogger.ErrorContext(context.Background(), "failed to publish user event",
+				slog.String("event_type", eventType),
+				slog.Uint64("user_id", uint64(userID)),
+				slog.String("error", err.Error()),
+			)
 		}
 	}
 }
@@ -71,7 +82,10 @@ func (s *Server) publishBroadcastEvent(eventType string, payload map[string]inte
 	}
 	eventJSON, err := json.Marshal(event)
 	if err != nil {
-		log.Printf("failed to marshal %s event: %v", eventType, err)
+		observability.GlobalLogger.ErrorContext(context.Background(), "failed to marshal broadcast event",
+			slog.String("event_type", eventType),
+			slog.String("error", err.Error()),
+		)
 		return
 	}
 	message := string(eventJSON)
@@ -80,7 +94,10 @@ func (s *Server) publishBroadcastEvent(eventType string, payload map[string]inte
 	}
 	if s.notifier != nil {
 		if err := s.notifier.PublishBroadcast(context.Background(), message); err != nil {
-			log.Printf("failed to publish %s broadcast event: %v", eventType, err)
+			observability.GlobalLogger.ErrorContext(context.Background(), "failed to publish broadcast event",
+				slog.String("event_type", eventType),
+				slog.String("error", err.Error()),
+			)
 		}
 	}
 }

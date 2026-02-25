@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
+	"log/slog"
 	"time"
 
 	"sanctum/internal/models"
+	"sanctum/internal/observability"
 	"sanctum/internal/repository"
 
 	"gorm.io/gorm"
@@ -48,7 +49,10 @@ func (s *GameService) CreateGameRoom(_ context.Context, userID uint, gameType mo
 				room.WinnerID = nil
 				room.NextTurnID = 0
 				if updateErr := s.gameRepo.UpdateRoom(&room); updateErr != nil {
-					log.Printf("failed to auto-cancel stale room %d: %v", room.ID, updateErr)
+					observability.GlobalLogger.ErrorContext(context.Background(), "failed to auto-cancel stale room",
+						slog.Uint64("room_id", uint64(room.ID)),
+						slog.String("error", updateErr.Error()),
+					)
 				}
 				continue
 			}
@@ -102,7 +106,10 @@ func (s *GameService) GetActiveGameRooms(_ context.Context, gameType *models.Gam
 			room.WinnerID = nil
 			room.NextTurnID = 0
 			if updateErr := s.gameRepo.UpdateRoom(&room); updateErr != nil {
-				log.Printf("failed to auto-cancel stale room %d: %v", room.ID, updateErr)
+				observability.GlobalLogger.ErrorContext(context.Background(), "failed to auto-cancel stale room",
+					slog.Uint64("room_id", uint64(room.ID)),
+					slog.String("error", updateErr.Error()),
+				)
 			}
 			continue
 		}

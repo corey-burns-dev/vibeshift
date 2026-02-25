@@ -50,25 +50,25 @@ func (r *postRepository) GetByID(ctx context.Context, id uint, currentUserID uin
 	var post models.Post
 	key := cache.PostKey(id)
 
-	err := cache.Aside(ctx, key, &post, cache.PostTTL, func() error {
-		return r.applyPostDetails(r.db.WithContext(ctx), 0).
+	var err error
+	if currentUserID == 0 {
+		err = cache.Aside(ctx, key, &post, cache.PostTTL, func() error {
+			return r.applyPostDetails(r.db.WithContext(ctx), 0).
+				Preload("User").
+				Preload("Poll").
+				Preload("Poll.Options").
+				First(&post, id).Error
+		})
+	} else {
+		err = r.applyPostDetails(r.db.WithContext(ctx), currentUserID).
 			Preload("User").
 			Preload("Poll").
 			Preload("Poll.Options").
 			First(&post, id).Error
-	})
+	}
 
 	if err != nil {
 		return nil, err
-	}
-
-	// Fetch liked status separately for the current user
-	if currentUserID != 0 {
-		var count int64
-		if err := r.db.WithContext(ctx).Model(&models.Like{}).Where("post_id = ? AND user_id = ?", post.ID, currentUserID).Count(&count).Error; err != nil {
-			fmt.Printf("post repository: failed to fetch liked status: %v\n", err)
-		}
-		post.Liked = count > 0
 	}
 	if err := r.enrichImageMetadata(ctx, []*models.Post{&post}); err != nil {
 		return nil, err

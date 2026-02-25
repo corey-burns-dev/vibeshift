@@ -10,7 +10,7 @@ import (
 	"image"
 	"image/draw"
 	"image/jpeg"
-	"log"
+	"log/slog"
 	"mime"
 	"net/http"
 	"os"
@@ -21,6 +21,7 @@ import (
 
 	"sanctum/internal/config"
 	"sanctum/internal/models"
+	"sanctum/internal/observability"
 	"sanctum/internal/repository"
 
 	"github.com/chai2010/webp"
@@ -274,11 +275,11 @@ func isValidImageHash(hash string) bool {
 }
 
 // ResolveForServing is retained for compatibility and resolves to the master image on disk.
-func (s *ImageService) ResolveForServing(_ context.Context, hash string, _ string) (*models.Image, string, error) {
+func (s *ImageService) ResolveForServing(ctx context.Context, hash string, _ string) (*models.Image, string, error) {
 	if !isValidImageHash(hash) {
 		return nil, "", models.NewValidationError("Invalid image hash")
 	}
-	img, err := s.repo.GetByHash(context.Background(), hash)
+	img, err := s.repo.GetByHash(ctx, hash)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, "", models.NewNotFoundError("Image", hash)
@@ -346,7 +347,11 @@ func (s *ImageService) workerLoop(ctx context.Context) {
 
 		if err := s.processQueuedImage(ctx, img); err != nil {
 			if ferr := s.repo.MarkFailed(ctx, img.ID, err.Error()); ferr != nil {
-				log.Printf("ERROR: failed to mark image %d as failed: %v (original error: %v)", img.ID, ferr, err)
+				observability.GlobalLogger.ErrorContext(ctx, "failed to mark image as failed",
+					slog.Uint64("image_id", uint64(img.ID)),
+					slog.String("mark_error", ferr.Error()),
+					slog.String("original_error", err.Error()),
+				)
 			}
 		}
 	}

@@ -12,6 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	chatHubTestEventuallyTimeout = time.Second
+	chatHubTestPollInterval      = 10 * time.Millisecond
+)
+
 type MockConn struct {
 	LastMessage []byte
 }
@@ -170,7 +175,7 @@ func TestChatHub_UnregisterCleanup(t *testing.T) {
 		_, convExists := hub.conversations[convID]
 		_, activeExists := hub.userActiveConvs[userID]
 		return !userConnExists && !convExists && !activeExists
-	}, time.Second, 10*time.Millisecond)
+	}, chatHubTestEventuallyTimeout, chatHubTestPollInterval)
 
 	_ = hub.Shutdown(context.Background())
 }
@@ -184,15 +189,14 @@ func TestChatHub_GracePeriodSuppressesOfflineOnRapidReconnect(t *testing.T) {
 	hub.RegisterUser(userConnA)
 
 	hub.UnregisterUser(userConnA)
-	time.Sleep(10 * time.Millisecond)
 	userConnB := &Client{UserID: 1, Send: make(chan []byte, 10)}
 	hub.RegisterUser(userConnB)
-	time.Sleep(80 * time.Millisecond)
 
-	hub.presence.mu.RLock()
-	notified := hub.presence.offlineNotified[1]
-	hub.presence.mu.RUnlock()
-	assert.False(t, notified)
+	assert.Never(t, func() bool {
+		hub.presence.mu.RLock()
+		defer hub.presence.mu.RUnlock()
+		return hub.presence.offlineNotified[1]
+	}, 20*chatHubTestPollInterval, chatHubTestPollInterval)
 	assert.True(t, hub.IsUserOnline(1))
 
 	_ = hub.Shutdown(context.Background())
@@ -209,18 +213,18 @@ func TestChatHub_MultipleConnections_LastDisconnectTriggersOffline(t *testing.T)
 	hub.RegisterUser(userConnB)
 
 	hub.UnregisterUser(userConnA)
-	time.Sleep(60 * time.Millisecond)
-	hub.presence.mu.RLock()
-	notified := hub.presence.offlineNotified[1]
-	hub.presence.mu.RUnlock()
-	assert.False(t, notified)
+	assert.Never(t, func() bool {
+		hub.presence.mu.RLock()
+		defer hub.presence.mu.RUnlock()
+		return hub.presence.offlineNotified[1]
+	}, 30*chatHubTestPollInterval, chatHubTestPollInterval)
 
 	hub.UnregisterUser(userConnB)
 	assert.Eventually(t, func() bool {
 		hub.presence.mu.RLock()
 		defer hub.presence.mu.RUnlock()
 		return hub.presence.offlineNotified[1]
-	}, time.Second, 10*time.Millisecond)
+	}, chatHubTestEventuallyTimeout, chatHubTestPollInterval)
 	assert.False(t, hub.IsUserOnline(1))
 
 	_ = hub.Shutdown(context.Background())

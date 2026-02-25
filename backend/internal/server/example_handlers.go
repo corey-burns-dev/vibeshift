@@ -4,7 +4,7 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -12,6 +12,7 @@ import (
 
 	"sanctum/internal/middleware"
 	"sanctum/internal/models"
+	"sanctum/internal/observability"
 )
 
 // GetUserCached demonstrates cache-aside for GET /users/:id/cached
@@ -41,14 +42,18 @@ func (s *Server) WebsocketHandler() fiber.Handler {
 		userIDVal := conn.Locals("userID")
 		if userIDVal == nil {
 			if cerr := conn.Close(); cerr != nil {
-				log.Printf("websocket close error: %v", cerr)
+				observability.GlobalLogger.ErrorContext(context.Background(), "websocket close error",
+					slog.String("error", cerr.Error()),
+				)
 			}
 			return
 		}
 		uid, ok := userIDVal.(uint)
 		if !ok {
 			if cerr := conn.Close(); cerr != nil {
-				log.Printf("websocket close error: %v", cerr)
+				observability.GlobalLogger.ErrorContext(context.Background(), "websocket close error",
+					slog.String("error", cerr.Error()),
+				)
 			}
 			return
 		}
@@ -64,8 +69,14 @@ func (s *Server) WebsocketHandler() fiber.Handler {
 		// Register connection with scaling guardrails
 		client, err := s.hub.Register(uid, conn)
 		if err != nil {
-			log.Printf("WebSocket Notification: Failed to register user %d: %v", uid, err)
-			_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"error":"`+err.Error()+`"}`))
+			observability.GlobalLogger.ErrorContext(context.Background(), "websocket notification register failed",
+				slog.Uint64("user_id", uint64(uid)),
+				slog.String("error", err.Error()),
+			)
+			payload, marshalErr := json.Marshal(fiber.Map{"error": err.Error()})
+			if marshalErr == nil {
+				_ = conn.WriteMessage(websocket.TextMessage, payload)
+			}
 			_ = conn.Close()
 			return
 		}
@@ -82,7 +93,10 @@ func (s *Server) WebsocketHandler() fiber.Handler {
 			},
 		})
 		if err := conn.WriteMessage(websocket.TextMessage, connectedMsg); err != nil {
-			log.Printf("WebSocket Notification: Failed to send connected message: %v", err)
+			observability.GlobalLogger.ErrorContext(context.Background(), "websocket notification connected message failed",
+				slog.Uint64("user_id", uint64(uid)),
+				slog.String("error", err.Error()),
+			)
 		}
 
 		// Start pumps
@@ -99,12 +113,18 @@ func (s *Server) notifyFriendsPresence(userID uint, status string) {
 	}
 	friends, err := s.friendRepo.GetFriends(context.Background(), userID)
 	if err != nil {
-		log.Printf("failed to load friends for presence event: %v", err)
+		observability.GlobalLogger.ErrorContext(context.Background(), "failed to load friends for presence event",
+			slog.Uint64("user_id", uint64(userID)),
+			slog.String("error", err.Error()),
+		)
 		return
 	}
 	user, err := s.userRepo.GetByID(context.Background(), userID)
 	if err != nil {
-		log.Printf("failed to load user for presence event: %v", err)
+		observability.GlobalLogger.ErrorContext(context.Background(), "failed to load user for presence event",
+			slog.Uint64("user_id", uint64(userID)),
+			slog.String("error", err.Error()),
+		)
 		return
 	}
 	for _, friend := range friends {
@@ -124,7 +144,10 @@ func (s *Server) sendFriendsOnlineSnapshot(conn *websocket.Conn, userID uint) {
 	}
 	friends, err := s.friendRepo.GetFriends(context.Background(), userID)
 	if err != nil {
-		log.Printf("failed to load friends for online snapshot: %v", err)
+		observability.GlobalLogger.ErrorContext(context.Background(), "failed to load friends for online snapshot",
+			slog.Uint64("user_id", uint64(userID)),
+			slog.String("error", err.Error()),
+		)
 		return
 	}
 	onlineFriendIDs := make([]uint, 0, len(friends))
@@ -140,10 +163,16 @@ func (s *Server) sendFriendsOnlineSnapshot(conn *websocket.Conn, userID uint) {
 		},
 	})
 	if err != nil {
-		log.Printf("failed to marshal friends online snapshot: %v", err)
+		observability.GlobalLogger.ErrorContext(context.Background(), "failed to marshal friends online snapshot",
+			slog.Uint64("user_id", uint64(userID)),
+			slog.String("error", err.Error()),
+		)
 		return
 	}
 	if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
-		log.Printf("failed to write friends online snapshot: %v", err)
+		observability.GlobalLogger.ErrorContext(context.Background(), "failed to write friends online snapshot",
+			slog.Uint64("user_id", uint64(userID)),
+			slog.String("error", err.Error()),
+		)
 	}
 }

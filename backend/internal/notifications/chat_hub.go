@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"sync"
+
+	"sanctum/internal/observability"
 
 	"github.com/gofiber/websocket/v2"
 	"github.com/redis/go-redis/v9"
@@ -17,8 +19,8 @@ import (
 type ChatHub struct {
 	mu sync.RWMutex
 
-	// Map: conversationID -> userID -> Client
-	conversations map[uint]map[uint]*Client
+	// Map: conversationID -> userID membership set
+	conversations map[uint]map[uint]struct{}
 
 	// Map: userID -> set of conversationIDs they're actively viewing
 	userActiveConvs map[uint]map[uint]struct{}
@@ -50,7 +52,7 @@ func NewChatHub(redisClients ...*redis.Client) *ChatHub {
 	}
 
 	h := &ChatHub{
-		conversations:   make(map[uint]map[uint]*Client),
+		conversations:   make(map[uint]map[uint]struct{}),
 		userActiveConvs: make(map[uint]map[uint]struct{}),
 		userConns:       make(map[uint]map[*Client]bool),
 		presence:        NewConnectionManager(redisClient, ConnectionManagerConfig{}),
@@ -116,7 +118,10 @@ func (h *ChatHub) Register(userID uint, conn *websocket.Conn) (*Client, error) {
 
 	onlineIDs := h.onlineUsersSnapshot(userID)
 
-	log.Printf("ChatHub: Registered user %d (Active clients: %d)", userID, activeClientCount)
+	observability.GlobalLogger.InfoContext(context.Background(), "chat hub registered user",
+		slog.Uint64("user_id", uint64(userID)),
+		slog.Int("active_clients", activeClientCount),
+	)
 
 	// Send initial snapshot
 	if len(onlineIDs) > 0 {
@@ -181,15 +186,23 @@ func (h *ChatHub) UnregisterClient(client *Client) {
 	if hasPresence {
 		h.presence.Unregister(context.Background(), client.UserID)
 		if remaining > 0 {
-			log.Printf("ChatHub: Unregistered client for user %d (Remaining clients: %d)", client.UserID, remaining)
+			observability.GlobalLogger.InfoContext(context.Background(), "chat hub unregistered client",
+				slog.Uint64("user_id", uint64(client.UserID)),
+				slog.Int("remaining_clients", remaining),
+			)
 			return
 		}
-		log.Printf("ChatHub: Unregistered user %d (offline grace started)", client.UserID)
+		observability.GlobalLogger.InfoContext(context.Background(), "chat hub unregistered user (offline grace started)",
+			slog.Uint64("user_id", uint64(client.UserID)),
+		)
 		return
 	}
 
 	if remaining > 0 {
-		log.Printf("ChatHub: Unregistered client for user %d (Remaining clients: %d)", client.UserID, remaining)
+		observability.GlobalLogger.InfoContext(context.Background(), "chat hub unregistered client",
+			slog.Uint64("user_id", uint64(client.UserID)),
+			slog.Int("remaining_clients", remaining),
+		)
 		return
 	}
 
@@ -208,7 +221,9 @@ func (h *ChatHub) UnregisterClient(client *Client) {
 	}
 	h.mu.Unlock()
 
-	log.Printf("ChatHub: Unregistered user %d (All connections closed)", client.UserID)
+	observability.GlobalLogger.InfoContext(context.Background(), "chat hub unregistered user (all connections closed)",
+		slog.Uint64("user_id", uint64(client.UserID)),
+	)
 
 	// Broadcast "User X is Offline" to everyone else
 	h.BroadcastGlobalStatus(client.UserID, "offline")
@@ -231,35 +246,21 @@ func (h *ChatHub) JoinConversation(userID, conversationID uint) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	// Get user's client
-	// Get user's client set
-	clients, ok := h.userConns[userID]
+	// Ensure user has at least one active client.
+	_, ok := h.userConns[userID]
 	if !ok {
-		log.Printf("ChatHub: User %d not connected, cannot join conversation %d", userID, conversationID)
+		observability.GlobalLogger.InfoContext(context.Background(), "chat hub user not connected for join",
+			slog.Uint64("user_id", uint64(userID)),
+			slog.Uint64("conversation_id", uint64(conversationID)),
+		)
 		return
 	}
 
-	// Add to conversation map (Just simple user presence in room)
+	// Add to conversation map (simple user presence in room)
 	if h.conversations[conversationID] == nil {
-		h.conversations[conversationID] = make(map[uint]*Client) // Note: Map value type *Client is legacy, we actually just need boolean presence here
-		// But changing `conversations` map type requires more refactoring.
-		// For now, we store nil or just any client. It doesn't matter because BroadcastToConversation should iterate userConns.
-		// Wait, BroadcastToConversation uses `users := h.conversations[conversationID]`.
-		// It iterates `for _, client := range users`.
-		// This OLD logic assumes 1 Client per User.
-		// We need to FIX `BroadcastToConversation` too.
-		// For now, let's keep the map type but ignore the value in new logic.
+		h.conversations[conversationID] = make(map[uint]struct{})
 	}
-	// We just mark presence:
-	// We just mark presence:
-	// We need to provide a single *Client to satisfy the map type for now.
-	// Since BroadcastToConversation ignores this value (it uses userConns), any valid client works.
-	var anyClient *Client
-	for c := range clients {
-		anyClient = c
-		break
-	}
-	h.conversations[conversationID][userID] = anyClient
+	h.conversations[conversationID][userID] = struct{}{}
 
 	// Track active conversation for user
 	if h.userActiveConvs[userID] == nil {
@@ -267,7 +268,10 @@ func (h *ChatHub) JoinConversation(userID, conversationID uint) {
 	}
 	h.userActiveConvs[userID][conversationID] = struct{}{}
 
-	log.Printf("ChatHub: User %d joined conversation %d", userID, conversationID)
+	observability.GlobalLogger.InfoContext(context.Background(), "chat hub user joined conversation",
+		slog.Uint64("user_id", uint64(userID)),
+		slog.Uint64("conversation_id", uint64(conversationID)),
+	)
 }
 
 // LeaveConversation unsubscribes a user from a conversation
@@ -288,7 +292,10 @@ func (h *ChatHub) LeaveConversation(userID, conversationID uint) {
 		delete(convs, conversationID)
 	}
 
-	log.Printf("ChatHub: User %d left conversation %d", userID, conversationID)
+	observability.GlobalLogger.InfoContext(context.Background(), "chat hub user left conversation",
+		slog.Uint64("user_id", uint64(userID)),
+		slog.Uint64("conversation_id", uint64(conversationID)),
+	)
 }
 
 // BroadcastToConversation sends a message to all users in a conversation
@@ -305,7 +312,9 @@ func (h *ChatHub) BroadcastToConversation(conversationID uint, message ChatMessa
 
 	messageJSON, err := json.Marshal(message)
 	if err != nil {
-		log.Printf("ChatHub: Failed to marshal message: %v", err)
+		observability.GlobalLogger.ErrorContext(context.Background(), "chat hub failed to marshal message",
+			slog.String("error", err.Error()),
+		)
 		return
 	}
 
@@ -320,7 +329,10 @@ func (h *ChatHub) BroadcastToConversation(conversationID uint, message ChatMessa
 		}
 	}
 
-	log.Printf("ChatHub: Broadcast to conversation %d (%d users)", conversationID, len(users))
+	observability.GlobalLogger.InfoContext(context.Background(), "chat hub broadcast to conversation",
+		slog.Uint64("conversation_id", uint64(conversationID)),
+		slog.Int("user_count", len(users)),
+	)
 }
 
 // BroadcastToAllUsers sends a message to every connected websocket client.
@@ -330,7 +342,9 @@ func (h *ChatHub) BroadcastToAllUsers(message ChatMessage) {
 
 	messageJSON, err := json.Marshal(message)
 	if err != nil {
-		log.Printf("ChatHub: Failed to marshal global message: %v", err)
+		observability.GlobalLogger.ErrorContext(context.Background(), "chat hub failed to marshal global message",
+			slog.String("error", err.Error()),
+		)
 		return
 	}
 
@@ -385,14 +399,19 @@ func (h *ChatHub) StartWiring(ctx context.Context, n *Notifier) error {
 		} else if _, err := fmt.Sscanf(channel, "presence:conv:%d", &conversationID); err == nil {
 			msgType = "presence"
 		} else {
-			log.Printf("ChatHub: Invalid channel format: %s", channel)
+			observability.GlobalLogger.ErrorContext(context.Background(), "chat hub invalid channel format",
+				slog.String("channel", channel),
+			)
 			return
 		}
 
 		// Parse the payload
 		var message ChatMessage
 		if err := json.Unmarshal([]byte(payload), &message); err != nil {
-			log.Printf("ChatHub: Failed to parse message from channel %s: %v", channel, err)
+			observability.GlobalLogger.ErrorContext(context.Background(), "chat hub failed to parse channel message",
+				slog.String("channel", channel),
+				slog.String("error", err.Error()),
+			)
 			return
 		}
 
@@ -420,7 +439,9 @@ func (h *ChatHub) BroadcastGlobalStatus(userID uint, status string) {
 
 	jsonMsg, err := json.Marshal(message)
 	if err != nil {
-		log.Printf("ChatHub: Failed to marshal status message: %v", err)
+		observability.GlobalLogger.ErrorContext(context.Background(), "chat hub failed to marshal status message",
+			slog.String("error", err.Error()),
+		)
 		return
 	}
 
@@ -453,16 +474,22 @@ func (h *ChatHub) Shutdown(_ context.Context) error {
 			}
 			if err := client.Conn.WriteMessage(1, // TextMessage
 				[]byte(`{"type":"server_shutdown","message":"Server is shutting down"}`)); err != nil {
-				log.Printf("failed to write shutdown message for user %d: %v", userID, err)
+				observability.GlobalLogger.ErrorContext(context.Background(), "chat hub failed to write shutdown message",
+					slog.Uint64("user_id", uint64(userID)),
+					slog.String("error", err.Error()),
+				)
 			}
 			if err := client.Conn.Close(); err != nil {
-				log.Printf("failed to close websocket for user %d: %v", userID, err)
+				observability.GlobalLogger.ErrorContext(context.Background(), "chat hub failed to close websocket",
+					slog.Uint64("user_id", uint64(userID)),
+					slog.String("error", err.Error()),
+				)
 			}
 		}
 	}
 
 	// Clear all state
-	h.conversations = make(map[uint]map[uint]*Client)
+	h.conversations = make(map[uint]map[uint]struct{})
 	h.userActiveConvs = make(map[uint]map[uint]struct{})
 	h.userConns = make(map[uint]map[*Client]bool)
 
@@ -488,7 +515,9 @@ func (h *ChatHub) handleUserOffline(userID uint) {
 	}
 	h.mu.Unlock()
 
-	log.Printf("ChatHub: User %d marked offline after grace period", userID)
+	observability.GlobalLogger.InfoContext(context.Background(), "chat hub user marked offline after grace period",
+		slog.Uint64("user_id", uint64(userID)),
+	)
 	h.BroadcastGlobalStatus(userID, "offline")
 }
 

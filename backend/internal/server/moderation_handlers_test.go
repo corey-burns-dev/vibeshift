@@ -184,7 +184,10 @@ func TestReportUser(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		body, _ := json.Marshal(map[string]string{"reason": "harassment"})
+		body, err := json.Marshal(map[string]string{"reason": "harassment"})
+		if err != nil {
+			t.Fatalf("marshal body: %v", err)
+		}
 		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/users/%d/report", target.ID), bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 		resp, _ := app.Test(req)
@@ -217,7 +220,10 @@ func TestReportPost(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		body, _ := json.Marshal(map[string]string{"reason": "spam"})
+		body, err := json.Marshal(map[string]string{"reason": "spam"})
+		if err != nil {
+			t.Fatalf("marshal body: %v", err)
+		}
 		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/posts/%d/report", post.ID), bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 		resp, _ := app.Test(req)
@@ -276,7 +282,10 @@ func TestResolveAdminReport(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		body, _ := json.Marshal(map[string]string{"status": "resolved", "resolution_notes": "taken care of"})
+		body, err := json.Marshal(map[string]string{"status": "resolved", "resolution_notes": "taken care of"})
+		if err != nil {
+			t.Fatalf("marshal body: %v", err)
+		}
 		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/admin/reports/%d/resolve", report.ID), bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 		resp, _ := app.Test(req)
@@ -375,7 +384,10 @@ func TestBanUser(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		body, _ := json.Marshal(map[string]string{"reason": "bad behavior", "expires_at": ""})
+		body, err := json.Marshal(map[string]string{"reason": "bad behavior", "expires_at": ""})
+		if err != nil {
+			t.Fatalf("marshal body: %v", err)
+		}
 		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/admin/users/%d/ban", target.ID), bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 		resp, _ := app.Test(req)

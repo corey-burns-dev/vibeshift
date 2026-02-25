@@ -55,7 +55,6 @@ func TestGetUserProfile(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/users/"+tt.userIDParam, nil)
 			resp, _ := app.Test(req)
 			defer func() { _ = resp.Body.Close() }()
-			defer func() { _ = resp.Body.Close() }()
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 		})
 	}
