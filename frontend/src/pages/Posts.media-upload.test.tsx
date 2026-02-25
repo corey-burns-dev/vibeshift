@@ -146,7 +146,7 @@ describe('Posts media upload flow', () => {
       target: { files: [file] },
     })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Post' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Create Post' }))
 
     await waitFor(() =>
       expect(apiClient.uploadImage).toHaveBeenCalledWith(file)

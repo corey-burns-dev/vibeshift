@@ -6,7 +6,6 @@ import OnboardingSanctums from '@/pages/OnboardingSanctums'
 
 const navigateMock = vi.fn()
 const mutateAsyncMock = vi.fn()
-const useIsMobileMock = vi.fn(() => false)
 
 const sanctums = [
   {
@@ -73,7 +72,7 @@ vi.mock('react-router-dom', async () => {
 })
 
 vi.mock('@/hooks/useMediaQuery', () => ({
-  useIsMobile: () => useIsMobileMock(),
+  useIsMobile: () => false,
 }))
 
 vi.mock('@/hooks/useSanctums', () => ({
@@ -92,7 +91,6 @@ describe('OnboardingSanctums', () => {
   afterEach(() => {
     mutateAsyncMock.mockReset()
     navigateMock.mockReset()
-    useIsMobileMock.mockReturnValue(false)
     sanctumsData = sanctums
   })
 
@@ -103,11 +101,9 @@ describe('OnboardingSanctums', () => {
       </MemoryRouter>
     )
 
-    sanctums.forEach(sanctum => {
-      expect(
-        screen.getByRole('button', { name: `Toggle ${sanctum.name}` })
-      ).toHaveAttribute('aria-pressed', 'false')
-    })
+    expect(screen.getAllByRole('button', { name: '+ Join' })).toHaveLength(
+      sanctums.length
+    )
     expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled()
   })
 
@@ -120,11 +116,11 @@ describe('OnboardingSanctums', () => {
       </MemoryRouter>
     )
 
-    await user.click(screen.getByRole('button', { name: 'Toggle The Atrium' }))
-    await user.click(screen.getByRole('button', { name: 'Toggle The Forge' }))
-    await user.click(
-      screen.getByRole('button', { name: 'Toggle The Game Room' })
-    )
+    // Cards are sorted alphabetically: Movies, Anime, Atrium, Forge, Game Room.
+    const joinButtons = screen.getAllByRole('button', { name: '+ Join' })
+    await user.click(joinButtons[2]!)
+    await user.click(joinButtons[3]!)
+    await user.click(joinButtons[4]!)
     await user.click(screen.getByRole('button', { name: 'Continue' }))
 
     expect(mutateAsyncMock).toHaveBeenCalledWith({
@@ -133,20 +129,19 @@ describe('OnboardingSanctums', () => {
     expect(navigateMock).toHaveBeenCalledWith('/')
   })
 
-  it('shows pagination controls on mobile and changes visible cards', async () => {
-    useIsMobileMock.mockReturnValue(true)
-    const user = userEvent.setup()
+  it('shows all sanctums without pagination controls', () => {
     render(
       <MemoryRouter>
         <OnboardingSanctums />
       </MemoryRouter>
     )
 
-    expect(screen.getByText('1 / 2')).toBeInTheDocument()
-    expect(screen.queryByText('The Game Room')).not.toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Next' }))
-    expect(screen.getByText('2 / 2')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Next' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Previous' })
+    ).not.toBeInTheDocument()
     expect(screen.getByText('The Game Room')).toBeInTheDocument()
   })
 })
