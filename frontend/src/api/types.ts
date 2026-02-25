@@ -149,7 +149,7 @@ export interface UpdateProfileRequest {
   avatar?: string
 }
 
-export type PostSort = 'new' | 'hot' | 'top' | 'rising' | 'best'
+export type PostSort = 'new' | 'hot' | 'top' | 'best'
 
 export interface PaginationParams {
   offset?: number

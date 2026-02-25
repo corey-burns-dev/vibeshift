@@ -212,6 +212,11 @@ func (h *GameHub) handleJoin(userID uint, action GameAction) bool {
 		room.SetState(initialState)
 	}
 
+	if room.Type == models.Checkers {
+		initialState := models.CheckersState{Board: models.InitialCheckersBoard()}
+		room.SetState(initialState)
+	}
+
 	if err := h.db.Save(&room).Error; err != nil {
 		h.sendError(userID, action.RoomID, "Failed to start game")
 		return false
@@ -395,6 +400,116 @@ func (h *GameHub) handleMove(userID uint, action GameAction) bool {
 		board = bsState
 		room.SetState(bsState)
 
+	case models.Checkers:
+		var moveData models.CheckersMove
+		if err := json.Unmarshal(moveBytes, &moveData); err != nil {
+			h.sendError(userID, action.RoomID, "Invalid move format")
+			return false
+		}
+
+		ckState := room.GetCheckersState()
+		ckBoard := ckState.Board
+		from := moveData.From
+		to := moveData.To
+
+		// Determine which side this player controls
+		side := "r"
+		if symbol == "O" {
+			side = "b"
+		}
+
+		// Validate bounds
+		if !models.InCheckersBounds(from[0], from[1]) || !models.InCheckersBounds(to[0], to[1]) {
+			h.sendError(userID, action.RoomID, "Move out of bounds")
+			return false
+		}
+
+		// Validate from cell has player's piece
+		if !models.IsCheckersPiece(ckBoard[from[0]][from[1]], side) {
+			h.sendError(userID, action.RoomID, "Not your piece")
+			return false
+		}
+
+		// If multi-jump in progress, must continue from required cell
+		if ckState.MustJumpFrom != nil && from != *ckState.MustJumpFrom {
+			h.sendError(userID, action.RoomID, "Must continue jump from highlighted piece")
+			return false
+		}
+
+		// Determine if this is a jump
+		isJump := false
+		jumps := models.GetCheckersJumps(ckBoard, from[0], from[1])
+		for _, j := range jumps {
+			if j == to {
+				isJump = true
+				break
+			}
+		}
+
+		if !isJump {
+			// Mandatory capture: reject simple move when any jump is available
+			if len(jumps) > 0 {
+				h.sendError(userID, action.RoomID, "Must capture when a jump is available")
+				return false
+			}
+			if models.HasAnyCheckersJump(ckBoard, side) {
+				h.sendError(userID, action.RoomID, "Must capture - another piece has a jump available")
+				return false
+			}
+			// Validate as simple move
+			simpleMoves := models.GetCheckersSimpleMoves(ckBoard, from[0], from[1])
+			validSimple := false
+			for _, m := range simpleMoves {
+				if m == to {
+					validSimple = true
+					break
+				}
+			}
+			if !validSimple {
+				h.sendError(userID, action.RoomID, "Invalid move")
+				return false
+			}
+		}
+
+		// Apply move
+		piece := ckBoard[from[0]][from[1]]
+		ckBoard[from[0]][from[1]] = ""
+		ckBoard[to[0]][to[1]] = piece
+
+		// Remove captured piece if jump
+		if isJump {
+			midR := (from[0] + to[0]) / 2
+			midC := (from[1] + to[1]) / 2
+			ckBoard[midR][midC] = ""
+		}
+
+		// Kinging
+		kinged := false
+		if piece == "r" && to[0] == 0 {
+			ckBoard[to[0]][to[1]] = "R"
+			kinged = true
+		}
+		if piece == "b" && to[0] == 7 {
+			ckBoard[to[0]][to[1]] = "B"
+			kinged = true
+		}
+
+		// Multi-jump continuation: if jump, not kinged, and more jumps available
+		ckState.MustJumpFrom = nil
+		if isJump && !kinged {
+			moreJumps := models.GetCheckersJumps(ckBoard, to[0], to[1])
+			if len(moreJumps) > 0 {
+				jumpFrom := [2]int{to[0], to[1]}
+				ckState.MustJumpFrom = &jumpFrom
+				skipDefaultTurnSwitch = true
+				room.NextTurnID = userID
+			}
+		}
+
+		ckState.Board = ckBoard
+		board = ckState
+		room.SetState(ckState)
+
 	default:
 		h.sendError(userID, action.RoomID, "Unsupported game type")
 		return false
@@ -442,6 +557,8 @@ func (h *GameHub) handleMove(userID uint, action GameAction) bool {
 					points = 25
 				case models.Battleship:
 					points = 30
+				case models.Checkers:
+					points = 20
 				}
 				winStats := models.GameStats{UserID: *winID, GameType: room.Type, Wins: 1, TotalGames: 1, Points: points}
 				if err := h.db.Clauses(clause.OnConflict{

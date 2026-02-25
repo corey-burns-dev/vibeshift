@@ -264,10 +264,43 @@ export function ChatDock() {
   } = useChatDockStore()
 
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const dragOffsetRef = useRef({ x: 0, y: 0 })
+  const [panelSide, setPanelSide] = useState<'left' | 'right'>('left')
   // Set to true when a drag gesture (with movement > threshold) actually occurred.
   // Allows the button's onClick to distinguish click vs drag-release.
   const didDragRef = useRef(false)
+
+  const updatePanelSide = useCallback(() => {
+    if (isMobile) return
+
+    const wrapper = wrapperRef.current
+    const panel = panelRef.current
+    if (!wrapper || !panel) return
+
+    const wrapperRect = wrapper.getBoundingClientRect()
+    const viewportPadding = 16
+    const panelWidth = panel.offsetWidth || 380
+    const viewportWidth = window.innerWidth
+
+    const canOpenRight =
+      wrapperRect.left + panelWidth <= viewportWidth - viewportPadding
+    const canOpenLeft = wrapperRect.right - panelWidth >= viewportPadding
+
+    let nextSide: 'left' | 'right' = 'left'
+    if (!canOpenRight && canOpenLeft) {
+      nextSide = 'right'
+    } else if (canOpenRight && canOpenLeft) {
+      const anchorCenter = wrapperRect.left + wrapperRect.width / 2
+      nextSide = anchorCenter <= viewportWidth / 2 ? 'left' : 'right'
+    } else if (!canOpenRight && !canOpenLeft) {
+      const rightSpace = viewportWidth - wrapperRect.left - viewportPadding
+      const leftSpace = wrapperRect.right - viewportPadding
+      nextSide = leftSpace > rightSpace ? 'right' : 'left'
+    }
+
+    setPanelSide(prev => (prev === nextSide ? prev : nextSide))
+  }, [isMobile])
 
   const handleDragStart = useCallback(
     (e: React.MouseEvent) => {
@@ -314,6 +347,9 @@ export function ChatDock() {
         w.style.top = `${newY}px`
         w.style.bottom = 'auto'
         w.style.right = 'auto'
+        if (isOpen && !minimized) {
+          updatePanelSide()
+        }
       }
 
       const handleMouseUp = (ev: MouseEvent) => {
@@ -345,7 +381,7 @@ export function ChatDock() {
       window.addEventListener('mousemove', handleMouseMove)
       window.addEventListener('mouseup', handleMouseUp)
     },
-    [isMobile, setDockPos]
+    [isMobile, isOpen, minimized, setDockPos, updatePanelSide]
   )
 
   // onClick for the floating button: ignore if drag just finished
@@ -811,6 +847,19 @@ export function ChatDock() {
     return Object.values(typingState[activeConversationId]).map(u => u.username)
   }, [activeConversationId, typingState])
 
+  useEffect(() => {
+    if (isMobile || !isOpen || minimized) return
+    const raf = window.requestAnimationFrame(updatePanelSide)
+    return () => window.cancelAnimationFrame(raf)
+  }, [dockPos, isMobile, isOpen, minimized, updatePanelSide])
+
+  useEffect(() => {
+    if (isMobile || !isOpen || minimized) return
+    const handleResize = () => updatePanelSide()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [isMobile, isOpen, minimized, updatePanelSide])
+
   return (
     <>
       {/* Desktop: button + panel share a single fixed wrapper so dragging moves both */}
@@ -825,7 +874,13 @@ export function ChatDock() {
         >
           {/* Panel: absolutely above the button when open */}
           {isOpen && !minimized && (
-            <div className='absolute bottom-full mb-2 left-0 flex h-125 w-95 flex-col rounded-xl border border-border bg-background shadow-2xl 2xl:h-150 2xl:w-105'>
+            <div
+              ref={panelRef}
+              className={cn(
+                'absolute bottom-full mb-2 flex h-125 w-95 flex-col rounded-xl border border-border bg-background shadow-2xl 2xl:h-150 2xl:w-105',
+                panelSide === 'left' ? 'left-0' : 'right-0'
+              )}
+            >
               <ChatDockPanelContent
                 view={view}
                 conversationName={conversationName}

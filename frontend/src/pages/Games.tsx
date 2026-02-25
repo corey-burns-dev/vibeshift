@@ -43,7 +43,6 @@ const GAME_CATEGORIES = [
         name: 'Checkers',
         description: 'Classic Jumps',
         reward: '+20 VP',
-        status: 'coming-soon',
       },
       {
         id: 'othello',
@@ -166,7 +165,12 @@ export default function Games() {
   }
 
   const handlePlayNow = async (type: string) => {
-    if (type === 'connect4' || type === 'othello' || type === 'battleship') {
+    if (
+      type === 'connect4' ||
+      type === 'othello' ||
+      type === 'battleship' ||
+      type === 'checkers'
+    ) {
       try {
         // Fetch fresh rooms at click time to avoid stale cache races.
         const freshRooms = await apiClient.getActiveGameRooms(type)
@@ -202,7 +206,6 @@ export default function Games() {
     } else {
       const routeMap: Record<string, string> = {
         chess: '/games/chess',
-        checkers: '/games/checkers',
         trivia: '/games/trivia',
         blackjack: '/games/blackjack',
         poker: '/games/poker',
@@ -362,7 +365,9 @@ export default function Games() {
                                 ? 'Connect Four'
                                 : room.type === 'othello'
                                   ? 'Othello'
-                                  : 'Battleship'}
+                                  : room.type === 'checkers'
+                                    ? 'Checkers'
+                                    : 'Battleship'}
                             </span>
                             <span className='text-sm font-bold truncate max-w-30'>
                               {room.status === 'active'

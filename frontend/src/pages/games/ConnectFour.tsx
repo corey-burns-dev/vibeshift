@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAudio } from '@/hooks'
 import { useGameRoomCore } from '@/hooks/useGameRoomCore'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 function createEmptyBoard() {
   return Array(6)
@@ -25,6 +26,7 @@ export default function ConnectFour() {
 
   const [board, setBoard] = useState<string[][]>(createEmptyBoard)
   const [hoverColumn, setHoverColumn] = useState<number | null>(null)
+  const isCompactViewport = useMediaQuery('(max-width: 1080px)')
 
   const {
     room,
@@ -116,7 +118,9 @@ export default function ConnectFour() {
     return <div className='p-8 text-center'>Loading game...</div>
   }
 
-  const boardWidthClass = 'w-[min(100%,calc(100dvh-20rem))] max-w-[30rem]'
+  const boardWidthClass = isCompactViewport
+    ? 'w-[min(100%,calc(100dvh-12rem))] max-w-[34rem]'
+    : 'w-[min(100%,calc(100dvh-20rem))] max-w-[30rem]'
   const overlayState = showVictoryBlast
     ? 'victory'
     : showDefeatBlast
@@ -127,10 +131,10 @@ export default function ConnectFour() {
     <div className='h-full overflow-y-auto bg-background text-foreground'>
       <GameResultOverlay show={overlayState} />
 
-      <div className='mx-auto grid h-full w-full max-w-300 gap-2 px-2 py-1.5 lg:grid-cols-12 lg:gap-3'>
-        <div className='min-h-0 overflow-hidden lg:col-span-9'>
+      <div className='mx-auto grid h-full w-full max-w-300 gap-2 px-2 py-1.5 xl:grid-cols-12 xl:gap-3'>
+        <div className='min-h-0 overflow-hidden xl:col-span-9'>
           <Card className='flex h-full flex-col border-2 border-blue-500/20 bg-blue-900/10 shadow-xl'>
-            <CardHeader className='border-b border-blue-500/10 bg-blue-500/5 px-2.5 py-1.5'>
+            <CardHeader className='border-b border-blue-500/10 bg-blue-500/5 px-2 py-1.5 max-[1080px]:px-1.5 max-[1080px]:py-1'>
               <div className='grid w-full grid-cols-1 items-center gap-2 md:grid-cols-[1fr_auto_1fr]'>
                 <div className='flex items-center gap-2 md:justify-self-start'>
                   <CardTitle className='flex shrink-0 items-center gap-1.5 text-base font-black text-blue-500 italic uppercase sm:text-lg'>
@@ -144,8 +148,8 @@ export default function ConnectFour() {
                   </span>
                 </div>
 
-                <div className='flex min-w-0 items-center justify-center gap-2 overflow-x-auto whitespace-nowrap md:justify-self-center'>
-                  <div className='flex shrink-0 items-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-2 py-1'>
+                <div className='flex min-w-0 items-center justify-center gap-2 overflow-x-auto whitespace-nowrap md:justify-self-center max-[1080px]:gap-1'>
+                  <div className='flex shrink-0 items-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-2 py-1 max-[1080px]:gap-1 max-[1080px]:px-1.5 max-[1080px]:py-0.5'>
                     <Avatar className='h-6 w-6 border border-red-500/30 sm:h-7 sm:w-7'>
                       <AvatarImage src={playerOneAvatar} />
                       <AvatarFallback className='text-[10px] font-black'>
@@ -153,14 +157,14 @@ export default function ConnectFour() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className='text-[9px] font-black uppercase tracking-[0.2em] text-red-500'>
+                      <p className='text-[9px] font-black uppercase tracking-[0.2em] text-red-500 max-[1080px]:hidden'>
                         Player 1
                       </p>
                       <p className='text-xs font-black'>{playerOneName}</p>
                     </div>
                   </div>
 
-                  <div className='flex shrink-0 items-center gap-2 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-2 py-1'>
+                  <div className='flex shrink-0 items-center gap-2 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-2 py-1 max-[1080px]:gap-1 max-[1080px]:px-1.5 max-[1080px]:py-0.5'>
                     <Avatar className='h-6 w-6 border border-yellow-500/30 sm:h-7 sm:w-7'>
                       <AvatarImage src={playerTwoAvatar} />
                       <AvatarFallback className='text-[10px] font-black'>
@@ -168,7 +172,7 @@ export default function ConnectFour() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className='text-[9px] font-black uppercase tracking-[0.2em] text-yellow-500'>
+                      <p className='text-[9px] font-black uppercase tracking-[0.2em] text-yellow-500 max-[1080px]:hidden'>
                         Player 2
                       </p>
                       <p className='text-xs font-black'>{playerTwoName}</p>
@@ -204,7 +208,7 @@ export default function ConnectFour() {
                         type='button'
                         variant='ghost'
                         size='icon'
-                        className='h-7 w-7 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive'
+                        className='h-7 w-7 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive max-[1080px]:h-6 max-[1080px]:w-6'
                         onClick={() => setShowLeaveDialog(true)}
                         title='Leave game'
                       >
@@ -324,8 +328,10 @@ export default function ConnectFour() {
           </Card>
         </div>
 
-        <div className='flex min-h-0 flex-col lg:col-span-3'>
-          <Card className='flex h-full min-h-0 flex-col overflow-hidden border-2 bg-card/50 backdrop-blur-sm'>
+        <div className='flex min-h-0 flex-col xl:col-span-3'>
+          <Card
+            className={`flex min-h-0 flex-col overflow-hidden border-2 bg-card/50 backdrop-blur-sm ${isCompactViewport ? '' : 'h-full'}`}
+          >
             <GameChat
               messages={messages}
               currentUserId={currentUserId}
@@ -335,6 +341,7 @@ export default function ConnectFour() {
               accentColor='blue'
               placeholder='Talk some trash...'
               chatScrollRef={chatScrollRef}
+              compact={isCompactViewport}
             />
           </Card>
         </div>

@@ -39,17 +39,17 @@ export function Sidebar() {
           <Sparkles className='h-5 w-5' />
         </div>
         <div>
-          <p className='text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground'>
+          <p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>
             Sanctum
           </p>
-          <p className='text-sm font-semibold'>Play. Connect.</p>
+          <p className='text-base font-bold'>Play. Connect.</p>
         </div>
       </Link>
 
       <div className='space-y-5 overflow-y-auto pr-1'>
         {navSections.map((section, sectionIndex) => (
           <section key={section.title} className='space-y-1.5'>
-            <p className='px-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground'>
+            <p className='px-2 text-xs font-bold uppercase tracking-wider text-muted-foreground'>
               {section.title}
             </p>
             <div className='space-y-1'>
@@ -73,12 +73,12 @@ export function Sidebar() {
                   >
                     <item.icon
                       className={cn(
-                        'mt-0.5 h-4 w-4 shrink-0',
+                        'mt-0.5 h-5 w-5 shrink-0',
                         active && 'text-primary'
                       )}
                     />
                     <span className='min-w-0'>
-                      <span className='block text-sm font-semibold'>
+                      <span className='block text-[15px] font-semibold leading-snug'>
                         {item.label}
                       </span>
                       {item.hint ? (
@@ -126,17 +126,17 @@ export function Sidebar() {
         <div className='grid grid-cols-2 gap-2'>
           <Link
             to='/profile'
-            className='inline-flex items-center justify-center gap-1.5 rounded-lg border border-border/60 px-2 py-2 text-xs font-semibold transition-colors hover:bg-muted/60'
+            className='inline-flex items-center justify-center gap-1.5 rounded-lg border border-border/60 px-2 py-2 text-sm font-semibold transition-colors hover:bg-muted/60'
           >
-            <User className='h-3.5 w-3.5' />
+            <User className='h-4 w-4' />
             Profile
           </Link>
           <button
             type='button'
             onClick={logout}
-            className='inline-flex items-center justify-center gap-1.5 rounded-lg border border-border/60 px-2 py-2 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10'
+            className='inline-flex items-center justify-center gap-1.5 rounded-lg border border-border/60 px-2 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10'
           >
-            <LogOut className='h-3.5 w-3.5' />
+            <LogOut className='h-4 w-4' />
             Logout
           </button>
         </div>

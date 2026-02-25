@@ -20,6 +20,10 @@ describe('game-routes helpers', () => {
       type: 'battleship',
       roomId: 7,
     })
+    expect(parseGameRoomPath('/games/checkers/5')).toEqual({
+      type: 'checkers',
+      roomId: 5,
+    })
   })
 
   it('rejects unsupported or invalid routes', () => {
@@ -37,5 +41,8 @@ describe('game-routes helpers', () => {
     expect(buildGameRoomPath('battleship', 5)).toBe('/games/battleship/5')
     expect(getGameTypeLabel('battleship')).toBe('Battleship')
     expect(isSupportedGameType('battleship')).toBe(true)
+    expect(buildGameRoomPath('checkers', 12)).toBe('/games/checkers/12')
+    expect(getGameTypeLabel('checkers')).toBe('Checkers')
+    expect(isSupportedGameType('checkers')).toBe(true)
   })
 })

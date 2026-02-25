@@ -17,6 +17,8 @@ const (
 	Othello GameType = "othello"
 	// Battleship game type constant
 	Battleship GameType = "battleship"
+	// Checkers game type constant
+	Checkers GameType = "checkers"
 )
 
 // GameStatus defines the current state of a game
@@ -99,6 +101,8 @@ func (r *GameRoom) CheckWin() (string, bool) {
 		return r.CheckOthelloWin()
 	case Battleship:
 		return r.CheckBattleshipWin()
+	case Checkers:
+		return r.CheckCheckersWin()
 	}
 	return "", false
 }
@@ -394,4 +398,197 @@ func allBattleshipShipsSunk(ships []BattleshipShip, shots [][2]int) bool {
 		}
 	}
 	return true
+}
+
+// CheckersMove represents a single move in Checkers.
+type CheckersMove struct {
+	From [2]int `json:"from"` // [row, col]
+	To   [2]int `json:"to"`   // [row, col]
+}
+
+// CheckersState is the full persistent state for a Checkers game room.
+type CheckersState struct {
+	Board        [8][8]string `json:"board"`
+	MustJumpFrom *[2]int      `json:"must_jump_from"` // non-nil = player must continue multi-jump from this cell
+}
+
+// InitialCheckersBoard returns the standard 8×8 checkers starting position.
+// "r" = creator pieces (rows 5-7), "b" = opponent pieces (rows 0-2).
+// Pieces are placed only on dark squares where (row+col)%2 == 1.
+func InitialCheckersBoard() [8][8]string {
+	var board [8][8]string
+	for row := 0; row < 8; row++ {
+		for col := 0; col < 8; col++ {
+			if (row+col)%2 != 1 {
+				continue
+			}
+			if row < 3 {
+				board[row][col] = "b"
+			} else if row > 4 {
+				board[row][col] = "r"
+			}
+		}
+	}
+	return board
+}
+
+// GetCheckersState deserializes CurrentState into a CheckersState.
+func (r *GameRoom) GetCheckersState() CheckersState {
+	if r.CurrentState == "" || r.CurrentState == "{}" {
+		return CheckersState{Board: InitialCheckersBoard()}
+	}
+	var state CheckersState
+	if err := json.Unmarshal([]byte(r.CurrentState), &state); err != nil {
+		return CheckersState{Board: InitialCheckersBoard()}
+	}
+	return state
+}
+
+// InCheckersBounds reports whether (row, col) is inside the 8×8 board.
+func InCheckersBounds(row, col int) bool {
+	return row >= 0 && row < 8 && col >= 0 && col < 8
+}
+
+// IsCheckersPiece reports whether cell belongs to the given side ("r" or "b").
+func IsCheckersPiece(cell, side string) bool {
+	if side == "r" {
+		return cell == "r" || cell == "R"
+	}
+	return cell == "b" || cell == "B"
+}
+
+// IsCheckersKing reports whether cell is a kinged piece.
+func IsCheckersKing(cell string) bool {
+	return cell == "R" || cell == "B"
+}
+
+// CheckersOpponentSide returns the opposite side.
+func CheckersOpponentSide(side string) string {
+	if side == "r" {
+		return "b"
+	}
+	return "r"
+}
+
+// CountCheckersPieces counts (rCount, bCount) including kings.
+func CountCheckersPieces(board [8][8]string) (int, int) {
+	rCount, bCount := 0, 0
+	for row := 0; row < 8; row++ {
+		for col := 0; col < 8; col++ {
+			if IsCheckersPiece(board[row][col], "r") {
+				rCount++
+			} else if IsCheckersPiece(board[row][col], "b") {
+				bCount++
+			}
+		}
+	}
+	return rCount, bCount
+}
+
+// checkersDirs returns the diagonal directions a piece can move.
+func checkersDirs(cell string) [][2]int {
+	if IsCheckersKing(cell) {
+		return [][2]int{{-1, -1}, {-1, 1}, {1, -1}, {1, 1}}
+	}
+	if cell == "r" {
+		return [][2]int{{-1, -1}, {-1, 1}} // toward row 0
+	}
+	return [][2]int{{1, -1}, {1, 1}} // "b" toward row 7
+}
+
+// GetCheckersJumps returns all valid jump destinations for the piece at (row, col).
+func GetCheckersJumps(board [8][8]string, row, col int) [][2]int {
+	cell := board[row][col]
+	if cell == "" {
+		return nil
+	}
+	side := "r"
+	if IsCheckersPiece(cell, "b") {
+		side = "b"
+	}
+	opp := CheckersOpponentSide(side)
+
+	var jumps [][2]int
+	for _, d := range checkersDirs(cell) {
+		midR, midC := row+d[0], col+d[1]
+		toR, toC := row+2*d[0], col+2*d[1]
+		if InCheckersBounds(toR, toC) &&
+			IsCheckersPiece(board[midR][midC], opp) &&
+			board[toR][toC] == "" {
+			jumps = append(jumps, [2]int{toR, toC})
+		}
+	}
+	return jumps
+}
+
+// GetCheckersSimpleMoves returns all non-jump moves for the piece at (row, col).
+func GetCheckersSimpleMoves(board [8][8]string, row, col int) [][2]int {
+	cell := board[row][col]
+	if cell == "" {
+		return nil
+	}
+	var moves [][2]int
+	for _, d := range checkersDirs(cell) {
+		toR, toC := row+d[0], col+d[1]
+		if InCheckersBounds(toR, toC) && board[toR][toC] == "" {
+			moves = append(moves, [2]int{toR, toC})
+		}
+	}
+	return moves
+}
+
+// HasAnyCheckersJump reports whether any piece of the given side has a capture.
+func HasAnyCheckersJump(board [8][8]string, side string) bool {
+	for row := 0; row < 8; row++ {
+		for col := 0; col < 8; col++ {
+			if IsCheckersPiece(board[row][col], side) && len(GetCheckersJumps(board, row, col)) > 0 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// HasAnyCheckersMove reports whether any piece of the given side has any legal move.
+func HasAnyCheckersMove(board [8][8]string, side string) bool {
+	for row := 0; row < 8; row++ {
+		for col := 0; col < 8; col++ {
+			if !IsCheckersPiece(board[row][col], side) {
+				continue
+			}
+			if len(GetCheckersJumps(board, row, col)) > 0 || len(GetCheckersSimpleMoves(board, row, col)) > 0 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// CheckCheckersWin returns ("X", true) when creator wins, ("O", true) when
+// opponent wins, ("", true) for a draw, or ("", false) when the game is ongoing.
+func (r *GameRoom) CheckCheckersWin() (string, bool) {
+	state := r.GetCheckersState()
+	board := state.Board
+
+	rCount, bCount := CountCheckersPieces(board)
+	if bCount == 0 {
+		return "X", true
+	}
+	if rCount == 0 {
+		return "O", true
+	}
+
+	rCanMove := HasAnyCheckersMove(board, "r")
+	bCanMove := HasAnyCheckersMove(board, "b")
+
+	if !rCanMove && !bCanMove {
+		return "", true // draw
+	}
+	if !rCanMove {
+		return "O", true // opponent wins, creator stuck
+	}
+	if !bCanMove {
+		return "X", true // creator wins, opponent stuck
+	}
+	return "", false
 }

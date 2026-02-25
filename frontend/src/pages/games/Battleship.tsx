@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useGameRoomCore } from '@/hooks/useGameRoomCore'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -239,6 +240,7 @@ export default function Battleship() {
   const [horizontal, setHorizontal] = useState(true)
   const [hoverCell, setHoverCell] = useState<[number, number] | null>(null)
   const [shipsSubmitted, setShipsSubmitted] = useState(false)
+  const isCompactViewport = useMediaQuery('(max-width: 1080px)')
 
   const {
     room,
@@ -466,11 +468,11 @@ export default function Battleship() {
     <div className='h-full overflow-y-auto bg-background text-foreground'>
       <GameResultOverlay show={overlayState} />
 
-      <div className='mx-auto grid h-full w-full max-w-300 gap-2 px-2 py-1.5 lg:grid-cols-12 lg:gap-3'>
+      <div className='mx-auto grid h-full w-full max-w-300 gap-2 px-2 py-1.5 xl:grid-cols-12 xl:gap-3'>
         {/* Main game card */}
-        <div className='min-h-0 overflow-hidden lg:col-span-9'>
+        <div className='min-h-0 overflow-hidden xl:col-span-9'>
           <Card className='flex h-full flex-col border-2 border-teal-500/20 bg-teal-900/10 shadow-xl'>
-            <CardHeader className='border-b border-teal-500/10 bg-teal-500/5 px-2.5 py-1.5'>
+            <CardHeader className='border-b border-teal-500/10 bg-teal-500/5 px-2 py-1.5 max-[1080px]:px-1.5 max-[1080px]:py-1'>
               <div className='grid w-full grid-cols-1 items-center gap-2 md:grid-cols-[1fr_auto_1fr]'>
                 {/* Title */}
                 <div className='flex items-center gap-2 md:justify-self-start'>
@@ -484,8 +486,8 @@ export default function Battleship() {
                 </div>
 
                 {/* Players */}
-                <div className='flex min-w-0 items-center justify-center gap-2 overflow-x-auto whitespace-nowrap md:justify-self-center'>
-                  <div className='flex shrink-0 items-center gap-2 rounded-lg border border-teal-500/40 bg-teal-500/10 px-2 py-1'>
+                <div className='flex min-w-0 items-center justify-center gap-2 overflow-x-auto whitespace-nowrap md:justify-self-center max-[1080px]:gap-1'>
+                  <div className='flex shrink-0 items-center gap-2 rounded-lg border border-teal-500/40 bg-teal-500/10 px-2 py-1 max-[1080px]:gap-1 max-[1080px]:px-1.5 max-[1080px]:py-0.5'>
                     <Avatar className='h-6 w-6 border border-teal-500/30 sm:h-7 sm:w-7'>
                       <AvatarImage src={playerOneAvatar} />
                       <AvatarFallback className='text-[10px] font-black'>
@@ -493,7 +495,7 @@ export default function Battleship() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className='text-[9px] font-black uppercase tracking-[0.2em] text-teal-400'>
+                      <p className='text-[9px] font-black uppercase tracking-[0.2em] text-teal-400 max-[1080px]:hidden'>
                         Commander 1
                       </p>
                       <p className='text-xs font-black'>{playerOneName}</p>
@@ -502,7 +504,7 @@ export default function Battleship() {
 
                   <span className='text-xs font-black text-slate-500'>vs</span>
 
-                  <div className='flex shrink-0 items-center gap-2 rounded-lg border border-slate-500/40 bg-slate-500/10 px-2 py-1'>
+                  <div className='flex shrink-0 items-center gap-2 rounded-lg border border-slate-500/40 bg-slate-500/10 px-2 py-1 max-[1080px]:gap-1 max-[1080px]:px-1.5 max-[1080px]:py-0.5'>
                     <Avatar className='h-6 w-6 border border-slate-500/30 sm:h-7 sm:w-7'>
                       <AvatarImage src={playerTwoAvatar} />
                       <AvatarFallback className='text-[10px] font-black'>
@@ -510,7 +512,7 @@ export default function Battleship() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className='text-[9px] font-black uppercase tracking-[0.2em] text-slate-400'>
+                      <p className='text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 max-[1080px]:hidden'>
                         Commander 2
                       </p>
                       <p className='text-xs font-black'>{playerTwoName}</p>
@@ -553,7 +555,7 @@ export default function Battleship() {
                         type='button'
                         variant='ghost'
                         size='icon'
-                        className='h-7 w-7 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive'
+                        className='h-7 w-7 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive max-[1080px]:h-6 max-[1080px]:w-6'
                         onClick={() => setShowLeaveDialog(true)}
                         title='Leave game'
                       >
@@ -608,9 +610,9 @@ export default function Battleship() {
                       </p>
                     </div>
                   ) : (
-                    <div className='flex flex-col gap-4 md:flex-row md:items-start md:gap-6'>
+                    <div className='flex flex-col gap-4 xl:flex-row xl:items-start xl:gap-6'>
                       {/* Fleet panel */}
-                      <div className='flex flex-col gap-3 md:w-44 shrink-0'>
+                      <div className='flex shrink-0 flex-col gap-3 xl:w-44'>
                         <h3 className='text-[10px] font-black uppercase tracking-[0.2em] text-teal-400'>
                           Your Fleet
                         </h3>
@@ -765,7 +767,7 @@ export default function Battleship() {
               {/* Battle Phase */}
               {coreState.status === 'active' && isBattlePhase && isPlayer && (
                 <div className='w-full max-w-3xl'>
-                  <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+                  <div className='grid grid-cols-1 gap-4 xl:grid-cols-2'>
                     <BoardGrid
                       label='Your Waters'
                       myBoard={true}
@@ -849,8 +851,10 @@ export default function Battleship() {
         </div>
 
         {/* Chat sidebar */}
-        <div className='flex min-h-0 flex-col lg:col-span-3'>
-          <Card className='flex h-full min-h-0 flex-col overflow-hidden border-2 bg-card/50 backdrop-blur-sm'>
+        <div className='flex min-h-0 flex-col xl:col-span-3'>
+          <Card
+            className={`flex min-h-0 flex-col overflow-hidden border-2 bg-card/50 backdrop-blur-sm ${isCompactViewport ? '' : 'h-full'}`}
+          >
             <GameChat
               messages={messages}
               currentUserId={currentUserId}
@@ -860,6 +864,7 @@ export default function Battleship() {
               accentColor='teal'
               placeholder='Talk some trash...'
               chatScrollRef={chatScrollRef}
+              compact={isCompactViewport}
             />
           </Card>
         </div>

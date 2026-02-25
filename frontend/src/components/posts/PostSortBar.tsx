@@ -5,11 +5,6 @@ const SORT_OPTIONS: { value: PostSort; label: string; title: string }[] = [
   { value: 'new', label: 'New', title: 'Newest posts first' },
   { value: 'hot', label: 'Hot', title: 'Trending by engagement and recency' },
   { value: 'top', label: 'Top', title: 'Most liked posts' },
-  {
-    value: 'rising',
-    label: 'Rising',
-    title: 'Fast-growing posts in the last 48 hours',
-  },
   { value: 'best', label: 'Best', title: 'Highest combined score' },
 ]
 

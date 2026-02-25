@@ -324,7 +324,7 @@ function RoutesWithPrefetch() {
           }
         />
         <Route
-          path='/games/checkers'
+          path='/games/checkers/:id'
           element={
             <ProtectedRoute>
               <Checkers />

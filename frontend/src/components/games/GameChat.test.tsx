@@ -62,7 +62,18 @@ describe('GameChat', () => {
     fireEvent.keyDown(input, { key: 'Enter' })
     expect(onSend).toHaveBeenCalledTimes(1)
 
-    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getAllByRole('button')[1])
     expect(onSend).toHaveBeenCalledTimes(2)
+  })
+
+  it('supports compact collapsed mode with toggle', () => {
+    renderGameChat([{ user_id: 2, username: 'bob', text: 'hey there' }], {
+      compact: true,
+    })
+
+    expect(screen.queryByText('hey there')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Open chat'))
+    expect(screen.getByText('hey there')).toBeInTheDocument()
   })
 })

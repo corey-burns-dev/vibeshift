@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAudio } from '@/hooks'
 import { useGameRoomCore } from '@/hooks/useGameRoomCore'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 type Cell = '' | 'X' | 'O'
 type Board = Cell[][]
@@ -159,6 +160,7 @@ export default function Othello() {
   const { playDropPieceSound } = useAudio()
 
   const [board, setBoard] = useState<Board>(createInitialBoard)
+  const isCompactViewport = useMediaQuery('(max-width: 1080px)')
 
   const {
     room,
@@ -264,6 +266,9 @@ export default function Othello() {
       ? 'defeat'
       : null
   const { xCount, oCount } = countPieces(board)
+  const boardWidthClass = isCompactViewport
+    ? 'w-[min(100%,calc(100dvh-12rem))] max-w-[34rem]'
+    : 'w-[min(100%,calc(100dvh-20rem))] max-w-104'
 
   return (
     <div className='h-full overflow-y-auto bg-background text-foreground'>
@@ -273,10 +278,10 @@ export default function Othello() {
         defeatColors={OTHELLO_DEFEAT_COLORS}
       />
 
-      <div className='mx-auto grid h-full w-full max-w-7xl gap-2 px-2 py-1.5 lg:grid-cols-12 lg:gap-3'>
-        <div className='min-h-0 overflow-hidden lg:col-span-9'>
+      <div className='mx-auto grid h-full w-full max-w-7xl gap-2 px-2 py-1.5 xl:grid-cols-12 xl:gap-3'>
+        <div className='min-h-0 overflow-hidden xl:col-span-9'>
           <Card className='flex h-full flex-col border-2 border-emerald-500/20 bg-emerald-950/10 shadow-xl'>
-            <CardHeader className='border-b border-emerald-500/20 bg-emerald-500/5 px-2.5 py-1.5'>
+            <CardHeader className='border-b border-emerald-500/20 bg-emerald-500/5 px-2 py-1.5 max-[1080px]:px-1.5 max-[1080px]:py-1'>
               <div className='grid w-full grid-cols-1 items-center gap-2 md:grid-cols-[1fr_auto_1fr]'>
                 <div className='flex items-center gap-2 md:justify-self-start'>
                   <CardTitle className='flex shrink-0 items-center gap-1.5 text-base font-black uppercase text-emerald-500 sm:text-lg'>
@@ -288,8 +293,8 @@ export default function Othello() {
                   </span>
                 </div>
 
-                <div className='flex min-w-0 items-center justify-center gap-2 overflow-x-auto whitespace-nowrap md:justify-self-center'>
-                  <div className='flex shrink-0 items-center gap-2 rounded-lg border border-slate-400/40 bg-slate-600/10 px-2 py-1'>
+                <div className='flex min-w-0 items-center justify-center gap-2 overflow-x-auto whitespace-nowrap md:justify-self-center max-[1080px]:gap-1'>
+                  <div className='flex shrink-0 items-center gap-2 rounded-lg border border-slate-400/40 bg-slate-600/10 px-2 py-1 max-[1080px]:gap-1 max-[1080px]:px-1.5 max-[1080px]:py-0.5'>
                     <Avatar className='h-6 w-6 border border-slate-500/40 sm:h-7 sm:w-7'>
                       <AvatarImage src={playerOneAvatar} />
                       <AvatarFallback className='text-[10px] font-black'>
@@ -297,14 +302,14 @@ export default function Othello() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className='text-[9px] font-black uppercase tracking-[0.2em] text-slate-300'>
+                      <p className='text-[9px] font-black uppercase tracking-[0.2em] text-slate-300 max-[1080px]:hidden'>
                         Black (X)
                       </p>
                       <p className='text-xs font-black'>{playerOneName}</p>
                     </div>
                   </div>
 
-                  <div className='flex shrink-0 items-center gap-2 rounded-lg border border-zinc-300/40 bg-zinc-300/20 px-2 py-1'>
+                  <div className='flex shrink-0 items-center gap-2 rounded-lg border border-zinc-300/40 bg-zinc-300/20 px-2 py-1 max-[1080px]:gap-1 max-[1080px]:px-1.5 max-[1080px]:py-0.5'>
                     <Avatar className='h-6 w-6 border border-zinc-300/40 sm:h-7 sm:w-7'>
                       <AvatarImage src={playerTwoAvatar} />
                       <AvatarFallback className='text-[10px] font-black'>
@@ -312,7 +317,7 @@ export default function Othello() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className='text-[9px] font-black uppercase tracking-[0.2em] text-zinc-200'>
+                      <p className='text-[9px] font-black uppercase tracking-[0.2em] text-zinc-200 max-[1080px]:hidden'>
                         White (O)
                       </p>
                       <p className='text-xs font-black'>{playerTwoName}</p>
@@ -345,9 +350,11 @@ export default function Othello() {
             </CardHeader>
 
             <CardContent className='flex min-h-0 flex-1 flex-col justify-center overflow-hidden px-1.5 py-1.5 md:px-2.5 md:py-2'>
-              <div className='grid min-h-0 w-full flex-1 items-center gap-1.5 lg:grid-cols-[minmax(0,1fr)_13rem]'>
+              <div className='grid min-h-0 w-full flex-1 items-center gap-1.5 xl:grid-cols-[minmax(0,1fr)_13rem]'>
                 <div className='flex min-h-0 items-center justify-center'>
-                  <div className='w-[min(100%,calc(100dvh-20rem))] max-w-104 rounded-2xl border-4 border-emerald-700 bg-emerald-700 p-1 shadow-[0_20px_50px_rgba(5,150,105,0.35)] sm:p-1.5'>
+                  <div
+                    className={`${boardWidthClass} rounded-2xl border-4 border-emerald-700 bg-emerald-700 p-1 shadow-[0_20px_50px_rgba(5,150,105,0.35)] sm:p-1.5`}
+                  >
                     <div className='grid grid-cols-8 gap-1 rounded-xl bg-emerald-900 p-1.5 md:p-2'>
                       {board.map((row, rowIndex) =>
                         row.map((cell, colIndex) => {
@@ -383,7 +390,7 @@ export default function Othello() {
                   </div>
                 </div>
 
-                <div className='order-last mt-1 grid w-full grid-cols-2 gap-2 sm:grid-cols-3 lg:order-0 lg:mt-0 lg:grid-cols-1 lg:content-start'>
+                <div className='order-last mt-1 grid w-full grid-cols-2 gap-2 sm:grid-cols-3 xl:order-0 xl:mt-0 xl:grid-cols-1 xl:content-start'>
                   <div className='rounded-lg border border-slate-500/40 bg-slate-950/30 px-3 py-2 text-center'>
                     <p className='text-[10px] font-black uppercase tracking-wider text-slate-300'>
                       Black
@@ -399,7 +406,7 @@ export default function Othello() {
 
                   {coreState.status === 'active' && (
                     <div
-                      className={`col-span-2 rounded-xl border px-3 py-2 text-center text-xs font-black uppercase tracking-wide sm:col-span-1 lg:col-span-1 ${
+                      className={`col-span-2 rounded-xl border px-3 py-2 text-center text-xs font-black uppercase tracking-wide sm:col-span-1 xl:col-span-1 ${
                         isMyTurn
                           ? 'border-emerald-300/60 bg-emerald-500/20 text-emerald-100'
                           : 'border-amber-300/60 bg-amber-500/20 text-amber-100'
@@ -412,7 +419,7 @@ export default function Othello() {
                   )}
 
                   {canJoin && (
-                    <div className='col-span-2 flex flex-col items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-3 sm:col-span-3 lg:col-span-1'>
+                    <div className='col-span-2 flex flex-col items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-3 sm:col-span-3 xl:col-span-1'>
                       <p className='text-muted-foreground text-sm font-medium'>
                         Room waiting for a challenger...
                       </p>
@@ -428,7 +435,7 @@ export default function Othello() {
                   )}
 
                   {coreState.status === 'pending' && isCreator && (
-                    <p className='text-muted-foreground col-span-2 text-center text-sm font-medium sm:col-span-3 lg:col-span-1 lg:text-left'>
+                    <p className='text-muted-foreground col-span-2 text-center text-sm font-medium sm:col-span-3 xl:col-span-1 xl:text-left'>
                       Waiting for an opponent to join...
                     </p>
                   )}
@@ -436,7 +443,7 @@ export default function Othello() {
                   {coreState.status === 'finished' && (
                     <Button
                       variant='outline'
-                      className='col-span-2 border-emerald-500/30 hover:bg-emerald-500/10 sm:col-span-3 lg:col-span-1'
+                      className='col-span-2 border-emerald-500/30 hover:bg-emerald-500/10 sm:col-span-3 xl:col-span-1'
                       onClick={() => navigate('/games')}
                     >
                       Return to Lobby
@@ -448,8 +455,10 @@ export default function Othello() {
           </Card>
         </div>
 
-        <div className='flex min-h-0 flex-col lg:col-span-3'>
-          <Card className='flex h-full min-h-0 flex-col overflow-hidden border-2 bg-card/50 backdrop-blur-sm'>
+        <div className='flex min-h-0 flex-col xl:col-span-3'>
+          <Card
+            className={`flex min-h-0 flex-col overflow-hidden border-2 bg-card/50 backdrop-blur-sm ${isCompactViewport ? '' : 'h-full'}`}
+          >
             <GameChat
               messages={messages}
               currentUserId={currentUserId}
@@ -459,6 +468,7 @@ export default function Othello() {
               accentColor='emerald'
               placeholder='Send a message...'
               chatScrollRef={chatScrollRef}
+              compact={isCompactViewport}
             />
           </Card>
         </div>

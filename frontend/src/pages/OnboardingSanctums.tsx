@@ -1,46 +1,24 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useSanctums, useUpsertMySanctumMemberships } from '@/hooks/useSanctums'
-
-const MOBILE_CARDS_PER_PAGE = 4
 
 export default function OnboardingSanctums() {
   const navigate = useNavigate()
-  const isMobile = useIsMobile()
   const { data: sanctums = [], isLoading, isError } = useSanctums()
   const upsert = useUpsertMySanctumMemberships()
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [page, setPage] = useState(0)
 
   const sortedSanctums = useMemo(
     () => [...sanctums].sort((a, b) => a.name.localeCompare(b.name)),
     [sanctums]
   )
 
-  useEffect(() => {
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [])
-
   const selectedSlugs = useMemo(
-    () =>
-      sortedSanctums
-        .map(sanctum => sanctum.slug)
-        .filter(slug => selected.has(slug)),
+    () => sortedSanctums.map(s => s.slug).filter(slug => selected.has(slug)),
     [selected, sortedSanctums]
   )
-
-  const totalPages = isMobile
-    ? Math.max(1, Math.ceil(sortedSanctums.length / MOBILE_CARDS_PER_PAGE))
-    : 1
-  const start = isMobile ? page * MOBILE_CARDS_PER_PAGE : 0
-  const end = isMobile ? start + MOBILE_CARDS_PER_PAGE : sortedSanctums.length
-  const visibleSanctums = sortedSanctums.slice(start, end)
 
   const toggle = (slug: string) => {
     setSelected(prev => {
@@ -68,16 +46,16 @@ export default function OnboardingSanctums() {
 
   if (isLoading) {
     return (
-      <div className='mx-auto max-w-3xl p-6'>
-        <p className='text-sm text-muted-foreground'>Loading sanctums...</p>
+      <div className='flex h-dvh items-center justify-center'>
+        <p className='text-muted-foreground'>Loading sanctums...</p>
       </div>
     )
   }
 
   if (isError) {
     return (
-      <div className='mx-auto max-w-3xl p-6'>
-        <p className='text-sm text-destructive'>
+      <div className='flex h-dvh items-center justify-center'>
+        <p className='text-destructive'>
           Failed to load sanctums. Refresh and try again.
         </p>
       </div>
@@ -85,106 +63,85 @@ export default function OnboardingSanctums() {
   }
 
   return (
-    <div className='h-[calc(100dvh-9rem)] px-4 py-3 md:h-[calc(100dvh-5rem)] md:px-6 md:py-5'>
-      <div className='mx-auto flex h-full max-w-7xl flex-col rounded-2xl border border-border/70 bg-card/60 p-3 shadow-xl backdrop-blur-xl md:p-4'>
-        <div>
-          <h1 className='text-xl font-semibold tracking-tight md:text-2xl'>
-            Choose your Sanctums
-          </h1>
-          <p className='text-sm text-muted-foreground'>
-            Select sanctums you want to follow. You can skip and use the main
-            feed.
-          </p>
-        </div>
+    <div className='flex h-dvh flex-col'>
+      {/* Header */}
+      <div className='shrink-0 border-b border-border/60 px-6 py-6 text-center'>
+        <h1 className='text-3xl font-bold tracking-tight'>
+          Find your communities
+        </h1>
+        <p className='mt-2 text-base text-muted-foreground'>
+          Join sanctums that match your interests. You can always change these
+          later.
+        </p>
+      </div>
 
-        <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
-          <div
-            className={`grid gap-1.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 ${
-              isMobile ? 'h-full' : ''
-            }`}
-            style={{
-              gridTemplateRows: isMobile
-                ? 'repeat(4, minmax(0, 1fr))'
-                : undefined,
-            }}
-          >
-            {visibleSanctums.map(sanctum => {
-              const checked = selected.has(sanctum.slug)
+      {/* Scrollable community grid */}
+      <div className='min-h-0 flex-1 overflow-y-auto px-4 py-6 md:px-8'>
+        <div className='mx-auto max-w-4xl'>
+          <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3'>
+            {sortedSanctums.map(sanctum => {
+              const joined = selected.has(sanctum.slug)
               return (
-                <button
+                <div
                   key={sanctum.id}
-                  type='button'
-                  aria-pressed={checked}
-                  aria-label={`Toggle ${sanctum.name}`}
-                  onClick={() => toggle(sanctum.slug)}
-                  className={`flex ${
-                    isMobile
-                      ? 'h-full flex-col justify-between'
-                      : 'min-h-[3rem] flex-col'
-                  } rounded-xl border px-2 py-1.5 text-left transition-colors ${
-                    checked
-                      ? 'border-primary/60 bg-primary/10'
-                      : 'border-border/70 bg-card hover:bg-muted/30'
+                  className={`flex flex-col gap-3 rounded-2xl border p-4 transition-colors ${
+                    joined
+                      ? 'border-primary/50 bg-primary/5'
+                      : 'border-border bg-card hover:border-border/80 hover:bg-muted/30'
                   }`}
                 >
-                  <div className='flex items-start justify-between gap-2'>
-                    <p className='line-clamp-1 text-xs font-semibold md:text-sm'>
-                      {sanctum.name}
-                    </p>
-                    <span
-                      aria-hidden='true'
-                      className={`mt-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded border text-[10px] font-semibold ${
-                        checked
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border/70 text-muted-foreground'
+                  {/* Icon + name */}
+                  <div className='flex items-center gap-3'>
+                    <div
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base font-bold ${
+                        joined
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground'
                       }`}
                     >
-                      {checked ? '✓' : ''}
-                    </span>
+                      {sanctum.name.charAt(0).toUpperCase()}
+                    </div>
+                    <p className='text-base font-semibold leading-snug'>
+                      {sanctum.name}
+                    </p>
                   </div>
-                  <p className='mt-0.5 line-clamp-1 text-[11px] text-muted-foreground'>
-                    {sanctum.description || 'No description'}
+
+                  {/* Description */}
+                  <p className='line-clamp-2 min-h-10 text-sm text-muted-foreground'>
+                    {sanctum.description || 'No description available.'}
                   </p>
-                </button>
+
+                  {/* Join button */}
+                  <button
+                    type='button'
+                    onClick={() => toggle(sanctum.slug)}
+                    className={`w-full rounded-full py-1.5 text-sm font-semibold transition-colors ${
+                      joined
+                        ? 'bg-primary/15 text-primary hover:bg-primary/25'
+                        : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    }`}
+                  >
+                    {joined ? '✓ Joined' : '+ Join'}
+                  </button>
+                </div>
               )
             })}
           </div>
         </div>
+      </div>
 
-        <div className='mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-3'>
-          <div className='flex items-center gap-2'>
-            {isMobile && (
-              <>
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  onClick={() => setPage(prev => Math.max(prev - 1, 0))}
-                  disabled={page === 0}
-                >
-                  Previous
-                </Button>
-                <span className='text-xs text-muted-foreground'>
-                  {page + 1} / {totalPages}
-                </span>
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  onClick={() =>
-                    setPage(prev => Math.min(prev + 1, totalPages - 1))
-                  }
-                  disabled={page >= totalPages - 1}
-                >
-                  Next
-                </Button>
-              </>
-            )}
-          </div>
+      {/* Footer */}
+      <div className='shrink-0 border-t border-border/60 px-6 py-4'>
+        <div className='mx-auto flex max-w-4xl items-center justify-between gap-4'>
+          <p className='text-sm text-muted-foreground'>
+            {selectedSlugs.length === 0
+              ? 'No sanctums selected'
+              : `${selectedSlugs.length} sanctum${selectedSlugs.length === 1 ? '' : 's'} selected`}
+          </p>
           <div className='flex items-center gap-3'>
-            <p className='text-xs text-muted-foreground md:text-sm'>
-              Selected: {selectedSlugs.length}
-            </p>
+            <Button variant='ghost' onClick={() => navigate('/')}>
+              Skip for now
+            </Button>
             <Button onClick={onSubmit} disabled={upsert.isPending}>
               {upsert.isPending ? 'Saving...' : 'Continue'}
             </Button>

@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Message, User } from '@/api/types'
@@ -34,6 +34,8 @@ const chatDockState = {
   removeOpenConversation: vi.fn(),
   clearOpenConversations: vi.fn(),
   incrementUnread: vi.fn(),
+  dockPos: null as { x: number; y: number } | null,
+  setDockPos: vi.fn(),
 }
 
 vi.mock('@/hooks/useMediaQuery', () => ({
@@ -118,6 +120,9 @@ function minimalUser(username: string): User {
 
 describe('ChatDock', () => {
   afterEach(() => {
+    chatDockState.isOpen = false
+    chatDockState.minimized = false
+    chatDockState.dockPos = null
     onMessageSubscription = null
     incrementUnreadMock.mockReset()
     clearUnreadMock.mockReset()
@@ -178,5 +183,43 @@ describe('ChatDock', () => {
 
     expect(incrementUnreadMock).toHaveBeenCalledWith(1)
     expect(toastMessageMock).toHaveBeenCalled()
+  })
+
+  it('opens the panel to the left when the launcher is near the right edge', async () => {
+    chatDockState.isOpen = true
+    chatDockState.dockPos = { x: 900, y: 700 }
+
+    render(
+      <MemoryRouter initialEntries={['/posts']}>
+        <ChatDock />
+      </MemoryRouter>
+    )
+
+    const button = screen.getByLabelText('Open messages')
+    const wrapper = button.parentElement as HTMLDivElement
+    const panel = wrapper.querySelector('.absolute.bottom-full')
+    expect(panel).toBeTruthy()
+
+    vi.spyOn(wrapper, 'getBoundingClientRect').mockReturnValue({
+      x: 900,
+      y: 700,
+      left: 900,
+      top: 700,
+      right: 948,
+      bottom: 748,
+      width: 48,
+      height: 48,
+      toJSON: () => ({}),
+    })
+    Object.defineProperty(panel as HTMLElement, 'offsetWidth', {
+      configurable: true,
+      value: 380,
+    })
+
+    fireEvent(window, new Event('resize'))
+
+    await waitFor(() => {
+      expect(panel).toHaveClass('right-0')
+    })
   })
 })

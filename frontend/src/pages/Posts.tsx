@@ -123,7 +123,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
 
   // Sort state — persisted in the URL so links are shareable
   const [searchParams, setSearchParams] = useSearchParams()
-  const validSorts: PostSort[] = ['new', 'hot', 'top', 'rising', 'best']
+  const validSorts: PostSort[] = ['new', 'hot', 'top', 'best']
   const rawSort = searchParams.get('sort') as PostSort | null
   const activeSort: PostSort =
     rawSort && validSorts.includes(rawSort) ? rawSort : 'new'
@@ -683,11 +683,20 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                                 value === 'main' ? 'main' : Number(value)
                               )
                             }}
-                            className='rounded-lg border border-border/60 bg-background px-3 py-2 text-sm'
+                            className='rounded-lg border border-border/60 bg-background px-3 py-2 text-sm text-foreground dark:[color-scheme:dark]'
                           >
-                            <option value='main'>Main Feed (No Sanctum)</option>
+                            <option
+                              value='main'
+                              className='bg-background text-foreground'
+                            >
+                              Main Feed (No Sanctum)
+                            </option>
                             {sanctums.map(s => (
-                              <option key={s.id} value={s.id}>
+                              <option
+                                key={s.id}
+                                value={s.id}
+                                className='bg-background text-foreground'
+                              >
                                 {s.name}
                               </option>
                             ))}
@@ -723,16 +732,26 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                               disabled={createPostMutation.isPending}
                               minRows={3}
                             />
-                            <input
-                              type='file'
-                              accept='image/jpeg,image/png,image/gif,image/webp'
-                              onChange={e =>
-                                setNewPostImageFile(
-                                  e.target.files?.[0] ? e.target.files[0] : null
-                                )
-                              }
-                              className='w-full rounded-lg border border-border/60 bg-background px-4 py-2 text-sm focus:outline-none file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-medium'
-                            />
+                            <div className='space-y-2 rounded-lg border border-dashed border-border/70 bg-muted/20 p-3'>
+                              <p className='text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground'>
+                                Upload image
+                              </p>
+                              <input
+                                type='file'
+                                accept='image/jpeg,image/png,image/gif,image/webp'
+                                onChange={e =>
+                                  setNewPostImageFile(
+                                    e.target.files?.[0]
+                                      ? e.target.files[0]
+                                      : null
+                                  )
+                                }
+                                className='w-full cursor-pointer rounded-lg border border-border/60 bg-background px-3 py-2 text-sm text-foreground focus:outline-none file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-medium'
+                              />
+                              <p className='text-xs text-muted-foreground'>
+                                Choose an image file to attach to your post.
+                              </p>
+                            </div>
                             {newPostImagePreview && (
                               <img
                                 src={newPostImagePreview}
@@ -849,7 +868,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                           </div>
                         )}
 
-                        <div className='flex justify-between items-center pt-2'>
+                        <div className='flex items-center gap-2 pt-2'>
                           <Button
                             variant='ghost'
                             size='sm'
@@ -859,24 +878,28 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                           >
                             Cancel
                           </Button>
-                          <Button
-                            onClick={handleNewPost}
-                            size='sm'
-                            disabled={
-                              !canSubmitNewPost() ||
-                              createPostMutation.isPending ||
-                              isUploadingImage
-                            }
-                            className='rounded-md px-5'
-                          >
-                            {createPostMutation.isPending ||
-                            isUploadingImage ? (
-                              <Loader2 className='w-4 h-4 mr-2 animate-spin' />
-                            ) : (
-                              <Send className='w-4 h-4 mr-2' />
-                            )}
-                            {isUploadingImage ? 'Uploading...' : 'Post'}
-                          </Button>
+                          <div className='ml-auto'>
+                            <Button
+                              onClick={handleNewPost}
+                              size='sm'
+                              disabled={
+                                !canSubmitNewPost() ||
+                                createPostMutation.isPending ||
+                                isUploadingImage
+                              }
+                              className='rounded-md px-5'
+                            >
+                              {createPostMutation.isPending ||
+                              isUploadingImage ? (
+                                <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                              ) : (
+                                <Send className='w-4 h-4 mr-2' />
+                              )}
+                              {isUploadingImage
+                                ? 'Uploading...'
+                                : 'Create Post'}
+                            </Button>
+                          </div>
                         </div>
                       </>
                     )}

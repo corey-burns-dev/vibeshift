@@ -96,15 +96,6 @@ function sortPosts(posts: Post[], sort: PostSort): Post[] {
           (b.likes_count ?? 0) - (a.likes_count ?? 0) ||
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       )
-    case 'rising':
-      return [...posts]
-        .filter(p => now - new Date(p.created_at).getTime() < 48 * 3_600_000)
-        .sort(
-          (a, b) =>
-            (b.likes_count ?? 0) +
-            (b.comments_count ?? 0) * 2 -
-            ((a.likes_count ?? 0) + (a.comments_count ?? 0) * 2)
-        )
     case 'best':
       return [...posts].sort(
         (a, b) =>

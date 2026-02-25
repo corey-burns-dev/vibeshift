@@ -131,11 +131,17 @@ export default function CreatePost() {
                 const value = event.target.value
                 setTarget(value === 'main' ? 'main' : Number(value))
               }}
-              className='rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-sm'
+              className='rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground dark:[color-scheme:dark]'
             >
-              <option value='main'>Main feed (no sanctum)</option>
+              <option value='main' className='bg-background text-foreground'>
+                Main feed (no sanctum)
+              </option>
               {sanctums.map(sanctum => (
-                <option key={sanctum.id} value={sanctum.id}>
+                <option
+                  key={sanctum.id}
+                  value={sanctum.id}
+                  className='bg-background text-foreground'
+                >
                   {sanctum.name}
                 </option>
               ))}
@@ -176,15 +182,21 @@ export default function CreatePost() {
           )}
 
           {postType === 'media' && (
-            <div className='space-y-2'>
+            <div className='space-y-2 rounded-xl border border-dashed border-border/70 bg-muted/20 p-3'>
+              <p className='text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground'>
+                Upload image
+              </p>
               <input
                 type='file'
                 accept='image/jpeg,image/png,image/gif,image/webp'
                 onChange={event =>
                   setImageFile(event.target.files?.[0] ?? null)
                 }
-                className='w-full rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-sm'
+                className='w-full cursor-pointer rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground'
               />
+              <p className='text-xs text-muted-foreground'>
+                Choose an image file to attach to your post.
+              </p>
               {imagePreview && (
                 <img
                   src={imagePreview}
