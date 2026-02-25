@@ -39,13 +39,13 @@ jobs:
         run: ./scripts/generate_env.sh
 
       - name: Validate compose (dev)
-        run: ./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.e2e.no-sysctls.override.yml config
+        run: ./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.e2e.override.yml config
 
       - name: Verify version catalog consistency
         run: make versions-check
 
       - name: Build backend and frontend images
-        run: ./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.e2e.no-sysctls.override.yml build app frontend
+        run: ./scripts/compose.sh -f compose.yml -f compose.override.yml -f compose.e2e.override.yml build app frontend
 
       - name: Frontend outdated report
         run: |
