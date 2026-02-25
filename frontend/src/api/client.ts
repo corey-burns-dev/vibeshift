@@ -172,10 +172,12 @@ class ApiClient {
           }
 
           // If refresh fails, clear auth state and let React handle the redirect
-          // via ProtectedRoute — a hard window.location redirect destroys React Query
-          // and Zustand in-memory state, causing a reload loop on HMR.
-          useAuthSessionStore.getState().clear()
-          localStorage.removeItem('user')
+          // via ProtectedRoute. For /ws/ticket we keep auth state intact so
+          // transient realtime failures don't hard-logout the whole app.
+          if (endpoint !== '/ws/ticket') {
+            useAuthSessionStore.getState().clear()
+            localStorage.removeItem('user')
+          }
         }
 
         let errMsg = `HTTP ${response.status}: ${response.statusText}`

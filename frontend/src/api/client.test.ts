@@ -1,11 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiClient } from '@/api/client'
+import { useAuthSessionStore } from '@/stores/useAuthSessionStore'
 
 function okJson(body: unknown): Response {
   return {
     ok: true,
     status: 200,
     statusText: 'OK',
+    headers: new Headers(),
+    text: async () => JSON.stringify(body),
+  } as Response
+}
+
+function errorJson(
+  status: number,
+  body: Record<string, unknown>,
+  statusText = 'Error'
+): Response {
+  return {
+    ok: false,
+    status,
+    statusText,
     headers: new Headers(),
     text: async () => JSON.stringify(body),
   } as Response
@@ -135,5 +150,40 @@ describe('apiClient game room chat', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     const [url] = fetchSpy.mock.calls[0]
     expect(String(url)).toContain('/games/rooms/42/messages')
+  })
+})
+
+describe('apiClient websocket auth behavior', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    localStorage.clear()
+    useAuthSessionStore.getState().clear()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    localStorage.clear()
+    useAuthSessionStore.getState().clear()
+  })
+
+  it('does not clear auth session when /ws/ticket returns 401', async () => {
+    const jwtPayload = { exp: Math.floor(Date.now() / 1000) + 60 * 60 }
+    const token = `a.${btoa(JSON.stringify(jwtPayload))}.c`
+    useAuthSessionStore.getState().setAccessToken(token)
+    localStorage.setItem(
+      'user',
+      JSON.stringify({ id: 1, username: 'alice', email: 'a@example.com' })
+    )
+
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(errorJson(401, { error: 'Unauthorized' }))
+      .mockResolvedValueOnce(errorJson(401, { error: 'Refresh failed' }))
+
+    await expect(apiClient.issueWSTicket()).rejects.toThrow('Unauthorized')
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(useAuthSessionStore.getState().accessToken).toBe(token)
+    expect(localStorage.getItem('user')).toContain('"alice"')
   })
 })

@@ -16,6 +16,7 @@ import {
   useManagedWebSocket,
 } from '@/hooks/useManagedWebSocket'
 import { useMyBlocks } from '@/hooks/useModeration'
+import { usePresenceStore } from '@/hooks/usePresence'
 import { useIsAuthenticated } from '@/hooks/useUsers'
 import { logger } from '@/lib/logger'
 import { createTicketedWS } from '@/lib/ws-utils'
@@ -637,8 +638,10 @@ export function ChatProvider({ children }: ChatProviderProps) {
             if (typeof userId === 'number') {
               if (status === 'online') {
                 onlineUserIDsRef.current.add(userId)
+                usePresenceStore.getState().setOnline(userId)
               } else if (status === 'offline') {
                 onlineUserIDsRef.current.delete(userId)
+                usePresenceStore.getState().setOffline(userId)
               }
               setOnlineUserIds(Array.from(onlineUserIDsRef.current))
             }
@@ -656,14 +659,16 @@ export function ChatProvider({ children }: ChatProviderProps) {
             const payload = data.payload || data
             const ids = payload.user_ids || payload.userIds
             if (Array.isArray(ids)) {
-              // Replace global set with provided connected users
-              onlineUserIDsRef.current = new Set(
-                ids.filter(id => typeof id === 'number')
+              const numericIds = ids.filter(
+                (id): id is number => typeof id === 'number'
               )
+              // Replace global set with provided connected users
+              onlineUserIDsRef.current = new Set(numericIds)
               setOnlineUserIds(Array.from(onlineUserIDsRef.current))
+              usePresenceStore.getState().setInitialOnlineUsers(numericIds)
               for (const cb of connectedUsersHandlersRef.current) {
                 try {
-                  cb(ids)
+                  cb(numericIds)
                 } catch (e) {
                   logger.error('connected_users handler failed', e)
                 }

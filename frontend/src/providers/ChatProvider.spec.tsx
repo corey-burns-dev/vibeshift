@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, render } from '@testing-library/react'
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { usePresenceStore } from '@/hooks/usePresence'
 import { useAuthSessionStore } from '@/stores/useAuthSessionStore'
 import { ChatProvider, useChatContext } from './ChatProvider'
 
@@ -133,6 +134,7 @@ describe('ChatProvider websocket behavior', () => {
     ;(globalThis as GlobalWithMocks).WebSocket =
       originalWS as GlobalWithMocks['WebSocket']
     MockWebSocket.instances = []
+    usePresenceStore.getState().reset()
     ;(
       globalThis as GlobalWithMocks as { localStorage?: unknown }
     ).localStorage = undefined
@@ -314,5 +316,53 @@ describe('ChatProvider websocket behavior', () => {
     await act(async () => {})
     expect(calls.length).toBe(1)
     expect(calls[0][1]).toBe(77)
+  })
+
+  it('syncs connected_users and user_status events into presence store', async () => {
+    vi.useFakeTimers()
+
+    const wrapper = ({ children }: { children?: React.ReactNode }) => (
+      <QueryClientProvider client={qc}>
+        <ChatProvider>{children}</ChatProvider>
+      </QueryClientProvider>
+    )
+
+    act(() => {
+      render(<HookTest cb={() => {}} />, { wrapper })
+    })
+    await act(async () => {})
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+      const w = MockWebSocket.instances[0]
+      if (w) w.flushConnect()
+    })
+
+    const ws = MockWebSocket.instances[0]
+    expect(ws).toBeDefined()
+    if (!ws) {
+      throw new Error('expected websocket instance')
+    }
+
+    act(() => {
+      ws.receive({
+        type: 'connected_users',
+        payload: { user_ids: [2, 9] },
+      })
+    })
+
+    let online = usePresenceStore.getState().onlineUserIds
+    expect(online.has(2)).toBe(true)
+    expect(online.has(9)).toBe(true)
+
+    act(() => {
+      ws.receive({
+        type: 'user_status',
+        payload: { user_id: 9, status: 'offline' },
+      })
+    })
+
+    online = usePresenceStore.getState().onlineUserIds
+    expect(online.has(2)).toBe(true)
+    expect(online.has(9)).toBe(false)
   })
 })
