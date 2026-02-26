@@ -42,7 +42,12 @@ test.describe('Sanctum open chat', () => {
       reason: 'Open chat smoke test',
     })
 
-    const pending = await getAdminRequestBySlug(request, adminToken, slug, 'pending')
+    const pending = await getAdminRequestBySlug(
+      request,
+      adminToken,
+      slug,
+      'pending'
+    )
     expect(pending).not.toBeNull()
     await approveSanctumRequest(request, adminToken, pending!.id)
 

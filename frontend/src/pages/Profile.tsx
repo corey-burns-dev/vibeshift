@@ -7,9 +7,11 @@ import {
   ShieldCheck,
   UserRound,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 import { apiClient } from '@/api/client'
+import { AvatarCropDialog } from '@/components/profile/AvatarCropDialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,6 +23,9 @@ import { useFriends } from '@/hooks/useFriends'
 import { usePosts } from '@/hooks/usePosts'
 import { useAllUsers, useMyProfile, useUpdateMyProfile } from '@/hooks/useUsers'
 import { getAvatarUrl } from '@/lib/chat-utils'
+import { normalizeImageURL } from '@/lib/mediaUrl'
+
+const AVATAR_ACCEPT = 'image/jpeg,image/png,image/gif,image/webp'
 
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false)
@@ -29,6 +34,11 @@ export default function Profile() {
     bio: '',
     avatar: '',
   })
+  const [avatarCropDialogOpen, setAvatarCropDialogOpen] = useState(false)
+  const [avatarCropImageSource, setAvatarCropImageSource] = useState('')
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const [showAvatarUrlInput, setShowAvatarUrlInput] = useState(false)
+  const avatarFileInputRef = useRef<HTMLInputElement>(null)
 
   const logout = useLogout()
   const { data: user, isLoading, error } = useMyProfile()
@@ -116,6 +126,7 @@ export default function Profile() {
       bio: user.bio || '',
       avatar: user.avatar || '',
     })
+    setShowAvatarUrlInput(false)
     setIsEditing(true)
   }
 
@@ -125,6 +136,53 @@ export default function Profile() {
   ) => {
     setEditedProfile(prev => ({ ...prev, [field]: value }))
   }
+
+  const handleAvatarFileSelect = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const url = URL.createObjectURL(file)
+    setAvatarCropImageSource(url)
+    setAvatarCropDialogOpen(true)
+    event.target.value = ''
+  }
+
+  const handleAvatarCropConfirm = async (croppedFile: File) => {
+    if (avatarCropImageSource) URL.revokeObjectURL(avatarCropImageSource)
+    setAvatarCropImageSource('')
+    setIsUploadingAvatar(true)
+    try {
+      const uploaded = await apiClient.uploadImage(croppedFile)
+      const url = normalizeImageURL(uploaded.url)
+      if (url) {
+        setEditedProfile(prev => ({ ...prev, avatar: url }))
+      } else {
+        toast.error(
+          'Avatar URL from server could not be used. Please try again.'
+        )
+      }
+    } catch (err) {
+      console.error('Avatar upload failed:', err)
+      toast.error('Avatar upload failed. Please try again.')
+    } finally {
+      setIsUploadingAvatar(false)
+    }
+  }
+
+  const handleAvatarCropDialogOpenChange = (open: boolean) => {
+    if (!open && avatarCropImageSource) {
+      URL.revokeObjectURL(avatarCropImageSource)
+      setAvatarCropImageSource('')
+    }
+    setAvatarCropDialogOpen(open)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (avatarCropImageSource) URL.revokeObjectURL(avatarCropImageSource)
+    }
+  }, [avatarCropImageSource])
 
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString('en-US', {
@@ -157,19 +215,52 @@ export default function Profile() {
 
   return (
     <div className='flex-1 overflow-y-auto py-6 md:py-8'>
+      <AvatarCropDialog
+        open={avatarCropDialogOpen}
+        onOpenChange={handleAvatarCropDialogOpenChange}
+        imageSource={avatarCropImageSource}
+        onConfirm={handleAvatarCropConfirm}
+      />
       <div className='mx-auto max-w-6xl space-y-6 px-4'>
         <Card>
           <CardContent className='pt-6'>
             <div className='flex flex-col gap-6 md:flex-row md:items-start md:justify-between'>
               <div className='flex items-start gap-4'>
-                <Avatar className='h-20 w-20 border border-border/60'>
-                  <AvatarImage
-                    src={user.avatar || getAvatarUrl(user.username)}
-                  />
-                  <AvatarFallback className='text-xl'>
-                    {user.username[0]?.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                <div className='relative'>
+                  <Avatar className='h-20 w-20 border border-border/60'>
+                    <AvatarImage
+                      src={
+                        (isEditing ? editedProfile.avatar : user.avatar) ||
+                        getAvatarUrl(user.username)
+                      }
+                    />
+                    <AvatarFallback className='text-xl'>
+                      {user.username[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  {isEditing && (
+                    <>
+                      <input
+                        ref={avatarFileInputRef}
+                        type='file'
+                        accept={AVATAR_ACCEPT}
+                        onChange={handleAvatarFileSelect}
+                        className='sr-only'
+                        aria-label='Upload avatar image'
+                      />
+                      <Button
+                        type='button'
+                        variant='secondary'
+                        size='sm'
+                        className='absolute bottom-0 right-0 rounded-full p-1.5 shadow'
+                        onClick={() => avatarFileInputRef.current?.click()}
+                        disabled={isUploadingAvatar}
+                      >
+                        {isUploadingAvatar ? 'Uploading…' : 'Upload photo'}
+                      </Button>
+                    </>
+                  )}
+                </div>
 
                 <div className='space-y-1'>
                   {isEditing ? (
@@ -181,13 +272,23 @@ export default function Profile() {
                         }
                         placeholder='Username'
                       />
-                      <Input
-                        value={editedProfile.avatar}
-                        onChange={e =>
-                          handleInputChange('avatar', e.target.value)
-                        }
-                        placeholder='Avatar URL'
-                      />
+                      {showAvatarUrlInput ? (
+                        <Input
+                          value={editedProfile.avatar}
+                          onChange={e =>
+                            handleInputChange('avatar', e.target.value)
+                          }
+                          placeholder='Avatar URL'
+                        />
+                      ) : (
+                        <button
+                          type='button'
+                          className='text-xs text-muted-foreground underline hover:text-foreground'
+                          onClick={() => setShowAvatarUrlInput(true)}
+                        >
+                          Or paste avatar URL
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <>
@@ -223,7 +324,7 @@ export default function Profile() {
                   <Button
                     onClick={isEditing ? handleSave : handleEdit}
                     variant={isEditing ? 'default' : 'outline'}
-                    disabled={updateProfile.isPending}
+                    disabled={updateProfile.isPending || isUploadingAvatar}
                   >
                     <Edit className='mr-2 h-4 w-4' />
                     {updateProfile.isPending
