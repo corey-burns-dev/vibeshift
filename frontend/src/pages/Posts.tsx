@@ -683,7 +683,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                                 value === 'main' ? 'main' : Number(value)
                               )
                             }}
-                            className='rounded-lg border border-border/60 bg-background px-3 py-2 text-sm text-foreground dark:[color-scheme:dark]'
+                            className='rounded-lg border border-border/60 bg-background px-3 py-2 text-sm text-foreground dark:scheme-dark'
                           >
                             <option
                               value='main'

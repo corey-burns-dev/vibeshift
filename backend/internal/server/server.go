@@ -909,7 +909,9 @@ func (s *Server) Start() error {
 	s.shutdownCtx = ctx
 	s.shutdownFn = cancel
 
-	app := fiber.New(fiber.Config{
+	isProduction := s.config.Env == "production" || s.config.Env == "prod"
+
+	fiberCfg := fiber.Config{
 		AppName: "Social Media API",
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			// Default status code
@@ -926,7 +928,20 @@ func (s *Server) Start() error {
 
 			return models.RespondWithError(c, code, err)
 		},
-	})
+	}
+
+	// Trust X-Real-IP from the upstream reverse proxy (nginx) so that the
+	// rate limiter and logging use real client IPs, not the proxy container IP.
+	// Without this, all users share one rate-limit bucket keyed on the nginx IP.
+	// Enable via ENABLE_PROXY_HEADER=true in production.
+	if s.config.EnableProxyHeader {
+		fiberCfg.ProxyHeader = "X-Real-IP"
+		log.Println("[server] Proxy header trust enabled: using X-Real-IP as client IP")
+	} else if isProduction {
+		log.Println("WARNING: ENABLE_PROXY_HEADER is false in production. The rate limiter will key on the reverse proxy IP, causing all users to share one rate-limit bucket. Set ENABLE_PROXY_HEADER=true.")
+	}
+
+	app := fiber.New(fiberCfg)
 	s.app = app
 
 	s.SetupMiddleware(app)

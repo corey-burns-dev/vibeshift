@@ -10,8 +10,11 @@ import (
 )
 
 var (
-	// WriteWait is the time allowed to write a message to the peer (reduced to detect write failures faster on abnormal disconnects).
-	WriteWait = 3 * time.Second
+	// WriteWait is the time allowed to write a message to the peer.
+	// 15s gives enough headroom for production network latency while still
+	// detecting truly dead connections within a reasonable window.
+	// (Previously 3s, which was too aggressive for any non-local path.)
+	WriteWait = 15 * time.Second
 
 	// PongWait is the time allowed to read the next pong message from the peer (shortened to target ~10s offline detection).
 	PongWait = 10 * time.Second

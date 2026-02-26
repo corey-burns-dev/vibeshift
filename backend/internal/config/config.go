@@ -199,6 +199,10 @@ func (c *Config) Validate() error {
 		if c.AllowedOrigins == "*" {
 			log.Println("WARNING: ALLOWED_ORIGINS is set to '*' in production. This is insecure.")
 		}
+		const localhostOrigins = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"
+		if c.AllowedOrigins == localhostOrigins {
+			log.Println("WARNING: ALLOWED_ORIGINS is still the development default in production. WebSocket ticket requests from your production domain will be blocked by CORS. Set ALLOWED_ORIGINS to your production domain (e.g. 'https://yourdomain.com').")
+		}
 		if c.RedisURL == "" {
 			return errors.New("REDIS_URL is required in production (auth, rate limiting, and WebSocket features depend on it)")
 		}

@@ -13,9 +13,11 @@ import (
 const (
 	defaultPresenceOnlineSetKey  = "ws:online_users"
 	defaultPresenceLastSeenKeyNS = "ws:last_seen:"
-	// Shorter TTL for last-seen to avoid long-lived ghost presence in Redis.
-	// Keep slightly above `PongWait` so normal heartbeat activity refreshes the key.
-	defaultPresenceTTL = 12 * time.Second
+	// TTL for last-seen key in Redis. Must exceed PongWait (10s) by a comfortable
+	// margin so that a pong arriving late under production network jitter does not
+	// expire the key before it can be refreshed, causing false offline events.
+	// 25s gives 2.5× headroom above PongWait and 8× the PingPeriod (3s).
+	defaultPresenceTTL = 25 * time.Second
 	// Small grace to avoid transient flaps but remain responsive.
 	defaultOfflineGrace = 2 * time.Second
 	// Frequent reaper to clean stale Redis keys quickly and surface offline events.

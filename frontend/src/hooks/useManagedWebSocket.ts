@@ -28,7 +28,9 @@ interface UseManagedWebSocketOptions {
    * Connection handshake timeout in milliseconds.
    * If the WebSocket doesn't receive a 'connected' message within this time,
    * it will close and reconnect. Set to 0 to disable.
-   * @default 5000 (5 seconds)
+   * @default 15000 (15 seconds) — raised from 5s to accommodate production
+   * latency (Redis ticket validation + DB lookup + hub registration can exceed
+   * 5s under load, causing spurious reconnect storms).
    */
   handshakeTimeoutMs?: number
 }
@@ -47,7 +49,7 @@ export function useManagedWebSocket({
   onClose,
   reconnectDelaysMs = DEFAULT_RECONNECT_DELAYS,
   autoPong = true,
-  handshakeTimeoutMs = 5000,
+  handshakeTimeoutMs = 15000,
 }: UseManagedWebSocketOptions) {
   const wsRef = useRef<WebSocket | null>(null)
   const socketIdByInstanceRef = useRef<WeakMap<WebSocket, number>>(
