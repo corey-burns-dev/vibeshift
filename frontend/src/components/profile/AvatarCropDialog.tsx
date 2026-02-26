@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Area, Point } from 'react-easy-crop'
 import Cropper from 'react-easy-crop'
 import 'react-easy-crop/react-easy-crop.css'
@@ -36,6 +36,16 @@ export function AvatarCropDialog({
   const [zoom, setZoom] = useState(1)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+
+  // Reset crop state when opening or when image changes so we never apply stale
+  // coordinates to a new image (e.g. user selects a second photo).
+  useEffect(() => {
+    if (open && imageSource) {
+      setCrop({ x: 0, y: 0 })
+      setZoom(1)
+      setCroppedAreaPixels(null)
+    }
+  }, [open, imageSource])
 
   const handleCropChange = useCallback((_croppedArea: Area, pixels: Area) => {
     setCroppedAreaPixels(pixels)
