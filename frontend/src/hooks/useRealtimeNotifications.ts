@@ -470,6 +470,7 @@ export function useRealtimeNotifications(enabled = true) {
 
   const { reconnect, setPlannedReconnect } = useManagedWebSocket({
     enabled: wsEnabled,
+    debugLabel: 'realtime-notifications',
     createSocket: async () => {
       logger.debug('[realtime] createSocket called, requesting ticket...')
       try {
@@ -508,5 +509,6 @@ export function useRealtimeNotifications(enabled = true) {
     wsEnabled,
     reconnect,
     setPlannedReconnect,
+    debugLabel: 'realtime-notifications',
   })
 }

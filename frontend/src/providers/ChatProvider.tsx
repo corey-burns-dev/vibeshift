@@ -783,6 +783,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
 
   const { wsRef, connectionState } = useManagedWebSocket({
     enabled: isAuthenticated,
+    debugLabel: 'chat-provider',
     createSocket: async () => {
       const userStr = localStorage.getItem('user')
       if (userStr) {

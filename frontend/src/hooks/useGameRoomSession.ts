@@ -69,6 +69,7 @@ export function useGameRoomSession({
   const { wsRef, connectionState, reconnect, setPlannedReconnect } =
     useManagedWebSocket({
       enabled: wsEnabled,
+      debugLabel: 'game-room-session',
       createSocket: async () => {
         if (!roomId) {
           throw new Error('missing game room id')
@@ -112,6 +113,9 @@ export function useGameRoomSession({
           ws.readyState === WebSocket.OPEN ||
           ws.readyState === WebSocket.CONNECTING
         ) {
+          console.warn(
+            '[game-room-session] onError closing websocket (OPEN/CONNECTING)'
+          )
           ws.close()
         }
       },
@@ -238,6 +242,7 @@ export function useGameRoomSession({
     wsEnabled,
     reconnect,
     setPlannedReconnect,
+    debugLabel: 'game-room-session',
   })
 
   return {
