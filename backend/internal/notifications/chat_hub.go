@@ -335,6 +335,27 @@ func (h *ChatHub) BroadcastToConversation(conversationID uint, message ChatMessa
 	)
 }
 
+// SendToUser sends a message to all active connections for a single user.
+// Unlike BroadcastToConversation, this does not deliver to other room members.
+func (h *ChatHub) SendToUser(userID uint, message ChatMessage) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	messageJSON, err := json.Marshal(message)
+	if err != nil {
+		observability.GlobalLogger.ErrorContext(context.Background(), "chat hub failed to marshal user message",
+			slog.String("error", err.Error()),
+		)
+		return
+	}
+
+	if clients, ok := h.userConns[userID]; ok {
+		for client := range clients {
+			client.TrySend(messageJSON)
+		}
+	}
+}
+
 // BroadcastToAllUsers sends a message to every connected websocket client.
 func (h *ChatHub) BroadcastToAllUsers(message ChatMessage) {
 	h.mu.RLock()

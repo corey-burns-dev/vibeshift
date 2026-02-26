@@ -90,9 +90,9 @@ func (s *Server) maybeSendWelcomeRoomJoinMessage(ctx context.Context, userID, co
 		return
 	}
 
-	// Broadcast the welcome message so the user sees it immediately
+	// Send the welcome message only to the joining user, not the whole room.
 	if s.chatHub != nil {
-		s.chatHub.BroadcastToConversation(conversationID, notifications.ChatMessage{
+		s.chatHub.SendToUser(userID, notifications.ChatMessage{
 			Type:           "room_message",
 			ConversationID: conversationID,
 			UserID:         bot.ID,

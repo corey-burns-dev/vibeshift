@@ -779,12 +779,18 @@ db-reset-dev:
 	$(MAKE) db-migrate
 	@echo "$(GREEN)✓ Dev DB reset complete$(NC)"
 
+db-clear-chat:
+	@echo "$(BLUE)Clearing all chat room messages (conversations and participants preserved)...$(NC)"
+	$(DOCKER_COMPOSE) $(COMPOSE_FILES) exec -T postgres psql -U $${POSTGRES_USER:-sanctum_user} -d $${POSTGRES_DB:-sanctum_test} -c \
+		"TRUNCATE message_reactions, message_mentions, messages, welcome_bot_events RESTART IDENTITY CASCADE;"
+	@echo "$(GREEN)✓ Chat messages cleared$(NC)"
+
 prod-admin:
 	@if [ -z "$(email)" ]; then echo "Usage: make prod-admin email=user@example.com"; exit 1; fi
 	@echo "$(BLUE)Promoting $(email) to admin in production...$(NC)"
-	@$(DOCKER_COMPOSE) -f compose.yml exec -T postgres psql -U postgres -d sanctum_db -c "UPDATE users SET is_admin = TRUE WHERE email = '$(email)';"
+	@$(DOCKER_COMPOSE) -f compose.yml exec -T postgres psql -U $${POSTGRES_USER:-sanctum_user} -d $${POSTGRES_DB:-sanctum_test} -c "UPDATE users SET is_admin = TRUE WHERE email = '$(email)';"
 	@echo "$(GREEN)✓ User promoted. Current production admins:$(NC)"
-	@$(DOCKER_COMPOSE) -f compose.yml exec -T postgres psql -U postgres -d sanctum_db -c "SELECT id, username, email, is_admin FROM users WHERE is_admin = TRUE ORDER BY id;"
+	@$(DOCKER_COMPOSE) -f compose.yml exec -T postgres psql -U $${POSTGRES_USER:-sanctum_user} -d $${POSTGRES_DB:-sanctum_test} -c "SELECT id, username, email, is_admin FROM users WHERE is_admin = TRUE ORDER BY id;"
 
 # Dependency Management
 deps-install-backend:
