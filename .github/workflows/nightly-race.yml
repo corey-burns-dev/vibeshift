@@ -2,13 +2,13 @@ name: Nightly Go Race Detector
 
 on:
   schedule:
-    - cron: "0 4 * * *" # every day at 04:00 UTC
+    - cron: "0 4 * * 1" # weekly on Monday at 04:00 UTC
   workflow_dispatch:
 
 jobs:
   go-race:
     name: Go race detector
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     services:
       postgres:
         image: postgres:16.11-alpine3.23

@@ -14,7 +14,7 @@ jobs:
   auto-pr:
     name: Create PR On Push
     if: github.actor != 'github-actions[bot]' && github.ref_name != github.event.repository.default_branch
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout

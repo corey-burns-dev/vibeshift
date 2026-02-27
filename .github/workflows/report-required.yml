@@ -11,7 +11,7 @@ permissions:
 jobs:
   report-required:
     name: Require Report For Substantial Changes
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout

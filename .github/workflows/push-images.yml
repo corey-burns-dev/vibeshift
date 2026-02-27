@@ -23,7 +23,7 @@ permissions:
 jobs:
     build-and-push:
         name: Build and Push Images
-        runs-on: ubuntu-latest
+        runs-on: self-hosted
         # For workflow_run events, only proceed when CI was triggered by a branch push and succeeded.
         if: >
             github.event_name != 'workflow_run' || (

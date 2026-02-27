@@ -9,7 +9,7 @@ on:
 jobs:
   go-test-fast:
     name: Fast Go tests (fail-fast)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
@@ -28,7 +28,7 @@ jobs:
   go-race-smoke:
     name: Go race smoke tests
     needs: [go-test-fast]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     services:
       postgres:
         image: postgres:16.11-alpine3.23
@@ -79,7 +79,7 @@ jobs:
   backend-checks:
     name: Backend Checks
     needs: [go-test-fast, go-race-smoke]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     services:
       postgres:
         image: postgres:16.11-alpine3.23
@@ -140,7 +140,7 @@ jobs:
 
   frontend-checks:
     name: Frontend Checks
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
@@ -154,7 +154,7 @@ jobs:
 
   docs-checks:
     name: Docs and Agent Instruction Checks
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
@@ -169,7 +169,7 @@ jobs:
 
   e2e-smoke:
     name: E2E Smoke
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [backend-checks, frontend-checks, docs-checks]
     services:
       postgres:
@@ -312,7 +312,7 @@ jobs:
 
   docker-build:
     name: Docker Build Verification
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [backend-checks, frontend-checks, docs-checks]
     steps:
       - uses: actions/checkout@v4
