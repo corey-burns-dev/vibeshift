@@ -1,15 +1,19 @@
 name: GHCR Container Cleanup
 
 on:
+    # Run after every image push so storage is trimmed immediately
+    workflow_run:
+        workflows: ["Push Docker Images"]
+        types: [completed]
+    # Daily safety net
     schedule:
-        # Run daily at 03:00 UTC
         - cron: "0 3 * * *"
     workflow_dispatch:
         inputs:
-            retention_days:
-                description: "Number of days to keep package versions"
+            keep_versions:
+                description: "Number of most-recent versions to keep per image"
                 required: false
-                default: "30"
+                default: "2"
 
 permissions:
     contents: read
@@ -20,15 +24,11 @@ jobs:
         name: Cleanup old GHCR container package versions
         runs-on: ubuntu-latest
         steps:
-            - name: Install tools
-              run: |
-                  sudo apt-get update && sudo apt-get install -y jq python3
-
             - name: Delete old container package versions
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   OWNER: ${{ github.repository_owner }}
-                  RETENTION_DAYS: ${{ github.event.inputs.retention_days || '30' }}
+                  KEEP_VERSIONS: ${{ github.event.inputs.keep_versions || '2' }}
               run: |
                   set -euo pipefail
                   API='https://api.github.com'
@@ -43,30 +43,31 @@ jobs:
                   fi
 
                   for pkg in $PKGS; do
-                    echo "Checking package: $pkg (api base: $PKG_BASE)"
-                    # List versions (paginated); take first 100
+                    echo "Checking package: $pkg — keeping $KEEP_VERSIONS most recent versions"
                     resp=$(curl -s -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" "$PKG_BASE/$pkg/versions?per_page=100")
-                    echo "$resp" | jq -c '.[]' | while read -r ver; do
-                      id=$(echo "$ver" | jq -r '.id')
-                      created=$(echo "$ver" | jq -r '.created_at')
-                      # collect tags (may be empty)
-                      tags=$(echo "$ver" | jq -r '.metadata.container.tags // [] | join(" ")')
-                      if [ -z "$id" ] || [ -z "$created" ]; then
-                        continue
-                      fi
-                      # Skip deletion if this version contains the 'latest' tag
-                      if echo "$tags" | grep -qw "latest"; then
-                        echo "Skipping $pkg version $id (tagged latest)"
-                        continue
-                      fi
-                      # compute age in days (single-line python to avoid heredoc/YAML parsing issues)
-                      age=$(python3 -c "from datetime import datetime,timezone; created='${created}'; fmt='%Y-%m-%dT%H:%M:%SZ'; dt=datetime.strptime(created,fmt).replace(tzinfo=timezone.utc); now=datetime.utcnow().replace(tzinfo=timezone.utc); print((now-dt).days)")
-                      if [ "${age:-0}" -ge "$RETENTION_DAYS" ]; then
-                        echo "Deleting $pkg version $id (age ${age}d)"
-                        curl -s -X DELETE \
-                          -H "Accept: application/vnd.github+json" \
-                          -H "Authorization: Bearer $GITHUB_TOKEN" \
-                          "$PKG_BASE/$pkg/versions/$id" || true
-                      fi
+
+                    # Sort newest-first, skip the first KEEP_VERSIONS, collect IDs to delete
+                    # Always protect versions tagged 'latest' regardless of position
+                    ids_to_delete=$(echo "$resp" | jq -r --argjson keep "$KEEP_VERSIONS" '
+                      sort_by(.created_at) | reverse
+                      | to_entries
+                      | map(select(
+                          .key >= $keep and
+                          ((.value.metadata.container.tags // []) | index("latest") | not)
+                        ))
+                      | .[].value.id
+                    ')
+
+                    if [ -z "$ids_to_delete" ]; then
+                      echo "Nothing to delete for $pkg"
+                      continue
+                    fi
+
+                    for id in $ids_to_delete; do
+                      echo "Deleting $pkg version $id"
+                      curl -s -X DELETE \
+                        -H "Accept: application/vnd.github+json" \
+                        -H "Authorization: Bearer $GITHUB_TOKEN" \
+                        "$PKG_BASE/$pkg/versions/$id" || true
                     done
                   done
