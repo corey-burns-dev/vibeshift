@@ -145,10 +145,12 @@ jobs:
             sanctum/playwright:nightly npx playwright test --workers=2
 
       - name: Upload Playwright artifacts
-        if: always()
+        if: failure()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-nightly
+          retention-days: 1
           path: |
             frontend/reports/playwright-report
             frontend/test-results
@@ -163,9 +165,11 @@ jobs:
 
       - name: Upload service logs
         if: failure()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: nightly-service-logs
+          retention-days: 1
           path: |
             /tmp/backend.log
             /tmp/frontend.log

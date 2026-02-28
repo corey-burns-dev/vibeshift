@@ -40,8 +40,10 @@ jobs:
         run: make observability-verify
 
       - name: Upload k6 results
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: k6-results
+          retention-days: 3
           path: |
             *.json
