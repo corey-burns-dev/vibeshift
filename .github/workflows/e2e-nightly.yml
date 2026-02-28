@@ -133,6 +133,7 @@ jobs:
         run: |
           mkdir -p frontend/reports frontend/test-results
           docker run --rm --network host \
+            --user "$(id -u):$(id -g)" \
             -v "$PWD/frontend/reports:/app/reports" \
             -v "$PWD/frontend/test-results:/app/test-results" \
             -e PLAYWRIGHT_BASE_URL="$PLAYWRIGHT_BASE_URL" \
