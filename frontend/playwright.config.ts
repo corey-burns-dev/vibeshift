@@ -10,6 +10,7 @@ const testDir = fs.existsSync(preferred) ? './test/e2e' : './test/tests/e2e'
 
 export default defineConfig({
   testDir: testDir,
+  outputDir: 'reports/test-results',
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
   forbidOnly: !!process.env.CI,
