@@ -23,6 +23,20 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      - name: Prepare workspace permissions (self-hosted)
+        run: |
+          set -euo pipefail
+          for dir in "$GITHUB_WORKSPACE/frontend/reports" "$GITHUB_WORKSPACE/frontend/test-results"; do
+            if [ -e "$dir" ]; then
+              if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+                sudo chown -R "$(id -u):$(id -g)" "$dir" || true
+              elif command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+                docker run --rm -v "$dir:$dir" alpine:3.22 sh -lc "chown -R $(id -u):$(id -g) \"$dir\"" || true
+              fi
+            fi
+          done
+          rm -rf "$GITHUB_WORKSPACE/frontend/reports" "$GITHUB_WORKSPACE/frontend/test-results"
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
