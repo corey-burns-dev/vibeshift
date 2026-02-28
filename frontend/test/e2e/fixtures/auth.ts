@@ -1,7 +1,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-export const AUTH_DIR = path.resolve(__dirname, '..', '.auth')
+// Store auth state under reports so containerized runs can write via mounted volume.
+export const AUTH_DIR = process.env.PLAYWRIGHT_AUTH_DIR
+  ? path.resolve(process.env.PLAYWRIGHT_AUTH_DIR)
+  : path.resolve(process.cwd(), 'reports', '.auth')
 export const USER_STATE_PATH = path.join(AUTH_DIR, 'user.json')
 export const ADMIN_STATE_PATH = path.join(AUTH_DIR, 'admin.json')
 

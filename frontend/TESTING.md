@@ -97,7 +97,7 @@ await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
 ## E2E
 
-- **Global setup** (`test/tests/e2e/global-setup.ts`): Creates authenticated user and admin storage states under `test/tests/e2e/.auth/`.
+- **Global setup** (`test/e2e/global-setup.ts`): Creates authenticated user and admin storage states under `reports/.auth/` (or `PLAYWRIGHT_AUTH_DIR` when set).
 - **Auth**: Use `test.use({ storageState: USER_STATE_PATH })` or `ADMIN_STATE_PATH` for authenticated tests.
 - **Base URL**: `PLAYWRIGHT_BASE_URL` (default `http://localhost:5173`). API: `PLAYWRIGHT_API_URL` (default `http://localhost:8375/api`).
 
