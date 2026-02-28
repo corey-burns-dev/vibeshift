@@ -571,7 +571,7 @@ function MainLayout({ children }: { children: ReactNode }) {
           isAuthenticated && isViewportLockedRoute
             ? 'overflow-hidden'
             : 'overflow-visible',
-          isAuthenticated ? 'pb-20 pt-20 md:pb-0 md:pt-16' : 'pt-0'
+          isAuthenticated ? 'pb-20 pt-17 md:pb-0 md:pt-11' : 'pt-0'
         )}
       >
         <div
