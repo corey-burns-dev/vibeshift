@@ -33,4 +33,3 @@ func TestConversationChannel(t *testing.T) {
 	t.Parallel()
 	assert.Equal(t, "chat:conv:5", ConversationChannel(5))
 }
-
