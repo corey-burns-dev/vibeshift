@@ -17,9 +17,6 @@ Sanctum is a Reddit-style social platform focused on creativity, hobbies, and sh
 - **Databases:** PostgreSQL for persistence, Redis for caching and pub/sub
 - **Observability:** Prometheus metrics and health monitoring integration
 
-> [!NOTE]
-> **Video Streaming & Video Chat:** These features are NOT enabled in the `master` (production) branch. If you'd like to try or develop streaming/video locally, switch to the `with-streaming-video` branch — it contains the additional services and code paths for video chat and live streaming. Keep in mind that `with-streaming-video` is intended for local/dev experimentation only; production deployments on `master` intentionally exclude these capabilities.
-
 ## Prerequisites
 
 - Docker and Docker Compose

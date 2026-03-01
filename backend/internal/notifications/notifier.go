@@ -211,45 +211,6 @@ func (n *Notifier) StartGameSubscriber(
 	return nil
 }
 
-// PublishVideoChatSignal publishes a WebRTC signaling message to a video chat room channel
-func (n *Notifier) PublishVideoChatSignal(
-	ctx context.Context, roomID string, payload string,
-) error {
-	if n.rdb == nil {
-		return nil
-	}
-	channel := fmt.Sprintf("videochat:room:%s", roomID)
-	return n.rdb.Publish(ctx, channel, payload).Err()
-}
-
-// StartVideoChatSubscriber subscribes to video chat room patterns
-func (n *Notifier) StartVideoChatSubscriber(
-	ctx context.Context, onMessage func(channel string, payload string),
-) error {
-	if n.rdb == nil {
-		return nil
-	}
-	sub := n.rdb.PSubscribe(ctx, "videochat:room:*")
-	ch := sub.Channel()
-
-	go func() {
-		defer func() { _ = sub.Close() }()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case msg, ok := <-ch:
-				if !ok {
-					return
-				}
-				onMessage(msg.Channel, msg.Payload)
-			}
-		}
-	}()
-
-	return nil
-}
-
 // UserChannel derives the Redis channel name for a user.
 func UserChannel(userID uint) string {
 	return "notifications:user:" + strconv.FormatUint(uint64(userID), 10)

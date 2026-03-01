@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { Gamepad2, Radio, Users as UsersIcon } from 'lucide-react'
+import { Gamepad2, Users as UsersIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import {
@@ -52,9 +52,6 @@ const DrawAndGuess = lazy(() => import('@/pages/games/DrawAndGuess'))
 const Snake = lazy(() => import('@/pages/games/Snake'))
 const Battleship = lazy(() => import('@/pages/games/Battleship'))
 const Othello = lazy(() => import('@/pages/games/Othello'))
-const Streams = lazy(() => import('@/pages/Streams'))
-const Stream = lazy(() => import('@/pages/Stream'))
-const VideoChat = lazy(() => import('@/pages/VideoChat'))
 const Sanctums = lazy(() => import('@/pages/Sanctums'))
 const SanctumDetail = lazy(() => import('@/pages/SanctumDetail'))
 const SanctumRequestForm = lazy(() => import('@/pages/SanctumRequestForm'))
@@ -111,12 +108,6 @@ function HomePage() {
       title: 'Built for real communities',
       description:
         'Move from post to chat to game room without switching platforms.',
-    },
-    {
-      icon: Radio,
-      title: 'Streaming where your friends are',
-      description:
-        'Jump into live channels while conversations stay connected.',
     },
     {
       icon: Gamepad2,
@@ -176,7 +167,7 @@ function HomePage() {
               Create your profile and set your status.
             </li>
             <li className='rounded-lg border border-border/60 bg-background p-3'>
-              Join a stream or hop into chatrooms.
+              Join a chatroom or follow a sanctum.
             </li>
             <li className='rounded-lg border border-border/60 bg-background p-3'>
               Challenge friends in quick games.
@@ -408,30 +399,6 @@ function RoutesWithPrefetch() {
           element={
             <ProtectedRoute>
               <Othello />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/streams'
-          element={
-            <ProtectedRoute>
-              <Streams />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/streams/:id'
-          element={
-            <ProtectedRoute>
-              <Stream />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/videochat'
-          element={
-            <ProtectedRoute>
-              <VideoChat />
             </ProtectedRoute>
           }
         />
