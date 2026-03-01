@@ -1,46 +1,31 @@
 #!/bin/sh
 set -e
 
-# Pre-push hook: run frontend quality gate + backend tests.
-# This keeps local checks aligned with CI and catches failures before push.
+# Pre-push: fast lint + type-check + short unit tests only.
+# Full suite (vitest, go -race, e2e, docker build) runs in CI.
+# Skip entirely: SKIP_PRE_PUSH=1 git push
 
-echo "🚀 Running pre-push quality checks..."
+if [ "${SKIP_PRE_PUSH:-}" = "1" ]; then
+  echo "SKIP_PRE_PUSH=1 — skipping pre-push checks"
+  exit 0
+fi
 
-if [ -d frontend ]; then
-  if command -v bun >/dev/null 2>&1; then
-	echo "Running frontend quality gate..."
-	if ! make check-frontend; then
-		printf "\nERROR: Frontend quality gate failed. Fix issues before pushing.\n"
-		exit 1
-	fi
-  else
-	echo "bun not found; skipping frontend quality checks"
-  fi
+echo "🚀 Running pre-push checks (lint + type-check + short tests)..."
+
+if [ -d frontend ] && command -v bun >/dev/null 2>&1; then
+  cd frontend && bun install --frozen-lockfile --silent
+  echo "  → biome lint..."
+  bun --bun biome check src || { printf "\nERROR: Frontend lint failed.\n"; exit 1; }
+  echo "  → tsc..."
+  bun --bun tsc --noEmit || { printf "\nERROR: Frontend type-check failed.\n"; exit 1; }
+  cd ..
 fi
 
 if [ -d backend ]; then
-	echo "Running backend unit tests..."
-	if ! make test; then
-	  printf "\nERROR: Backend unit tests failed. Fix tests before pushing.\n"
-	  exit 1
-	fi
+  echo "  → go test -short..."
+  cd backend && go test ./... -short || { printf "\nERROR: Backend short tests failed.\n"; exit 1; }
+  cd ..
 fi
 
-# Run e2e smoke pre-push (skippable via SKIP_E2E_PRE_PUSH=1). This will attempt
-# to bring up the e2e compose stack if a test Postgres isn't reachable.
-if [ "${SKIP_E2E_PRE_PUSH:-}" != "1" ]; then
-	if command -v bash >/dev/null 2>&1; then
-		echo "Running quick e2e smoke (skippable with SKIP_E2E_PRE_PUSH=1)..."
-		# run the project script which will start compose e2e stack if needed
-		if ! ./scripts/run-e2e-smoke.sh; then
-			echo "Pre-push e2e smoke failed. To skip locally set SKIP_E2E_PRE_PUSH=1 and re-push."
-			exit 1
-		fi
-	else
-		echo "bash not found; skipping e2e pre-push smoke"
-	fi
-else
-	echo "SKIP_E2E_PRE_PUSH=1 set — not running e2e smoke"
-fi
-
+echo "✅ Pre-push checks passed (full suite runs in CI)."
 exit 0
